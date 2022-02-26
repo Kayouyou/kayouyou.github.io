@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Getting started with signposts | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="今年WWDC的一大焦点是性能——不仅是苹果如何努力提高其操作系统和框架的整体性能，也包括向美国第三方开发者传达的信息。
+就像在会议期间的几个会议中提到的，在许多情况下，保持稳定的性能水平对于提供良好的用户体验是必不可少的。 随着我们渲染屏幕..." />
+    <meta name="keywords" content="debugging,performance" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Getting started with signposts</h2>
+            <div class="post-date">2018-06-07</div>
+            
+            <div class="post-content" v-pre>
+              <p>今年WWDC的一大焦点是性能——不仅是苹果如何努力提高其操作系统和框架的整体性能，也包括向美国第三方开发者传达的信息。</p>
+<p>就像在会议期间的几个会议中提到的，在许多情况下，保持稳定的性能水平对于提供良好的用户体验是必不可少的。 随着我们渲染屏幕的刷新率增加(iPad Pro高达120赫兹)，我们(和系统)用于渲染每帧的时间会减少，维护平滑滚动和其他每帧渲染任务变得越来越具有挑战性。</p>
+<p>在性能方面，更有挑战性的是调试和识别瓶颈。很多时候，性能下降是很难重现的，而且确实需要良好的信息才能修复。</p>
+<p>为了解决这一问题，苹果今年推出了一个名为os_signpost的新开发者工具。使用这个新工具，我们可以很容易地在代码中放置标记(路标)，从而简化性能分析和调试问题。 在今天的WWDC更新中，让我们看看如何开始使用这个新工具!</p>
+<h2 id="bottlenecks">Bottlenecks</h2>
+<p>当我们发现我们正在开发的应用程序存在性能问题时，我们首先要做的是确定导致问题的瓶颈可能在哪里。设我们的应用程序在某个时刻需要加载一组记录，通过在Instruments中的time Profiler花费一些时间，我们怀疑问题在于加载记录的函数，如下所示:</p>
+<pre><code class="language-swift">func loadRecords() throws -&gt; [Record] {
+    let decoder = JSONDecoder()
+
+    return try files.map { file in
+        let data = try file.read()
+        let record = try decoder.decode(Record.self, from: data)
+        return record
+    }
+}
+</code></pre>
+<p>现在的问题是，到底是什么导致了性能问题?  它是读取我们文件的数据，还是解码它们的内容? 这只会发生在特定的一组文件还是所有文件?   os_signpost可以帮助我们以一种友好的方式回答这些问题。</p>
+<h2 id="setting-things-up">Setting things up</h2>
+<p>指示符成对放置，使用带有begin和end类型的平衡调用os_signpost。 但是在我们开始放置路标之前，我们需要创建一个日志句柄和路标id。 让我们首先创建我们的日志句柄，这是Instruments根据它们的子系统(在我们的例子中是应用程序的bundle identifier)和类别(我们正在执行的任务类型，在这个例子中是RecordLoading)来分组路标:</p>
+<pre><code class="language-swift">import os.signpost
+
+let log = OSLog(
+    subsystem: &quot;com.johnsundell.app&quot;,
+    category: &quot;RecordLoading&quot;
+)
+</code></pre>
+<p>接下来，我们将为每个文件创建一个路标ID, Instruments将使用它来匹配每个开始和结束路标对:</p>
+<pre><code class="language-swift">let signpostID = OSSignpostID(log: log)
+</code></pre>
+<p>现在，设置完成后，我们可以开始放置一些路标了!</p>
+<h2 id="placing-signposts">Placing signposts</h2>
+<p>我们将在每个操作之前放置一个带有begin类型的路标，在操作完成后放置一个带有end类型的路标。对于每个路标，我们都将传递我们的log和signpostID。 我们还将添加一个包含每个文件路径的描述，这样我们就能够识别出任何有特别问题的文件。下面是读取文件时的样子:</p>
+<pre><code class="language-swift">os_signpost(
+    type: .begin,
+    log: log,
+    name: &quot;Read File&quot;,
+    signpostID: signpostID,
+    &quot;%{public}s&quot;,
+    file.path
+)
+
+let data = try file.read()
+
+os_signpost(
+    type: .end,
+    log: log,
+    name: &quot;Read File&quot;,
+    signpostID: signpostID,
+    &quot;%{public}s&quot;,
+    file.path
+)
+</code></pre>
+<p>正如你在上面看到的，我们不能使用Swift的普通字符串插值。这是因为我们处理的是StaticString类型的字符串，需要在编译时完全定义。相反，我们将使用特殊的%{public}s格式来传递文件的路径作为参数。</p>
+<h2 id="wrapping-things-up">Wrapping things up</h2>
+<p>最后，让我们在调用的周围添加相同的路标来解码每个文件的数据，最终结果如下:</p>
+<pre><code class="language-swift">import os.signpost
+
+func loadRecords() throws -&gt; [Record] {
+    let decoder = JSONDecoder()
+
+    let log = OSLog(
+        subsystem: &quot;com.johnsundell.app&quot;,
+        category: &quot;RecordLoading&quot;
+    )
+
+    return try files.map { file in
+        let signpostID = OSSignpostID(log: log)
+
+        os_signpost(
+            type: .begin,
+            log: log,
+            name: &quot;Read File&quot;,
+            signpostID: signpostID,
+            &quot;%{public}s&quot;,
+            file.path
+        )
+
+        let data = try file.read()
+
+        os_signpost(
+            type: .end,
+            log: log,
+            name: &quot;Read File&quot;,
+            signpostID: signpostID,
+            &quot;%{public}s&quot;,
+            file.path
+        )
+
+        os_signpost(
+            type: .begin,
+            log: log,
+            name: &quot;Decode Record&quot;,
+            signpostID: signpostID,
+            &quot;%{public}@&quot;,
+            file.path
+        )
+
+        let record = try decoder.decode(Record.self, from: data)
+
+        os_signpost(
+            type: .end,
+            log: log,
+            name: &quot;Decode Record&quot;,
+            signpostID: signpostID,
+            &quot;%{public}s&quot;,
+            file.path
+        )
+
+        return record
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以在Xcode中选择Product &gt; Profile来启动仪器并开始分析。 选择空白模板，使用右上角的+按钮添加os_signpost工具，现在，我们可以看到为每个文件🎉显示的路标。</p>
+<p>现在剩下的就是深入研究仪器显示给我们的数据，识别出有问题的文件类型，以及我们需要在代码中修改哪些内容来处理这些情况。有了这些新的、更细粒度的信息，这个过程现在应该比以前容易得多。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Signposts似乎是一个非常有前途的新工具，尤其是在调试复杂的性能问题和异步操作时，它可以快速获得更全面的信息。然而，在这篇文章中，我们只触及了路标所能做的表面，所以我相信，我们将在未来的每周文章中重新讨论这个话题。</p>
+<p>一个问题是，即使在我们完成分析并解决了问题之后，我们是否应该在代码库中保留使用os_signpost的调用。一方面，让这些信息总是可以访问是很好的——但另一方面，所有这些额外的调用真的会使我们的代码混乱，使它更难阅读。对于某些用例，保留它们可能是值得的，而对于另一些用例，我们可能想把它们更像一个临时的调试工具。</p>
+<p>有关路标及其更强大的用例的更多信息，请确保查看“使用日志记录度量性能”WWDC会话。</p>
+<p><a href="https://www.swiftbysundell.com/wwdc2018/getting-started-with-signposts/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VadC328gp/" class="tag">
+                    debugging
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/I0LcoAOtHu/" class="tag">
+                    performance
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/static-factory-methods-in-swift/">
+                  <h3 class="post-title">
+                    Static factory methods in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Subclass-free view controllers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="自从Swift的发布及其面向协议的范例开始流行起来，许多iOS开发者开始减少子类化的使用，转而使用组合、协议扩展和其他更“快速”的技术和解决方案。
+然而，子类化仍然被大量使用的一个领域是在为iOS应用程序创建新的UI特性时。不管我们是创建一..." />
+    <meta name="keywords" content="ui developement,view controllers" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Subclass-free view controllers in Swift</h2>
+            <div class="post-date">2018-07-08</div>
+            
+            <div class="post-content" v-pre>
+              <p>自从Swift的发布及其面向协议的范例开始流行起来，许多iOS开发者开始减少子类化的使用，转而使用组合、协议扩展和其他更“快速”的技术和解决方案。</p>
+<p>然而，子类化仍然被大量使用的一个领域是在为iOS应用程序创建新的UI特性时。不管我们是创建一个新视图被推到导航堆栈上，还是某种形式的模态表，或者一个标签栏的新成员-起点通常是创建一个新的UIViewController子类。</p>
+<p>虽然我个人并不认为子类化是一件坏事，但在很多情况下，避免子类化会使我们的代码更简单，更容易更改和重用。本周，让我们看看一些不同的技术，它们可以帮助我们写无子类的视图控制器，以及如何帮助我们避免大规模视图控制器的问题。</p>
+<h2 id="custom-root-views">Custom root views</h2>
+<p>有时当我们创建一个新的UIViewController子类时，我们对任何视图控制器特定的功能都不太感兴趣-我们只是想为我们的视图代码提供某种形式的容器，并且需要使用视图控制器，以便能够以某种方式呈现我们的新视图。</p>
+<p>例如，假设我们正在为某种形式的事件构建一个细节视图。一个非常常见的解决方案是创建一个EventDetailsViewController，给它一个带有事件模型的初始化器，并让视图控制器构造我们需要的UI，如下所示:</p>
+<pre><code class="language-swift">class EventDetailsViewController: UIViewController {
+    private let event: Event
+
+    init(event: Event) {
+        self.event = event
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        let titleLabel = UILabel()
+        ...
+
+        let subtitleLabel = UILabel()
+        ...
+
+        let imageView = UIImageView()
+        ...
+    }
+}
+</code></pre>
+<p>虽然上面的方法没有任何问题，如果所有的EventDetailsViewController正在做的是配置和设置子视图，简单地将它作为一个视图可能更合适。通过移动我们的视图代码从视图控制器到普通视图,还可以帮助我们避免很多陷阱,导致大规模视图控制器——例如当视图控制器开始充满从布局代码,创建子视图,数据绑定。</p>
+<p>在这个例子中，我们要做的是创建一个EventDetailsView，并将我们所有的事件细节视图代码移动到它里面:</p>
+<pre><code class="language-swift">class EventDetailsView: UIView {
+    let titleLabel = UILabel()
+    let subtitleLabel = UILabel()
+    let imageView = UIImageView()
+}
+</code></pre>
+<p>然而，我们仍然需要一个视图控制器，以便能够以模态或导航控制器或标签控制器等容器的形式显示我们的细节视图。 为了能够做到这一点，我们可以简单地创建一个新的UIViewController实例，并分配我们的EventDetailsView作为它的根视图，像这样:</p>
+<pre><code class="language-swift">let vc = UIViewController()
+vc.view = EventDetailsView()
+navigationController.pushViewController(vc, animated: true)
+</code></pre>
+<h2 id="factory-methods">Factory methods</h2>
+<p>将我们的视图代码从一个UIViewController子类移动到一个UIView子类可能看起来并不是什么大问题。 但是，一旦我们开始将这种方法与其他模式结合起来，从而改进代码的封装性，这种方法就会变得更加强大。</p>
+<p>其中一种模式是工厂模式，我们之前已经介绍过，它是一种避免共享状态的方式，也是一种静态创建对象的方式。当我们处理更简单的ui时，这些ui是相当静态的，不需要大量的交互，工厂模式也可以是封装视图控制器的创建的很好的方式，而视图控制器只是作为自定义视图的容器。</p>
+<p>这里我们创建了一个EventViewControllerFactory，它可以让我们将EventDetailsView的创建和它的数据绑定抽象到一个易于使用的API中:</p>
+<pre><code class="language-swift">class EventViewControllerFactory {
+    func makeDetailViewController(for event: Event) -&gt; UIViewController {
+        let view = EventDetailsView()
+        view.titleLabel.text = event.title
+        view.subtitleLabel.text = event.location
+        view.imageView.image = event.image
+
+        let vc = UIViewController()
+        vc.view = view
+        return vc
+    }
+}
+</code></pre>
+<p>很好，很干净，我们还引入了一个很好的抽象层它可以让我们在EventDetailsView上迭代而不需要更新很多不同的调用站点，因为它现在成为了我们的工厂的实现细节👍。</p>
+<h2 id="presenters">Presenters</h2>
+<p>当想要以更简单的方式使用视图控制器时，另一个非常有用的模式是presenter模式。虽然这个模式有许多不同的风格，涉及的逻辑比我们在这里使用的多得多，但当我们想统一某个UI的呈现方式时，它是一个很好的选择。</p>
+<p>让我们说我们总是想要以模式的方式呈现我们的EventDetailsView，我们想让它很容易从我们的应用程序的任何地方这样做。一种方法是把我们的EventViewControllerFactory变成一个演示者，它没有返回创建的视图控制器，而是以模态方式呈现它——像这样:</p>
+<pre><code class="language-swift">struct EventDetailsPresenter {
+    let event: Event
+
+    func present(in container: UIViewController) {
+        let view = EventDetailsView()
+        view.titleLabel.text = event.title
+        view.subtitleLabel.text = event.location
+        view.imageView.image = event.image
+
+        let vc = UIViewController()
+        vc.view = view
+        container.present(vc, animated: true)
+    }
+}
+</code></pre>
+<p>以上方法的美妙之处在于，它使我们更不可能以“错误的方式”使用EventDetailsView。通过不仅对其创建进行抽象，还对其表示进行抽象，我们可以更容易地确保在整个代码库中一致地表示它。</p>
+<p>在以后的文章中，我们将仔细研究许多不同风格的演示者模式(以及促进使用它们的设计模式)。</p>
+<h2 id="the-declarative-nature-of-auto-layout">The declarative nature of Auto Layout</h2>
+<p>到目前为止，我们的EventDetailsView总是填满它的整个父视图控制器，但很多时候我们的顶级布局没有那么简单。通常我们想要添加多个子视图到一个视图控制器的视图，并定义它们之间的布局关系。</p>
+<p>在这种情况下，自动布局的声明性本质真正发挥了作用。因为自动布局是基于定义约束的，所以它不需要任何形式的子类化来工作。这意味着我们可以继续使用相同的无子类的视图控制器方法，即使我们有多个视图。这里我们用头部视图扩展了我们的事件细节UI，并在它和EventDetailsView之间添加了之前的约束:</p>
+<pre><code class="language-swift">let vc = UIViewController()
+
+let headerView = EventHeaderView()
+headerView.translatesAutoresizingMaskIntoConstraints = false
+vc.view.addSubview(headerView)
+
+let detailView = EventDetailsView()
+detailView.translatesAutoresizingMaskIntoConstraints = false
+vc.view.addSubview(detailView)
+
+NSLayoutConstraint.activate([
+    headerView.topAnchor.constraint(equalTo: vc.view.topAnchor),
+    headerView.widthAnchor.constraint(equalTo: vc.view.widthAnchor),
+    headerView.heightAnchor.constraint(equalTo: vc.view.heightAnchor, multiplier: 0.3),
+    detailView.widthAnchor.constraint(equalTo: vc.view.widthAnchor),
+    detailView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+    detailView.bottomAnchor.constraint(equalTo: vc.view.bottomAnchor)
+])
+</code></pre>
+<p>不管我们是选择工厂模式、展示者模式，还是其他方式来创建我们的视图控制器，上面的方法都可以很容易地使用。如果布局代码不断增长，我们也可以将约束的创建移到另一个工厂中(例如EventDetailConstraintsFactory，它返回一个给定头视图和细节视图的NSLayoutConstraint数组)。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>避免大规模视图控制器问题在很多方面都是关于打破许多关于iOS开发的常见假设。就像我们打破了每个屏幕只能有一个视图控制器的假设，通过使用子视图控制器和创建自定义容器视图控制器 - 打破一个常见的假设，一个新的UI总是需要在一个视图控制器子类中创建，有时是非常有益的。</p>
+<p>这是否意味着子类化UIViewController是不好的，应该不惜一切代价避免?  当然不是。有时我们需要一个视图控制器子类给我们的能力，有时一个自定义视图控制器是一个复杂UI的适当抽象，它有交互或模型更新，我们需要观察。然而，对于更简单的静态视图控制器，使用普通的UIViewController可能是一个很好的选择。</p>
+<p>如果我们愿意，我们也可以通过组合普通的uiview而不是创建EventDetailsView的子类来让我们的解决方案完全没有子类-但是我们不要做得太过火😉。</p>
+<p><a href="https://www.swiftbysundell.com/articles/subclass-free-view-controllers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/FhUIK00QN/" class="tag">
+                    ui developement
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/PG4tMePHd/" class="tag">
+                    view controllers
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/custom-container-view-controllers-in-swift/">
+                  <h3 class="post-title">
+                    Custom container view controllers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

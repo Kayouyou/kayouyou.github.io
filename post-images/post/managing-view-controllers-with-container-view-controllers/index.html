@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Managing View Controllers With Container View Controllers | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Managing View Controllers With Container View Controllers
+
+
+1.1. MasterViewController.swift
+1.2. Adding a Child View..." />
+    <meta name="keywords" content="child controller" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Managing View Controllers With Container View Controllers</h2>
+            <div class="post-date">2021-05-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#ManagingViewControllersWithContainerViewControllers">Managing View Controllers With Container View Controllers</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#MasterViewController.swift">MasterViewController.swift</a></li>
+<li>1.2. <a href="#AddingaChildViewController">Adding a Child View Controller</a></li>
+<li>1.3. <a href="#RemovingaChildViewController">Removing a Child View Controller</a></li>
+<li>1.4. <a href="#UpdatingtheView">Updating the View</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namemanagingviewcontrollerswithcontainerviewcontrollersamanaging-view-controllers-with-container-view-controllers">1. <a name='ManagingViewControllersWithContainerViewControllers'></a>Managing View Controllers With Container View Controllers</h2>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq9tx3l1jhj30xr0u07gh.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="11-a-namemasterviewcontrollerswiftamasterviewcontrollerswift">1.1. <a name='MasterViewController.swift'></a>MasterViewController.swift</h3>
+<pre><code class="language-swift">import UIKit
+
+final class MasterViewController: UIViewController {
+
+    @IBOutlet var segmentedControl: UISegmentedControl!
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupView()
+    }
+
+    private func setupView() {
+        setupSegmentedControl()
+    }
+
+    private func setupSegmentedControl() {
+        // Configure Segmented Control
+        segmentedControl.removeAllSegments()
+        segmentedControl.insertSegment(withTitle: &quot;Summary&quot;, at: 0, animated: false)
+        segmentedControl.insertSegment(withTitle: &quot;Sessions&quot;, at: 1, animated: false)
+        segmentedControl.addTarget(self, action: #selector(selectionDidChange(_:)), for: .valueChanged)
+
+        // Select First Segment
+        segmentedControl.selectedSegmentIndex = 0
+    }
+
+    func selectionDidChange(_ sender: UISegmentedControl) {
+        updateView()
+    }
+}
+
+</code></pre>
+<h3 id="12-a-nameaddingachildviewcontrolleraadding-a-child-view-controller">1.2. <a name='AddingaChildViewController'></a>Adding a Child View Controller</h3>
+<pre><code class="language-swift">private lazy var summaryViewController: SummaryViewController = {
+    // Load Storyboard
+    let storyboard = UIStoryboard(name: &quot;Main&quot;, bundle: Bundle.main)
+
+    // Instantiate View Controller
+    var viewController = storyboard.instantiateViewController(withIdentifier: &quot;SummaryViewController&quot;) as! SummaryViewController
+
+    // Add View Controller as Child View Controller
+    self.add(asChildViewController: viewController)
+
+    return viewController
+}()
+
+private lazy var sessionsViewController: SessionsViewController = {
+    // Load Storyboard
+    let storyboard = UIStoryboard(name: &quot;Main&quot;, bundle: Bundle.main)
+
+    // Instantiate View Controller
+    var viewController = storyboard.instantiateViewController(withIdentifier: &quot;SessionsViewController&quot;) as! SessionsViewController
+
+    // Add View Controller as Child View Controller
+    self.add(asChildViewController: viewController)
+
+    return viewController
+}()
+
+private func add(asChildViewController viewController: UIViewController) {
+    // Add Child View Controller
+    addChildViewController(viewController)
+
+    // Add Child View as Subview
+    view.addSubview(viewController.view)
+
+    // Configure Child View
+    viewController.view.frame = view.bounds
+    viewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+
+    // Notify Child View Controller
+    viewController.didMove(toParentViewController: self)
+}
+</code></pre>
+<h3 id="13-a-nameremovingachildviewcontrolleraremoving-a-child-view-controller">1.3. <a name='RemovingaChildViewController'></a>Removing a Child View Controller</h3>
+<pre><code class="language-swift">private func remove(asChildViewController viewController: UIViewController) {
+    // Notify Child View Controller
+    viewController.willMove(toParentViewController: nil)
+
+    // Remove Child View From Superview
+    viewController.view.removeFromSuperview()
+
+    // Notify Child View Controller
+    viewController.removeFromParentViewController()
+}
+</code></pre>
+<h3 id="14-a-nameupdatingtheviewaupdating-the-view">1.4. <a name='UpdatingtheView'></a>Updating the View</h3>
+<pre><code class="language-swift">private func updateView() {
+    if segmentedControl.selectedSegmentIndex == 0 {
+        remove(asChildViewController: sessionsViewController)
+        add(asChildViewController: summaryViewController)
+    } else {
+        remove(asChildViewController: summaryViewController)
+        add(asChildViewController: sessionsViewController)
+    }
+}
+
+func setupView() {
+    setupSegmentedControl()
+    updateView()
+}
+</code></pre>
+<p><a href="https://cocoacasts.com/managing-view-controllers-with-container-view-controllers/">参考链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ZAot0WRDx/" class="tag">
+                    child controller
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/zen-yang-jue-ding-zai-na-ge-dispatchqueue-shang-diao-yong-completion-handler/">
+                  <h3 class="post-title">
+                    怎样决定在哪个DispatchQueue上调用 completion handler
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

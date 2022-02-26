@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Avoiding race conditions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="竞争条件是当操作序列的预期完成顺序变得不可预测时发生的情况，导致我们的程序逻辑最终处于未定义的状态。例如，我们可能会在内容完全加载之前更新UI，或者在用户完全登录之前，意外地显示一个只针对已登录用户的屏幕。
+竞态条件一开始可能看起来是随机的..." />
+    <meta name="keywords" content="concurrency,GCD,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Avoiding race conditions in Swift</h2>
+            <div class="post-date">2018-11-04</div>
+            
+            <div class="post-content" v-pre>
+              <p>竞争条件是当操作序列的预期完成顺序变得不可预测时发生的情况，导致我们的程序逻辑最终处于未定义的状态。例如，我们可能会在内容完全加载之前更新UI，或者在用户完全登录之前，意外地显示一个只针对已登录用户的屏幕。</p>
+<p>竞态条件一开始可能看起来是随机的，而且调试起来非常棘手——因为通常很难(甚至不可能)为它们提出可靠的复制步骤。本周，让我们来看一看可能导致竞态条件的常见场景，以及避免竞态条件的可能方法——以及我们如何使我们的代码在过程中更加健壮和可预测。</p>
+<h2 id="an-unpredictable-race">An unpredictable race</h2>
+<p>让我们从看一个示例开始，在这个示例中，我们正在构建一个AccessTokenService，使我们能够轻松地检索访问令牌，以执行某种形式的经过身份验证的网络请求。 我们的服务是用一个AccessTokenLoader初始化的，它执行实际的网络操作，而服务本身作为顶级API处理缓存和令牌验证——看起来像这样:</p>
+<pre><code class="language-swift">class AccessTokenService {
+    typealias Handler = (Result&lt;AccessToken&gt;) -&gt; Void
+
+    private let loader: AccessTokenLoader
+    private var token: AccessToken?
+    
+    init(loader: AccessTokenLoader) {
+        self.loader = loader
+    }
+    func retrieveToken(then handler: @escaping Handler) {
+        // If we have a cached token that is still valid, simply
+        // return that directly as the result.
+        if let token = token, token.isValid {
+            return handler(.value(token))
+        }
+        loader.load { [weak self] result in
+            // Cache the loaded token, then pass the result
+            // along to the given handler.
+            self?.token = result.value
+            handler(result)
+        }
+    }
+}
+</code></pre>
+<p>上面的类可能看起来非常简单，如果单独使用的话——确实如此。但是，如果我们仔细观察我们的实现，我们可以看到，如果retrieveToken方法被调用两次 -第二次调用发生在加载器完成加载之前-我们最终会加载两个访问令牌。对于一些身份验证服务器来说，这可能是一个大问题，因为在任何给定的时间通常只有一个访问令牌有效--当第二个请求使第一个请求的结果无效时，我们很可能会以一个竞争条件结束。</p>
+<h2 id="enqueueing-pending-handlers">Enqueueing pending handlers</h2>
+<p>那么我们如何才能防止这种竞态条件的发生呢?我们可以做的第一件事是确保没有重复的请求并行执行，而是在加载器忙于加载时将传递给retrieveToken的任何处理程序放入队列中</p>
+<p>为此，我们首先将pendingHandlers数组添加到我们的访问令牌服务—每次调用retrieveTokens时，我们将把传递的handler附加到该数组。 然后，通过检查数组是否只包含单个元素，确保在任何给定时间只执行单个请求一旦加载器完成，我们将调用一个新的私有方法handle，而不是直接调用当前的处理程序:</p>
+<pre><code class="language-swift">class AccessTokenService {
+    typealias Handler = (Result&lt;AccessToken&gt;) -&gt; Void
+
+    private let loader: AccessTokenLoader
+    private var token: AccessToken?
+    // We'll keep track of all enqueued, pending handlers using
+    // a simple array.
+    private var pendingHandlers = [Handler]()
+
+    func retrieveToken(then handler: @escaping Handler) {
+        if let token = token, token.isValid {
+            return handler(.value(token))
+        }
+
+        pendingHandlers.append(handler)
+
+        // We'll only start loading if the current handler is
+        // alone in the array after being inserted.
+        guard pendingHandlers.count == 1 else {
+            return
+        }
+
+        loader.load { [weak self] result in
+            self?.handle(result)
+        }
+    }
+}
+</code></pre>
+<p>我们之所以引入了一个新的handle方法，而不是简单地将结果处理逻辑内联到load completion处理器中(就像我们之前做的那样)，因为我们现在需要更复杂的逻辑和对self的多个引用。 我们无需使用经典的guard let dance将对self的弱引用转换为强引用，只需调用handle，这将让我们像往常一样访问所有的属性。</p>
+<p>在我们的handle实现中，我们将再次缓存已加载的令牌，并通知每个挂起的处理程序一个结果已加载-像这样:</p>
+<pre><code class="language-swift">private extension AccessTokenService {
+    func handle(_ result: Result&lt;AccessToken&gt;) {
+        token = result.value
+        let handlers = pendingHandlers
+        pendingHandlers = []
+        handlers.forEach { $0(result) }
+    }
+}
+</code></pre>
+<p>我们现在可以保证，即使按顺序多次调用retrieveToken，最终也只会加载一个令牌——并且所有处理程序都将按照正确的顺序得到通知。👍</p>
+<p>在处理单个状态源的代码中，加入异步完成处理程序(就像我们上面所做的那样)可以让我们走很长一段路来避免竞争条件——但我们仍然有一个需要解决的主要问题——线程安全。</p>
+<h2 id="thread-safety">Thread safety</h2>
+<p>很少有事情会比多线程更容易导致竞态条件，尤其是因为我们在构建应用程序时编写的大部分代码实际上并不是线程安全的。因为UIKit只运行在主线程上，它对我们的逻辑来说是有意义的，操作接近视图层，假设它只会从主线程调用但一旦我们深入到我们的核心逻辑，这个假设可能就不再成立了。</p>
+<p>只要代码在同一个线程中执行，我们就可以相信从对象属性中读取和写入的数据是正确的。然而，一旦我们引入了多线程并发，两个线程可能会在完全相同的时间结束对相同属性的读写-导致其中一个线程的数据立即过时。</p>
+<p>例如，只要在单个线程中使用之前的AccessTokenService，我们通过输入等待完成处理程序来处理竞争条件的机制可以很好地工作，但是，如果多个线程最终使用相同的访问令牌服务，一旦我们的pendingHandlers数组并发地从多个线程更改，我们可能很快就会以未定义的状态结束。再一次，我们手上有一个竞争条件。</p>
+<p>虽然有很多方法可以处理基于多线程的竞态条件，但在苹果平台上，一种相当直接的方法是使用Grand Central Dispatch——这让我们可以使用更简单的基于队列的抽象来处理线程。</p>
+<p>让我们回到AccessTokenService，通过使用专用的DispatchQueue来同步其内部状态，使其成为线程安全的服务。我们将首先在服务的初始化器中接受注入的队列(以便于测试)，或者创建一个新的队列，然后——一旦retrieveToken方法被调用-我们将发送一个异步闭包到我们的队列上，我们将在队列中实际执行令牌检索，使我们的类现在看起来像这样:</p>
+<pre><code class="language-swift">class AccessTokenService {
+    typealias Handler = (Result&lt;AccessToken&gt;) -&gt; Void
+
+    private let loader: AccessTokenLoader
+    private let queue: DispatchQueue
+    private var token: AccessToken?
+    private var pendingHandlers = [Handler]()
+
+    init(loader: AccessTokenLoader,
+         queue: DispatchQueue = .init(label: &quot;AccessToken&quot;)) {
+        self.loader = loader
+        self.queue = queue
+    }
+
+    func retrieveToken(then handler: @escaping Handler) {
+        queue.async { [weak self] in
+            self?.performRetrieval(with: handler)
+        }
+    }
+}
+</code></pre>
+<p>就像之前一样，我们只需在异步闭包中调用一个私有方法，而不必添加大量的自引用。在我们的新performRetrieval方法中，我们将运行与之前完全相同的逻辑——添加的内容是，我们现在也将调用封装在异步队列分派中handle,-确保完整的线程安全:</p>
+<pre><code class="language-swift">private extension AccessTokenService {
+    func performRetrieval(with handler: @escaping Handler) {
+        if let token = token, token.isValid {
+            return handler(.value(token))
+        }
+
+        pendingHandlers.append(handler)
+
+        guard pendingHandlers.count == 1 else {
+            return
+        }
+
+        loader.load { [weak self] result in
+            // Whenever we are mutating our class' internal
+            // state, we always dispatch onto our queue. That
+            // way, we can be sure that no concurrent mutations
+            // will occur.
+            self?.queue.async {
+                self?.handle(result)
+            }
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以从任何线程使用AccessTokenService，并且仍然可以确保我们的逻辑将保持可预测，并且所有处理程序都将按照正确的顺序🎉被调用。</p>
+<p>好消息是，我们还可以很容易地测试线程和队列逻辑是否正常工作，因为我们要注入DispatchQueue，以便在服务的初始化器中使用。关于如何编写这类测试的更多信息，请参阅“异步Swift代码单元测试”。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然可能没有办法完全避免竞争条件，但使用诸如排队和中央调度等技术可以让我们编写更可预测、更不易发生基于竞争条件的错误的代码。每当我们编写某种形式的异步代码时，确实需要仔细考虑代码在并发调用时的行为，并设置机制以确保所有操作以可预测的顺序执行(和完成)。</p>
+<p>这是否意味着我们应该以完全线程安全的方式编写所有代码? 我个人不这么认为。 虽然线程安全在核心服务中非常方便，比如我们在本文中使用的AccessTokenService，我们的大部分代码可能永远不会在主线程之外使用——所以在任何地方都添加完全的线程安全性常常会成为过度工程的练习。</p>
+<p>像往常一样，什么技术是合适的在很大程度上取决于我们正在构建什么 - 当我们设计api和它们的实现时，只要把线程安全放在心上，就可以让我们的代码变得更加健壮。</p>
+<p><a href="https://www.swiftbysundell.com/articles/avoiding-race-conditions-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ArhVOQ_GL/" class="tag">
+                    concurrency
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/C46TKgaZSw/" class="tag">
+                    GCD
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-power-of-key-paths-in-swift/">
+                  <h3 class="post-title">
+                    The power of key paths in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

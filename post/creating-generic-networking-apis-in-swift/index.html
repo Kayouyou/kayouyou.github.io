@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Creating generic networking APIs in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="实现应用程序的网络层时,常常有许多不同的服务器端点,我们需要支持,而每个端点可能返回不同类型的模型和数据,用于调用它们的底层逻辑往往非常相似，至少在一个代码库中是如此。
+因此，本周，让我们来看看一些不同的技术，它们可以帮助我们尽可能多地分享..." />
+    <meta name="keywords" content="combine,networking,generics" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Creating generic networking APIs in Swift</h2>
+            <div class="post-date">2020-09-20</div>
+            
+            <div class="post-content" v-pre>
+              <p>实现应用程序的网络层时,常常有许多不同的服务器端点,我们需要支持,而每个端点可能返回不同类型的模型和数据,用于调用它们的底层逻辑往往非常相似，至少在一个代码库中是如此。</p>
+<p>因此，本周，让我们来看看一些不同的技术，它们可以帮助我们尽可能多地分享常见的网络逻辑 - 同时也利用Swift的先进类型系统，使我们的网络代码更健壮，更容易验证。</p>
+<h2 id="modeling-shared-structures">Modeling shared structures</h2>
+<p>在使用某些web api时，尤其是那些遵循rest式设计的api时，在所有端点都通用的键下，接收包含实际数据的JSON响应是非常常见的。 例如，下面的JSON使用result作为顶级键:</p>
+<pre><code class="language-swift">{
+    &quot;result&quot;: {
+        &quot;id&quot;: &quot;D4F28578-51BD-40F4-A8BD-387668E06EF8&quot;,
+        &quot;name&quot;: &quot;John Sundell&quot;,
+        &quot;twitterHandle&quot;: &quot;johnsundell&quot;,
+        &quot;gitHubUsername&quot;: &quot;johnsundell&quot;
+    }
+}
+</code></pre>
+<p>现在的问题是，什么是在客户端处理上述情况的优雅方式，特别是当使用Codable解码JSON响应为实际Swift模型类型?</p>
+<p>一种选择是将我们想要提取的模型包装成一个专用的响应类型，然后我们可以直接从下载的数据中解码。例如，假设上面的JSON表示一个用户模型——这可能会导致我们创建以下嵌套的NetworkResponse包装器来解码这样的响应:</p>
+<pre><code class="language-swift">struct User: Identifiable, Codable {
+    let id: UUID
+    var name: String
+    var twitterHandle: String
+    var gitHubUsername: String
+}
+
+extension User {
+    struct NetworkResponse: Codable {
+        var result: User
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以像这样加载和解码一个用户实例(使用Foundation的URLSession API的 Combine-powered 版本):</p>
+<pre><code class="language-swift">struct UserLoader {
+    var urlSession = URLSession.shared
+
+    func loadUser(withID id: User.ID) -&gt; AnyPublisher&lt;User, Error&gt; {
+        urlSession.dataTaskPublisher(for: resolveURL(forID: id))
+            .map(\.data)
+            .decode(type: User.NetworkResponse.self, decoder: JSONDecoder())
+            .map(\.result)
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>虽然上面的代码肯定没有什么问题，但是总是必须为每个模型创建专用的NetworkResponse包装器可能会导致大量的重复-因为这也要求我们多次编写上述类型的网络请求代码。所以让我们看看我们是否能想出一个更通用的，可重用的抽象来代替。</p>
+<p>考虑到我们的每个网络响应都遵循相同的结构，让我们从创建一个通用的NetworkResponse类型开始，我们可以在加载任何模型时使用它:</p>
+<pre><code class="language-swift">struct NetworkResponse&lt;Wrapped: Decodable&gt;: Decodable {
+    var result: Wrapped
+}
+</code></pre>
+<p>现在，我们不再需要为每种请求创建和维护单独的包装器类型，而是可以为每个具体的用例专门化上述类型——像这样:</p>
+<pre><code class="language-swift">struct UserLoader {
+    var urlSession = URLSession.shared
+
+    func loadUser(withID id: User.ID) -&gt; AnyPublisher&lt;User, Error&gt; {
+        urlSession.dataTaskPublisher(for: resolveURL(forID: id))
+            .map(\.data)
+            .decode(type: NetworkResponse&lt;User&gt;.self, decoder: JSONDecoder())
+            .map(\.result)
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>虽然上面的方法确实是一种改进，但使用泛型类型对网络请求等建模的真正力量在于，我们可以不断创建实用程序和方便的api，让我们在执行这些任务时能够在更高的层次上工作。</p>
+<p>例如，除了上述loadUser方法的返回类型之外，它的内部逻辑实际上没有什么是用户特定的 - 事实上，我们可能会在加载任何应用模型时编写或多或少完全相同的代码 - 所以让我们把这个逻辑提取到一个共享的抽象中:</p>
+<pre><code class="language-swift">extension URLSession {
+    func publisher&lt;T: Decodable&gt;(
+        for url: URL,
+        responseType: T.Type = T.self,
+        decoder: JSONDecoder = .init()
+    ) -&gt; AnyPublisher&lt;T, Error&gt; {
+        dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: NetworkResponse&lt;T&gt;.self, decoder: decoder)
+            .map(\.result)
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>注意我们是如何为responseType和decoder参数使用默认参数的——这对前者特别有用，因为这将使编译器能够从每个调用站点的周围上下文自动推断出泛型类型T。</p>
+<p>因此，如果我们回到以前的UserLoader类型，我们现在只需要一行代码就可以执行所有所需的网络 - 因为编译器能够根据loadUser方法的返回类型推断我们正在寻找加载和解码用户模型:</p>
+<pre><code class="language-swift">struct UserLoader {
+    var urlSession = URLSession.shared
+
+    func loadUser(withID id: User.ID) -&gt; AnyPublisher&lt;User, Error&gt; {
+        urlSession.publisher(for: resolveURL(forID: id))
+    }
+}
+</code></pre>
+<p>这是一个很大的进步! 如此之多，以至于我们现在可能开始问自己，是否真的需要专门的类型来加载我们的每个模型  - 因为我们可以创建一个完全通用的ModelLoader，使用我们上面的URLSession扩展， 还有一个闭包，可以解析指定模型ID使用的URL，让我们能够在应用程序中加载任何模型——像这样:</p>
+<pre><code class="language-swift">struct ModelLoader&lt;Model: Identifiable &amp; Decodable&gt; {
+    var urlSession = URLSession.shared
+    var urlResolver: (Model.ID) -&gt; URL
+
+    func loadModel(withID id: Model.ID) -&gt; AnyPublisher&lt;Model, Error&gt; {
+        urlSession.publisher(for: urlResolver(id))
+    }
+}
+</code></pre>
+<p>上面的ModelLoader类型当然可能不能满足我们所有的网络需求，但至少它可以让我们统一加载每个主要数据模型的方式。</p>
+<h2 id="type-based-validation">Type-based validation</h2>
+<p>除了减少样板代码，创建泛型api还可以提供一种使代码更强类型化的方法，并使我们能够使用Swift的高级类型系统在编译时验证部分代码。</p>
+<p>为了了解如何在网络环境中实现这一点，我们假设我们正在开发一个应用程序，它使用一个端点结构来定义它的各种网络请求<br>
+-例如这一个从“管理url和端点”插曲的Swift剪辑:</p>
+<pre><code class="language-swift">struct Endpoint {
+    var path: String
+    var queryItems = [URLQueryItem]()
+}
+</code></pre>
+<p>特别是当应用程序调用许多不同的端点时，使用一个专用的类型来表示这些端点在类型安全性和方便性方面已经向前迈进了一大步 -然而，许多应用程序也将它们的端点划分为不同的范围或类型。例如，某些端点可能只在用户登录后才能有效调用，有些端点可能需要更高的权限，而有些端点可能根本不需要任何身份验证。</p>
+<p>然而，由于上述端点类型目前已经实现，Swift编译器无法帮助我们验证是否允许在特定情况下调用给定的端点， 而且，它也没有为我们提供任何将上下文数据(如访问令牌或其他身份验证头)附加到我们将要发出的请求的方法。 因此，让我们看看是否可以使用泛型来解决这两个问题。</p>
+<p>让我们首先创建一个带有两个需求的EndpointKind协议——一个定义执行给定请求所需的RequestData的关联类型，以及一个使用所需数据准备一个URLRequest实例的方法:</p>
+<pre><code class="language-swift">protocol EndpointKind {
+    associatedtype RequestData
+    
+    static func prepare(_ request: inout URLRequest,
+                        with data: RequestData)
+}
+</code></pre>
+<p>要了解更多关于上面使用的inout关键字，以及它与值类型的关系，请查看“在Swift中利用值语义”。</p>
+<p>接下来，让我们使用上面的协议为我们的应用程序所调用的每一种不同类型的端点实现具体类型。 在这个特定的例子中，我们将简单地为我们的公共端点定义一种类型，为我们的私有端点定义一种类型——像这样:</p>
+<pre><code class="language-swift">enum EndpointKinds {
+    enum Public: EndpointKind {
+        static func prepare(_ request: inout URLRequest,
+                            with _: Void) {
+            // Here we can do things like assign a custom cache
+            // policy for loading our publicly available data.
+            // In this example we're telling URLSession not to
+            // use any locally cached data for these requests:
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+        }
+    }
+
+    enum Private: EndpointKind {
+        static func prepare(_ request: inout URLRequest,
+                            with token: AccessToken) {
+            // For our private endpoints, we'll require an
+            // access token to be passed, which we then use to
+            // assign an Authorization header to each request:
+            request.addValue(&quot;Bearer \(token.rawValue)&quot;,
+                forHTTPHeaderField: &quot;Authorization&quot;
+            )
+        }
+    }
+}
+</code></pre>
+<p>请注意我们是如何使用Void作为我们的公共类型的RequestData的，因为它在发出请求时不需要传递任何特定的数据。然后，在该类型的prepare方法中使用下划线作为内部参数标签，忽略该形参。</p>
+<p>上面的部分都准备好了，现在让我们在之前的端点结构中添加两个通用类型——一个告诉我们给定实例属于什么EndpointKind，另一个定义每个端点响应应该被解码成什么响应类型:</p>
+<pre><code class="language-swift">struct Endpoint&lt;Kind: EndpointKind, Response: Decodable&gt; {
+    var path: String
+    var queryItems = [URLQueryItem]()
+}
+</code></pre>
+<p>此时，我们将上面的Kind和Response类型用作幻像类型，因为它们不用于在端点结构中存储任何形式的数据。关于这个主题的更多信息，请查看“Swift中的幽灵类型”。</p>
+<p>接下来，我们需要一种将端点值转换为URLRequest实例的方法——这可以通过结合Foundation的URLComponents API和我们之前在EndpointKind协议中定义的prepare方法来实现:</p>
+<pre><code class="language-swift">extension Endpoint {
+    func makeRequest(with data: Kind.RequestData) -&gt; URLRequest? {
+        var components = URLComponents()
+        components.scheme = &quot;https&quot;
+        components.host = &quot;api.myapp.com&quot;
+        components.path = &quot;/&quot; + path
+        components.queryItems = queryItems.isEmpty ? nil : queryItems
+
+        // If either the path or the query items passed contained
+        // invalid characters, we'll get a nil URL back:
+        guard let url = components.url else {
+            return nil
+        }
+
+        var request = URLRequest(url: url)
+        Kind.prepare(&amp;request, with: data)
+        return request
+    }
+}
+</code></pre>
+<p>现在，我们不再使用原始url来执行各种请求，让我们再次使用一个方便的API来扩展URLSession，使使用我们新的通用端点类型来执行请求变得非常容易。我们将使用与构建之前基于networkresponse的扩展时非常相似的方法——只是这次我们将使用泛型类型来确保始终为每个端点使用正确的请求和响应类型:</p>
+<pre><code class="language-swift">extension URLSession {
+    func publisher&lt;K, R&gt;(
+        for endpoint: Endpoint&lt;K, R&gt;,
+        using requestData: K.RequestData,
+        decoder: JSONDecoder = .init()
+    ) -&gt; AnyPublisher&lt;R, Error&gt; {
+        guard let request = endpoint.makeRequest(with: requestData) else {
+            return Fail(
+                error: InvalidEndpointError(endpoint: endpoint)
+            ).eraseToAnyPublisher()
+        }
+
+        return dataTaskPublisher(for: request)
+            .map(\.data)
+            .decode(type: NetworkResponse&lt;R&gt;.self, decoder: decoder)
+            .map(\.result)
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>拥有完全类型安全的网络管道和通用端点结构的强大之处在于，我们现在可以在定义应用程序的各种端点时使用通用类型约束 -这使得执行每个请求所需要的数据类型以及产生的响应类型都变得非常清晰。</p>
+<p>下面是我们如何使用静态工厂方法定义两个类型受限的api——一个用于公共端点，一个用于私有端点:</p>
+<pre><code class="language-swift">extension Endpoint where Kind == EndpointKinds.Public, Response == [Item] {
+    static var featuredItems: Self {
+        Endpoint(path: &quot;featured&quot;)
+    }
+}
+
+extension Endpoint where Kind == EndpointKinds.Private,
+                         Response == SearchResults {
+    static func search(for query: String) -&gt; Self {
+        Endpoint(path: &quot;search&quot;, queryItems: [
+            URLQueryItem(name: &quot;q&quot;, value: query)
+        ])
+    }
+}
+</code></pre>
+<p>尽管让我们的网络请求更强类型确实需要我们构建大量的底层基础设施，但实际上，现在发出请求比以往任何时候都要简单 -编译器会自动验证我们是否为每个给定的端点传递了正确的请求数据， 并且我们的返回类型与我们的网络调用相匹配——所有这些都在每个调用站点为我们提供了一个非常漂亮和简洁的语法:</p>
+<pre><code class="language-swift">struct SearchResultsLoader {
+    var urlSession = URLSession.shared
+    var userSession: UserSession
+
+    func loadResults(
+        matching query: String
+    ) -&gt; AnyPublisher&lt;SearchResults, Error&gt; {
+        urlSession.publisher(
+            for: .search(for: query),
+            using: userSession.accessToken
+        )
+    }
+}
+</code></pre>
+<p>当然,我们可以进一步延长上述网络系统,例如为了支持不同的HTTP方法(比如POST和PUT),各种载荷、更细粒度的错误处理,等等,所以我们可能会回到网络的话题再次在未来的文章中。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>当有策略地部署时，泛型不仅可以使我们摆脱常见的样板源，而且还可以通过更强的类型和更严格的编译时验证来帮助我们改进代码库的某些部分。 然而，同样重要的是要记住，使用泛型也会使某些代码变得更加复杂和难于维护——因此在简单性和强大性之间取得良好的平衡确实是关键。</p>
+<p>例如，一些项目可能不需要完全通用的EndpointKind系统，而另一些项目可能不会从将每个端点与通用响应类型关联中获益太多 - 尽管这两种技术在项目增长或处理大量端点时都非常有用。</p>
+<p><a href="https://www.swiftbysundell.com/articles/creating-generic-networking-apis-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EV0rk5a8R1/" class="tag">
+                    networking
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/how-swift-53-enhances-swiftuis-dsl/">
+                  <h3 class="post-title">
+                    How Swift 5.3 enhances SwiftUI’s DSL
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

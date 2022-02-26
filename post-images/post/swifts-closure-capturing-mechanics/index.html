@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift’s closure capturing mechanics | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="闭包是Swift的一个越来越重要的组成部分，无论是从语言本身的整体方向来看，还是从苹果和第三方开发者使用它设计库和api的方式来看。 然而，闭包也带来了一些复杂性和行为，刚开始可能很难完全理解-特别是当涉及到他们如何从他们周围的环境中捕捉价..." />
+    <meta name="keywords" content="memory management,closures" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift’s closure capturing mechanics</h2>
+            <div class="post-date">2020-01-26</div>
+            
+            <div class="post-content" v-pre>
+              <p>闭包是Swift的一个越来越重要的组成部分，无论是从语言本身的整体方向来看，还是从苹果和第三方开发者使用它设计库和api的方式来看。 然而，闭包也带来了一些复杂性和行为，刚开始可能很难完全理解-特别是当涉及到他们如何从他们周围的环境中捕捉价值和对象，以执行他们的工作。</p>
+<p>在2017年的“Capturing objects in Swift closures”,中，我们已经了解了捕捉对象的各种方法，本周，让我们更广泛地探索捕捉的概念-通过仔细观察一些在编写捕获闭包时所带来的机遇和挑战。</p>
+<h2 id="implicit-capturing">Implicit capturing</h2>
+<p>每当我们定义一个逃逸闭包时——即，一个要么存储在一个属性中，要么被另一个逃逸闭包捕获的闭包 - 它将隐式地捕获在它内部引用的任何对象、值和函数。 因为这样的闭包可能会在以后执行，所以它们需要维护对所有依赖项的强引用，以防止它们在此期间被释放。</p>
+<p>例如，这里我们使用Grand Central Dispatch将UIAlertController的呈现延迟三秒，这需要将闭包传递给asyncAfter调用，以捕获presenter视图控制器实例</p>
+<pre><code class="language-swift">func presentDelayedConfirmation(in presenter: UIViewController) {
+    let queue = DispatchQueue.main
+
+    queue.asyncAfter(deadline: .now() + 3) {
+        let alert = UIAlertController(
+            title: &quot;...&quot;,
+            message: &quot;...&quot;,
+            preferredStyle: .alert
+        )
+
+        // By simply refering to 'presenter' here, our closure
+        // will automatically capture that instance, and retain
+        // it until the closure itself gets released from memory:
+        presenter.present(alert, animated: true)
+    }
+}
+```swift
+
+虽然上面的行为确实很方便，但如果我们不小心的话，它也可能成为一些非常棘手的bug和内存相关问题的根源。
+
+例如，由于我们将上述代码的执行延迟了几秒钟，当闭包实际运行时，我们的presenter视图控制器可能已经从应用程序的视图层次结构中移除-虽然在这种情况下这不会是一个灾难，但如果视图控制器仍然被另一个对象保留(可能是它的父视图控制器或窗口)，那么只显示我们的确认可能会更好。
+
+## Using capture lists
+
+这就是捕获列表的作用所在，它使我们能够自定义给定闭包捕获它所引用的任何对象或值的方式。使用捕获列表，我们可以指示上面的闭包弱捕获演示者视图控制器，而不是强捕获(这是默认的)。这样的话，如果视图控制器没有被我们的代码库的任何其他部分引用，它就会被释放——从而更快地释放内存，并且没有不必要的操作被执行:
+```swift
+func presentDelayedConfirmation(in presenter: UIViewController) {
+    let queue = DispatchQueue.main
+    // A capture list is defined using a set of square brackets
+    // directly following a closure's opening curly bracket:
+    queue.asyncAfter(deadline: .now() + 3) { [weak presenter] in
+        // Here we verify that our presenter is still in memory,
+        // otherwise we can return early:
+        guard let presenter = presenter else { return }
+        let alert = UIAlertController(
+            title: &quot;...&quot;,
+            message: &quot;...&quot;,
+            preferredStyle: .alert
+        )
+        presenter.present(alert, animated: true)
+    }
+}
+</code></pre>
+<p>当我们需要引用self时，捕捉列表可能更有用，特别是当这样做会导致一个retain cycle，即两个对象或闭包相互引用时——防止它们都被释放(因为它们的引用计数不能达到0)。</p>
+<p>这里有一个这样的例子，我们使用一个捕获列表来避免在闭包中强引用self，而闭包也将由self保留:</p>
+<pre><code class="language-swift">class UserModelController {
+    let storage: UserStorage
+    private var user: User { didSet { userDidChange() } }
+
+    init(user: User, storage: UserStorage) {
+        self.storage = storage
+        self.user = user
+
+        storage.addObserver(forID: user.id) { [weak self] user in
+            self?.user = user
+        }
+    }
+}
+</code></pre>
+<p>另外，我们也可以将上面的user属性转换为一个使用其键路径的函数，就像我们在“Swift中的键路径的力量”中所做的那样——因为我们在观察闭包中所做的一切都是更新该属性的值。</p>
+<p>如果我们没有弱地捕获self，上面的闭包最终会导致一个retain cycle的原因是UserStorage将保留那个闭包，而self已经通过它的storage属性保留了那个对象。</p>
+<h2 id="weak-references-are-not-always-the-answer">Weak references are not always the answer</h2>
+<p>虽然上面的两个代码示例可能会让人觉得总是弱捕获self是正确的做法，但事实并非如此。与其他类型的内存管理一样，我们必须仔细考虑如何在每种情况下使用self，以及每个捕获闭包在内存中保留多长时间。</p>
+<p>例如，如果我们处理真正短命的闭包，例如传递给UIView的闭包。动画API(它们只是执行一个动画的插值，然后释放)，捕获self真的不是一个问题，而且很可能会导致代码更容易阅读:</p>
+<pre><code class="language-swift">extension ProductViewController {
+    func expandImageView() {
+        UIView.animate(withDuration: 0.3) {
+            self.imageView.frame = self.view.bounds
+            self.showImageCloseButton()
+        }
+    }
+}
+</code></pre>
+<p>请注意，在访问逃逸闭包中的实例方法和属性时，我们总是需要显式地引用self。这是一件好事，因为它要求我们做出明确的决定来捕捉自我，考虑到这样做可能产生的后果。</p>
+<p>在很多情况下，我们可能会想要更长时间地保留自我 -例如，为了执行闭包的工作，当前对象是必需的，就像这样:</p>
+<pre><code class="language-swift">extension NetworkingController {
+    func makeImageUploadingTask(for image: Image) -&gt; Task {
+        Task { handler in
+            let request = Request(
+                endpoint: .imageUpload,
+                payload: image
+            )
+
+            // The current NetworkingController is required here,
+            // so for as long the returned task is retained,
+            // we'll also retain its underlying controller:
+            self.perform(request, then: handler)
+        }
+    }
+}
+</code></pre>
+<p>上面的代码不会导致任何产生循环引用，因为NetworkingController不会保留它创建的任务。要了解在Swift中建模和处理任务的更复杂的方法，请查看“Swift中基于任务的并发性”。</p>
+<p>我们也可以直接捕获闭包的每个依赖项，而不是引用self-再次使用捕获列表。 例如，这里我们捕获了一个图像加载器的缓存属性，以便能够在一个图像成功下载后使用它:</p>
+<pre><code class="language-swift">class ImageLoader {
+    private let cache = Cache&lt;URL, Image&gt;()
+
+    func loadImage(
+        from url: URL,
+        then handler: @escaping (Result&lt;Image, Error&gt;) -&gt; Void
+    ) {
+        // Here we capture our image loader's cache without
+        // capturing 'self', and without having to deal with
+        // any optionals or weak references:
+        request(url) { [cache] result in
+            do {
+                let image = try result.decodedAsImage()
+                cache.insert(image, forKey: url)
+                handler(.success(image))
+            } catch {
+                handler(.failure(error))
+            }
+        }
+    }
+}
+</code></pre>
+<p>当我们只需要访问我们的一些属性，而不是将self作为一个整体时，上面的技巧非常有效—只要这些属性包含引用类型(类实例)或不可变值类型。</p>
+<h2 id="capturing-values">Capturing values</h2>
+<p>当涉及到闭包捕获时，值类型有时处理起来会更复杂一些，因为它们是作为副本而不是引用传递给外部作用域的。尽管这正是Swift的价值类型如此强大的原因，在下面这种情况下，它可能会产生一些意想不到的结果- 当我们给一个按钮分配一个闭包时，我们捕获了一个sender和message属性:</p>
+<pre><code class="language-swift">class MessageComposerViewController: UIViewController {
+    private let sender: MessageSender
+    private var message = Message()
+    private lazy var sendButton = ActionButton()
+    ...
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        ...
+        sendButton.handler = { [sender, message] in
+            sender.send(message)
+        }
+    }
+}
+</code></pre>
+<p>乍一看，上面的代码似乎完全没问题。然而，我们上面使用的消息类型是作为一个结构体实现的，这为它提供了值语义-这意味着我们只是在把它添加到捕获列表时捕获它的当前值。所以即使这个值可能在我们的视图控制器的生命周期中改变，一旦我们的sendButton被点击，我们仍然会发送我们的原始值，这并不好。</p>
+<p>解决上述问题的一种方法(同时仍然避免任何额外的保护语句)是，只捕获self才能访问其消息</p>
+<pre><code class="language-swift">sendButton.handler = { [weak self, sender] in
+    let message = self?.message
+    message.map(sender.send)
+}
+</code></pre>
+<p>然而，以上只是在处理可变值时的一个问题。 如果我们只有常量，就像下面的例子，那么我们可以把这些属性添加到任何闭包的捕获列表中，不会有任何问题(因为它们的值不会改变):</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    private let productManager: ProductManager
+    private let product: Product
+    ...
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        ...
+        buyButton.handler = { [productManager, product] in
+            productManager.startCheckout(for: product)
+        }
+    }
+}
+</code></pre>
+<p>在类似于上面的情况下，我们还可以通过将我们的值(本例中为product)与它将被传入的方法相结合来创建一个新函数。</p>
+<p>最后，让我们看看如何在局部变量中捕获值。与捕获基于值的属性的方式相反，当被同一个范围内的闭包捕获时，局部变量仍然保持它们与原始声明的连接——为了跟踪各种状态，这可能非常有用。</p>
+<p>例如，假设我们想用API扩展Swift的集合协议，使我们能够使用由当前元素和下一个元素组成的缓冲区迭代任何集合。这可以通过将标准库的AnySequence和AnyIterator类型与本地捕获的值相结合来实现，如下所示:</p>
+<pre><code class="language-swift">extension Collection {
+    typealias Buffer = (current: Element, next: Element?)
+    var buffered: AnySequence&lt;Buffer&gt; {
+        AnySequence { () -&gt; AnyIterator&lt;Buffer&gt; in
+            // We define our state as local variables:
+            var iterator = self.makeIterator()
+            var next: Element?
+            return AnyIterator { () -&gt; Buffer? in
+                // We can then use our state to make decisions by
+                // capturing them within our iterator's closure:
+                guard let current = next ?? iterator.next() else {
+                    return nil
+                }
+                next = iterator.next()
+                return (current, next)
+            }
+        }
+    }
+}
+</code></pre>
+<p>关于上面创建自定义序列的更多信息，请查看“Swift中的包装序列”。</p>
+<p>因此，当使用捕获列表捕获时，值被复制，而当直接引用时，它们不被复制—例如，当作为属性访问时，或者当一个局部变量被捕获时，这个局部变量的作用域与定义的作用域相同。</p>
+<h2 id="unowned-references">Unowned references</h2>
+<p>关于闭包捕获的最后一个选项是使用unowned引用。它们和弱引用一样，都是使用捕获列表指定的，而且只能应用于引用类型。使用unowned和使用force-unwrapped optional的结果基本上是一样的，因为它让我们把弱引用当作非可选的，但如果我们试图在它被释放后访问它，将导致崩溃。</p>
+<p>回到我们之前的UserModelController示例，如果我们使用无主控制器而不是弱控制器，它会是这样的:</p>
+<pre><code class="language-swift">class UserModelController {
+    ...
+
+    init(user: User, storage: UserStorage) {
+        ...
+
+        storage.addObserver(forID: user.id) { [unowned self] user in
+            self.user = user
+        }
+    }
+}
+</code></pre>
+<p>虽然使用无主的可以让我们摆脱可选的，有时可能真的很方便，但事实上它会导致释放引用的崩溃，这使得使用它非常危险，除非我们绝对确定给定的闭包不会在它的一个依赖项被释放后意外地触发。</p>
+<p>然而，这类崩溃的一个优点是，它们让我们能够识别理想情况下不应该进入的代码路径。 例如，如果我们上面的观察闭合在self被释放后被触发，这可能意味着我们没有正确地取消我们的观察，这将是很好的告知。</p>
+<p>但是，与使用unowned不同，我们可以(在本例中)使用assert -实现完全相同的结果 - 虽然这样做会导致更多的代码，但它也会在失败的情况下给我们一个更可操作的错误消息，而且我们不会在生产中造成任何崩溃:</p>
+<pre><code class="language-swift">class UserModelController {
+    ...
+
+    init(user: User, storage: UserStorage) {
+        ...
+
+        storage.addObserver(forID: user.id) { [weak self] user in
+            assert(self != nil, &quot;&quot;&quot;
+            It seems like UserModelController didn't unregister \
+            itself as a storage observer before being deallocated
+            &quot;&quot;&quot;)
+
+            self?.user = user
+        }
+    }
+}
+</code></pre>
+<p>要了解更多关于assert以及其他传播各种错误的方法——请查看“Swift中失败的正确方式”。</p>
+<pre><code class="language-swift">Applying a value to a closure, to avoid the classic “weak self dance”:
+对闭包应用一个值，以避免经典的“弱自我舞蹈”:
+// A view controller that currently captures 'self' weakly, in
+// order to call a method on a 'productManager' property object:
+class ProductViewController: UIViewController {
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        buyButton.handler = { [weak self] in
+            guard let self = self else {
+                return
+            }
+
+            self.productManager.startCheckout(for: self.product)
+        }
+    }
+}
+
+// Introducing a 'combine' function for applying a value to
+// any function or closure:
+func combine&lt;A, B&gt;(
+    _ value: A,
+    with closure: @escaping (A) -&gt; B
+) -&gt; () -&gt; B {
+    return { closure(value) }
+}
+
+// Using our new combine function:
+class ProductViewController: UIViewController {
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        buyButton.handler = combine(product,
+            with: productManager.startCheckout
+        )
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然Swift的自动引用计数内存管理模型不需要我们手动分配和释放内存，但它仍然需要我们精确地决定我们想要的各种对象和值如何被引用。</p>
+<p>虽然经常听到“总是在闭包中使用弱引用”之类过于简化的规则，但编写性能良好、可预测的应用程序和系统通常需要更细致的思考。 就像软件开发世界中的大多数事情一样，最好的方法往往是彻底了解底层的机制和行为，然后选择如何在每个给定的情况下应用它们。</p>
+<p><a href="https://www.swiftbysundell.com/articles/swifts-closure-capturing-mechanics/#weak-references-are-not-always-the-answer">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_oT-GALgc/" class="tag">
+                    memory management
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/WHIN6Hnog/" class="tag">
+                    closures
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/under-the-hood-of-futures-and-promises-in-swift/">
+                  <h3 class="post-title">
+                    Under the hood of Futures and Promises in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 67: SwiftUI and State Management: Part 3 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+What’s the point?
+
+
+
+
+What’s to like?
+
+
+
+
+Cumbersome persistent state API
+
+
+
+
+Scattered state mutation
+
+
+
+
+No story ..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 67: SwiftUI and State Management: Part 3</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Whatstolike">What’s to like?</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#CumbersomepersistentstateAPI">Cumbersome persistent state API</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Scatteredstatemutation">Scattered state mutation</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Nostoryforsideeffects">No story for side effects</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Statemanagementisntcomposable">State management isn't composable</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#SwiftUIisnttestable">SwiftUI isn’t testable</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 67: SwiftUI and State Management: Part 3 -->
+<h2 id="1-a-namewhatsthepointawhats-the-point">1. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>我们现在有了一个在SwiftUI中构建的比较复杂的应用程序。这真的很神奇。 我们绝对不可能在使用UIKit的时间内构建这个应用。在这一过程中，可能会出现许多需要实现的协议和需要建立的委托，而且可能还会引入大量的bug。</p>
+<p>但尽管这很酷，在每个point - free主题的结尾，我们都喜欢问这样一个问题:“重点是什么?”“为了把事情弄清楚，这样我们就能从以管窥豹。这一集已经相当实用了，但也有一些非常重要的教训需要吸取。</p>
+<h2 id="2-a-namewhatstolikeawhats-to-like">2. <a name='Whatstolike'></a>What’s to like?</h2>
+<p>首先，用于描述UI的声明性视图的概念非常棒。这比我们过去在UIKit中做事情的方式要好得多。用一个入口点来描述视图，即<strong>body</strong> computed var是非常强大的，这迫使我们将视图视为一个简单的函数，从视图中的状态到SwiftUI视图DSL值。我们很高兴苹果在视图建设上采取了这样的立场。</p>
+<p>然后，当本地状态不够时，可以使用@<strong>ObjectBinding</strong>属性，它允许您为状态提供自己的存储，以便多个视图都可以共享相同的数据。这意味着对一个视图中的状态所做的任何更改都可以被另一个视图观察到，这正是允许我们跨多个屏幕持久化状态的原因，甚至在钻取和钻出一个屏幕时也是如此。</p>
+<p>最后，我们喜欢SwiftUI的另一件事是，它对应用程序应该如何架构给出了相当有力的意见。在UIKit的世界里，事情是很松散的很多概念都被解释混淆了。例如，<strong>UIView和UIViewController</strong>之间的区别是什么? 它们都有用户事件并且可以布局子视图，然而有些人认为<strong>UIView</strong>应该只关心绘制视图，所有的逻辑应该留给视图控制器。在实践中，这会导致很多混乱，因为你经常需要在视图和控制器之间来回切换数据，最终你会开始怀疑这两个对象是否真的服务于相同的目的。</p>
+<p>此外，UIKit提供了很多方法来监听状态的变化，这样你就可以更新你的UI，但它们都没有创建一个从状态更新所有UI的一致方法。当然，你可以监听通知、订阅KVO、委托、目标动作，并向对象甚至子类化添加回调闭包，但在所有的通知机制的最后，你只需要执行一堆命令状态，例如隐藏这个按钮，禁用这个文本框，设置这个标签的文本，等等。也许有些人喜欢<strong>UIKit</strong>的快速和松散的设计,但我认为公平地说，在UIKit的意见真空中，关于如何在我们的社区中构建应用程序架构的想法不断扩散，所有这些想法都有细微的不同和不兼容。</p>
+<p>与<strong>UIKit</strong>相比，<strong>SwiftUI</strong>提供了更多关于如何构建应用程序的意见。首先，如果你想要一个视图显示在屏幕上，你别无选择，只能创建一个符合<strong>view</strong>协议的视图结构，并在<strong>body</strong> computed属性中呈现你的整个视图。这就是创建视图的简单方法。然后，如果希望视图能够动态更新，则必须向视图添加一些状态，尽管有几种方法可以做到这一点，但它们在原则上基本上是相同的。</p>
+<p>因此，<strong>SwiftUI</strong>带来了一些非常积极、非常棒的东西。它解决了很多困扰<strong>UIKit</strong>的问题。苹果确实让<strong>SwiftUI</strong>在如何完成某些任务方面非常有主见，并为我们提供了一些出色的工具。</p>
+<h2 id="3-a-namecumbersomepersistentstateapiacumbersome-persistent-state-api">3. <a name='CumbersomepersistentstateAPI'></a>Cumbersome persistent state API</h2>
+<p>但是，我们认为还有一些问题没有解决。我们认为，对于创建一个大型的、复杂的、可伸缩的应用程序来说，swifttui有一些事情是不能为我们做的。</p>
+<p>所以，让我们讨论一下这些，以便讨论一些可能的解决方案。</p>
+<p>尽管添加<strong>AppState</strong>类、使其成为<strong>BindableObject</strong>并挂钩到<strong>passthrough subject</strong>很容易，但它并不能很好地扩展。</p>
+<p>现在我们只有两个属性，但是这个状态类可以很容易地增长到几十个属性，甚至更好的是，有许多带有自己局域内的子状态类。</p>
+<p>例如，我们可以通过添加结构来引入登录用户的概念。</p>
+<pre><code class="language-swift">struct User {
+  let id: Int
+  let name: String
+  let bio: String
+}
+</code></pre>
+<p>通过添加一个可选的<strong>user</strong>属性到我们的<strong>app state</strong>。</p>
+<pre><code class="language-swift">var loggedInUser: User? = nil {
+  didSet { self.didChange.send() }
+}
+</code></pre>
+<blockquote>
+<p>Correction<br>
+This episode was recorded with Xcode 11 beta 3. In later betas, SwiftUI’s BindableObject protocol was deprecated in favor of an ObservableObject protocol that was introduced to the Combine framework. This protocol utilizes an objectWillChange property of ObservableObjectPublisher, which is pinged before (not after) any mutations are made to your model. Because of this, willSet should be used instead of didSet:</p>
+</blockquote>
+<pre><code class="language-swift">var loggedInUser: User? {
+  willSet { self.objectWillChange.send() }
+}
+</code></pre>
+<blockquote>
+<p>Even better, we can remove this boilerplate entirely by using a @Published property wrapper:</p>
+</blockquote>
+<pre><code class="language-swift">@Published var loggedInUser: User?
+</code></pre>
+<p>我们需要确保添加了<strong>didSet</strong>逻辑，因为如果我们忘记了，那么以后对登录用户的更改将不会在UI中反映出来。</p>
+<p>然后说，我们想要一个<strong>activity feed</strong>，记录用户在应用中做的所有事情。同样，这是要添加到<strong>AppState</strong>类的更多状态，包括一个关联的数据类型。</p>
+<pre><code class="language-swift">struct Activity {
+  let timestamp: Date
+  let type: ActivityType
+
+  enum ActivityType {
+    case addedFavoritePrime(Int)
+    case removedFavoritePrime(Int)
+  }
+}
+</code></pre>
+<p>还有另一个特性:</p>
+<pre><code class="language-swift">var activityFeed: [Activity] = [] {
+  didSet { self.didChange.send() }
+}
+</code></pre>
+<p>同样，我们需要确保添加<strong>didSet</strong>逻辑。我们总是需要添加这个样板文件，忘记它可能会导致一些非常微妙的UI错误，很难追踪。</p>
+<p>我们的<strong>state</strong>类也开始看起来很混乱，因为每个字段都需要为这个didSet东西添加一行:</p>
+<pre><code class="language-swift">var count = 0 {
+  didSet { self.didChange.send() }
+}
+
+var favoritePrimes: [Int] = [] {
+  didSet { self.didChange.send() }
+}
+
+var activityFeed: [Activity] = [] {
+  didSet { self.didChange.send() }
+}
+
+var loggedInUser: User? = nil {
+  didSet { self.didChange.send() }
+}
+</code></pre>
+<p>这感觉就像我们的<strong>state</strong>的核心描述被所有这些注释所掩盖。</p>
+<p>实际上，通过将值类型包装在一个可绑定对象类中，并利用该值的<strong>didSet</strong>来通知值的任何部分发生的更改，可以为这个问题创建一个通用的解决方案。然而，这里的重点是，苹果还没有给我们一个解决方案，以一种可扩展的方式来真正建模我们的整个应用状态，我们必须想出我们自己的解决方案。</p>
+<blockquote>
+<p>Correction<br>
+这一集是用Xcode 11 beta 3录制的。后来的测试版引入了一些变化，以显著减少这个样板文件:<br>
+可观察对象publisher现在自动合成了。<br>
+使用@<strong>Published</strong>包装的属性将自动被<strong>SwiftUI</strong>订阅，而不需要执行<strong>willSet</strong>舞蹈。</p>
+</blockquote>
+<pre><code class="language-swift">class AppState: ObservableObject {
+  @Published var count = 0
+  @Published var favoritePrimes: [Int] = []
+  @Published var activityFeed: [Activity] = []
+  @Published var loggedInUser: User?
+
+  ...
+}
+</code></pre>
+<h2 id="4-a-namescatteredstatemutationascattered-state-mutation">4. <a name='Scatteredstatemutation'></a>Scattered state mutation</h2>
+<p>下一个问题是尽管很容易改变我们的状态，并让这些变化在我们的UI中产生反响，我们还不清楚应该如何组织我们的变化。现在，我们的视图中只有分散的变化。目前最糟糕的是<strong>Counter</strong> view，我们有不少于7个变化:</p>
+<pre><code class="language-swift">Button(action: { self.state.count -= 1 }) {
+…
+Button(action: { self.state.count += 1 }) {
+…
+Button(action: { self.showModal = true }) {
+…
+Button(action: {
+  nthPrime(self.state.count) { prime in
+    self.alertNthPrime = prime
+  }
+}) {
+…
+onDismiss: { self.showModal = false }
+</code></pre>
+<p>一些突变发生在全局状态，一些发生在局部状态，这是一种误导。有些甚至隐藏在双向绑定中，比如<strong>alert</strong>绑定。</p>
+<pre><code class="language-swift">.presentation(self.$alertNthPrime) { n in
+</code></pre>
+<blockquote>
+<p>Correction<br>
+This episode was recorded with Xcode 11 beta 3, and a change has been made to the presentation APIs in beta 4 and later versions of Xcode. The above APIs have been renamed to <strong>alert(isPresented:content:) and alert(item:content:).</strong></p>
+</blockquote>
+<p>这允许<strong>SwiftUI</strong>在<strong>alert</strong> 隐藏后将该值重置为<strong>nil</strong>。那是一个你必须知道的隐藏变异!</p>
+<p>这些突变是如何发生的真的没有规律或原因，我们只是把它们撒在需要的地方。</p>
+<p>问题是，当一个新手进入这个代码库时，他们没有明显的地方可以开始查找应用程序中的状态是如何变化的。它可能被隐藏在很多地方，所以我们认为这不会为新贡献者创造一个非常欢迎的环境，这是一个需要解决的重大问题。</p>
+<p>这样做的另一个问题是，添加到视图的变化越多，它的声明性就越差。这是因为这些突变本身并不是声明性的，它们只是一些小闭包，里面保存着一堆要执行的命令式命令。</p>
+<p>当视图的<strong>body</strong>属性只关心将你的状态转换成视图层次结构以显示在屏幕上时，这是一件非常棒的事情。 这非常容易理解，非常容易更改，也非常容易测试。</p>
+<p>让我们通过向应用程序添加两个新特性来演示这一点。第一种方法是在<strong>Wolfram Alpha API</strong>请求飞行时禁用“第n个prime”按钮。 <strong>SwiftUI</strong>使这一点很简单，因为它提供了一个禁用的修饰符，该修饰符接受一个布尔值来确定UI控件是否被禁用。</p>
+<pre><code class="language-swift">.disabled(&lt;#disabled: Bool#&gt;
+</code></pre>
+<p>让我们创建一些本地状态来保存一个布尔值，以确定API请求是否正在运行:</p>
+<pre><code class="language-swift">@State var isNthPrimeButtonDisabled = false
+</code></pre>
+<p>然后我们hook到我们的按钮动作，在API请求的生命周期中将它设置为<strong>true和false</strong>:</p>
+<pre><code class="language-swift">self.isNthPrimeButtonDisabled = true
+nthPrime(self.state.count) { prime in
+  self.alertNthPrime = prime
+  self.isNthPrimeButtonDisabled = false
+}
+</code></pre>
+<p>最后，我们可以使用这个状态值来决定按钮是否被启用:</p>
+<pre><code class="language-swift">.disabled(self.isNthPrimeButtonDisabled)
+</code></pre>
+<p>这个按钮动作变得有点长了，但是让我们来测试一下。</p>
+<p>它运行良好，然而，它只是看起来不太好，我们有这么多的逻辑塞进这个动作闭包。它开始偏离这个视图的声明性，我们希望它主要关注于将状态转换为视图层次结构。</p>
+<p>当然，我们可以将其提取到<strong>helper</strong>方法中:</p>
+<pre><code class="language-swift">func nthPrimeButtonAction() {
+  self.isNthPrimeButtonDisabled = true
+  nthPrime(self.state.count) { prime in
+    self.alertNthPrime = prime
+    self.isNthPrimeButtonDisabled = false
+  }
+}
+</code></pre>
+<p>然后我们可以直接把它传递给按钮。</p>
+<pre><code class="language-swift">Button(action: self.nthPrimeButtonAction) {
+</code></pre>
+<p>但现在我们的突变以两种方式分散:一些在视图中内联，一些在helper方法中。编写这段代码的团队可能应该提出一些指导原则，以确定何时将突变分解为辅助方法，但即便如此，这也只是围绕着做一些应该非常简单的事情的额外过程。</p>
+<p>但更糟糕的是，到处都有突变意味着突变更容易不同步。例如，我将实现必要的更改以跟踪我添加的活动提要状态。我将进入<strong>CounterView</strong>并更新按钮动作如下:</p>
+<pre><code class="language-swift">Button(action: {
+  self.state.favoritePrimes.removeAll(where: { $0 == self.state.count })
+  self.state.activityFeed.append(.init(type: .removedFavoritePrime(self.state.count)))
+})
+…
+Button(action: {
+  self.state.favoritePrimes.append(self.state.count)
+  self.state.activityFeed.append(.init(type: .addedFavoritePrime(self.state.count)))
+})
+</code></pre>
+<p>非常简单! 但不幸的是，这是完全错误的。这里有一个相当严重的<strong>bug</strong>，因为有另一种方法可以从你的收藏夹中删除质数。你可以从收藏素数列表视图中进行操作:</p>
+<pre><code class="language-swift">.onDelete(perform: { indexSet in
+  for index in indexSet {
+    self.state.favoritePrimes.remove(at: index)
+  }
+})
+</code></pre>
+<p>所以我们还需要更新这个逻辑:</p>
+<pre><code class="language-swift">.onDelete(perform: { indexSet in
+  for index in indexSet {
+    let prime = self.state.favoritePrimes[index]
+    self.state.favoritePrimes.remove(at: index)
+    self.state.activityFeed.append(Activity(type: .removedFavoritePrime(prime)))
+  }
+})
+</code></pre>
+<p>这个修复很简单，但更好的修复可能是将这些突变移动到<strong>AppState</strong>中，这样我们就可以更好地合并它们:</p>
+<pre><code class="language-swift">extension AppState {
+  func addFavoritePrime() {
+    self.favoritePrimes.append(self.count)
+    self.activityFeed.append(Activity(timestamp: Date(), type: .addedFavoritePrime(self.count)))
+  }
+
+  func removeFavoritePrime(_ prime: Int) {
+    self.favoritePrimes.removeAll(where: { $0 == prime })
+    self.activityFeed.append(Activity(timestamp: Date(), type: .removedFavoritePrime(prime)))
+  }
+
+  func removeFavoritePrime() {
+    self.removeFavoritePrime(self.count)
+  }
+
+  func removeFavoritePrimes(at indexSet: IndexSet) {
+    for index in indexSet {
+      self.removeFavoritePrime(self.favoritePrimes[index])
+    }
+  }
+}
+</code></pre>
+<p>这肯定会达到目的，但现在我们有三种改变状态的方法:在动作块中内联，作为视图的方法，或在可绑定对象上。同样，这取决于你的团队如何采取指导方针，以明智的方式从<strong>view</strong>中提取突变，它仍然不能保证未来在你的<strong>view</strong>中发生突变，这些突变应该合并，但没有。对于如何在<strong>SwiftUI</strong>中解决这个问题，苹果并没有给出任何指导。</p>
+<h2 id="5-a-namenostoryforsideeffectsano-story-for-side-effects">5. <a name='Nostoryforsideeffects'></a>No story for side effects</h2>
+<p>我们看到的下一个问题是，苹果还没有提供一个如何处理副作用的故事。我们已经讨论过几次Point-Free的副作用，事实上，一年半前的第二集专注于副作用和理解为什么它们如此复杂。</p>
+<p>在我们的应用程序中，我们只有一个外部副作用，那就是我们对<strong>Wolfram Alpha API</strong>的调用。我们用了我们能想到的最直接的方法，但这是正确的方法吗?</p>
+<pre><code class="language-swift">func nthPrimeButtonAction() {
+  self.isNthPrimeButtonDisabled = true
+  nthPrime(self.state.count) { prime in
+    self.alertNthPrime = prime
+    self.isNthPrimeButtonDisabled = false
+  }
+}
+</code></pre>
+<p>现在的效果就像是被发射到虚空中。如果我们决定需要取消它，我们就没有办法取消它，如果它有可能被多次执行，我们就没有办法取消它，当然我们也没有办法测试它。</p>
+<p>这些观察表明，这一副作用是无法控制的。我们只是在闭包中直接执行这个副作用，我们想要的是这个效果的数据类型表示，这样我们就可以像处理任何类型的值一样处理这个副作用。</p>
+<p>不幸的是，苹果并没有给我们任何指导，告诉我们应该怎么做。我们希望<strong>Combine</strong>框架能够帮助我们，但是关于如何在SwiftUI中使用<strong>Combine</strong>还没有大量的信息。</p>
+<h2 id="6-a-namestatemanagementisntcomposableastate-management-isnt-composable">6. <a name='Statemanagementisntcomposable'></a>State management isn't composable</h2>
+<p>我们看到的最后一个问题是SwiftUI希望我们如何处理state，它没有给我们一种简单的方法，将大states分割成小states，这样我们就有可能有模块化的代码。</p>
+<p>例如，让我们看看我们的<strong>Favoritprime</strong>视图:</p>
+<pre><code class="language-swift">struct FavoritePrimes: View {
+  @ObjectBinding var state: AppState
+</code></pre>
+<p>该视图接受整个<strong>AppState</strong>，但它只读取或改变<strong>favoritePrimes</strong>数组。</p>
+<p>我们想做的是让这个视图只知道它关心的数据。</p>
+<p>如果我们可以这样做，那么我们甚至可以想象，将这个视图提取到它自己的Swift包中，以便它可以用于其他应用程序。能够做到这一点是模块化应用程序设计的极致。能够将这个视图完全隔离到它自己的模块中，同时仍然允许它插入到其他ui中，这意味着您可以真正开始完全独立地理解组件。</p>
+<p>不幸的是，目前还不知道如何在<strong>SwiftUI</strong>中实现这一点。 我们想到的最接近的方法是创建符合<strong>ObjectBinding</strong>并仅公开少量子状态的包装器类。我们需要定义我们自己的初始化式，我们需要用一个<strong>computed</strong>属性来暴露全局状态的<strong>didChange</strong>。</p>
+<blockquote>
+<p>Correction<br>
+这一集是用Xcode 11 beta 3录制的。虽然它允许从可观察的绑定派生子状态的绑定，但一个bug阻止了它在表示边界(如导航链接和模态表)上传播这个可变状态。这个bug已经在Xcode 11 beta 5中修复了，状态现在更易于组合了。<br>
+我们可以传递两个绑定给FavoritesPrimeView，而不是定义favoritemrimesstate:</p>
+</blockquote>
+<pre><code class="language-swift">struct FavoritePrimesView: View {
+  @Binding var favoritePrimes: [Int]
+  @Binding var activityFeed: [AppState.Activity]
+</code></pre>
+<pre><code class="language-swift">class FavoritePrimesState: BindableObject {
+  var didChange: PassthroughSubject&lt;Void, Never&gt; {
+    self.state.didChange
+  }
+
+  private var state: AppState
+  init(state: AppState) {
+    self.state = state
+  }
+}
+</code></pre>
+<p>然后我们需要通过更多的计算属性来传递我们关心的子状态。首先，我们可以曝光最受欢迎的素数。</p>
+<pre><code class="language-swift">var favoritePrimes: [Int] {
+  get { self.state.favoritePrimes }
+  set { self.state.favoritePrimes = newValue }
+}
+</code></pre>
+<p>接下来，我们可以公开<strong>activityFeed</strong>。</p>
+<pre><code class="language-swift">var activityFeed: [AppState.Activity] {
+  get { self.state.activityFeed }
+  set { self.state.activityFeed = newValue }
+}
+</code></pre>
+<p>现在我们有了一个关于全局应用状态的包装器，它暴露了一些本地状态。</p>
+<pre><code class="language-swift">class FavoritePrimesState: BindableObject {
+  var didChange: PassthroughSubject&lt;Void, Never&gt; {
+    self.state.didChange
+  }
+
+  private var state: AppState
+  init(state: AppState) {
+    self.state = state
+  }
+
+  var favoritePrimes: [Int] {
+    get { self.state.favoritePrimes }
+    set { self.state.favoritePrimes = newValue }
+  }
+
+  var activityFeed: [AppState.Activity] {
+    get { self.state.activityFeed }
+    set { self.state.activityFeed = newValue }
+  }
+}
+</code></pre>
+<p>不幸的是，它附带了许多样板文件。</p>
+<p>现在让我们确保它能工作。首先，我们可以替换最爱的素数视图中的对象绑定。</p>
+<pre><code class="language-swift">struct FavoritePrimesView: View {
+  @ObjectBinding var state: FavoritePrimesState
+</code></pre>
+<p>不需要对这个视图做更多的修改，因为它只依赖于我们管道通过的状态。</p>
+<p>为了在根视图中实例化这个视图，我们现在需要将这个本地化的状态传递给它。</p>
+<pre><code class="language-swift">NavigationLink(destination: FavoritePrimesView(state: FavoritePrimesState(state: self.state))) {
+</code></pre>
+<p>它可以像以前一样编译和工作，但是我们已经能够去除很多全局状态，只留下视图真正关心的小块状态。</p>
+<p>不幸的是，我们认为这个解决方案不能解决问题。有太多的样板文件，而且没有办法将这些组件隔离到它们自己的模块中。但据我们所知，这是从全局状态的<strong>ObjectBinding</strong>获取子状态的<strong>ObjectBinding</strong>的最直接的方法。似乎没有更简单的方法来做这件事。未来可能会有一些Swift的功能让这变得更容易，但目前我们还没有这些功能。</p>
+<p>我们认为这个问题非常重要，因为我们在代码库中遇到的最大问题之一是无法将组件分离出来，并将它们完全封装在自己的模块中，与代码的其余部分隔离开来，这导致了一系列的复杂性。</p>
+<h2 id="7-a-nameswiftuiisnttestableaswiftui-isnt-testable">7. <a name='SwiftUIisnttestable'></a>SwiftUI isn’t testable</h2>
+<p>最后，我们应该快速评论一下可测试性。目前来看，SwiftUI还不是超级可测试的，因为苹果还没有给我们提供指导或工具来测试SwiftUI视图。现在，我们所有的状态和突变都在我们的视图中纠缠在一起，所以没有简单的方法来测试点击加号按钮是否确实增加了计数，或者点击“添加喜爱素数”是否确实将其添加到喜爱素数列表中。</p>
+<p>测试对于软件开发人员来说是非常重要的，所以我们在这里应该有一个故事。测试允许我们验证我们所希望的程序是正确的，这意味着在未来，我们可以通过查看测试重构或重新学习代码的功能。我们肯定需要知道如何测试应用程序的逻辑。</p>
+<h2 id="8-a-nameconclusionaconclusion">8. <a name='Conclusion'></a>Conclusion</h2>
+<p>所以，这就是为什么我们认为有必要探索状态管理的问题空间，并使用SwiftUI作为实现这一目标的手段。在应用程序架构中，有一些非常重要的问题需要解决，即:</p>
+<ul>
+<li>How to manage and mutate state</li>
+<li>How to execute side effects</li>
+<li>How to decompose large applications into small ones, and</li>
+<li>How to test our application.</li>
+</ul>
+<p>因此，在下一个系列中，我们将展示函数式编程对状态管理的影响。我们将展示，只需一点前期基础设施工作，我们就可以提出一种机制，统一我们的应用程序状态，我们的应用程序突变，以及可以执行到一个简单的包的效果。它仍然在很大程度上利用了SwiftUI提供给我们的所有精彩技术，但它给了我们机会去解决一些苹果选择不去解决的问题。最好的一点是，这个解决方案不仅仅是swift的解决方案。它在UIKit应用程序中也能很好地工作，这对于处理需要混合传统UIKit和新的<strong>SwiftUI</strong>视图的应用程序是必要的。</p>
+<h2 id=""></h2>
+<p><strong>关联阅读：</strong><br>
+<a href="https://kateinoigakukun.hatenablog.com/entry/2019/06/09/081831">Inside SwiftUI (About @State)</a><br>
+<a href="https://kateinoigakukun.hatenablog.com/entry/2019/03/22/184356">Swift Type Metadata (en)</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-66-swiftui-and-state-management-part-2/">
+                  <h3 class="post-title">
+                    PointFree Episode 66: SwiftUI and State Management: Part 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

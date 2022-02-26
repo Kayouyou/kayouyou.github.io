@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>50道iOS面试问答 - 5 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+50道iOS面试问答 - 5
+
+1- Explain Data Structures
+2- Explain CodingKey Protocol
+3- Explain IGListKit
+4- What is URLSession?
+5..." />
+    <meta name="keywords" content="interview" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">50道iOS面试问答 - 5</h2>
+            <div class="post-date">2021-05-26</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gqvsuptg95j316o0seacy.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#50%E9%81%93ios%E9%9D%A2%E8%AF%95%E9%97%AE%E7%AD%94---5">50道iOS面试问答 - 5</a>
+<ul>
+<li><a href="#1--explain-data-structures">1- Explain Data Structures</a></li>
+<li><a href="#2--explain-codingkey-protocol">2- Explain CodingKey Protocol</a></li>
+<li><a href="#3--explain-iglistkit">3- Explain IGListKit</a></li>
+<li><a href="#4--what-is-urlsession">4- What is URLSession?</a></li>
+<li><a href="#5--how-do-we-download-images">5- How do we download images?</a></li>
+<li><a href="#6--how-does-testflight-make-a-difference">6- How does TestFlight make a difference?</a></li>
+<li><a href="#7--what-is-snapkit-or-masonry-make-a-difference-from-auto-layout">7- What is SnapKit or Masonry make a difference from Auto layout?</a></li>
+<li><a href="#8--explain-iteratorprotocol">8- Explain IteratorProtocol</a></li>
+<li><a href="#9--explain-differences-between-wkwebview-and-uiwebview">9- Explain differences between WKWebView and UIWebView</a></li>
+<li><a href="#10--explain-xliff-pros-and-cons">10- Explain XLIFF Pros and Cons</a></li>
+<li><a href="#11--what-is-difference-layout-margins-and-directional-layout-margins">11- What is difference Layout Margins and Directional Layout Margins?</a></li>
+<li><a href="#12--what-is-sequence-protocol">12- What is Sequence protocol?</a></li>
+<li><a href="#13--what-is-oauth">13- What is OAuth?</a></li>
+<li><a href="#14--what-is-offset">14- What is offset?</a></li>
+<li><a href="#15--explain-rethrows-keyword">15- Explain rethrows keyword</a></li>
+<li><a href="#16--explain-objc-inference">16- Explain @objc inference</a></li>
+<li><a href="#17--what-is-safe-area-">17- What is Safe area ?</a></li>
+<li><a href="#18--explain-viper-architecture">18- Explain Viper Architecture</a></li>
+<li><a href="#19--explain-content-offset">19- Explain Content offset</a></li>
+<li><a href="#20--explain-queues">20- Explain Queues</a></li>
+<li><a href="#21--explain-objcmembers-inference">21- Explain @objcMembers inference</a></li>
+<li><a href="#22--whats-new-with-xcode-server-">22- What’s new with Xcode Server ?</a></li>
+<li><a href="#23--explain-type-inference">23- Explain type inference</a></li>
+<li><a href="#24--what-is-the-difference-between-array-vs-nsarray-">24- What is the difference between Array vs NSArray ?</a></li>
+<li><a href="#25--what-is-nslayoutanchor">25- What is NSLayoutAnchor?</a></li>
+<li><a href="#26--what-is-themutating-keyword">26- What is themutating keyword?</a></li>
+<li><a href="#27--what-is-snapshot-testing-">27- What is snapshot testing ?</a></li>
+<li><a href="#28--what-is-circular-dependencies--%E4%BB%80%E4%B9%88%E6%98%AF%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96">28- What is circular dependencies ? (什么是循环依赖?)</a></li>
+<li><a href="#29--whats-the-difference-between-mkannotation-and-mkpointannotation">29- What’s the difference between MKAnnotation and MKPointAnnotation?</a></li>
+<li><a href="#30--what-is-dto-">30- What is DTO ?</a></li>
+<li><a href="#31--explain-main-thread-checker">31- Explain Main Thread Checker</a></li>
+<li><a href="#32--what-is-the-difference-stack-and-heap-">32- What is the difference Stack and Heap ?</a></li>
+<li><a href="#33--explain-vip--clean-swift-architecture">33- Explain VIP ( Clean-Swift) Architecture</a></li>
+<li><a href="#34--explain-uibezierpath">34- Explain UIBezierPath</a></li>
+<li><a href="#35--explain-dependency-injection-container">35- Explain Dependency Injection Container</a></li>
+<li><a href="#36--explain-objectmapper-for-parsing-json-data">36- Explain ObjectMapper for parsing JSON data</a></li>
+<li><a href="#37--explain-cashapelayer">37- Explain CAShapeLayer</a></li>
+<li><a href="#38--explain-get-request-steps">38- Explain Get Request Steps</a></li>
+<li><a href="#39--explain-coordinate-systems-in-views">39- Explain coordinate systems in views</a></li>
+<li><a href="#40--explain-encoding-decoding-and-serialization-deserialization">40- Explain Encoding, Decoding and Serialization, Deserialization</a></li>
+<li><a href="#41--what-is-the-purpose-of-using-ibaction-and-iboutlet-">41- What is the purpose of using IBAction and IBOutlet ?</a></li>
+<li><a href="#42--explain-alamofire-benefits">42- Explain AlamoFire Benefits</a></li>
+<li><a href="#43--explain-semaphore-in-ios">43- Explain Semaphore in iOS</a></li>
+<li><a href="#44--what-is-lldb">44- What is LLDB?</a></li>
+<li><a href="#45--explain-tuples">45- Explain Tuples</a></li>
+<li><a href="#46--explain-the-difference-between-generics-and-anyobject-in-swift">46- Explain the difference between Generics and AnyObject in Swift</a></li>
+<li><a href="#47--explain-dependency-inversion-principle">47- Explain Dependency Inversion Principle</a></li>
+<li><a href="#48--what-is-smoke-testing">48- What is Smoke Testing?</a></li>
+<li><a href="#49--explain-how-does-uiedgeinsetsmake-work">49- Explain how does UIEdgeInsetsMake work?</a></li>
+<li><a href="#50--what-is-the-meaning-of-id-">50- What is the meaning of id ?</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="50道ios面试问答-5">50道iOS面试问答 - 5</h2>
+<!-- ![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gqvsuptg95j316o0seacy.jpg) -->
+<h3 id="1-explain-data-structures">1- Explain Data Structures</h3>
+<p>数组、集合、元组和字典都是将数据存储在一个地方的数据结构的集合。</p>
+<h3 id="2-explain-codingkey-protocol">2- Explain CodingKey Protocol</h3>
+<p>CodingKeys枚举(protocol)允许您在序列化格式不符合API要求的情况下重命名特定属性。CodingKeys应该有嵌套枚举。</p>
+<h3 id="3-explain-iglistkit">3- Explain IGListKit</h3>
+<p>IGListKit提供自动diff对象，用于在集合视图上执行批处理更新之前创建插入、删除和移动。如果用户删除我们正在查看的队列中的更新，我们将看到它淡出，而不需要下拉刷新。</p>
+<p>我们告别了UICollectionViewDatasource，而使用IGListAdapter和IGListAdapterDataSource。 数据源不返回计数或单元格，而是提供一个Section Controllers数组。Section Controllers用于配置和控制给定集合视图Section中的单元格。</p>
+<h3 id="4-what-is-urlsession">4- What is URLSession?</h3>
+<p>当我们想要从某个URL检索内容时，我们选择使用URLConnection。任务有三种类型:</p>
+<ul>
+<li>Data tasks: 将数据存储到内存中</li>
+<li>Download tasks:  下载文件到磁盘</li>
+<li>Upload tasks: 从磁盘上传文件并在内存中接收响应作为数据</li>
+</ul>
+<h3 id="5-how-do-we-download-images">5- How do we download images?</h3>
+<p>通过URLSession，我们可以下载一个图像作为数据，然后把它从NSData转换到UIImage，最后我们连接它UIImageView IBOutlet。更好的方法是使用library。通过URLSession Adaptable Connectivity API，我们还可以内置连接监控，并在没有连接时运行请求。当资源可用时，请求将等待并下载，而不是失败。</p>
+<h3 id="6-how-does-testflight-make-a-difference">6- How does TestFlight make a difference?</h3>
+<ul>
+<li>多个构建分布</li>
+<li>测试分组</li>
+<li>内部自动分配</li>
+<li>测试指标</li>
+<li>增加到10000个测试用户</li>
+<li>公开连结</li>
+</ul>
+<h3 id="7-what-is-snapkit-or-masonry-make-a-difference-from-auto-layout">7- What is SnapKit or Masonry make a difference from Auto layout?</h3>
+<p>SnapKit或Masonry帮助我们用代码在iOS和OS X上做自动布局，我使用两个库。</p>
+<h3 id="8-explain-iteratorprotocol">8- Explain IteratorProtocol</h3>
+<p>IteratorProtocol协议与Sequence协议紧密相连。 序列通过创建迭代器来提供对其元素的访问，迭代器跟踪其迭代过程，并在经过序列时每次返回一个元素。 关于iteratorprotocol与for循环和while循环的区别，有很多很好的<a href="https://developer.apple.com/documentation/swift/iteratorprotocol">例子</a>。</p>
+<h3 id="9-explain-differences-between-wkwebview-and-uiwebview">9- Explain differences between WKWebView and UIWebView</h3>
+<p>WKWebView拥有自己的cookie存储，它不被整个应用程序和所有其他web视图共享，如在(UIWebView)的情况下。</p>
+<h3 id="10-explain-xliff-pros-and-cons">10- Explain XLIFF Pros and Cons</h3>
+<p>Pros</p>
+<ul>
+<li>它帮助我们从或代码中提取本地化工作，所以我们不需要在源代码中做任何语言假设。</li>
+<li>XLIFF文件还包含要从我们的开发语言本地化的内容以及翻译。</li>
+<li>XLIFF将来自不同资源和不同文件类型的字符串合并到一个文档中。</li>
+</ul>
+<p>Cons</p>
+<ul>
+<li>XLIFF没有给它们提供视觉和功能上下文。</li>
+<li>XLIFF不提供项目中的资产之类的资源数据。</li>
+<li>XLIFF没有提供关于生成的XLIFF的自定义元数据。</li>
+</ul>
+<h3 id="11-what-is-difference-layout-margins-and-directional-layout-margins">11- What is difference Layout Margins and Directional Layout Margins?</h3>
+<p>布局边距属性UIView的类型是UIEdgeInsets，定义了顶部，左侧，底部和右侧的插入，当应用到视图的框架定义了视图的边距。</p>
+<p>具有RTL (Right-To-Left)语言的定向布局边。这与使用布局锚创建约束时使用的模式相同。请看这篇关于RTL语言的早期文章。</p>
+<h3 id="12-what-is-sequence-protocol">12- What is Sequence protocol?</h3>
+<p>序列是一组值，我们可以一次单步执行一个。  迭代序列元素的最常见方法是使用for-in循环</p>
+<h3 id="13-what-is-oauth">13- What is OAuth?</h3>
+<p>OAuth是开放授权的简称，是一种授权协议，不是用于身份验证的协议。  OAuth作为一种授权协议，并不关心用户的身份识别。相反，它处理授权第三方应用程序访问用户数据，而不暴露用户的凭据。 There are two libraries: OAuthSwift &amp; OAuth2</p>
+<h3 id="14-what-is-offset">14- What is offset?</h3>
+<p>如果我们想要将按钮排列在父视图的右下角，间距为20 Pts，我们使用UIButton或UILabel的视图属性来参考父视图的视图属性，并使用.offset(x)来设置padding。</p>
+<h3 id="15-explain-rethrows-keyword">15- Explain rethrows keyword</h3>
+<p>Rethrows是一个非常特殊的关键字，可以与可能抛出错误的闭包一起使用。</p>
+<p>rethrows关键字向编译器表明，只有当传入的闭包抛出一个传播到当前作用域的错误时，外部函数才是一个抛出函数。</p>
+<h3 id="16-explain-objc-inference">16- Explain @objc inference</h3>
+<p>我们可以用@objc标记Swift声明，表示它应该对Objective-C可用。 在Swift 3中，许多声明被自动推断为对Objective-C可用。 常见的地方是使用选择器引用的任何Swift方法。</p>
+<h3 id="17-what-is-safe-area">17- What is Safe area ?</h3>
+<p>安全区域允许我们创建约束，以避免我们的内容被状态栏、导航栏或标签栏等UIKit栏所隐藏。以前我们使用的是playoutGuide和bottomLayoutGuide。</p>
+<h3 id="18-explain-viper-architecture">18- Explain Viper Architecture</h3>
+<p>Viper 是另一种设计样式。它有五层:视图、交互器、呈现器、实体和路由器。它是以单一责任原则为基础的。</p>
+<p>Viper体系结构的优点是通过协议实现从一个实体到另一个实体的通信。 这个想法是为了隔离应用程序的依赖关系，平衡实体之间的责任委托。</p>
+<p>你可以在这篇文章中找到更多的细节。</p>
+<h3 id="19-explain-content-offset">19- Explain Content offset</h3>
+<p>当我们滚动一个scrollView时，它会修改一个称为内容偏移量的属性。内容偏移是指contentView的origin，也就是bounds rectangle，从scrollView的原点偏移的一点。</p>
+<p>使用这个值，scrollView可以计算它的新边界并重新绘制它的任何子视图。</p>
+<h3 id="20-explain-queues">20- Explain Queues</h3>
+<p>队列用于存储一组数据，但不同之处在于进入该集合的第一个项将是被删除的第一个项。也就是众所周知的FIFO，意思是“先进先出”。</p>
+<h3 id="21-explain-objcmembers-inference">21- Explain @objcMembers inference</h3>
+<p>当我们声明该类具有@objcMembers时，该类中的所有内容都将公开给Objective-C运行时。这就相当于在函数前面隐式地写@objc。</p>
+<h3 id="22-whats-new-with-xcode-server">22- What’s new with Xcode Server ?</h3>
+<p>There are a few improvements:<br>
+Xcode Server不再需要macOS Server应用程序，它现在构建在Xcode 9中。<br>
+持续集成机器人可以在任何带有Xcode 9的Mac上运行，不需要安装macOS Server。</p>
+<h3 id="23-explain-type-inference">23- Explain type inference</h3>
+<p>Swift使用类型推断来计算出适当的类型。类型推断使编译器能够在编译代码时自动推断特定表达式的类型，只需检查您提供的值。</p>
+<h3 id="24-what-is-the-difference-between-array-vs-nsarray">24- What is the difference between Array vs NSArray ?</h3>
+<p>数组只能保存一种类型的数据，NSArray可以保存不同类型的数据。数组是值类型，NSArray是不可变引用类型。</p>
+<h3 id="25-what-is-nslayoutanchor">25- What is NSLayoutAnchor?</h3>
+<p>在ios9中，苹果引入了NSLayoutAnchor类，使编写自动布局更容易。</p>
+<p>There are three subclasses of NSLayoutAnchor:</p>
+<ul>
+<li>NSLayoutXAxisAnchor这个子类用于创建水平约束</li>
+<li>NSLayoutYAxisAnchor这个子类用于创建垂直约束</li>
+<li>NSLayoutDimension 这个子类用于创建宽度和高度约束</li>
+</ul>
+<h3 id="26-what-is-themutating-keyword">26- What is themutating keyword?</h3>
+<p>mutating关键字用于在结构体或枚举中修改变量。如果需要修改值类型的属性，则必须在实例方法中使用mutating关键字。</p>
+<h3 id="27-what-is-snapshot-testing">27- What is snapshot testing ?</h3>
+<p>快照测试是一种自动测试UI美学部分的方法。它包括从你的应用中创建一个视图，并将其与参考图像进行比较。</p>
+<h3 id="28-what-is-circular-dependencies-什么是循环依赖">28- What is circular dependencies ? (什么是循环依赖?)</h3>
+<p>循环依赖关系是两个或多个模块之间的关系，它们直接或间接地相互依赖以正常工作。这样的模块也被称为相互递归。</p>
+<h3 id="29-whats-the-difference-between-mkannotation-and-mkpointannotation">29- What’s the difference between MKAnnotation and MKPointAnnotation?</h3>
+<p>MKAnnotation是一个协议。通常，我们会创建一个NSObject子类来实现这个协议。  然后，这个自定义类的实例将作为映射注释。</p>
+<p>MKPointAnnotation是一个实现MKAnnotation的类。如果我们想在annotation上使用自己的业务逻辑，我们可以直接使用它。</p>
+<h3 id="30-what-is-dto">30- What is DTO ?</h3>
+<p>DTO广泛应用于web项目。 它声明了对mapable协议的响应。它包含映射(map: map)函数的实现。</p>
+<h3 id="31-explain-main-thread-checker">31- Explain Main Thread Checker</h3>
+<p>主线程检查器是Xcode 9推出的一个新工具，它检测无效的使用苹果的框架，如UIKit, AppKit等，本来应该从主线程使用，但意外在后台线程中使用。无效使用的影响可能导致错过UI更新、视觉缺陷、数据损坏和崩溃。你可以在这里阅读更多关于主线程检查器的内容。</p>
+<h3 id="32-what-is-the-difference-stack-and-heap">32- What is the difference Stack and Heap ?</h3>
+<p>我们的代码在iOS中占用了一些空间。它的大小有时是固定的，有时会根据用户在程序中输入的内容而改变。由于这种差异，我们基本上有两种不同的方法: <strong>Stack and Heap</strong></p>
+<p>使用Stack，并在工作完成后自动从内存中删除自己。但是在Heap中，用户可以通过编写从内存中删除的手动代码来做到这一点。</p>
+<p><strong>Stack</strong>;</p>
+<ul>
+<li>栈易于使用。</li>
+<li>它保存在电脑的内存中。</li>
+<li>创建的变量在退出栈时自动删除。</li>
+<li>与Heap相比，它是相当快的。</li>
+<li>构造变量不需要指针就可以使用。</li>
+</ul>
+<p><strong>Heap</strong>;</p>
+<ul>
+<li>与Stack相比，它相当慢。</li>
+<li>如果使用不正确，它会产生内存问题。</li>
+<li>变量与指针一起使用。</li>
+<li>它是在运行时创建的。</li>
+</ul>
+<h3 id="33-explain-vip-clean-swift-architecture">33- Explain VIP ( Clean-Swift) Architecture</h3>
+<p>ViewController通过向Interactor发送请求直接与Interactor交互。Interactor通过向Presenter发送一个带有数据模型的响应来响应这些请求。Presenter格式化要显示的数据，创建一个ViewModel并通知ViewController它应该基于ViewModel更新它的View。 ViewController通过调用Router上的一个方法来决定什么时候导航到一个不同的场景。<br>
+Router执行下一个视图控制器的设置，并处理布线，传递数据和委托设置。</p>
+<p>与VIPER相比，不同之处在于ViewController本身会联系路由器进行导航。</p>
+<h3 id="34-explain-uibezierpath">34- Explain UIBezierPath</h3>
+<p>UIBezierPath类允许我们定义描述任何形状的自定义路径，并使用这些路径来实现我们想要的自定义结果。</p>
+<h3 id="35-explain-dependency-injection-container">35- Explain Dependency Injection Container</h3>
+<p>容器保存每个类类型到该类实例的映射。然后，只需将类型提供给容器，就可以实例化任何类。 然后容器自动为类提供依赖项。</p>
+<h3 id="36-explain-objectmapper-for-parsing-json-data">36- Explain ObjectMapper for parsing JSON data</h3>
+<p>ObjectMapper将JSON数据转换为强类型模型对象。它在JSON之间有双向绑定，可以处理通用对象和嵌套对象。我们还可以管理子类。</p>
+<h3 id="37-explain-cashapelayer">37- Explain CAShapeLayer</h3>
+<p>CAShapeLayer是CALayer的一个子类，它提供了各种2D图形的硬件加速绘图，并包括额外的功能，如填充和描边颜色，线帽，模式等。</p>
+<h3 id="38-explain-get-request-steps">38- Explain Get Request Steps</h3>
+<p>我们将创建任务。我们将从服务器接收回数据。我们会根据是否有错误和数据来处理它。</p>
+<h3 id="39-explain-coordinate-systems-in-views">39- Explain coordinate systems in views</h3>
+<p>UIkit定义了一个默认坐标系，原点在左上角，轴向右延伸，从原点向下。视图在这个坐标系统中进行布局，以确定它们的位置和大小。</p>
+<p>除了这个默认坐标系统，我们称之为屏幕坐标系统，应用程序的窗口和视图也定义了它们自己的本地坐标系统。</p>
+<p>例如单一视图，一个视图对象使用frame和bounds来跟踪它的大小和位置。frame是一个矩形，它在SuperView坐标系统中指定视图的大小和位置。</p>
+<p>另一方面，bounds rectangle 在其自己的局部坐标系中指定视图的大小。</p>
+<h3 id="40-explain-encoding-decoding-and-serialization-deserialization">40- Explain Encoding, Decoding and Serialization, Deserialization</h3>
+<p>序列化是将数据转换为单个字符串或json的过程，以便能够方便地存储或传输数据。Serialization，也称为encoding。  将单个字符串转换为数据的反向过程称为解码或反序列化。 在swift中，我们使用类型可以遵循的Codable协议来声明它可以被编码和解码。它基本上是可编码协议和可解码协议的别名。</p>
+<h3 id="41-what-is-the-purpose-of-using-ibaction-and-iboutlet">41- What is the purpose of using IBAction and IBOutlet ?</h3>
+<p>IBAction和IBOutlet是用来表示可以在Interface Builder中引用的变量和方法的宏。</p>
+<p>IBAction解析为void, IBOutlet解析为nothing，但它们向Xcode和Interface builder表示，这些变量和方法可以在Interface builder中用于将UI元素链接到代码。</p>
+<h3 id="42-explain-alamofire-benefits">42- Explain AlamoFire Benefits</h3>
+<p>AlamoFire创建了一条路线。这意味着我们可以通过一个静态函数创建请求并将其执行到服务器。</p>
+<p>AlamoFire为返回的请求提供了方法链， 这使得添加头部和处理响应变得很容易。</p>
+<p>AlamoFire有多个响应处理程序，返回二进制形式，文本，解析JSON，我们甚至可以使用多个这些给定的请求。</p>
+<p>AlamoFire的方法链允许响应验证。我们可以调用验证来检查HTTP响应的状态代码、内容类型或任何您可能需要为我们的应用程序进行的自定义验证。</p>
+<p>AlamoFire给我们提供了使用两个协议，URLConvertible和URLRequestConvertible。这些协议可以在创建请求时传入。</p>
+<p>AlamoFire提供了可以传入的扩展来创建请求。</p>
+<h3 id="43-explain-semaphore-in-ios">43- Explain Semaphore in iOS</h3>
+<p>当我们在iOS上执行线程操作时，它能工作。该应用程序是相当有效的防止数据干扰不同的进程，同时下载数据到设备。 或者，我们可以通过检查等待时间来超时处理。</p>
+<p>为一种结构，一个以上的工作过程根据情况保持等待，另一个过程在完成后从事进入电路等过程。</p>
+<h3 id="44-what-is-lldb">44- What is LLDB?</h3>
+<p>它是LLVM编译器基础结构的调试器。 这是主页，这是一篇关于它的好文章:<a href="https://www.objc.io/issues/19-debugging/lldb-debugging/#lldb">在调试器中跳舞 — A Waltz with LLDB</a>.</p>
+<h3 id="45-explain-tuples">45- Explain Tuples</h3>
+<p>元组在Swift中是一种复合类型，这意味着我们可以像保存结构一样保存多个值。 元组包含非常有价值的数据类型，但我们创建了数据结构 (like dictionaries).</p>
+<h3 id="46-explain-the-difference-between-generics-and-anyobject-in-swift">46- Explain the difference between Generics and AnyObject in Swift</h3>
+<p>泛型是类型安全的，这意味着如果你传递一个字符串作为泛型，并试图使用整数，编译器将抱怨，你将无法编译你的。 因为Swift使用了静态类型，并且能够给你一个编译错误。</p>
+<p>如果你使用AnyObject，编译器不知道对象是可以作为字符串还是整数处理。它能让你随心所欲。</p>
+<h3 id="47-explain-dependency-inversion-principle">47- Explain Dependency Inversion Principle</h3>
+<p>依赖倒置原则通过显式地为类提供依赖关系，而不是让类自己创建依赖关系，来实现类之间的解耦。</p>
+<h3 id="48-what-is-smoke-testing">48- What is Smoke Testing?</h3>
+<p>Smoke Testing,  也称为“构建验证测试”，是一种软件测试，由一组非详尽的测试组成，目的是确保最重要的功能能正常工作。</p>
+<p>据说，“冒烟测试”这个术语是从一种类似的硬件测试演变而来的。在硬件测试中，如果设备在第一次开机时没有着火(或冒烟)，那么它就通过了测试。</p>
+<h3 id="49-explain-how-does-uiedgeinsetsmake-work">49- Explain how does UIEdgeInsetsMake work?</h3>
+<p>According to the documentation: We can use this method to add cap insets to an image or to change the existing cap insets of an image.</p>
+<p>在这两种情况下，都将返回一个新图像，而原始图像保持不变。 我们在UIEdgeInsetsMake函数的值中使用我们想要使不可拉伸的像素的数量。 目标是保持图像的原始圆角。通过UIEdgeInsets，我们可以指定从顶部、左侧、底部和右侧拉伸图像的像素数。</p>
+<pre><code class="language-swift">Syntax : UIEdgeInsets(top: 0, left: 0, bottom: 10, right: 0)
+</code></pre>
+<h3 id="50-what-is-the-meaning-of-id">50- What is the meaning of id ?</h3>
+<p>id是一个指向任何类型的指针，它总是指向一个Objective-C对象。AnyObject协议是类似的，它有助于在Swift和Objective-C之间架起桥梁。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1UYNOQrST/" class="tag">
+                    interview
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/50-dao-ios-mian-shi-wen-da-4/">
+                  <h3 class="post-title">
+                    50道iOS面试问答 - 4
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

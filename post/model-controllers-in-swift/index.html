@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Model controllers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在构建架构良好的应用程序和系统时，正确的逻辑封装是最重要的事情之一。通过将对给定值或对象的访问限制给那些真正需要它的人，我们可以创建更多定义良好的关系，并减少需要测试的代码路径的数量。
+在这篇博文之前，我们已经探索了几种不同的代码封装技术，..." />
+    <meta name="keywords" content="design pattern,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Model controllers in Swift</h2>
+            <div class="post-date">2018-08-19</div>
+            
+            <div class="post-content" v-pre>
+              <p>在构建架构良好的应用程序和系统时，正确的逻辑封装是最重要的事情之一。通过将对给定值或对象的访问限制给那些真正需要它的人，我们可以创建更多定义良好的关系，并减少需要测试的代码路径的数量。</p>
+<p>在这篇博文之前，我们已经探索了几种不同的代码封装技术，本周，让我们看看如何使用模型控制器来改进模型层的封装。</p>
+<h2 id="shared-model-logic">Shared model logic</h2>
+<p>大多数应用程序都包含许多不同类型的模型，但总的来说，它们可以分为两类——共享和本地。本地模型是那些只在我们的应用程序的一小部分中使用的模型——例如图书阅读应用程序中的书签-这可能只在某些形式的书签视图和实际阅读一本书时使用。</p>
+<p>另一方面，共享模型是应用程序的许多不同部分所使用的模型。 虽然有人可能会说共享模型与封装的整个理念背道而驰-设计一个不包含任何共享信息的架构是非常困难的-大多数应用程序都有一些核心数据，整个应用程序都是围绕这些数据构建的。</p>
+<p>这种共享模型的一个很常见的例子是用户模型-我们可能会使用它来跟踪当前登录的用户和与该帐户相关的数据，看起来像这样:</p>
+<pre><code class="language-swift">struct User: Codable {
+    var firstName: String
+    var lastName: String
+    var age: Int
+    var groups: Set&lt;Group&gt;
+    var permissions: Set&lt;Permission&gt;
+}
+</code></pre>
+<p>共享模型通常会带来共享逻辑——我们经常需要在应用程序的许多不同部分对某些属性执行类似的检查。例如，如果我们正在构建某种形式的社交网络应用程序，我们可能需要检查当前用户是否可以在许多不同的地方对给定的帖子发表评论。与其复制该逻辑，不如将User扩展为自身包含该逻辑:</p>
+<pre><code class="language-swift">extension User {
+    func canComment(on post: Post) -&gt; Bool {
+        guard groups.contains(post.group) else {
+            return false
+        }
+
+        return permissions.contains(.comments)
+    }
+}
+</code></pre>
+<p>上面的方法是有效的——而且是一种非常普遍的方法——但是如果我们从架构的角度来考虑它，那么在模型中添加逻辑和决策就有点奇怪了。大多数设计模式(包括MVC、MVVM和VIPER)都同意的一件事是，理想的模型应该是简单的数据容器，不包含太多(如果有的话)逻辑。</p>
+<p>对于本地模型，大多数设计模式都知道该把这种逻辑放在哪里，但对于共享模型，这就有点棘手了， 因为大多数iOS设计模式都非常关注不同的屏幕和UI部分 - 来自MVVM的ViewModel和来自VIPER的Presenter或Interactor都与他们关联的UI是强耦合的(有很好的理由)。</p>
+<p>正因为如此，将上述逻辑放到某种形式的单例或全局函数中是很常见的，这通常会损害我们的代码封装，并可能成为共享可变状态和棘手bug的来源。相反，让我们看看如何回到MVC的本质，并将这种共享模型逻辑作为控制器层的一部分。</p>
+<h2 id="model-controllers">Model controllers</h2>
+<p>关于iOS风格的MVC，一个常见的误解是，所有控制器都需要是视图控制器。然而，就像我们在“Swift中的逻辑控制器”中看到的那样——它有时是一个很好的解决方案，将控制器层拆分为多个专用的控制器——并不是所有的控制器都需要控制一个视图。</p>
+<p>这种无视图控制器的另一种实现是模型控制器。就像一个视图控制器可以被描述为UIView背后的“大脑”一样，一个模型控制器执行与一个模型的单一实例相关的所有逻辑-允许我们正确地封装模型特定的逻辑。</p>
+<p>这不是一个新概念——苹果已经使用模型控制器很多年了——看看NSArrayController或它的基类就知道了;NSObjectController。</p>
+<p>让我们为之前的用户模型构建一个模型控制器。首先，我们简单地创建一个可以用User实例初始化的类，如下所示:</p>
+<pre><code class="language-swift">class UserModelController {
+    private var user: User
+
+    init(user: User) {
+        self.user = user
+    }
+}
+</code></pre>
+<p>当然，我们可以简单地称我们的模型控制器为UserController——但就像逻辑控制器一样，我个人更喜欢明确地说出model，因为它创建了一个与视图控制器更清晰的分离。</p>
+<p>接下来，让我们将检查用户是否可以对给定帖子发表评论的逻辑移到我们的新模型控制器上:</p>
+<pre><code class="language-swift">extension UserModelController {
+    func allowComments(on post: Post) -&gt; Bool {
+        guard user.groups.contains(post.group) else {
+            return false
+        }
+
+        return user.permissions.contains(.comments)
+    }
+}
+</code></pre>
+<p>到目前为止一切都好!👍但是为什么我们的模型控制器保持它的用户模型私有呢?其他对象如何能够读取或写入其属性?</p>
+<p>像我们在“Swift中的代码封装”中看到的那样，正确的代码封装和清晰的API设计的一大好处是，它可以防止API被“错误的方式”使用。如果我们将底层用户暴露给外部世界，我们就不能真正保证做出正确的决策 -  因为我们的代码库的其他部分可能会直接开始读取属性并做出自己的决定。</p>
+<p>相反，让我们用清晰的api来扩展UserModelController，以获得我们需要从User获得的一切。例如，我们可能需要为一个概要视图组合一个displayName，或者循环遍历所有用户的权限，以便在一个列表中显示它们 -所以让我们为这些用例添加api，同时保持底层模型的私有:</p>
+<pre><code class="language-swift">extension UserModelController {
+    typealias PermissionsClosure = (Permission, Permission.Status) -&gt; Void
+
+    var displayName: String {
+        return &quot;\(user.firstName) \(user.lastName)&quot;
+    }
+
+    func enumeratePermissions(using closure: PermissionsClosure) {
+        for permission in Permission.allCases {
+            let isGranted = user.permissions.contains(permission)
+            closure(permission, isGranted ? .granted : .denied)
+        }
+    }
+}
+</code></pre>
+<p>现在，我们有了针对上述逻辑的单一、专用的代码路径，我们可以确保对其进行完整的单元测试——消除了重复逻辑和不一致的风险，并减少了错误的风险。</p>
+<h2 id="taking-action">Taking action</h2>
+<p>模型控制器也是执行特定于模型的操作的好地方，比如更新来自服务器的本地数据。与其让每个视图控制器负责确保它们总是更新它们的用户模型副本，我们可以为这种逻辑建立一个中心-不需要引入单例，也不违反任何架构规则。</p>
+<p>要添加对更新的支持，让我们向UserModelController添加一个更新方法，代码库的其他部分可以调用该方法来请求更新。我们还允许该方法的任何调用者在调用它时附加一个补全处理程序，这在实现下拉刷新等功能时非常有用。下面是我们的UserModelController现在的样子:</p>
+<pre><code class="language-swift">class UserModelController {
+    private var user: User
+    private let dataLoader: DataLoader
+
+    init(user: User, dataLoader: DataLoader) {
+        self.user = user
+        self.dataLoader = dataLoader
+    }
+
+    func update(then handler: @escaping (Outcome) -&gt; Void) {
+        let url = Endpoint.user.url
+
+        dataLoader.loadData(from: url) { [weak self] result in
+            do {
+                switch result {
+                case .success(let data):
+                    let decoder = JSONDecoder()
+                    self?.user = try decoder.decode(User.self, from: data)
+                    handler(.success)
+                case .failure(let error):
+                    handler(.failure(error))
+                }
+            } catch {
+                handler(.failure(error))
+            }
+        }
+    }
+}
+```swift
+
+上面我们可以看到模型控制器作为控制器的另一个好处——而不是模型 - 我们可以给它注入依赖，让它执行诸如联网之类的任务，并且仍然保持一个mvc对齐的架构。
+
+## Observing changes
+
+由于我们现在能够更新我们的模型，我们还需要一些方法来观察它何时发生变化。值得庆幸的是，由于我们选择了一个紧密封装的设计(通过不暴露我们的底层用户模型)，以一种安全的方式添加观察支持应该是相对容易的。
+
+就像我们在两篇文章“Swift中的观察者”中看到的那样，我们有很多不同的方法可以让一个物体被观察到。在本例中，让我们使用一个简单的观察协议，因为我们只有一个需要观察的事件—当我们的UserModelController被更新时:
+```swift
+protocol UserModelControllerObserver: AnyObject {
+    func userModelControllerDidUpdate(_ controller: UserModelController)
+}
+
+extension UserModelController {
+    func addObserver(_ observer: UserModelControllerObserver) {
+        // See &quot;Observers in Swift&quot; for a full implementation
+        ...
+    }
+}
+</code></pre>
+<p>然后，当我们更新我们的私有用户值时，我们只需通知所有的观察者(例如，通过迭代它们并从我们的UserModelControllerObserver协议调用上面的观察方法):</p>
+<pre><code class="language-swift">class UserModelController {
+    private var user: User { didSet { notifyObservers() } }
+}
+</code></pre>
+<p>最后，让我们看看所有的东西是如何在调用站点上组合在一起的。对于希望以任何方式使用用户数据的视图控制器，我们现在注入我们的UserModelController，而不是用户值-并使用我们上面定义的api来渲染我们的模型控制器给我们的数据，像这样:</p>
+<pre><code class="language-swift">class HomeViewController: UIViewController {
+    private let userController: UserModelController
+    private lazy var nameLabel = UILabel()
+
+    init(userController: UserModelController) {
+        self.userController = userController
+        super.init(nibName: nil, bundle: nil)
+        userController.addObserver(self)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        render()
+    }
+
+    private func render() {
+        nameLabel.text = userController.displayName
+    }
+}
+
+extension HomeViewController: UserModelControllerObserver {
+    func userModelControllerDidUpdate(_ controller: UserModelController) {
+        render()
+    }
+}
+</code></pre>
+<p>我们现在可以为所有其他依赖于用户数据的视图控制器做同样的事情，使我们能够为所有它们使用完全相同的模型逻辑👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>代码封装在很多方面都是关于给每种类型一个非常独特和明确定义的责任区域，并且不向外界泄露任何实现细节。对于需要大量逻辑关联才能工作的共享模型来说, 模型控制器是实现这一目标的好工具。</p>
+<p>当然，Swift中还有很多其他方法可以解决同样的问题(这是我最喜欢编程的地方之一)。我们之前探讨过的另一种方法(在“Swift中处理可变模型”中)是使用处理程序，这是将值类型转换为可观察引用类型的一个很好的选择-当不需要那么多额外的逻辑时。不是所有的东西都应该是控制器，但是当一个对象实际上负责控制一个实体时——这通常是有意义的。</p>
+<p><a href="https://www.swiftbysundell.com/articles/model-controllers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4g5XtbTAR/" class="tag">
+                    design pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/trimming-long-argument-lists-in-swift/">
+                  <h3 class="post-title">
+                    Trimming long argument lists in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

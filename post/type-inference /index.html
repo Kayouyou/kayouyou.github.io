@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Type inference | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift是一种静态类型语言，这意味着我们声明的每个属性、常量和变量的类型都需要在编译时指定。然而，这通常不需要手动完成，相反，编译器能够自己计算出范围广泛的类型信息-这要归功于Swift支持类型推断。
+例如，这里我们声明了一些常量，但没有..." />
+    <meta name="keywords" content="type system" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Type inference</h2>
+            <div class="post-date">2020-07-08</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift是一种静态类型语言，这意味着我们声明的每个属性、常量和变量的类型都需要在编译时指定。然而，这通常不需要手动完成，相反，编译器能够自己计算出范围广泛的类型信息-这要归功于Swift支持类型推断。</p>
+<p>例如，这里我们声明了一些常量，但没有指定任何类型，因为编译器能够根据被赋值的值推断出这些信息:</p>
+<pre><code class="language-swift">let number = 42
+let string = &quot;Hello, world!&quot;
+let array = [1, 1, 2, 3, 5, 8]
+let dictionary = [&quot;key&quot;: &quot;value&quot;]
+</code></pre>
+<p>为了便于比较，如果我们手工指定每个常量的类型，上面的赋值将会是这样的:</p>
+<pre><code class="language-swift">let number: Int = 42
+let string: String = &quot;Hello, world!&quot;
+let array: [Int] = [1, 1, 2, 3, 5, 8]
+let dictionary: [String: String] = [&quot;key&quot;: &quot;value&quot;]
+</code></pre>
+<p>因此，类型推断在使Swift语法尽可能轻量级方面扮演了重要角色，不仅在变量声明和其他类型的赋值时如此，在许多其他类型的情况下也是如此。</p>
+<p>例如，这里我们定义了一个描述各种联系人的枚举，以及一个函数，它允许我们加载属于某一种联系人值的数组:</p>
+<pre><code class="language-swift">enum ContactKind {
+    case family
+    case friend
+    case coworker
+    case acquaintance
+}
+
+func loadContacts(ofKind kind: ContactKind) -&gt; [Contact] {
+    ...
+}
+</code></pre>
+<p>虽然我们通常通过同时指定类型和用例(例如ContactKind.friend)来引用上述enum的成员，但由于有了类型推断，在引用已知类型的上下文中的case时，可以完全忽略类型的名称-就像调用上面的函数:</p>
+<pre><code class="language-swift">let friends = loadContacts(ofKind: .friend)
+</code></pre>
+<p>真正酷的是上面的“点语法”不仅仅适用于枚举情况，它也适用于引用任何静态属性或方法。例如，这里我们用一个静态属性扩展了Foundation的URL类型，创建了一个指向这个网站的URL:</p>
+<pre><code class="language-swift">extension URL {
+    static var swiftBySundell: URL {
+        URL(string: &quot;https://swiftbysundell.com&quot;)!
+    }
+}
+</code></pre>
+<p>现在，当调用任何接受URL参数的方法时 (例如新的组合驱动的URLSession API)，我们可以像这样简单地引用上面的属性:</p>
+<pre><code class="language-swift">let publisher = URLSession.shared.dataTaskPublisher(for: .swiftBySundell)
+</code></pre>
+<p>真的整洁!然而，尽管类型推断是一个非常有用的特性，但在某些情况下，我们可能需要指定一些额外的类型信息来实现我们想要的结果。</p>
+<p>这种情况的一个非常常见的例子是在处理数字类型时。当一个数值字面值被赋值给一个变量或常量时，默认情况下它将被推断为Int类型-这是完全合理的默认值-但如果我们希望使用另一种数字类型，如Double或Float，我们需要手动指定这些类型。以下是一些方法:</p>
+<pre><code class="language-swift">let int = 42
+let double = 42 as Double
+let float: Float = 42
+let cgFloat = CGFloat(42)
+</code></pre>
+<p>另一种需要向编译器提供额外类型信息的情况是调用具有泛型返回类型的函数。</p>
+<p>例如，在这里，我们用一个通用方法扩展了内置的Bundle类型，让我们可以轻松地加载和解码绑定到应用中的任何JSON文件:</p>
+<pre><code class="language-swift">extension Bundle {
+    struct MissingFileError: Error {
+        var name: String
+    }
+
+    func decodeJSONFile&lt;T: Decodable&gt;(named name: String) throws -&gt; T {
+        guard let url = self.url(forResource: name, withExtension: &quot;json&quot;) else {
+            throw MissingFileError(name: name)
+        }
+
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        return try decoder.decode(T.self, from: data)
+    }
+}
+</code></pre>
+<p>现在，假设在我们的应用程序开发过程中，直到我们的真实服务器和网络代码启动并运行， 我们希望从捆绑的JSON文件中解码以下用户类型的实例:</p>
+<pre><code class="language-swift">struct User: Codable {
+    var name: String
+    var email: String
+    var lastLoginDate: Date
+}
+</code></pre>
+<p>然而，如果我们像这样调用decodeJSONFile方法，我们将以编译器错误结束:</p>
+<pre><code class="language-swift">// Error: Generic parameter 'T' could not be inferred
+let user = try Bundle.main.decodeJSONFile(named: &quot;user-mock&quot;)
+
+</code></pre>
+<p>这是因为我们将解码任何给定JSON文件的确切类型取决于泛型类型T在每个调用站点实际引用的是什么-因为我们没有给编译器任何上述信息，我们将以一个错误结束。在这种情况下，编译器根本无法知道我们希望解码一个用户实例。</p>
+<p>为了解决这个问题，我们可以使用与上面相同的技术来指定不同类型的数值，或者给我们的user常量一个明确的类型，或者使用as关键字——像这样:</p>
+<pre><code class="language-swift">let user: User = try Bundle.main.decodeJSONFile(named: &quot;user-mock&quot;)
+let user = try Bundle.main.decodeJSONFile(named: &quot;user-mock&quot;) as User
+</code></pre>
+<p>但是，如果我们要在已知所需返回类型的上下文中调用decodeJSONFile方法， 然后，我们可以再次让Swift的类型推断机制为我们找出信息 - 就像在这个例子中，我们定义了一个名为MockData的包装结构，它有一个用户类型的属性，我们将结果赋给它:</p>
+<pre><code class="language-swift">struct MockData {
+    var user: User
+}
+
+let mockData = try MockData(
+    user: Bundle.main.decodeJSONFile(named: &quot;user-mock&quot;)
+)
+</code></pre>
+<p>以上就是对Swift类型推断功能的快速介绍。同样需要指出的是，类型推断确实有与之相关的计算成本，谢天谢地，这完全发生在编译时(所以它不会影响我们的应用程序的运行性能)，但在处理更复杂的表达式时，记住这一点还是很有好处的。然而，如果我们遇到需要编译器很长时间才能计算出来的表达式，那么我们总是可以使用上述技术之一来手动指定这些类型。</p>
+<p><a href="https://www.swiftbysundell.com/basics/type-inference/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/JQK7bx_qF/" class="tag">
+                    type system
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-an-appdelegate-with-the-new-swiftui-based-app-lifecycle/">
+                  <h3 class="post-title">
+                    Using an AppDelegate with the new SwiftUI-based app lifecycle
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

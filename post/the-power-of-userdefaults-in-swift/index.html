@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The power of UserDefaults in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="从iOS SDK的第一个版本开始，UserDefaults API看起来既简单又有一定的局限性。虽然它提供了一种易于使用的保存和存储持久值的方法，但它在单一plist文件中存储这些值的方式可能不适合更大的数据集-导致许多开发人员放弃了它，转..." />
+    <meta name="keywords" content="userdefaults,foundation" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The power of UserDefaults in Swift</h2>
+            <div class="post-date">2019-03-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>从iOS SDK的第一个版本开始，UserDefaults API看起来既简单又有一定的局限性。虽然它提供了一种易于使用的保存和存储持久值的方法，但它在单一plist文件中存储这些值的方式可能不适合更大的数据集-导致许多开发人员放弃了它，转而支持功能更全面的数据库，或某种形式的自定义解决方案。</p>
+<p>然而，表象可能具有欺骗性，事实证明，UserDefaults的强大功能远远超出了简单地存储和加载基本值类型。本周，让我们来看看这些力量来自于什么，以及我们如何在我们构建的应用程序中适当地使用它们。</p>
+<h2 id="database-or-not">Database or not?</h2>
+<p>通常，UserDefaults被定位为数据库解决方案的替代方案——如CoreData或SQLite。虽然用户defaults API确实能够充当数据库，但它的主要用例更多地围绕与用户首选项相关的值 - 当仔细看它的各种功能以及它如何与系统集成时，它看起来就不像一个有限的数据库了- 更像是一个专注的API，能很好地处理核心的事情。</p>
+<p>让我们从看一个例子开始，在这个例子中，我们正在构建一个ThemeController，它负责跟踪当前的主题，我们的应用程序将使用这个主题来渲染它的UI。因为这是用户可以自己选择的内容，所以将其作为用户首选项，并将其值存储在UserDefaults中是很有意义的。</p>
+<p>为此，我们将在ThemeController中注入一个实例(它将默认为标准的默认值集)，并使用它来保存和加载主题值——像这样</p>
+<pre><code class="language-swift">enum Theme: String {
+    case light
+    case dark
+    case black
+}
+
+class ThemeController {
+    private(set) lazy var currentTheme = loadTheme()
+    private let defaults: UserDefaults
+    private let defaultsKey = &quot;theme&quot;
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func changeTheme(to theme: Theme) {
+        currentTheme = theme
+        defaults.setValue(theme.rawValue, forKey: defaultsKey)
+    }
+
+    private func loadTheme() -&gt; Theme {
+        let rawValue = defaults.string(forKey: defaultsKey)
+        return rawValue.flatMap(Theme.init) ?? .light
+    }
+}
+</code></pre>
+<p>上面的实现可能看起来很简单，但是我们为这种设置使用用户默认值的方式将很快为我们的用户和我们作为开发人员解锁很多有趣的特性。</p>
+<h2 id="sharing-data-within-an-app-group">Sharing data within an app group</h2>
+<p>使用用户默认值允许我们做的第一件事，是很容易在多个应用程序和应用程序扩展之间共享数据。例如，假设我们正在发送两个应用程序(如果我们正在构建一个拼车服务，那可能是一个应用程序的司机和一个应用程序的客户)，或者我们正在构建的单个应用程序也包括一个扩展，呈现某种形式的UI。</p>
+<p>为了让我们的用户只需要选择他们喜欢的主题一次——然后让这个值在整个UI中传播——我们可以设置一个默认套件。例如，如果我们构建的两个应用都在同一个应用组中，那么我们可以创建一个UserDefaults实例，它的套件名称与我们应用组的标识符匹配:</p>
+<pre><code class="language-swift">extension UserDefaults {
+    static var shared: UserDefaults {
+        return UserDefaults(suiteName: &quot;group.johnsundell.app&quot;)!
+    }
+}
+</code></pre>
+<p>另一个选项是简单地将我们的应用组套件添加到标准默认值中——创建一个合并的UserDefaults实例，像这样:</p>
+<pre><code class="language-swift">extension UserDefaults {
+    static var shared: UserDefaults {
+        let combined = UserDefaults.standard
+        combined.addSuite(named: &quot;group.johnsundell.app&quot;)
+        return combined
+    }
+}
+</code></pre>
+<p>以上两个选项的不同之处在于，当UserDefaults实例基于标准默认值集时(就像我们在上一个例子中所做的那样)，标准默认值中的值总是会覆盖共享套件中的值。这很有用(如果我们想在每个应用上启用本地覆盖)，但也会使传播共享设置变得更加困难。这很有用(如果我们想在每个应用上启用本地覆盖)，但也会使传播共享设置变得更加困难。</p>
+<p>不管我们将采用哪种方法，我们所要做的就是使用新的基于套件的UserDefaults实例，将ThemeController初始化器中的.standard替换为.shared:</p>
+<pre><code class="language-swift">class ThemeController {
+    ...
+
+    init(defaults: UserDefaults = .shared) {
+        self.defaults = defaults
+    }
+
+    ...
+}
+</code></pre>
+<p>UserDefaults的美妙之处在于，它仍然为我们提供了100%的同步API，即使更改在后台异步传播到多个应用程序或扩展。这使得我们的本地代码可以在更新一个值后立即继续执行，而不必在等待所有实例更新时牺牲性能。</p>
+<p>以这种方式存储的值会一直保存，直到app组内的所有应用从用户的设备中删除为止。</p>
+<h2 id="overriding-values-at-launch">Overriding values at launch</h2>
+<p>就像我们在“Swift中的启动参数”中看到的那样，让应用程序在启动时接受参数是一种很好的方式，可以让它为手动和自动测试定制 - UserDefaults自动解析传入应用程序的任何参数，并使用这些值作为本地覆盖。</p>
+<p>这使得我们可以使用Xcode的scheme编辑器(Product &gt; scheme &gt; Edit scheme…)通过添加-theme参数 - 后面跟着一个主题的名字- 来轻松定制我们的应用程序将使用的主题 ——但它也能让我们在UI测试中做同样的事情。</p>
+<p>例如，假设我们想要编写一个测试来验证我们的设置屏幕的主题选择器是否正确地显示所选的当前主题。要以一种非常可预测的方式做到这一点，我们所要做的就是将一个主题作为启动参数传递给XCUIApplication，然后验证我们传递的主题确实在UI中被标记为选中-通过使用可访问性标识符，像这样:</p>
+<pre><code class="language-swift">class ThemingUITests: XCTestCase {
+    func testThemePickerShowingCurrentTheme() {
+        let app = XCUIApplication()
+        app.launchArguments = [&quot;-theme&quot;, &quot;dark&quot;]
+        app.launch()
+
+        // Querying our theme picker table view by its
+        // accessibility identifier.
+        let picker = app.tables[&quot;Theme.Picker&quot;]
+
+        // Here we give each cell a different accessibility
+        // identifier both depending on what theme it represents,
+        // and also whether or not it's selected.
+        let cells = (
+            light: picker.cells[&quot;Theme.Light&quot;],
+            dark: picker.cells[&quot;Theme.Dark.Selected&quot;],
+            black: picker.cells[&quot;Theme.Black&quot;]
+        )
+
+        XCTAssertTrue(cells.light.exists)
+        XCTAssertTrue(cells.dark.exists)
+        XCTAssertTrue(cells.black.exists)
+    }
+}
+</code></pre>
+<p>当编写测试和调试时，能够轻松地配置应用程序的各个方面，这真的是一个巨大的生产力助推器—— 启动参数可以是实现这一点的一个很好的方式，特别是考虑到UserDefaults如何自动为我们做所有的解析和覆盖。用这种方式覆盖的值也不会影响之前持久化的值，这样就很容易返回到应用程序之前的状态——只需删除启动参数。</p>
+<h2 id="mock-free-tests">Mock-free tests</h2>
+<p>继续测试的话题，使用自定义UserDefaults套件的另一种有用方法是能够轻松地对代码进行单元测试，从而持久化数据，而不会导致不稳定或不可预测的结果。</p>
+<p>假设我们想要编写一个测试，验证在ThemeController上调用changeTheme方法是否正确地更新了当前主题。最初的想法可能是简单地创建控制器的一个实例，调用有问题的方法，然后验证结果——像这样:</p>
+<pre><code class="language-swift">class ThemeControllerTests: XCTestCase {
+    func testChangingTheme() {
+        let controller = ThemeController()
+        controller.changeTheme(to: .dark)
+        XCTAssertEqual(controller.currentTheme, .dark)
+    }
+}
+</code></pre>
+<p>上述测试工作正常，并将成功通过。然而，在第一次运行之后，它实际上并没有测试任何东西。因为我们持久化了选定的主题，所以即使我们删除了对changeTheme的调用，我们的测试也会继续通过——这不是很好。</p>
+<p>就像我们在“使Swift测试更容易调试”中看到的那样，为了编写更容易维护的更健壮的测试，验证我们的初始状态是非常重要的。让我们这样做，在创建ThemeController实例之后，添加第二个assert来验证初始主题是否符合我们的预期:</p>
+<pre><code class="language-swift">class ThemeControllerTests: XCTestCase {
+    func testChangingTheme() {
+        let controller = ThemeController()
+        XCTAssertEqual(controller.currentTheme, .light)
+
+        controller.changeTheme(to: .dark)
+        XCTAssertEqual(controller.currentTheme, .dark)
+    }
+}
+</code></pre>
+<p>有了附加的断言，我们的测试现在将开始失败——这是一件好事，因为它将促使我们进行改进。我们需要做的是确保在测试运行之前清除所有持久化的主题值，乍一看，这似乎需要某种形式的mock，但是，由于我们使用了用户默认值，我们将能够在解决持久性问题的同时保持测试的非模拟性。</p>
+<p>要做到这一点，我们首先要在UserDefaults上添加一个扩展，这将使我们能够轻松地创建一个实例，它的所有持久化值都已完全清除。 我们将使用之前用于在不同应用程序之间共享值的基于套件名称的初始化器，但不是使用应用程序组的标识符，而是基于实例将要使用的文件和测试函数的名称。最后，我们在我们的默认对象上调用removePersistentDomain来清除它的持久性—像这样:</p>
+<pre><code class="language-swift">extension UserDefaults {
+    static func makeClearedInstance(
+        for functionName: StaticString = #function,
+        inFile fileName: StaticString = #file
+    ) -&gt; UserDefaults {
+        let className = &quot;\(fileName)&quot;.split(separator: &quot;.&quot;)[0]
+        let testName = &quot;\(functionName)&quot;.split(separator: &quot;(&quot;)[0]
+        let suiteName = &quot;com.johnsundell.test.\(className).\(testName)&quot;
+
+        let defaults = self.init(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        return defaults
+    }
+}
+</code></pre>
+<p>在上面，我们通过使用#function和#file自动收集调用函数的名称和函数定义的文件名称。然后，我们将从文件名中去掉.swift扩展名，从函数名中去掉()。</p>
+<p>有了上面的代码，我们现在可以更新我们的测试以再次通过，但这一次是通过实际验证我们的功能，而不是依赖于任何先前持久的值:</p>
+<pre><code class="language-swift">class ThemeControllerTests: XCTestCase {
+    func testChangingTheme() {
+        let controller = ThemeController(defaults: .makeClearedInstance())
+        XCTAssertEqual(controller.currentTheme, .light)
+
+        controller.changeTheme(to: .dark)
+        XCTAssertEqual(controller.currentTheme, .dark)
+    }
+}
+</code></pre>
+<p>在这种情况下，不模仿用户默认值的好处是，我们不必为了模仿而引入任何额外的类型或协议，而是使用我们的实际产品代码将与之交互的真实对象 -给了我们一个在现实生活中也可以执行的测试。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>UserDefaults比它最初看起来要强大得多，虽然它不应该被认为是一个完整的数据库解决方案，将它用于简单的设置值——如主题和其他首选项——可以解锁一些不同的特性，这些特性在编写测试和调试时都被证明是非常有用的。</p>
+<p>所以问题是，该在哪里划清界限?什么时候用例“超出”用户默认值，对于哪种类型的数据，使用合适的数据库是更合适的选择? 对我来说，这一切都取决于所讨论的数据的预期大小。 它是简单的Bool、Int或String吗?或者我们讨论的是一个对象数组，它可以根据用户的不同轻松增长几个数量级? UserDefaults是很棒的，只要数据集的大小可以保持有限，但当这不再是真的- 是时候换个解决方案了。</p>
+<p><a href="https://www.swiftbysundell.com/articles/the-power-of-userdefaults-in-swift/">原文链接:</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/OMzhOR1No/" class="tag">
+                    userdefaults
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWHkY3onB/" class="tag">
+                    foundation
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pattern-matching-in-swift/">
+                  <h3 class="post-title">
+                    Pattern matching in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

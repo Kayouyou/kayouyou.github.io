@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A deep summary of Codable | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Codable
+
+简介：“将程序内部的数据结构序列化为一些可交换的数据格式，以及反过来将通用的数据格式反序列化为内部使用的数据结构，这在编程中是一项非常常见的任务。Swift 将这些操作称为编码 (encoding) 和解码 (decodi..." />
+    <meta name="keywords" content="a deep summary,summary,codable" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A deep summary of Codable</h2>
+            <div class="post-date">2021-04-22</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="codable">Codable</h2>
+<blockquote>
+<p>简介：“将程序内部的数据结构序列化为一些可交换的数据格式，以及反过来将通用的数据格式反序列化为内部使用的数据结构，这在编程中是一项非常常见的任务。Swift 将这些操作称为编码 (encoding) 和解码 (decoding)。”</p>
+</blockquote>
+<p>一个类型通过声明自己遵守 Encodable 和/或 Decodable 协议，来表明可以被序列化和/或反序列化。<em><strong>这两个协议都只约束了一个方法，其中：Encodable 约束了 encode(to:)，它定义了一个类型如何对自身进行编码；而 Decodable 则约束了一个初始化方法，用来从序列化的数据中创建实例。</strong></em></p>
+<pre><code class="language-swift">/// 一个类型可以将自身编码为某种外部表示形式。
+public protocol Encodable {
+    /// 将值编码到给定的 encoder 中。
+    public func encode(to encoder: Encoder) throws
+}
+/// 一个类型可以从某种外部表示形式中解码得到自身。
+public protocol Decodable {
+    /// 从给定的 decoder 中解码来创建新的实例。
+    public init(from decoder: Decoder) throws
+}
+
+///因为大多数实现了其中一个协议的类型，也会实现另一个，所以标准库中还提供了 Codable 类型别名，它是这两个协议组合后的简写
+public typealias Codable = Decodable &amp; Encodable
+</code></pre>
+<p>一旦有了一个 Codable 类型的值，你就可以创建一个编码器 (Encoder)，并让它将这个值转换成像是 JSON 这样的目标格式。反过来，一个解码器 (Decoder)可以将序列化后的数据转回成原始类型的一个实例。表面上看，对应的 Encoder 和 Decoder 协议并没有比 Encodable 和 Decodable 复杂太多。它们的核心任务是管理一个容器的层次结构，这些容器用来存储序列化之后的数据。不过，除非要创建自己的编解码器，否则你很少会直接和 Encoder 及 Decoder 协议打交道。但是，当你要自定义一个类型的编码过程时，了解这个层次结构以及结构中的三种不同容器还是很有必要的。</p>
+<h2 id="编码过程">编码过程</h2>
+<p>当你开始编码过程时，编码器会调用正在被编码的值上的 encode(to: Encoder) 方法，并将自身作为参数传递给它。接下来，如何用编码器进行正确的编码，就是值自身的责任了</p>
+<p>我们将 Placemark 数组传递到 JSON 编码器中：</p>
+<pre><code class="language-swift">let jsonData = try encoder.encode(places)
+</code></pre>
+<p>编码器 (或者说是实际负责干活的 _JSONEncoder) 将会调用 places.encode(to: self)。那么，数组又是如何将自己编码为编码器可以理解的格式的呢？</p>
+<h3 id="容器">容器</h3>
+<h4 id="encoder-协议">Encoder 协议</h4>
+<pre><code class="language-swift">/// 一个可以把值编码成某种外部表现形式的类型。
+public protocol Encoder {
+    /// 编码到当前位置的编码键 (coding key) 路径
+    var codingPath: [CodingKey] { get }
+    /// 用户为编码设置的上下文信息。
+    var userInfo: [CodingUserInfoKey : Any] { get }
+    /// 返回一个容器，用于存放多个由给定键索引的值。
+    func container&lt;Key: CodingKey&gt;(keyedBy type: Key.Type) 
+    -&gt; KeyedEncodingContainer&lt;Key&gt;
+    /// 返回一个容器，用于存放多个没有键索引的值。
+    func unkeyedContainer() -&gt; UnkeyedEncodingContainer
+    /// 返回一个适合存放单一值的编码容器。
+    func singleValueContainer() -&gt; SingleValueEncodingContainer
+}
+</code></pre>
+<p>现在先忽略 codingPath 和 userInfo，显然 Encoder 的核心功能就是提供一个编码容器 (encoding container)。一个容器就是编码器内部存储的一种沙盒视图。通过为每个要编码的值创建一个新的容器，编码器能够确保每个值都不会覆盖彼此的数据。</p>
+<p>容器有三种类型：</p>
+<ul>
+<li>
+<p>键容器 (Keyed Container) 用于编码键值对。可以把键容器想像为一个特殊的字典，这是到目前为止，应用最普遍的容器。<br>
+<em>键容器内部使用的键是强类型的，这为我们提供了类型安全和自动补全的特性</em>。编码器最终会在写入目标格式 (比如 JSON) 时，将键转换为字符串 (或者数字)，不过这对开发者来说是隐藏的。修改编码后的键名是最简单的一种自定义编码方式的操作，我们将会在下面看到一些相关的例子。</p>
+</li>
+<li>
+<p>无键容器 (Unkeyed Container) 用于编码一系列值，但不需要对应的键，可以将它想像成保存编码结果的数组。因为没有对应的键来确定某个值，所以对无键容器中的值进行解码的时候，<em>需要遵守和编码时同样的顺序</em>。</p>
+</li>
+<li>
+<p>单值容器对单一值进行编码。你可以用它来处理只由<em>单个属性定义的那些类型</em>。例如：Int 这样的原始类型，或以原始类型实现了 RawRepresentable 协议的枚举。</p>
+</li>
+</ul>
+<p>SingleValueEncodingContainer 协议定义：</p>
+<pre><code class="language-swift">/// 支持存储和直接编码无索引单一值的容器。
+public protocol SingleValueEncodingContainer {
+    /// 编码到当前位置的编码键路径。
+    var codingPath: [CodingKey] { get }
+    /// 编码空值。
+    mutating func encodeNil() throws
+    /// 编码原始类型的方法
+    mutating func encode(_ value: Bool) throws
+    mutating func encode(_ value: Int) throws
+    mutating func encode(_ value: Int8) throws
+    mutating func encode(_ value: Int16) throws
+    mutating func encode(_ value: Int32) throws
+    mutating func encode(_ value: Int64) throws
+    mutating func encode(_ value: UInt) throws
+    mutating func encode(_ value: UInt8) throws
+    mutating func encode(_ value: UInt16) throws
+    mutating func encode(_ value: UInt32) throws
+    mutating func encode(_ value: UInt64) throws
+    mutating func encode(_ value: Float) throws
+    mutating func encode(_ value: Double) throws
+    mutating func encode(_ value: String) throws
+    mutating func encode&lt;T: Encodable&gt;(_ value: T) throws
+}
+</code></pre>
+<p>可以看到，这个协议主要对 Bool，String，各种整数以及浮点数声明了一系列 encode(_😃 重载方法。另外，还有一个专门对 null 值进行编码的方法。所有的编码器和解码器都必须支持这些原始类型，而且所有的 Encodable 类型从根本上来说，也都必须归结到这些类型。Swift 进化提案中在介绍 Codable &gt; 系统的时候说道：</p>
+<blockquote>
+<p>这些重载为编码提供了静态强类型的保证，这可以避免意外地编码不可用的类型。同时它们也为用户提供了一份可以依靠的常用原始类型列表，所有的编码器和解码器都支持对这些类型的编解码操作。</p>
+</blockquote>
+<p><em>其他不属于原始类型的值，最后都会落到泛型的 encode&lt;T: Encodable&gt; 重载中。在这个方法里，容器最终会调用参数的 encode(to: Encoder) 方法，这使得整个过程会下降一个层级并重新开始，最终到达只剩下原始类型的情况</em>。不过容器可以对不同的类型有不同的特殊要求。 例如，在写作本书的时候，_JSONEncoder 在编码 Data 时会检查编码策略，比如是否编码成 Base64 字符串 (Data 默认的编码行为是把它的每个字节编码到一个无键容器里)。</p>
+<p>UnkeyedEncodingContainer 和 KeyedEncodingContainerProtocol 拥有和 SingleValueEncodingContainer 相同的结构，不过它们具备更多的能力，比如可以创建嵌套的容器。如果你想要为其它数据格式创建编码器或解码器，那么最重要的部分就是实现这些容器。</p>
+<h2 id="值是如何对自己编码的">值是如何对自己编码的</h2>
+<p>我们要编码的顶层类型是 Array<Placemark>。而无键容器是保存数组编码结果的绝佳场所 (因为数组说白了就是一串值的序列)。因此，数组将会向编码器请求一个无键容器。然后，对自身的元素进行迭代，并告诉容器对这些元素一一进行编码。把这个过程用代码表示出来，是这样的：</p>
+<pre><code class="language-swift">extension Array: Encodable where Element: Encodable {
+    public func encode(to encoder: Encoder) throws {
+    var container = encoder.unkeyedContainer()
+        for element in self {
+            //对于非原始类型的值，容器将继续调用这个值的 encode(to:) 方法。
+            try container.encode(element)
+        }
+    }
+}
+</code></pre>
+<h2 id="编译器背后合成的代码">编译器背后合成的代码</h2>
+<h3 id="coding-keys">Coding Keys</h3>
+<p>首先，在 Placemark里，编译器会生成一个叫做 CodingKeys 的私有枚举类型：</p>
+<pre><code class="language-swift">struct Placemark {
+    // ...
+    private enum CodingKeys: CodingKey {
+        case name
+        case coordinate
+    }
+}
+</code></pre>
+<p>这个枚举包含的成员与结构体中的存储属性一一对应。而枚举值即为键容器编码对象时使用的键。和字符串形式的键相比，因为编译器会检查拼写错误，所以这些强类型的键要更加安全和方便。不过，编码器最后为了存储需要，还是必须要能将这些键转为字符串或者整数值。而完成这个转换任务的，就是 CodingKey 协议：</p>
+<pre><code class="language-swift">// 该类型作为编码和解码时使用的键
+public protocol CodingKey {
+    /// 在一个命名集合 (例如：以字符串作为键的字典) 中的字符串值。
+    var stringValue: String { get }
+    /// 在一个整数索引的集合 (一个整数作为键的字典) 中使用的值。
+    var intValue: Int? { get }
+    init?(stringValue: String)
+    init?(intValue: Int)
+}
+</code></pre>
+<p><em>所有键都必须可以用字符串的形式表示</em>，另外，一个键类型也可以提供和整数互相转换的能力。如果使用整数更高效，编码器会选择整数形式的键。但它们也可以完全忽略掉这个特性而坚持使用字符串键，而JSONEncoder 就是这么做的。因此，编译器合成的默认代码也只包含了字符串键</p>
+<h3 id="encodeto-方法">encode(to:) 方法</h3>
+<p>编译器为 Placemark 结构体生成的 encode(to:) 方法：</p>
+<pre><code class="language-swift">struct Placemark: Codable {
+    // ...
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encode(coordinate, forKey: .coordinate)
+    }
+}
+</code></pre>
+<p>和编码 Placemark 数组时的主要区别是，<em>Placemark 会将自己编码到一个键容器中</em>。对于那些拥有多个属性的复合数据类型 (例如结构体和类)，使用键容器是正确的选择 (这里有一个例外，就是 Range，它使用无键容器来编码上下边界)。注意代码中，Placemark 从编码器申请键容器时，是如何通过 CodingKeys.self 指定容器中的键值的。接下来的所有编码命令都必须使用与之相同的类型。</p>
+<p>编码过程的结果，最终是一棵嵌套的容器树。JSON 编码器可以根据树中节点的类型把这个结果转换成对应的目标格式：键容器会变成 JSON 对象 ({ … })，无键容器变成 JSON 数组 ([ … ])，单值容器则按照它们的数据类型，被转换为数字，布尔值，字符串或者 null。</p>
+<h3 id="initfrom-初始化方法">init(from:) 初始化方法</h3>
+<p>当我们调用 try decoder.decode([Placemark].self, from: jsonData) 时，解码器会按照我们传入的类型 (这里是 [Placemark])，使用 Decodable 中定义的初始化方法创建一个该类型的实例。和编码器类似，解码器也管理一棵由解码容器 (decoding containers) 构成的树，树中所包含的容器我们已经很熟悉了，它们还是键容器，无键容器，以及单值容器。</p>
+<p>每个被解码的值会以递归方式向下访问容器的层级，并且使用从容器中解码出来的值初始化对应的属性。如果某个步骤发生了错误 (比如由于类型不匹配或者值不存在)，那么整个过程都会失败，并抛出错误</p>
+<p>编译器为 Placemark 生成的解码初始化方法看上去是这样的</p>
+<pre><code class="language-swift">struct Placemark: Codable {
+    // ...
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        coordinate = try container.decode(Coordinate.self, forKey: .coordinate)
+    }
+}
+</code></pre>
+<h2 id="手动遵守协议">手动遵守协议</h2>
+<p>如果你的类型有特殊要求，可以通过手动实现 Encodable 和 Decodable 协议来进行满足。好的地方在于，自动代码合成不是一件一锤子买卖的事儿，你可以选择想要覆盖的部分，然后依然把剩下的事情交给编译器来做。</p>
+<h3 id="自定义-coding-keys">自定义 Coding Keys</h3>
+<p>控制一个类型如何编码自己最简单的方式，是为它创建自定义的 CodingKeys 枚举 (<em>顺带一提，虽然自动合成的代码也使用枚举实现了 CodingKey 协议，但这个类型实际上也可以不是枚举</em>)。它可以让我们用一种简单的，声明式的方法，改变类型的编码方式。在这个枚举中，我们可以：</p>
+<ul>
+<li>
+<p>在编码后的输出中，用明确指定的字符串值重命名字段。</p>
+</li>
+<li>
+<p>将某个键从枚举中移除，以此跳过与之对应字段。</p>
+</li>
+</ul>
+<p><em>想要设置一个不同的名字，我们需要明确将枚举的底层类型设置为 String</em>。例如，下面的代码会把 name 在 JSON 中映射为 &quot;label&quot;，但保持 coordinate 的名字不变：</p>
+<pre><code class="language-swift">struct Placemark2: Codable {
+    var name: String
+    var coordinate: Coordinate
+    private enum CodingKeys: String, CodingKey {
+        case name = &quot;label&quot;
+        case coordinate
+    }
+    // 编译器合成的 encode 和 decode 方法将使用覆盖后的 CodingKeys。
+}
+/// 跳过name
+struct Placemark3: Codable {
+    var name: String = &quot;(Unknown)&quot;
+    var coordinate: Coordinate
+    private enum CodingKeys: CodingKey {
+        case coordinate
+    }
+}
+</code></pre>
+<blockquote>
+<p>注意我们给 name 属性赋了一个默认值。如果没有这个默认值，为 Decodable 生成的代码将会编译失败，因为编译器会发现在初始化方法中它无法给 name 属性正确赋值。</p>
+</blockquote>
+<h3 id="自定义的-encodeto-和-initfrom-实现">自定义的 encode(to:) 和 init(from:) 实现</h3>
+<p>JSONEncoder 和 JSONDecoder 默认就可以处理可选值。当目标类型中的一个属性是可选值，如果输入数据中对应的值不存在的话，解码器将会正确地跳过这个属性。不过，JSONDecoder 会对输入数据的结构十分挑剔，只要数据和所期待的形式稍有不同，就可能触发解码错误。现在假设服务器的配置是发送一个空的 JSON 对象来表示某个可选值空缺的情况，于是，发送的 JSON 就会变为这样：</p>
+<pre><code class="language-swift">let invalidJSONInput = &quot;&quot;&quot;
+    [
+        {
+        &quot;name&quot; : &quot;Berlin&quot;,
+        &quot;coordinate&quot;: {}
+        }
+    ]
+&quot;&quot;&quot;
+</code></pre>
+<p>当我们尝试解码这个输入时，解码器本来期待 &quot;latitude&quot; 和 &quot;longitude&quot; 字段存在于 coordinate 中，但是由于这两个字段实际并不存在，所以这会触发 .keyNotFound 错误：</p>
+<pre><code class="language-swift">do {
+    let inputData = invalidJSONInput.data(using: .utf8)!
+    let decoder = JSONDecoder()
+    let decoded = try decoder.decode([Placemark4].self, from: inputData)
+} catch {
+    print(error.localizedDescription)
+    // The data couldn’t be read because it is missing.
+}
+</code></pre>
+<p>重载 Decodable 的初始化方法，明确地捕获我们所期待的错误：</p>
+<pre><code class="language-swift">struct Placemark4: Codable {
+    var name: String
+    var coordinate: Coordinate?
+    // encode(to:) 依然由编译器合成
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.name = try container.decode(String.self, forKey: .name)
+        do {
+            self.coordinate = try container.decodeIfPresent(Coordinate.self forKey: .coordinate)
+        } catch DecodingError.keyNotFound {
+            self.coordinate = nil
+        }
+    }
+}
+</code></pre>
+<p>解码器就可以成功地解码这个错误的 JSON 了</p>
+<pre><code class="language-swift">do {
+    let inputData = invalidJSONInput.data(using: .utf8)!
+    let decoder = JSONDecoder()
+    let decoded = try decoder.decode([Placemark4].self, from: inputData)
+    decoded // [Berlin (nil)]
+} catch {
+    print(error.localizedDescription)
+}
+
+</code></pre>
+<p><em>在只有一两个类型需要处理时，这种自定义方式是不错的选择，但是它很难大规模运用</em>。如果一个类型有很多属性的话，就算你只想要自定义其中一个，你也将会需要对每个字段都手写代码。你可以阅读 Dave Lyon <a href="http://davelyon.net/2017/08/16/jsondecoder-in-the-real-world">关于这个话题的文章</a>，Dave 对于这个问题，给出了一种基于协议的泛型解决方案。不过如果你可以控制输入的话，最好还是在问题的源头进行修正 (让服务器返回有效的 JSON)，而不是在之后的阶段再去对奇怪的数据进行处理。</p>
+<h2 id="常见的编码任务">常见的编码任务</h2>
+<h3 id="让其他人的代码满足-codable">让其他人的代码满足 Codable</h3>
+<p>假设我们要把 Coordinate 换成 Core Location 框架中的 CLLocationCoordinate2D，CLLocationCoordinate2D 和 Coordinate 的结构完全一样，所以我们应该尽量避免重复造轮子。</p>
+<p>不过问题是，CLLocationCoordinate2D 并不满足 Codable 协议。所以，编译器现在会 (正确地) 抱怨说它无法为 Placemark5 自动生成实现 Codable 的代码，因为它的 coordinate 属性不再是遵从 Codable 的类型了：</p>
+<pre><code class="language-swift">import CoreLocation
+struct Placemark5: Codable {
+    var name: String
+    var coordinate: CLLocationCoordinate2D
+}
+// 错误：无法自动合成 'Decodable'/'Encodable' 的适配代码，
+// 因为 'CLLocationCoordinate2D' 不遵守相关协议”
+</code></pre>
+<p>就算它定义在其它模块里，我们可以让 CLLocationCoordinate2D 也遵守 Codable 吗？在扩展中给类型添加协议支持会造成一个错误：</p>
+<pre><code class="language-swift">extension CLLocationCoordinate2D: Codable { }
+// 错误: 不能在类型定义的文件之外通过扩展自动合成实现 'Encodable' 的代码。
+</code></pre>
+<p>Swift 只在两种情况下会自动合成协议实现的代码，分别是直接添加在类型定义上的协议，以及定义在同一个文件的类型扩展上的协议。因此，在我们的例子中，只能自己手工添加实现代码。不过即使这个限制不存在，通过扩展让一个不属于我们的类型适配 Codable 也并不是一个好主意。要是 Apple 决定在今后的 SDK 版本中自己来满足协议的话，怎么办？很可能 Apple 的 实现与你自己的实现不兼容。也就是说，用我们自己的实现进行编码的结果，很可能在 Apple 的代码中无法解码，反之也是如此。</p>
+<p>Apple 的工程师 Itai Ferber 写了很多关于 Codable 系统的东西，他给出了这样的建议：</p>
+<blockquote>
+<p>实际上我会更进一步，并且建议在当你想要扩展别人的类型，使其满足 Encodable 或 Decodable 时，你几乎总是应该考虑写一个结构体把它封装起来，除非你有理由能够确信这个类型自己绝对不会去遵循这些协议。</p>
+</blockquote>
+<p>而对于当前的问题，让我们先通过一个略有不同 (但同样安全) 的方案来解决：我们会为 Placemark5 提供我们自己的 Codable 实现，在那里直接对纬度和经度进行编码。这么做可以有效地对编码器和解码器隐藏 CLLocationCoordinate2D 的存在；从它们的角度来看，纬度和经度就好像是直接定义在 Placemark5 里的一样：</p>
+<ul>
+<li>方案一</li>
+</ul>
+<pre><code class="language-swift">extension Placemark5 {
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case latitude = &quot;lat&quot;
+        case longitude = &quot;lon&quot;
+    }
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        // 分别编码纬度和经度
+        try container.encode(coordinate.latitude, forKey: .latitude)
+        try container.encode(coordinate.longitude, forKey: .longitude)
+    }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.name = try container.decode(String.self, forKey: .name)
+        // 从纬度和经度重新构建 CLLocationCoordinate2D
+        self.coordinate = CLLocationCoordinate2D(
+        latitude: try container.decode(Double.self, forKey: .latitude),
+        longitude: try container.decode(Double.self, forKey: .longitude)
+        )
+    }
+}
+</code></pre>
+<ul>
+<li>方案二</li>
+</ul>
+<p>另一种方案是使用嵌套容器来编码经纬度。KeyedDecodingContainer 有一个叫做 nestedContainer(keyedBy:forKey:) 的方法，它可以在 forKey 指定的键上，新建一个嵌套的键容器 (译注：想象一下，原本这个键对应的应该是在原始容器中保存的编码结果)，这个嵌套键容器使用 keyedBy 参数指定的另一套编码键。于是，我们只要再定义一个实现了 CodingKeys 的枚举，用它作为键，在嵌套的键容器中编码纬度和精度就好了 (这里我们只给出了 Encodable 的实现；Decodable 也遵循同样的模式)：</p>
+<pre><code class="language-swift">struct Placemark6: Encodable {
+    var name: String
+    var coordinate: CLLocationCoordinate2D
+    private enum CodingKeys: CodingKey {
+        case name
+        case coordinate
+    }
+    // 嵌套容器的编码键
+    private enum CoordinateCodingKeys: CodingKey {
+        case latitude
+        case longitude
+    }
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        var coordinateContainer = container.nestedContainer(
+        keyedBy: CoordinateCodingKeys.self, forKey: .coordinate)
+        try coordinateContainer.encode(coordinate.latitude, forKey: .latitude)
+        try coordinateContainer.encode(coordinate.longitude, forKey: .longitude)
+    }
+}
+</code></pre>
+<p>这样，我们就在 Placemark 结构体里，有效地重建了 Coordinate 类型的编码方式，而没有向 Codable 系统暴露这个内嵌的类型。当然，无论是直接编码、还是使用嵌套容器，这两种方式生成的 JSON 结果是完全相同的。</p>
+<ul>
+<li>方案三</li>
+</ul>
+<p>可以看到，无论上面哪种情况，我们都要写很多代码。对这个特定的例子，我们推荐一种不同的策略。这次，在 Placemark 里，我们定义一个 Coordinate 类型的私有属性 _coordinate，用它存储位置信息。然后，给用户暴露一个 CLLocationCoordinate2D 类型的计算属性 coordinate。这次，由于 Coordinate 已经实现了 Codable，因此整个 Placemark 类型就自动是一个实现 Codable 的类型了。所以，我们唯一要做的事情，就是在 CodingKeys 枚举中，重命名 _coordinate 对应的键，让它和暴露给用户的属性同名。这样，用户仍旧可以像之前一样使用 coordinate，而 Codable 系统则会完全忽略它，因为它只是一个计算属性：</p>
+<pre><code class="language-swift">struct Placemark7: Codable {
+    var name: String
+    private var _coordinate: Coordinate
+    var coordinate: CLLocationCoordinate2D {
+        get {
+            return CLLocationCoordinate2D(latitude: _coordinate.latitude,
+            longitude: _coordinate.longitude)
+        }
+        set {
+            _coordinate = Coordinate(latitude: newValue.latitude,
+            longitude: newValue.longitude)
+        }
+    }
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case _coordinate = &quot;coordinate&quot;
+    }
+}
+</code></pre>
+<p>这种方式之所以可以良好工作，是因为 CLLocationCoordinate2D 是一个很简单的类型，而且它与我们自定义类型的相互转换也非常容易。</p>
+<h3 id="让类满足-codable">让类满足 Codable</h3>
+<p>对于任意的值类型，我们都可以 (但是不建议) 通过追加的方式让其满足 Codable。不过对于非 final 的类来说，情况就不是这样了。</p>
+<p>作为一般性的原则，Codable 系统也能用在类上，但由于还可能存在子类，事情会因此变得更加复杂。打个比方，如果我们试图让 UIColor 满足 Decodable 的话 (我们这里先暂时忽略 Encodable，因为它和这个讨论无关)，会发生什么呢？下面的例子取自 Jordan Rose 在 Swift 论坛上关于进化方向讨论的一个帖子。</p>
+<p>UIColor 的一个自定义的 Decodable 实现看起来可能是这样的：</p>
+<pre><code class="language-swift">extension UIColor: Decodable {
+    private enum CodingKeys: CodingKey {
+        case red
+        case green
+        case blue
+        case alpha
+    }
+    // 错误：在一个可继承的类里，`Decodable` 约束的 'init(from:)'
+    // 初始化方法只能通过在类定义中的一个`必须的`初始化方法满足。
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let red = try container.decode(CGFloat.self, forKey: .red)
+        let green = try container.decode(CGFloat.self, forKey: .green)
+        let blue = try container.decode(CGFloat.self, forKey: .blue)
+        let alpha = try container.decode(CGFloat.self, forKey: .alpha)
+        self.init(red: red, green: green, blue: blue, alpha: alpha)
+    }
+}
+</code></pre>
+<p>上面的代码无法编译，它有好几个错误，最终它们可以归结到一个不可解决的冲突：<strong>只有必须的初始化方法 (required initializers) 才能满足协议的要求，而这类方法不能添加在扩展里，它们必须直接添加在类定义中</strong>。<br>
+一个必须的初始化方法 (通过 required 关键字标记) 表示所有的子类都必须实现这个初始化方法。定义在协议中的初始化方法必须都是 required 的，和协议的所有要求一样，这能够保证对该初始化方法的调用都能动态地作用在子类上。编译器必须保证类似这样的代码能够正确工作：</p>
+<pre><code class="language-swift">func decodeDynamic(_ colorType: UIColor.Type,
+    from decoder: Decoder) throws -&gt; UIColor {
+    return try colorType.init(from: decoder)
+}
+let color = decodeDynamic(SomeUIColorSubclass.self, from: someDecoder)
+</code></pre>
+<p>要让这个动态派发正确工作，<em>编译器需要在类的派发表中为 Decodable 约束的初始化方法创建一条记录。但这个表是在类定义被编译的时候创建的，它的大小是固定的，不能通过扩展再向其中添加新的记录</em>。这就是为什么 required 初始化方法只能在类定义中存在的原因。</p>
+<p><strong>长话短说，我们不能为一个非 final 的类用扩展的方式事后追加 Codable 特性</strong>。在我们上面提到的帖子中，Jordan Rose 讨论了一系列场景，来说明 Swift 今后如何能让这些代码工作：比如可以允许 required 初始化方法是 final 的 (这样它就不需要在派发表中有一个条目)，比如可以添加运行时的检查，如果子类没有提供 required 初始化方法所调用的指定初始化方法 (designated initializer)，则让程序中断。</p>
+<p>不过即使这样，为不属于你的类型添加 Codable 还是问题重重，我们必须要面对这个事实。上一节说过，<strong>推荐的方式是写一个结构体来封装 UIColor，并且对这个结构体进行编解码</strong>。</p>
+<p>我们先来写一个小扩展，让我们可以更容易地从 UIColor 值中提取红、绿、蓝和透明度的值。因为 Objective-C 不支持用多元组作为返回类型，所以已有的 getRed(_:green:blue:alpha:) 方法需要使用指针来将结果传回给调用者。我们在 Swift 中可以做得更好：</p>
+<pre><code class="language-swift">extension UIColor {
+    var rgba: (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat)? {
+        var red: CGFloat = 0.0
+        var green: CGFloat = 0.0
+        var blue: CGFloat = 0.0
+        var alpha: CGFloat = 0.0
+        if getRed(&amp;red, green: &amp;green, blue: &amp;blue, alpha: &amp;alpha) {
+            return (red: red, green: green, blue: blue, alpha: alpha)
+        } else {
+            return nil
+        }
+    }
+}
+</code></pre>
+<p>我们会在 encode(to:) 的实现里用到 rgba 属性。注意 rgba 是一个可选的多元组，这是因为并不是所有的 UIColor 实例都能被表示为 RGBA 的形式。如果有人想要编码一个不能转换为 RGBA 的颜色 (比如，一个从图案图片创建的颜色)，我们会抛出一个编码错误。</p>
+<p>下面是 UIColor.CodableWrapper 结构体的完整实现 (我们将这个结构体放在 UIColor 的命名空间中，这样它们之间的关系可以更加明确)：</p>
+<pre><code class="language-swift">extension UIColor {
+    struct CodableWrapper: Codable {
+        var value: UIColor
+        init(_ value: UIColor) {
+            self.value = value
+        }
+        enum CodingKeys: CodingKey {
+            case red
+            case green
+            case blue
+            case alpha
+        }
+        func encode(to encoder: Encoder) throws {
+            // 如果颜色不能转为 RGBA，则抛出错误
+            guard let (red, green, blue, alpha) = value.rgba else {
+                let errorContext = EncodingError.Context(
+                codingPath: encoder.codingPath,
+                debugDescription:
+                &quot;Unsupported color format: \(value)&quot;
+                )
+                throw EncodingError.invalidValue(value, errorContext)
+            }
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(red, forKey: .red)
+            try container.encode(green, forKey: .green)
+            try container.encode(blue, forKey: .blue)
+            try container.encode(alpha, forKey: .alpha)
+        }
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let red = try container.decode(CGFloat.self, forKey: .red)
+            let green = try container.decode(CGFloat.self, forKey: .green)
+            let blue = try container.decode(CGFloat.self, forKey: .blue)
+            let alpha = try container.decode(CGFloat.self, forKey: .alpha)
+            self.value = UIColor(red: red, green: green, blue: blue, alpha: alpha)
+        }
+    }
+}
+</code></pre>
+<p>封装结构体的方式最大的缺点在于，你需要手动在编码前和解码后将类型在 UIColor 和封装类型之间进行转换。比如你想要编码一个 UIColor 的数组：</p>
+<pre><code class="language-swift">let colors: [UIColor] = [
+    .red,
+    .white,
+    .init(displayP3Red: 0.5, green: 0.4, blue: 1.0, alpha: 0.8),
+    .init(hue: 0.6, saturation: 1.0, brightness: 0.8, alpha: 0.9),
+]
+</code></pre>
+<p>在将它传递给编码器之前，你需要先把数组中的元素映射为 UIColor.CodableWrapper：</p>
+<pre><code class="language-swift">let codableColors = colors.map(UIColor.CodableWrapper.init)
+</code></pre>
+<p>不光如此，现在，编译器也无法为包含 UIColor 属性的类型自动合成 Codable 实现了。下面这个定义就会产生错误，因为 UIColor 不是一个遵从 Codable 的类型：</p>
+<pre><code class="language-swift">// 错误：不能自动合成 `Encodable` 和 `Decodable` 的实现
+struct ColoredRect: Codable {
+    var rect: CGRect
+    var color: UIColor
+}
+</code></pre>
+<p>如何才能用最少的代码修复这个问题呢？和上一节一样，我们可以给 ColorRect 添加一个 UIColor.CodableWrapper 类型的私有属性 _color，用来它作为颜色值的存储。然后，再添加一个 UIColor 类型的计算属性 color，让它访问 _color 并返回其中的颜色值。另外，我们还需要添加一个接受 UIColor 为参数初始化方法。最后，我们还需要提供一个自定义的编码键枚举，把编码颜色值的键名从默认的 &quot;_color&quot; 改为 &quot;color&quot; (当然，这一步是可选的)：</p>
+<pre><code class="language-swift">struct ColoredRect: Codable {
+    var rect: CGRect
+    // 存储颜色
+    private var _color: UIColor.CodableWrapper
+    var color: UIColor {
+        get { return _color.value }
+        set { _color.value = newValue }
+    }
+    init(rect: CGRect, color: UIColor) {
+        self.rect = rect
+        self._color = UIColor.CodableWrapper(color)
+    }
+    private enum CodingKeys: String, CodingKey {
+        case rect
+        case _color = &quot;color&quot;
+    }
+}
+</code></pre>
+<p>现在，编码一个 ColorRect 数组得到的 JSON 结果就是这样的：</p>
+<pre><code class="language-swift">let rects = [ColoredRect(rect: CGRect(x: 10, y: 20, width: 100, height: 200),
+color: .yellow)]
+do {
+    let encoder = JSONEncoder()
+    let jsonData = try encoder.encode(rects)
+    let jsonString = String(decoding: jsonData, as: UTF8.self)
+    // [{&quot;color&quot;:{&quot;red&quot;:1,&quot;alpha&quot;:1,&quot;blue&quot;:0,&quot;green&quot;:1},&quot;rect&quot;:[[10,20],[100,200]]}]
+} catch {
+    print(error.localizedDescription)
+}
+</code></pre>
+<h3 id="让枚举满足-codable">让枚举满足 Codable</h3>
+<p>编译器也可以为实现了 RawRepresentable 协议的枚举自动合成实现 Codable 的代码，只要枚举的 RawValue 类型是这些原生就支持 Codable 的类型即可：Bool，String，Float，Double 以及各种形式的整数。而对于其它情况，例如带有关联值的枚举，你就只能手动添加 Codable 实现了。</p>
+<p>让我们给下面这个 Either 枚举添加 Codable 的支持。Either 是一个非常常用的表达二选一概念的类型，它表示的值既可以是泛型参数 A 的对象，也可以是泛型参数 B 的对象：</p>
+<pre><code class="language-swift">enum Either&lt;A, B&gt; {
+    case left(A)
+    case right(B)
+}
+</code></pre>
+<p>只有在泛型参数 A 和 B 都支持 Codable 时，我们才能给 Either 添加一个合理的 Codable 实现。如果没有这个约束，我们就不知道应该如何编码或解码 […]</p>
+<pre><code class="language-swift">extension Either: Codable where A: Codable, B: Codable {
+    private enum CodingKeys: CodingKey {
+        case left
+        case right
+    }
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+            case .left(let value):
+            try container.encode(value, forKey: .left)
+            case .right(let value):
+            try container.encode(value, forKey: .right)
+        }
+    }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let leftValue = try container.decodeIfPresent(A.self, forKey: .left) {
+        self = .left(leftValue)
+        } else {
+        let rightValue = try container.decode(B.self, forKey: .right)
+        self = .right(rightValue)
+        }
+    }
+}
+</code></pre>
+<p>在 encode(to:) 的实现里，我们检查了枚举自身是 left 还是 right，然后将它的关联值编码在对应的键下。同样，init(from:) 初始化方法先使用了容器的 decodeIfPresent 来检查容器是否拥有左键。如果没有，那么它就无条件地解码右键，因为两个键必有其一。</p>
+<p>至此，对一个集合的编码和解码现在看起来应该很眼熟了。这次让我们用 PropertyListEncoder 和 PropertyListDecoder 来做一点改变：</p>
+<pre><code class="language-swift">let values: [Either&lt;String, Int&gt;] = [
+    .left(&quot;Forty-two&quot;),
+    .right(42)
+]
+do {
+    let encoder = PropertyListEncoder()
+    encoder.outputFormat = .xml
+    let xmlData = try encoder.encode(values)
+    let xmlString = String(decoding: xmlData, as: UTF8.self)
+    /*
+    &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+    &lt;!DOCTYPE plist PUBLIC &quot;-//Apple//DTD PLIST 1.0//EN&quot;
+    &quot;http://www.apple.com/DTDs/PropertyList-1.0.dtd&quot;&gt;
+    &lt;plist version=&quot;1.0&quot;&gt;
+    &lt;array&gt;
+    &lt;dict&gt;
+    &lt;key&gt;left&lt;/key&gt;
+    &lt;string&gt;Forty-two&lt;/string&gt;
+    &lt;/dict&gt;
+    &lt;dict&gt;
+    &lt;key&gt;right&lt;/key&gt;
+    &lt;integer&gt;42&lt;/integer&gt;
+    &lt;/dict&gt;
+    &lt;/array&gt;
+    &lt;/plist&gt;
+    */
+    let decoder = PropertyListDecoder()
+    let decoded = try decoder.decode([Either&lt;String, Int&gt;].self, from: xmlData)
+    /*
+    [Either&lt;Swift.String, Swift.Int&gt;.left(&quot;Forty-two&quot;),
+    Either&lt;Swift.String, Swift.Int&gt;.right(42)]
+    */
+} catch {
+    print(error.localizedDescription)
+}
+</code></pre>
+<h3 id="解码多态集合">解码多态集合</h3>
+<p>我们已经看到过了，解码器要求我们为要解码的值传入具体的类型。直觉上这很合理：解码器需要知道具体的类型才能调用合适的初始化方法，而且由于被编码的数据一般不含有类型信息，所以类型必须由调用者来供。这种对强类型的强调导致了一个结果，那就是在解码步骤中不存在多态的可能。</p>
+<p>例如，我们想编码一个 UIView 的数组，数组中的元素则是 UILabel 或 UIImageView 这样的 UIView 的子类：</p>
+<pre><code class="language-swift">let views: [UIView] = [label, imageView, button]
+</code></pre>
+<p>(让我们假设现在 UIView 和它的子类现在都满足 Codable，尽管现在它们并不是这样的类型。)</p>
+<p>如果我们编码这个数组，再对它进行解码，就会发现得到的结果和原来 views 并不相同 - 数组中元素的具体类型在解码回来后都消失了。解码器能还原回来的只是普通的 UIView 对象，因为它对被解码数据类型的全部了解就是 [UIView].self。</p>
+<p>那么，我们应该如何编码这样的多态对象集合呢？最好的方式就是创建一个枚举，让它的每个 case 对应我们要支持的子类，而 case 的关联值则是对应的子类对象：</p>
+<pre><code class="language-swift">enum View {
+    case view(UIView)
+    case label(UILabel)
+    case imageView(UIImageView)
+    // ...
+}
+</code></pre>
+<p>接下来，我们需要手写一个 Codable 实现，它和之前我们在 Either 枚举中做的事情遵循同样的模式：</p>
+<p>在编码时，对要编码的对象和 View 的所有 case 进行匹配，然后将对象的类型和对象本身编码到各自的键中。</p>
+<p>在解码时，先解码出类型信息，然后根据具体的类型调用合适的初始化方法。</p>
+<p>最后，我们还应该写两个简便方法，一个用于把 UIView 包装成 View，另一个从 View 解包得到原始的 UIView 对象。这样，只用一个 map 方法，我们就能把原始数组传递给编码器，以及从解码器中还原回原始数组中的对象了。</p>
+<p>当然，这并不是一个动态的解决方案；每次我们想要支持新的子类时，都需要手动更新 View 枚举。这不是很方便，但是却情有可原，因为我们必须明确地告诉解码器代码中所能接受的每个类型的名字。其他方式可能会带来潜在的安全威胁，因为攻击者很可能通过操作程序包来初始化一些我们程序里未知的对象。</p>
+<p>参考书籍<br>
+<a href="https://objccn.io/products/advanced-swift/">Swift进阶</a></p>
+<p>更多文章<br>
+<a href="https://onevcat.com/2020/11/codable-default/">使用 Property Wrapper 为 Codable 解码设定默认值</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/BKc_eiC_7/" class="tag">
+                    a deep summary
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/mQbhOOb5q/" class="tag">
+                    summary
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Q_Pnv_k3a/" class="tag">
+                    codable
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-brief-summary-of-property-wrappers/">
+                  <h3 class="post-title">
+                    A brief summary of Property Wrappers
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

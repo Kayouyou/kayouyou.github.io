@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 04: Algebraic Data Types | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+The algebra of structs
+
+
+
+
+The algebra of enums
+
+
+
+
+Word of warning: Void
+
+
+
+
+Empty structs vs. emp..." />
+    <meta name="keywords" content="Algebraic,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 04: Algebraic Data Types</h2>
+            <div class="post-date">2021-10-21</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Thealgebraofstructs">The algebra of structs</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Thealgebraofenums">The algebra of enums</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Wordofwarning:Void">Word of warning: Void</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Emptystructsvs.emptyenums">Empty structs vs. empty enums</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Algebraicproperties">Algebraic properties</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 04: Algebraic Data Types -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>今天我们想谈谈两个世界之间的联系:Swift类型和代数。我们对这两个世界都很熟悉，但事实证明，它们有着非常深刻、美丽的联系。使用这种对应关系，我们可以更好地理解是什么给我们的数据结构增加了复杂性，甚至使用我们从代数中获得的直觉来更好地塑造我们的数据，这样不可能的状态是不可表示的，因此不能编译!</p>
+<h2 id="2-a-namethealgebraofstructsathe-algebra-of-structs">2. <a name='Thealgebraofstructs'></a>The algebra of structs</h2>
+<p>首先，让我们看看一些足够简单的东西:结构体。事实上，这个结构:</p>
+<pre><code class="language-swift">struct Pair&lt;A, B&gt; {
+  let first: A
+  let second: B
+}
+</code></pre>
+<p>这是最通用的，非平凡的结构。 它有两个字段，每个字段只包含一段通用数据。 让我们做一些奇怪的事情，对于A和B的特定值，让我们计算Pair&lt; A, B&gt;有多少值:</p>
+<pre><code class="language-swift">Pair&lt;Bool, Bool&gt;(first: true, second: true)
+Pair&lt;Bool, Bool&gt;(first: true, second: false)
+Pair&lt;Bool, Bool&gt;(first: false, second: true)
+Pair&lt;Bool, Bool&gt;(first: false, second: false)
+</code></pre>
+<p>Pair&lt;Bool, Bool&gt;正好包含四个值。不可能构造任何其他有效的、正在编译的Swift程序的值。让我们试试另一个。 我要创建一个只有3个值的lil类型，并用Bool数其对:</p>
+<pre><code class="language-swift">enum Three {
+  case one
+  case two
+  case three
+}
+</code></pre>
+<p>我们可以用Bool和Three创建多少对?</p>
+<pre><code class="language-swift">Pair&lt;Bool, Three&gt;(first: true, second: .one)
+Pair&lt;Bool, Three&gt;(first: true, second: .two)
+Pair&lt;Bool, Three&gt;(first: true, second: .three)
+Pair&lt;Bool, Three&gt;(first: false, second: .one)
+Pair&lt;Bool, Three&gt;(first: false, second: .two)
+Pair&lt;Bool, Three&gt;(first: false, second: .three)
+</code></pre>
+<p>这个有六个值!有趣!</p>
+<p>Swift有一种奇怪的类型叫<em>Void</em>。 事实上，它的奇怪至少有两个原因。首先，你可以用同样的方式来引用类型和值:</p>
+<pre><code class="language-swift">_: Void = Void()
+_: Void = ()
+_: () = ()
+</code></pre>
+<p>这就引出了另一件奇怪的事。 Void只有一个值! 正因为如此，()的实质内容根本不重要。它只是一个值，表示我们在Void中有这个东西，但你不能用()做任何事。 这也是为什么没有返回值的函数会偷偷返回<em>Void</em>，即使没有明确指定:</p>
+<pre><code class="language-swift">func foo(_ x: Int) /* -&gt; Void */ {
+  // return ()
+}
+</code></pre>
+<p>Swift编译器会在你之后<em>return()</em>。</p>
+<p>让我们尝试将Void插入到我们的<em>pair</em>中，看看会发生什么:</p>
+<pre><code class="language-swift">Pair&lt;Bool, Void&gt;(first: true, second: ())
+Pair&lt;Bool, Void&gt;(first: false, second: ())
+</code></pre>
+<p>它只包含两个值。</p>
+<p>那么一对Void和Void呢?</p>
+<pre><code class="language-swift">Pair&lt;Void, Void&gt;(first: (), second: ())
+</code></pre>
+<p>Only 1 value!</p>
+<p>有趣! 我们别无选择，只能为第二个字段插入()，因此它实际上并没有改变太多类型。</p>
+<p>Swift还有另一种奇怪的类型:<em>Never</em>。它的定义非常简单:</p>
+<pre><code class="language-swift">enum Never {}
+</code></pre>
+<p>这意味着什么? 它是一个没有<em>case</em>的<em>enum</em>。这就是所谓的“<em>uninhabited type</em>”:不包含值的类型。没有办法做这样的事情:</p>
+<pre><code class="language-swift">_: Never = ???
+</code></pre>
+<p>这里没有任何东西可以让Swift编译这个程序。</p>
+<p>当我们将<em>Never</em>插入<em>Pair</em>时会发生什么?</p>
+<pre><code class="language-swift">Pair&lt;Bool, Never&gt;(first: true, second: ???)
+</code></pre>
+<p>没有我们可以投入的东西了?!</p>
+<p><em>Never</em>类型还会得到编译器的特殊处理，在编译器中，返回<em>Never</em>的函数被认为是不返回的函数。例如，<em>fatalError</em>函数返回<em>Never</em>。编译器知道在执行此语句之后的所有代码行和分支都不会发生，并可以使用这一点来证明穷尽性。</p>
+<p>考虑到所有这些例子，A和B中的值的数量与Pair&lt;A, B&gt;中的值的数量之间的关系是什么?</p>
+<pre><code class="language-swift">// Pair&lt;Bool, Bool&gt;  = 4
+// Pair&lt;Bool, Three&gt; = 6
+// Pair&lt;Bool, Void&gt;  = 2
+// Pair&lt;Void, Void&gt;  = 1
+// Pair&lt;Bool, Never&gt; = 0
+</code></pre>
+<p>一种模式开始出现了:乘法!</p>
+<pre><code class="language-swift">// Pair&lt;Bool, Bool&gt;  = 4 = 2 * 2
+// Pair&lt;Bool, Three&gt; = 6 = 2 * 3
+// Pair&lt;Bool, Void&gt;  = 2 = 2 * 1
+// Pair&lt;Void, Void&gt;  = 1 = 1 * 1
+// Pair&lt;Bool, Never&gt; = 0 = 2 * 0
+</code></pre>
+<p><em>Pair</em>使值的数量相乘，即Pair&lt;A, B&gt; 中的值的数量是A中的值乘以B中的值的数量。</p>
+<p>这个现象还有另一种代数解释:<strong>logical conjunction, a.k.a. and</strong>。 <em>Pair</em>类型封装了接受两种类型的“和”的含义，即Pair&lt; A, B&gt;的值就是类型A的值和另一个类型B的值。</p>
+<p>这适用于任何结构体和元组，而不仅仅是<em>Pair</em>。让我们来看一个例子</p>
+<pre><code class="language-swift">enum Theme {
+  case light
+  case dark
+}
+
+enum State {
+  case highlighted
+  case normal
+  case selected
+}
+
+struct Component {
+  let enabled: Bool
+  let state: State
+  let theme: Theme
+}
+</code></pre>
+<p>代数的<em>Component</em>是多少?</p>
+<pre><code class="language-swift">// Bool * Theme * State = 2 * 3 * 2 = 12
+</code></pre>
+<p><em>Component</em>有12个值!</p>
+<p>根据这种直觉，让我们删除所有类型的名称，只关注字段中存储的数据。为了做到这一点，我们将创建一个不是有效的Swift代码的符号，但将允许我们更紧凑地看到我们在这里所揭示的代数。 因此，我们以前写Pair&lt;A, B&gt;，现在我们只写A * B，这看起来很奇怪，但它只是帮助指导我们的直觉:</p>
+<pre><code class="language-swift">// Pair&lt;A, B&gt;        = A * B
+// Pair&lt;Bool, Bool&gt;  = Bool * Bool
+// Pair&lt;Bool, Three&gt; = Bool * Three
+// Pair&lt;Bool, Void&gt;  = Bool * Void
+// Pair&lt;Bool, Never&gt; = Bool * Never
+</code></pre>
+<p>我们称A * B为A和B类型的乘积。现在我们考虑得更抽象一点了，我们甚至可以放松对&lt; A, B&gt;的直觉，它是A和B中元素个数的字面量的乘法。虽然对于具有有限多个值的类型确实是这样，但这并不能真正帮助我们解决以下问题:</p>
+<pre><code class="language-swift">// Pair&lt;Bool, String&gt; = Bool * String
+</code></pre>
+<p>我们不再讨论值的数量，因为String有一个无限的数，但我们仍然可以把它看作乘法。</p>
+<p>我们甚至可以考虑以下几点:</p>
+<pre><code class="language-swift">// String * [Int]
+// [String] * [[Int]]
+</code></pre>
+<p>我们将无限种类型相乘!</p>
+<p>让我们更进一步，从Void, Never和Bool中删除名称，只通过包含的值的数量来表示这些类型。</p>
+<pre><code class="language-swift">// Never = 0
+// Void = 1
+// Bool = 2
+</code></pre>
+<p>现在我们甚至不考虑具体的类型，只考虑抽象的代数实体。</p>
+<h2 id="3-a-namethealgebraofenumsathe-algebra-of-enums">3. <a name='Thealgebraofenums'></a>The algebra of enums</h2>
+<p>现在我们知道了Swift中的结构体对应于类型的乘法。但是有一个对应的“dual”:加法! 这在Swift的类型系统中是什么样子的?</p>
+<p>好吧，事实证明Swift支持这样的构造，而这恰恰是一个enum! 让我们考虑一下最通用的、非平凡的枚举:</p>
+<pre><code class="language-swift">enum Either&lt;A, B&gt; {
+  case left(A)
+  case right(B)
+}
+</code></pre>
+<p>让我们使用之前的一些值，看看如何从这个类型构造一些简单的值:</p>
+<pre><code class="language-swift">Either&lt;Bool, Bool&gt;.left(true)
+Either&lt;Bool, Bool&gt;.left(false)
+Either&lt;Bool, Bool&gt;.right(true)
+Either&lt;Bool, Bool&gt;.right(false)
+</code></pre>
+<p>我们又得到了四个值。Three?</p>
+<pre><code class="language-swift">Either&lt;Bool, Three&gt;.left(true)
+Either&lt;Bool, Three&gt;.left(false)
+Either&lt;Bool, Three&gt;.right(.one)
+Either&lt;Bool, Three&gt;.right(.two)
+Either&lt;Bool, Three&gt;.right(.three)
+</code></pre>
+<p>这次我们得到5个值。嗯!Void呢?</p>
+<pre><code class="language-swift">Either&lt;Bool, Void&gt;.left(true)
+Either&lt;Bool, Void&gt;.left(false)
+Either&lt;Bool, Void&gt;.right(Void())
+</code></pre>
+<p>Never呢?</p>
+<pre><code class="language-swift">Either&lt;Bool, Never&gt;.left(true)
+Either&lt;Bool, Never&gt;.left(false)
+Either&lt;Bool, Never&gt;.right(???)
+</code></pre>
+<p>最后一个例子特别有趣。我们看到，通过取一对<em>Never</em>，即<em>Pair&lt;A, Never&gt;</em>，我们使这一对无人居住。然而，对于<em>Either</em>，它只是意味着一个情况是无人居住的，但另一个是自由地在<em>Bool</em>值。</p>
+<p>现在我们可以看到一些代数。那么A和B中的值的数量和Either&lt;A, B&gt;中的值的数量之间的关系是什么?</p>
+<pre><code class="language-swift">Either&lt;Bool, Bool&gt;  = 4 = 2 + 2
+Either&lt;Bool, Three&gt; = 5 = 2 + 3
+Either&lt;Bool, Void&gt;  = 3 = 2 + 1
+Either&lt;Bool, Never&gt; = 2 = 2 + 0
+</code></pre>
+<p>从这些例子中，我们可以看到Either&lt;A, B&gt;中的值的数量正好是A中的值的数量加上B的值的数量。所以<em>Either</em>直接对应于取类型的和。 这就是为什么枚举被称为“和类型”。 我们还可以从逻辑的角度解释<em>Either</em>，就像我们对Pair做的那样:Either类型封装了接受两种类型的“或”的含义，即Either&lt; A, B&gt;正好是A类型的值或B类型的值。</p>
+<p>和之前一样，让我们用一个新的符号来抽象取类型的和，这个符号在Swift中无效，但它会帮助我们发展直觉。</p>
+<pre><code class="language-swift">Either&lt;Bool, Bool&gt;  = Bool + Bool  = 2 + 2 = 4
+Either&lt;Bool, Three&gt; = Bool + Three = 2 + 3 = 5
+Either&lt;Bool, Void&gt;  = Bool + Void  = 2 + 1 = 3
+Either&lt;Bool, Never&gt; = Bool + Never = 2 + 0 = 2
+</code></pre>
+<h2 id="4-a-namewordofwarningvoidaword-of-warning-void">4. <a name='Wordofwarning:Void'></a>Word of warning: Void</h2>
+<p>值得注意的是，有些语言(如<em>Haskell、PureScript、Idris</em>)使用<em>Void</em>来表示<em>uninhabited</em>类型(即Swift所称的<em>Never</em>)，因此如果你研究这些语言，可能会导致一些困惑。 事实上，从某种意义上说，这是一个很棒的名字，因为“<em>void</em>”看起来像是一个没有任何东西的空间!</p>
+<p>对于只有一个唯一值的类型来说，更好的名称可能是类似<em>Unit</em>的东西。我们可以这样定义它:</p>
+<pre><code class="language-swift">struct Unit {}
+let unit = Unit()
+</code></pre>
+<p>这很好，因为我们现在为类型Unit和值Unit有了一个独特的名称。另一个关于Unit的实际结构类型的好处是我们可以扩展它:</p>
+<pre><code class="language-swift">extension Unit: Equatable {
+  static func == (lhs: Unit, rhs: Unit) -&gt; Bool {
+    return true
+  }
+}
+</code></pre>
+<p>现在我们可以把<em>Unit</em>传递给只需要等价值的函数，这很酷。但在Swift的 Void中，这是不可能的。如果你试图扩展它，你会得到这个错误:</p>
+<pre><code class="language-swift">Non-nominal type 'Void' cannot be extended
+</code></pre>
+<p>原因是<em>Void</em>被定义为一个空元组:</p>
+<pre><code class="language-swift">typealias Void = ()
+</code></pre>
+<p>Swift中的元组是<em>non-nominal</em> 类型，你不能通过名字来引用它们，只能通过结构来引用。这对Swift来说是一件非常不幸的事情，希望有一天能够得到纠正。</p>
+<h2 id="5-a-nameemptystructsvsemptyenumsaempty-structs-vs-empty-enums">5. <a name='Emptystructsvs.emptyenums'></a>Empty structs vs. empty enums</h2>
+<p>但是现在我们想说一些非常奇怪的事情。让我们一起来看看Unit和Never的定义:</p>
+<pre><code class="language-swift">struct Unit {}
+enum Never {}
+</code></pre>
+<p>显然这里有一些对称:一个没有case的enum和一个没有字段的struct。 为什么没有case的枚举中没有值，而没有字段的结构体却有值? 我们完全有理由认为Unit也没有值。</p>
+<p>但是我们能凭直觉理解为什么会这样吗?</p>
+<p>利用Swift类型和代数之间的对应关系，我们可以提出一个可能更容易回答的相关问题。我们可以问自己，“空枚举和空结构中有什么值?”这就相当于问:“空数组中整数的和和积是多少?”</p>
+<p>假设我们有一个整数数组。如何定义以下函数:</p>
+<pre><code class="language-swift">func sum(_ xs: [Int]) -&gt; Int {
+  fatalError()
+}
+
+func product(_ xs: [Int]) -&gt; Int {
+  fatalError()
+}
+
+let xs = [1, 2, 3]
+sum(xs)
+product(xs)
+</code></pre>
+<p>当然，我们想要循环遍历数组，求和并将所有值相乘:</p>
+<pre><code class="language-swift">func sum(_ xs: [Int]) -&gt; Int {
+  var result: Int
+  for x in xs {
+    result += x
+  }
+  return result
+}
+
+func product(_ xs: [Int]) -&gt; Int {
+  var result: Int
+  for x in xs {
+    result *= x
+  }
+  return result
+}
+</code></pre>
+<p>因为我们还没有给<em>result</em>一个初始值，所以它目前还不能编译。但是我们应该选择什么呢?  为了回答这个问题，我们需要理解和和乘积应该满足什么性质，这将迫使我们决定需要<em>result</em>从什么开始。 我们想要满足的最简单的属性与<em>sum</em>和<em>product</em>在数组连接方面的行为:</p>
+<pre><code class="language-swift">sum([1, 2]) + sum([3]) == sum([1, 2] + [3])
+product([1, 2]) * product([3]) == product([1, 2] + [3])
+</code></pre>
+<p>现在，如果我们使用空数组呢?</p>
+<pre><code class="language-swift">sum([1, 2]) + sum([]) == sum([1, 2] + [])
+product([1, 2]) * product([]) == product([1, 2] + [])
+</code></pre>
+<p>这迫使sum([])为0,product([])为1。没有别的选择。因此empty sum是0, empty product是1。</p>
+<pre><code class="language-swift">sum([1, 2]) + 0 == sum([1, 2] + [])
+product([1, 2]) * 1 == product([1, 2] + [])
+
+sum([]) == 0
+product([]) == 1
+</code></pre>
+<p>现在，将这个概念转换回类型世界，我们自然会得到这样的语句:“<em>empty sum type</em>”没有值(即uninhabited)，而“<em>empty product type</em>”只有一个值! 所以我们用代数来解开一个非常棘手的存在困境!</p>
+<h2 id="6-a-namealgebraicpropertiesaalgebraic-properties">6. <a name='Algebraicproperties'></a>Algebraic properties</h2>
+<p>现在我们已经建立了一些概念来理解Swift类型和代数之间的对应关系，让我们试着展示这些肌肉，看看我们是否能在更高层次上获得一些类型结构的直觉。</p>
+<p>让我们从简单入手。回想一下<em>Void</em>对应于1，在代数世界中，我们知道乘以1没有任何作用。它的类型是什么?</p>
+<pre><code class="language-swift">// Void = 1
+// A * Void = A = Void * A
+</code></pre>
+<p>这意味着在结构体的字段中使用<em>Void</em>值实际上会保持类型不变。</p>
+<p>另一方面，<em>Never</em>对应于0，我们知道与它相乘是0。在类型世界中，这看起来像:</p>
+<pre><code class="language-swift">// Never = 0
+// A * Never = Never = Never * A
+</code></pre>
+<p>因此，将<em>Never</em>放到结构体的字段中，最终会将该结构体转换为<em>Never</em>类型本身。 它完全消灭了它。</p>
+<p>但是，加0的结果是保持值不变，在类型中，这对应于:</p>
+<pre><code class="language-swift">// A + Never = A = Never + A
+</code></pre>
+<p>我们换一种方法。考虑这个类型表达式:</p>
+<pre><code class="language-swift">// 1 + A = Void + A
+</code></pre>
+<p>In terms of Either this is:</p>
+<pre><code class="language-swift">// Either&lt;Void, A&gt; {
+//   case left(())
+//   case right(A)
+// }
+</code></pre>
+<p>这是一种类型，所有A的值都在右边，然后这个特殊的值*left(Void())*是附加的。 什么样的本土的Swift类型有同样的形状? <strong>Optionals!</strong></p>
+<pre><code class="language-swift">enum Optional&lt;A&gt; {
+  case none
+  case some(A)
+}
+</code></pre>
+<p><em>none</em>对应于left(没有关联值的case本质上与具有Void值的case相同)，而<em>some</em>对应于right。现在我们看到:</p>
+<pre><code class="language-swift">// 1 + A = Void + A = A?
+</code></pre>
+<p>现在，假设你遇到了这个表达:</p>
+<pre><code class="language-swift">// Either&lt;Pair&lt;A, B&gt;, Pair&lt;A, C&gt;&gt;
+</code></pre>
+<p>让我们看看它在符号里是什么样子的:</p>
+<pre><code class="language-swift">// A * B + A * C
+</code></pre>
+<p>使用基础代数，我们知道如何将其分解成一个更简单的表达式:</p>
+<pre><code class="language-swift">A * (B + C)
+</code></pre>
+<p>现在这对应于一个带enum的pair:</p>
+<pre><code class="language-swift">Pair&lt;A, Either&lt;B, C&gt;&gt;
+</code></pre>
+<p>这里我们可以看到代数直觉让我们得到了一个更简单的数据结构。</p>
+<p>另一方面，如果我们简单地调换<em>Pair</em>和<em>Either</em>的角色，我们有:</p>
+<pre><code class="language-swift">Pair&lt;Either&lt;A, B&gt;, Either&lt;A, C&gt;&gt;
+</code></pre>
+<p>And in the math world:</p>
+<pre><code class="language-swift">// (A + B) * (A + C)
+</code></pre>
+<p>这个方程不再因式分解了所以不能再简化了。</p>
+<p>当然，我们可以把它展开，使它等于</p>
+<pre><code class="language-swift">// A * A + A * C + B * A + B * C
+</code></pre>
+<p>这有点像一个有四种情况的enum，每一种情况都是一对。这可能不是你想要的，但也许你想要，你有代数来告诉你怎么做!</p>
+<p>我们讨论的每一个数据结构，如果我们只考虑数据而不考虑与数据相关的行为，那都只是产品的总和:从一个case的基本枚举开始，每个case都有一系列的product，这些product又可能包含更多的sum和product。</p>
+<h2 id="7-a-namewhatsthepointawhats-the-point">7. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>我们已经写了一堆伪代码，甚至不是有效的Swift，它所能做的只是引导我们的直觉。我们从中得到什么好处了吗?</p>
+<p>让我们看看<em>URLSession</em>的一个方法。</p>
+<pre><code class="language-swift">// URLSession.shared
+//   .dataTask(with: url, completionHandler: (data: Data?, response: URLResponse?, error: Error?) -&gt; Void)
+</code></pre>
+<p><em>completionHandler</em>返回三个可选值。这是一个有3个字段的乘积类型。Swift元组只是乘积。我们用代数表示一下:</p>
+<pre><code class="language-swift">// (Data + 1) * (URLResponse + 1) * (Error + 1)
+</code></pre>
+<p>这看起来有点奇怪。如果我们完全扩展它会发生什么?</p>
+<pre><code class="language-swift">// (Data + 1) * (URLResponse + 1) * (Error + 1)
+//   = Data * URLResponse * Error
+//     + Data * URLResponse
+//     + URLResponse * Error
+//     + Data * Error
+//     + Data
+//     + URLResponse
+//     + Error
+//     + 1
+</code></pre>
+<p>这里有很多可表示的状态是没有意义的。它们甚至会在每一行中跳出来。我们可以得到<strong>URLResponse * Error</strong>，而<em>URLResponse</em>不应该和<em>Error</em>同时出现。我们还可以得到<strong>Data * Error</strong>，这也没有意义。我们也可以得到1，也就是Void，或者在这里所有值都是<em>nil</em>。我们还可以得到一切:<strong>Data * URLResponse * Error</strong>，这是不应该发生的。</p>
+<p>当您使用这个接口时，您可能会注意到，如果您忽略了预期的情况，那么不可避免地会出现一个需要<em>fatalError</em>的分支，并且只希望它永远不会被调用。</p>
+<p>让我们用新的直觉来表示我们想要的东西:</p>
+<pre><code class="language-swift">// Data * URLResponse + Error
+</code></pre>
+<p>我们这种类型的是什么样子?</p>
+<pre><code class="language-swift">Either&lt;Pair&lt;Data, URLResponse&gt;, Error&gt;
+</code></pre>
+<p>事实上，Swift社区已经接受了一种允许我们处理这类状态的类型，即<strong>Result</strong>类型。</p>
+<pre><code class="language-swift">// Result&lt;(Data, URLResponse), Error&gt;
+</code></pre>
+<p>在本例中，我们可以使用一个简单的元组来表示<em>Data</em>和<em>URLResponse</em>的乘积，而不是使用Pair。</p>
+<p>通过在完成回调中使用适当的类型，我们大大减少了编译时允许的无效状态的数量，从而简化了回调中所需的逻辑。</p>
+<p>让我们进一步考虑<strong>Result</strong>类型。如果我们使用一个返回<em>Result</em>的API，但是带有一个永远不会失败的特定操作呢? 我们可以指定错误类型为<em>Never</em>!</p>
+<pre><code class="language-swift">// Result&lt;A, Never&gt;
+</code></pre>
+<p>现在我们可以确定错误情况是不适合的。</p>
+<p>如果我们正在处理一个支持取消的异步API呢? 如何将取消案例添加到Result中?</p>
+<pre><code class="language-swift">// Result&lt;A, Error&gt;?
+</code></pre>
+<p>我们只是把它变成可选的!</p>
+<p>看到我们如何既能解决复杂性，又能自然地将自己引向更适合我们需求的类型，就能更清楚地看到代数直觉如何改善我们的日常代码。 我们还看到，虽然结构体在元组中有轻量级版本，但也许<em>Either</em>是属于我们日常武器库的轻量级<em>enum</em>。我们也不要害怕!既害怕元组又不害怕元组，就好像你害怕加法而不害怕乘法一样。 或者这就像说你害怕“or”，而不是“and”。我们不会只使用乘法(*)和“和”(&amp;&amp;)来编写程序。 我们允许自己使用加法(+)和“或”(||)。所以让我们熟悉求和类型和Either!</p>
+<p>我们的代数之旅才刚刚开始。我们还没有看到类型系统如何表示其他概念，比如求幂! 一种类型的能量比另一种类型的能量看起来像什么? 但那得等到下次了。请继续关注!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/aG-kwpTEW/" class="tag">
+                    Algebraic
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-03-uikit-styling-with-functions/">
+                  <h3 class="post-title">
+                    PointFree Episode 03: UIKit Styling with Functions
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

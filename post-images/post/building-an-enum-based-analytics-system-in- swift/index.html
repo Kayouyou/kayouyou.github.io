@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Building an enum-based analytics system in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在不断构建、迭代和改进产品时，从用户那里收集某种形式的分析非常重要。了解你的用户如何在现实生活中使用你的应用程序，有时真的会让人惊讶，并把它的发展方向，或作为新功能的灵感。
+虽然肯定有一些方法让它变得过分，让人毛骨悚然，还有很多方法可以实现..." />
+    <meta name="keywords" content="analytics,enums" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Building an enum-based analytics system in Swift</h2>
+            <div class="post-date">2017-12-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>在不断构建、迭代和改进产品时，从用户那里收集某种形式的分析非常重要。了解你的用户如何在现实生活中使用你的应用程序，有时真的会让人惊讶，并把它的发展方向，或作为新功能的灵感。</p>
+<p>虽然肯定有一些方法让它变得过分，让人毛骨悚然，还有很多方法可以实现系统，这些系统可以告诉你产品的实际使用情况，同时尊重用户的隐私、数据使用和整体体验。</p>
+<p>然而，实现一个在代码中易于使用的可靠分析系统却非常困难。本周，让我们看看这样一个系统是如何架构和实现的，它是基于我最喜欢的Swift特性之一——枚举!</p>
+<h2 id="the-requirements">The requirements</h2>
+<p>在开始构建任何形式的系统之前，根据您希望它如何工作和您需要它做什么，写下一个需求列表总是一个好主意。</p>
+<p>对于我们的分析系统，我们将设定4个目标:</p>
+<p>它需要容易地记录事件从任何视图控制器。您应该只需要一行代码就可以记录一些内容。<br>
+该系统应该支持任何底层系统，以便将事件实际发送到某种形式的后端。<br>
+系统应该是高度可测试的，并且容易验证。<br>
+当调用站点需要更新时，应该很容易添加、删除和修改事件，并获得编译时错误。</p>
+<h2 id="common-approaches">Common approaches</h2>
+<p>在我们进入Xcode并开始编写代码之前，还有一件事——让我们看看一些在应用程序中实现分析的常见方法，看看我们能从这些方法中学到什么。</p>
+<h2 id="singletons">Singletons</h2>
+<p>到目前为止，实现分析系统最常见的方法是使用基于单例的方法。 就像我们在“Swift中避免单例”中看到的那样，使用单例是一种完全有效的方法(而且非常方便)，但它也可能很快让我们的应用更难测试和维护。</p>
+<p>在大多数情况下，日志分析事件应该被认为是控制器层的一部分(如果你没有使用MVC，则可以认为是等价的逻辑层)，当使用单例时，分析代码很容易泄漏到模型或视图层。</p>
+<h2 id="strings">Strings</h2>
+<p>在应用中设置分析的另一种常见方法是使用字符串作为标识符。这是非常灵活的，可以让您快速更改所使用的标识符。然而，这也是分析代码中常见错误和bug的来源。在一个地方改变一个字符串，却忘记在另一个地方更新它，这太容易了。随着时间的推移，这通常会使这类系统更难维护，并通常会导致大量噪音和无效事件——这使得数据分析更加困难。</p>
+<h2 id="third-party-sdks">Third party SDKs</h2>
+<p>最后，实现分析的一个常见解决方案是使用第三方服务或SDK。从很多方面来看，这都是一个很好的解决方案，可以让你更快更容易地执行分析，但要注意你在应用中使用的是哪种sdk-确保调查他们从你的用户那里收集了什么类型的数据，以尊重他们的隐私。</p>
+<p>所以我并不反对使用第三方SDK，恰恰相反。然而，当将这样的SDK添加到应用程序中时，我建议总是在代码和自己的代码之间添加一层。这样做将使测试变得更容易，并且在将来切换任何此类解决方案时更加灵活。</p>
+<h2 id="setting-up-the-architecture">Setting up the architecture</h2>
+<p>好了，我们已经把要求写下来了，我们也做了研究——让我们开始工作吧!⚒</p>
+<p>我们设置分析系统的方法是从一个AnalyticsManager开始。 这个类将作为记录事件的顶级API，这个类的实例将被注入到任何想要使用我们系统的视图控制器中。</p>
+<p>但是我们的AnalyticsManager实际上不会做任何日志记录。 相反，它将使用一个AnalyticsEngine将事件发送到后端。AnalyticsEngine将是一个我们可以有多个实现的协议(例如一个用于测试，一个用于分段，一个用于生产)。这也将使我们更容易切换任何第三方SDK，我们可能会在未来使用。</p>
+<p>最后，我们将有一个名为AnalyticsEvent的枚举，它将包含分析系统支持的所有事件。我们将使用这个设置而不是普通字符串，这都是为了在编译时保证我们的事件是正确的，并且在将来使重构和其他更改变得更加容易。</p>
+<h2 id="lets-get-coding">Let's get coding</h2>
+<p>让我们从头开始，首先实现AnalyticsEvent。我们将使用没有原始值的枚举，并实现一些我们最初想要支持的事件:</p>
+<pre><code class="language-swift">enum AnalyticsEvent {
+    case loginScreenViewed
+    case loginAttempted
+    case loginFailed(reason: LoginFailureReason)
+    case loginSucceeded
+    case messageListViewed
+    case messageSelected(index: Int)
+    case messageDeleted(index: Int, read: Bool)
+}
+</code></pre>
+<p>关于上述代码的两点注意事项:</p>
+<p>对于某些事件，我们添加了额外的元数据，例如LoginFailureReason用于loginFailed事件。这将让我们能够更轻松地分析分析数据，回答“为什么这么多用户无法登录我们的应用?”等问题。<br>
+当包含元数据时，我们使用匿名信息，比如UI中消息的索引，或者一个简单的Bool来指示是否读取了它。理想情况下，我们不应该包含诸如消息ID或用户ID这样的ID，因为记录这些数据会很快导致用户隐私受损。</p>
+<h2 id="start-your-engine">Start your engine</h2>
+<p>接下来，让我们实现AnalyticsEngine协议</p>
+<pre><code class="language-swift">protocol AnalyticsEngine: class {
+    func sendAnalyticsEvent(named name: String, metadata: [String : String])
+}
+</code></pre>
+<p>非常简单，但是当您看到上面的代码时，可能会感到有些惊讶。我刚才不是说我们不应该用自由形式字符串作为标识符吗?  我们新实现的AnalyticsEvent枚举呢?  🤔</p>
+<p>虽然我们希望所有顶级调用都以类型安全的方式使用AnalyticsEvent，但我们不希望底层引擎必须知道该类型。这将给我们在未来重构事物时更多的灵活性，我们可以保证一个统一的序列化过程，而不是把它留给每个引擎。</p>
+<h2 id="engine-implementations">Engine implementations</h2>
+<p>这种设置的美妙之处在于它支持AnalyticsEngine协议的多种实现。例如，我们可以从一个简单的基于CloudKit的示例开始:</p>
+<pre><code class="language-swift">class CloudKitAnalyticsEngine: AnalyticsEngine {
+    private let database: CKDatabase
+
+    init(database: CKDatabase = CKContainer.default().publicCloudDatabase) {
+        self.database = database
+    }
+
+    func sendAnalyticsEvent(named name: String, metadata: [String : String]) {
+        let record = CKRecord(recordType: &quot;AnalyticsEvent.\(name)&quot;)
+
+        for (key, value) in metadata {
+            record[key] = value as NSString
+        }
+
+        database.save(record) { _, _ in
+            // We treat this as a fire-and-forget type operation
+        }
+    }
+}
+</code></pre>
+<p>或者我们可以使用更高级的解决方案，比如将数据发送到我们自己的后端数据库，或者使用第三方sdk，如Mixpanel或Logmatic。我们也可以很容易地实现一个模拟的引擎进行测试，更多的内容将在下周😉。</p>
+<h2 id="serialization">Serialization</h2>
+<p>在我们继续执行并通过实现AnalyticsManager来完成事情之前，让我们看看如何序列化一个AnalyticsEvent值，以便为AnalyticsEngine使用它做好准备。</p>
+<p>有两个部分，事件名称和它的元数据。在大多数情况下，这个名称非常容易自动生成，因为我们可以使用标准库的String(description:) API让Swift生成一个表示所有不带关联值的情况的字符串。 对于具有关联值的情况，我们将手动返回一个名称。</p>
+<pre><code class="language-swift">extension AnalyticsEvent {
+    var name: String {
+        switch self {
+        case .loginScreenViewed, .loginAttempted,
+             .loginSucceeded, .messageListViewed:
+            return String(describing: self)
+        case .loginFailed:
+            return &quot;loginFailed&quot;
+        case .messageSelected:
+            return &quot;messageSelected&quot;
+        case .messageDeleted:
+            return &quot;messageDeleted&quot;
+        }
+    }
+}
+</code></pre>
+<p>对于元数据，我们要么必须手动将给定的enum值转换为字典，要么使用自动编码器，如Wrap。下面是一个简单的手动实现:</p>
+<pre><code class="language-swift">extension AnalyticsEvent {
+    var metadata: [String : String] {
+        switch self {
+        case .loginScreenViewed, .loginAttempted,
+             .loginSucceeded, .messageListViewed:
+            return [:]
+        case .loginFailed(let reason):
+            return [&quot;reason&quot; : String(describing: reason)]
+        case .messageSelected(let index):
+            return [&quot;index&quot; : &quot;\(index)&quot;]
+        case .messageDeleted(let index, let read):
+            return [&quot;index&quot; : &quot;\(index)&quot;, &quot;read&quot;: &quot;\(read)&quot;]
+        }
+    }
+}
+</code></pre>
+<h2 id="the-api">The API</h2>
+<p>我们终于准备好把所有东西放在一起并实现AnalyticsManager了。管理器将在其初始化器中接受一个符合AnalyticsEngine的对象，并提供一个API来让我们记录一个给定的事件，像这样:</p>
+<pre><code class="language-swift">class AnalyticsManager {
+    private let engine: AnalyticsEngine
+
+    init(engine: AnalyticsEngine) {
+        self.engine = engine
+    }
+
+    func log(_ event: AnalyticsEvent) {
+        engine.sendAnalyticsEvent(named: event.name, metadata: event.metadata)
+    }
+}
+</code></pre>
+<p>很简单，但这就是我们真正需要的!🎉</p>
+<h2 id="usage">Usage</h2>
+<p>对任何系统的真正测试是如何使用它的API，以及调用站点是什么样子的。让我们在MessageListViewController中实现我们的分析系统:</p>
+<pre><code class="language-swift">class MessageListViewController: UIViewController {
+    private let messages: MessageCollection
+    private let analytics: AnalyticsManager
+
+    init(messages: MessageCollection, analytics: AnalyticsManager) {
+        self.messages = messages
+        self.analytics = analytics
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        analytics.log(.messageListViewed)
+    }
+
+    private func deleteMessage(at index: Int) {
+        let message = messages.delete(at: index)
+        analytics.log(.messageDeleted(index: index, read: message.read))
+    }
+}
+</code></pre>
+<p>正如你在上面看到的，我们使用了经典的基于初始化器的依赖注入，将我们的AnalyticsManager传递到我们的视图控制器，作为它的设置过程的一部分。在这里，你也可以使用基于属性的依赖注入(例如，如果你在使用故事板)，或者“使用Swift中的工厂的依赖注入”中的基于工厂的方法。</p>
+<h2 id="how-did-we-do">How did we do?</h2>
+<p>那么我们的最终执行与我们的4个目标之间的差距是什么呢?</p>
+<p>你现在可以从任何视图控制器轻松地记录事件。只需注入一个AnalyticsManager，并使用一行代码来记录任何事件。</p>
+<p>使用AnalyticsEngine的各种实现，我们可以支持多个后端或第三方sdk。</p>
+<p>因为AnalyticsEngine是一种协议，所以很容易在测试中模拟它。</p>
+<p>因为AnalyticsEvent是一个类型安全的枚举，它为我们增加了额外的安全级别，我们可以利用编译器来确保我们的设置是正确的。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用三个不同的部分，一个管理器，一个引擎和一个事件枚举，我们现在能够轻松地编写可预测和灵活的分析代码，大量的编译时检查。</p>
+<p>这种方法不仅适用于分析，而且管理器+引擎组合也是抽象硬件传感器、位置服务等内容的好方法。它的优点是可以将逻辑和代码从与底层依赖项的交互中分离出来。这极大地增加了代码经受时间测试的机会，并且在底层依赖项发生变化时，不必完全重写代码。</p>
+<p><a href="https://www.swiftbysundell.com/articles/building-an-enum-based-analytics-system-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/7HhPUl4uT/" class="tag">
+                    analytics
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5CEvLT7HIN/" class="tag">
+                    enums
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-child-view-controllers-as-plugins-in-swift/">
+                  <h3 class="post-title">
+                    Using child view controllers as plugins in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

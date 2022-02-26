@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>SwiftUI and UIKit interoperability - Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="SwiftUI的主要优势之一就是它能很好地集成UIKit和AppKit。不仅作为一个有用的“逃生出口”当一个给定的用例是本地不支持SwiftUI本身,它还使我们能够逐步迁移现有UIKit或AppKit-based项目苹果的新UI框架,同时重..." />
+    <meta name="keywords" content="uikit,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">SwiftUI and UIKit interoperability - Part 1</h2>
+            <div class="post-date">2020-11-08</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>SwiftUI的主要优势之一就是它能很好地集成UIKit和AppKit。不仅作为一个有用的“逃生出口”当一个给定的用例是本地不支持SwiftUI本身,它还使我们能够逐步迁移现有UIKit或AppKit-based项目苹果的新UI框架,同时重用我们的许多核心UI组件。<br>
+虽然这个话题已经覆盖的几个方面在这个网站之前,本周和下周,我们潜水更深SwiftUI和UIKit可以以多种方式组合在一起,从如何将日益复杂UIKit-based视图和视图控制器SwiftUI声明性的世界。<br>
+note: 尽管本文中的所有示例都是基于uikit的，但是同样的工具和技术也可以用于AppKit。在本例中，我们将使用的所有swift提供的协议和方法在iOS和macOS之间都是相同的，唯一的区别是macOS在它们的名称中使用NS而不是UI。</p>
+<h2 id="reusing-existing-components">Reusing existing components</h2>
+<p>尽管把一个新的项目迁移到SwiftUI时尝试重头开始很诱人,但是从头重写整个应用程序,这通常不是一个明智的决定,因为这样做意味着扔掉工作,一些久经沙场的生产代码仅仅因为它使用一个有点老的UI框架实现的。<br>
+相反，让我们来探索一下如何重用现有的UI组件，同时让它们与我们新的、基于SwiftUI的视图完美契合。举个例子，假设我们正在开发一个管理各种事件的iOS应用程序，它包括以下的EventDetailsView:</p>
+<pre><code class="language-swift">class EventDetailsView: UIView {
+    let imageView = UIImageView()
+    let nameLabel = UILabel()
+    let descriptionLabel = UILabel()
+    ...
+}
+</code></pre>
+<p>上面的视图遵循常见的UIKit模式，让视图保持简单的UI容器，同时让它们的外围视图控制器负责为它们填充数据。然而，由于SwiftUI中没有视图控制器，我们不得不在这个上下文中采用一种稍微不同的方法——通过使用uiviewrepresentation协议。</p>
+<p>这个协议(和它在Mac上的NSViewRepresentation等价)让我们实现桥接类型，每个桥接类型包装一个UIView实例，以便使它与SwiftUI兼容。对于非交互式视图，比如我们的EventDetailsView，创建这样的包装器需要实现两个方法——一个用于创建我们的视图，一个用于更新它:</p>
+<pre><code class="language-swift">
+struct EventDetailsComponent: UIViewRepresentable {
+    var event: Event
+
+    func makeUIView(context: Context) -&gt; EventDetailsView {
+        EventDetailsView()
+    }
+
+    func updateUIView(_ view: EventDetailsView, context: Context) {
+         view.imageView.image = UIImage(named: event.icon.imageName)
+        view.nameLabel.text = event.name
+        view.descriptionLabel.text = event.description
+    }
+}
+</code></pre>
+<p>note: 注意我们是如何将上面的包装器命名为EventDetailsComponent的，因为EventDetailsView已经被占用了，而且我们的包装器的目的是将我们现有的基于UIKit的视图转换成一个自定义的SwiftUI组件。</p>
+<p>由于所有SwiftUI视图类型都只是视图的描述，而不是视图的具体表示，理想情况下，我们不应该对每个包装器将拥有什么样的生命周期做出任何假设。相反，我们应该总是惰性地在包装器的makeUIView方法中创建每个底层的UIView，然后根据updateUIView中的当前状态更新它。</p>
+<p>这是特别重要的，因为SwiftUI将尽可能多地重用我们的底层UIView实例，即使当它们的包装UIViewRepresentation值被重新创建时——这意味着我们在makeUIView中分配的任何属性不会随着我们的状态变化而不断更新。</p>
+<p>然而，有时我们可能想要在包装器本身中持久化某种形式的状态，SwiftUI也为此提供了专门的API。为了探索这一点，让我们现在说，我们也想在SwiftUI中引入一个自定义UIButton子类:</p>
+<pre><code class="language-swift">
+class EventSchedulingButton: UIButton {
+    ...
+}
+</code></pre>
+<p>因为上面的控件是UIButton的子类，我们使用UIKit的内置目标/动作模式来处理它的事件，这反过来意味着我们将需要某些形式的对象来作为我们的按钮的目标</p>
+<p>虽然最初的想法可能是简单地让我们的按钮的UIViewRepresentable包装器一个类，然后让它承担目标角色，这不会工作得很好，因为我们的包装器可以销毁并在任何时候重新创建(即使它们是类)。相反，让我们通过实现可选的makeCoordinator方法来给我们新的EventSchedulingButton包装器一个协调器——像这样:</p>
+<pre><code class="language-swift">
+struct EventSchedulingComponent: UIViewRepresentable {
+    // Although our component will keep using target/action
+    // internally, we'll make our SwiftUI-facing API closure-
+    // based, since that's a much better fit within that context:
+    var handler: () -&gt; Void
+
+    func makeCoordinator() -&gt; Coordinator {
+        Coordinator()
+    }
+
+    func makeUIView(context: Context) -&gt; UIView {
+        let button = EventSchedulingButton()
+
+        button.addTarget(context.coordinator,
+            action: #selector(Coordinator.callHandler),
+            for: .touchUpInside
+        )
+
+        return button
+    }
+
+    func updateUIView(_ uiView: UIViewType, context: Context) {
+        context.coordinator.handler = handler
+    }
+}
+</code></pre>
+<p>SwiftUI协调器总是与给定的UIView实例有一对一的关系，这意味着即使我们的UIViewRepresentable结构最终被重新创建，我们也可以使用它来持久化状态。</p>
+<p>好消息是SwiftUI将自动管理所有涉及到的复杂性——我们需要做的唯一一件事(除了实现上面的makeCoordinator方法)是定义我们自己的协调器类型</p>
+<pre><code class="language-swift">
+extension EventSchedulingComponent {
+    class Coordinator {
+        var handler: (() -&gt; Void)?
+
+        @objc func callHandler() {
+            handler?()
+        }
+    }
+}
+</code></pre>
+<p>上述方法的美妙之处在于，它允许我们充分利用现有的基于UIKit的组件——甚至不需要对它们做任何修改——同时也使我们能够为组件将要嵌入的新视图实现专用的、对SwiftUI友好的api。</p>
+<p>如果我们现在把这两个已经创建好的包装器添加到实际的SwiftUI视图中，实际上很难判断这些包装器是不是“SwiftUI-native”视图(这绝对是一个很好的设计目标):</p>
+<pre><code class="language-swift">
+struct EventInvitationView: View {
+    var event: Event
+    ...
+    
+    var body: some View {
+        VStack {
+            Text(&quot;Invitation&quot;).font(.title)
+            EventDetailsComponent(event: event)
+            EventSchedulingComponent { ... }
+        }
+    }
+}
+</code></pre>
+<h2 id="importing-view-controllers-into-swiftui">Importing view controllers into SwiftUI</h2>
+<p>到目前为止，我们导入的两个基于UIKit的视图都是独立的、底层的组件，但我们也可以将整个视图控制器引入SwiftUI。</p>
+<p>例如，我们想要重用下面的EventListViewController，它使用一个注入的EventListLoader来加载一个事件模型列表，然后使用UITableView来呈现:</p>
+<pre><code class="language-swift">
+class EventListViewController: UIViewController {
+    private let loader: EventListLoader
+    private lazy var tableView = UITableView()
+    ...
+
+    init(loader: EventListLoader) {
+        self.loader = loader
+        super.init(nibName: nil, bundle: nil)
+    }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        showActivityIndicator()
+
+        loader.loadEvents { [weak self] result in
+            switch result {
+            case .success(let events):
+                self?.eventsDidLoad(events)
+            case .failure(let error):
+                self?.showError(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>考虑到上面的视图控制器管理它自己的生命周期——从加载它的模型，到渲染它们，再到处理用户输入和显示错误——我们将需要使用一种不同的方法来将它集成到我们的SwiftUI视图中。<br>
+首先，让我们使用SwiftUI的UIViewControllerRepresentation协议来实现另一个包装器，只是这次我们将简单地使用给定的EventListLoader来创建一个视图控制器的实例:</p>
+<pre><code class="language-swift">
+struct EventList: UIViewControllerRepresentable {
+    var loader: EventListLoader
+
+    func makeUIViewController(context: Context) -&gt; EventListViewController {
+        EventListViewController(loader: loader)
+    }
+
+    func updateUIViewController(_ viewController: EventListViewController,
+                                context: Context) {
+        // Nothing to do here, since our view controller is
+        // read-only from the outside.
+    }
+}
+</code></pre>
+<p>如果我们的列表将被单独呈现(例如作为NavigationLink的目的地，或使用表修饰符呈现时)，上述方法可能完全正确。然而，如果我们还想让我们的SwiftUI视图使用与我们的视图控制器相同的底层状态，那么我们目前需要加载该状态两次，这将是相当浪费的。</p>
+<p>解决这个问题的一种方法是将我们的EventListLoader变成一个ObservableObject，这样我们就可以直接从SwiftUI视图中观察它的状态，而不需要以任何方式改变我们的视图控制器。下面是我们如何通过将加载器的最后一个结果公开为@ published标记的属性来实现这一点:</p>
+<pre><code class="language-swift">
+class EventListLoader: ObservableObject {
+    typealias Result = Swift.Result&lt;[Event], Error&gt;
+    typealias Handler = (Result) -&gt; Void
+
+    @Published private(set) var result: Result?
+    private let networking: Networking
+
+    init(networking: Networking) {
+        self.networking = networking
+    }
+
+    func loadEvents(then handler: @escaping Handler) {
+        // Here we wrap the handler that was passed in, in order
+        // to ensure that we'll always update our result property:
+        let handler: Handler = { [weak self] result in
+            self?.result = result
+            handler(result)
+        }
+
+        networking.request(.eventList) { result in
+            do {
+                let decoder = JSONDecoder()
+                let data = try result.get()
+                let events = try decoder.decode([Event].self, from: data)
+                handler(.success(events))
+            } catch {
+                handler(.failure(error))
+            }
+        }
+    }
+}
+</code></pre>
+<p>有了上面的这些，我们现在可以轻松地将任何SwiftUI视图连接到EventListLoader实例——例如，为了渲染一个仪表板，在基于视图控制器的EventList视图上显示用户的下一个即将到来的事件。因为我们的底层视图控制器将管理我们模型的实际加载，我们只需要用@ObservedObject来注释存储EventListLoader的属性，我们的仪表板将在用户的事件加载完成后自动更新:</p>
+<pre><code class="language-swift">
+struct EventDashboard: View {
+    @ObservedObject var eventListLoader: EventListLoader
+
+    private var nextEvent: Event? {
+        try? eventListLoader.result?.get().first
+    }
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            if let event = nextEvent {
+                VStack(alignment: .leading) {
+                    Text(&quot;Your next event:&quot;).font(.headline)
+                    NextEventView(event: event)
+                }
+                .padding(.horizontal)
+            }
+
+            EventList(loader: eventListLoader)
+        }
+    }
+}
+</code></pre>
+<p>然而，尽管上面的方法非常方便，它也可以被认为是一种hack。毕竟，我们目前做了一个非常强的假设，我们的EventList和它的底层视图控制器将实际开始加载我们的数据，这意味着我们的EventDashboard最终有一个隐式的数据依赖于它的一个子视图，这不是理想的。</p>
+<p>虽然我们可以当然总是调用我们的loader的loadEvents方法直接在EventDashboard视图,这样做会造成两个独立的网络请求执行(我们一直试图避免),并将有点尴尬的在这种情况下,鉴于我们简单地丢弃结果传递给该方法的要求完成处理器。</p>
+<p>相反，让我们引入一个新类型，它将负责在基于SwiftUI的EventDashboard和基于UIKit的EventListViewController之间同步我们的状态。由于这个新类型将全部用于存储事件模型的集合，我们将其称为EventStore。我们将再次使用ObservableObject协议，使它可以连接到SwiftUI视图，同时也可以在加载它的事件时附加一个UIKit友好的完成处理程序:</p>
+<pre><code class="language-swift">
+class EventStore: ObservableObject {
+    @Published private(set) var events = [Event]()
+    @Published private(set) var error: Error?
+
+    private let loader: EventListLoader
+    private var isLoading = false
+    private var pendingHandlers = [EventListLoader.Handler]()
+
+    init(loader: EventListLoader) {
+        self.loader = loader
+    }
+
+    func loadEvents(then handler: EventListLoader.Handler? = nil) {
+        if let handler = handler {
+            pendingHandlers.append(handler)
+        }
+
+        // This time, we only start loading if a loading operation
+        // isn't already in progress, meaning that this method
+        // can be called multiple times without causing duplicate
+        // network requests to be performed:
+        if !isLoading {
+            isLoading = true
+
+            loader.loadEvents { [weak self] result in
+                self?.didFinishLoading(withResult: result)
+            }
+        }
+    }
+}
+</code></pre>
+<p>请注意，我们是如何将传递给上述loaddevents方法的每个处理程序存储在一个数组中，而不是将这些闭包直接附加到每个加载操作上的。这样，当我们的didFinishLoading方法被调用时，我们可以一次调用所有的挂起处理程序——像这样:</p>
+<pre><code class="language-swift">
+private extension EventStore {
+    func didFinishLoading(withResult result: EventListLoader.Result) {
+        isLoading = false
+
+        switch result {
+        case .success(let loadedEvents):
+            events = loadedEvents
+            error = nil
+        case .failure(let encounteredError):
+            error = encounteredError
+        }
+
+        let handlers = pendingHandlers
+        pendingHandlers.removeAll()
+        handlers.forEach { $0(result) }
+    }
+}
+</code></pre>
+<p>即使遇到错误，我们也故意保持事件数组不变，以避免在用户脱机或给定的网络请求因其他原因失败时删除现有的视图数据。</p>
+<p>有了上面的内容，我们现在可以回到EventDashboard，让它使用我们新的EventStore类型，而不是直接调用EventListLoader。我们还将让它在出现时调用loaddevents(可以安全地多次调用)，这使它在数据方面完全自给自足:</p>
+<pre><code class="language-swift">
+struct EventDashboard: View {
+    @ObservedObject var store: EventStore
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            if let event = store.events.first {
+                VStack(alignment: .leading) {
+                    Text(&quot;Your next event:&quot;).font(.headline)
+                    NextEventView(event: event)
+                }
+                .padding(.horizontal)
+            }
+
+            EventList(store: store)
+        }
+        .onAppear { store.loadEvents() }
+    }
+}
+
+</code></pre>
+<p>更好的!然而，这种方法也要求我们对EventListViewController(及其EventList包装器类型)做一些小更改。值得庆幸的是，这些变化真的很小，基本上只是改变所有对EventListLoader的调用，而不是使用我们新的EventStore类型，例如:</p>
+<pre><code class="language-swift">
+class EventListViewController: UIViewController {
+    private let store: EventStore
+    private lazy var tableView = UITableView()
+    ...
+
+    init(store: EventStore) {
+        self.store = store
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    ...
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        showActivityIndicator()
+
+        store.loadEvents { [weak self] result in
+            switch result {
+            case .success(let events):
+                self?.eventsDidLoad(events)
+            case .failure(let error):
+                self?.showError(error)
+            }
+        }
+    }
+    
+    ...
+}
+</code></pre>
+<p>有了上述更改，我们现在可以将EventListLoader恢复为一个简单的无状态加载器，它可以完全专注于加载事件列表。</p>
+<p>另一种方法(或者可能是我们整个迁移过程中的下一个逻辑步骤)是让上面的视图控制器也使用我们EventStore提供的@ publish -marked属性，而不是依赖于一个独立的、基于完成处理程序的API。这是下周我们将深入探讨的细节，当我们看一下另一方面——如何将基于swiftui的视图引入基于uikit的视图控制器。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>SwiftUI与UIKit和AppKit的互操作性很强，这给我们在采用时提供了很大的灵活性。然而，虽然在最基本的层次上使用像UIViewrepresentation这样的协议可能相对简单，但在基于UIKit的视图和使用SwiftUI构建的视图之间共享可变状态和复杂的交互往往会非常复杂，可能需要我们在这两个世界之间建立各种桥接层。</p>
+<p><a href="https://www.swiftbysundell.com/articles/swiftui-and-uikit-interoperability-part-1/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l8xvWHOizF/" class="tag">
+                    uikit
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/formatting-numbers-in-swift/">
+                  <h3 class="post-title">
+                    Formatting numbers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

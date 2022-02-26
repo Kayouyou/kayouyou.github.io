@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Conditional compilation within Swift expressions | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Working around platform differences
+
+
+
+
+Inline checks within expressions
+
+
+
+
+Conclusion
+
+
+
+
+
+Swift 5.5新增功能:现在可以使用Swi..." />
+    <meta name="keywords" content="Conditional,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Conditional compilation within Swift expressions</h2>
+            <div class="post-date">2021-09-11</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Workingaroundplatformdifferences">Working around platform differences</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Inlinecheckswithinexpressions">Inline checks within expressions</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p><strong>Swift 5.5新增功能</strong>:现在可以使用Swift的#<strong>if</strong>编译器指令有条件地编译后缀成员表达式。让我们看看这个新特性在哪些情况下真正有用。</p>
+<h2 id="1-a-nameworkingaroundplatformdifferencesaworking-around-platform-differences">1. <a name='Workingaroundplatformdifferences'></a>Working around platform differences</h2>
+<p>尽管许多内置api和框架在苹果平台上的工作方式完全相同，但我们可能需要解决某些差异。例如，当使用SwiftUI构建一个同时在iOS和Mac上运行的应用程序时，我们可能会发现自己处于以下类型的情况——当我们试图将iOS特有的<strong>InsetGroupedListStyle</strong>应用到<strong>List</strong>时，我们会得到一个错误:</p>
+<pre><code class="language-swift">struct ItemList: View {
+    var items: [Item]
+
+    var body: some View {
+        List {
+            ...
+        }
+        // Error: 'InsetGroupedListStyle' is unavailable in macOS
+        .listStyle(InsetGroupedListStyle())
+    }
+}
+</code></pre>
+<p>一般来说，这类问题可以通过使用编译时平台检查来解决——但在Swift 5.5之前，我们必须首先将List分解成一个单独的表达式，然后使用基于#<strong>if</strong>的操作系统条件分别应用不同的<strong>listStyle</strong>修饰符:</p>
+<pre><code class="language-swift">struct ItemList: View {
+    var items: [Item]
+
+    var body: some View {
+        let list = List {
+            ...
+        }
+
+        #if os(iOS)
+        list.listStyle(InsetGroupedListStyle())
+        #else
+        list.listStyle(InsetListStyle())
+        #endif
+    }
+}
+</code></pre>
+<p>单独来看，上面的代码看起来并没有那么糟糕，但是如果我们的<strong>ItemList</strong>视图要获得额外的子视图(或者如果我们需要在其中执行额外的编译时检查)，那么它的主体很快就会变得非常难以阅读。</p>
+<p>因此，解决这个问题的一个更健壮的解决方案可能是将上述平台检查提取到一个专用的修改器方法中——例如:</p>
+<pre><code class="language-swift">extension View {
+    func defaultListStyle() -&gt; some View {
+        #if os(iOS)
+        listStyle(InsetGroupedListStyle())
+        #else
+        listStyle(InsetListStyle())
+        #endif
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们可以简单地在<strong>ItemList</strong>视图中应用新的<strong>defaultListStyle</strong>修饰符，并且在构造实际的UI时，我们不再需要处理任何平台差异:</p>
+<pre><code class="language-swift">struct ItemList: View {
+    var items: [Item]
+
+    var body: some View {
+        List {
+            ...
+        }
+        .defaultListStyle()
+    }
+}
+</code></pre>
+<p>然而，尽管在处理我们希望在项目中多次重用的修饰符和样式时，上述方法确实是一种整洁的技术，但每次遇到平台差异时都必须定义专用方法，这可能会变得非常乏味。</p>
+<p>这就是Swift 5.5在后缀成员表达式中支持#if条件的地方。</p>
+<h2 id="2-a-nameinlinecheckswithinexpressionsainline-checks-within-expressions">2. <a name='Inlinecheckswithinexpressions'></a>Inline checks within expressions</h2>
+<p>当使用Swift 5.5(在编写本文时，作为Xcode 13的一部分正在测试)时，我们现在可以选择在表达式中内联#<strong>if</strong>指令。那么，回到我们的ItemList，我们现在可以有条件地完全内联地应用每个<strong>listStyle</strong>修饰符，而不必首先将表达式分成多个部分:</p>
+<pre><code class="language-swift">struct ItemList: View {
+    var items: [Item]
+
+    var body: some View {
+        List {
+            ...
+        }
+        #if os(iOS)
+        .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
+    }
+}
+</code></pre>
+<p>很不错! 当然，这个新功能也适用于其他类型的基于#<strong>if</strong>的编译时检查——包括使用标准<strong>DEBUG</strong>标志来检查我们的应用程序是否正在使用它的调试构建配置进行编译，以及任何自定义编译器标志。</p>
+<p>作为一个例子，下面是我们如何使用自定义标记来有条件地可视化一个视图的最终渲染大小:</p>
+<pre><code class="language-swift">struct DynamicIcon: View {
+    var name: String
+
+    var body: some View {
+        Image(systemName: name)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            #if SHOW_ICON_SIZES
+            .overlay(GeometryReader { geo in
+                Text(&quot;\(Int(geo.size.width)) x \(Int(geo.size.height))&quot;)
+                    .font(.footnote)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+            })
+            #endif
+    }
+}
+</code></pre>
+<h2 id="3-a-nameconclusionaconclusion">3. <a name='Conclusion'></a>Conclusion</h2>
+<p>那么，我们应该如何在这些新的内联#if条件和创建专门的修饰符来处理平台差异和执行其他类型的编译时检查之间进行选择呢? 虽然每个开发人员肯定都有自己的偏好——对我来说，这完全取决于给定的模式是否会在代码库中重复，或者它是否只执行一次。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/IzH1-o3vc/" class="tag">
+                    Conditional
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/expert-swift-chapter-6-sequences-collections-and-algorithms/">
+                  <h3 class="post-title">
+                    Expert Swift Chapter 6 : Sequences, Collections &amp; Algorithms
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

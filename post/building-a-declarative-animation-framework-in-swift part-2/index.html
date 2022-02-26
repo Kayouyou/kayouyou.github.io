@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Building a declarative animation framework in Swift - Part 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="本周，让我们完成上周开始的动画框架的构建!  总而言之，我们的目标是构建一个声明性API，使我们能够通过预先定义的一系列操作(而不是内联嵌套的动画闭包)清晰地表达动画。
+从上周开始，我们的API已经可以在单个视图上运行动画了。虽然这可能涵盖..." />
+    <meta name="keywords" content="declarative programming,animations" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Building a declarative animation framework in Swift - Part 2</h2>
+            <div class="post-date">2017-07-30</div>
+            
+            <div class="post-content" v-pre>
+              <p>本周，让我们完成上周开始的动画框架的构建!  总而言之，我们的目标是构建一个声明性API，使我们能够通过预先定义的一系列操作(而不是内联嵌套的动画闭包)清晰地表达动画。</p>
+<p>从上周开始，我们的API已经可以在单个视图上运行动画了。虽然这可能涵盖了我们的很多用例，但有一件事是缺少了协调在多个视图上执行动画的能力。</p>
+<p>让我们说我们想要动画一个序列，首先一个标签淡入，然后稍微向上移动，然后最后一个按钮也淡入，像这样:</p>
+<pre><code class="language-swift">label.animate([
+    .fadeIn(),
+    .move(byX: 0, y: -50)
+])
+
+// We want this animation to run *after* the label animation
+button.animate([
+    .fadeIn()
+])
+</code></pre>
+<p>如果我们使用当前的动画API运行上述代码，这两个动画将同时执行，这不是我们想要的。 为了解决这个问题，我们需要引入另一个可以排序动画的图层，而不仅仅是一个单独的视图级别。</p>
+<h2 id="adding-a-top-level-function">Adding a top level function</h2>
+<p>解决上述问题的一种方法是在开始动画时添加一个选项来传递一个完成处理程序，然后在那个处理器中执行第二个，像这样:</p>
+<pre><code class="language-swift">label.animate([
+    .fadeIn(),
+    .move(byX: 0, y: -50)
+], completionHandler: {
+    button.animate([
+        .fadeIn()
+    ])
+})
+</code></pre>
+<p>上述方法适用于大多数iOS开发者，因为这是一种非常普遍的模式。然而，如果我们采用那个解决方案，我们就会失去动画框架的一些声明性特征。嵌套闭包正是我们要避免的，所以如果我们仍然能够实现这个目标，那就太好了，即使添加了这个新功能。</p>
+<p>所以我们要做的，就是添加一个顶层函数，它可以用来包装在不同视图上对animate()的多个调用，这样我们就可以写这样的代码:</p>
+<pre><code class="language-swift">animate([
+    label.animate([
+        .fadeIn(),
+        .move(byX: 0, y: -50)
+    ]),
+    button.animate([
+        .fadeIn()
+    ])
+])
+</code></pre>
+<p>一个挑战是确保按钮的动画直到标签的动画完成后才开始。我们可以通过引入一个新的API来解决这个问题，叫做waitThenAnimate()或者别的什么，但这似乎不是很优雅，而且需要我们不断改变调用的API，这取决于我们想要动画的上下文——这不是很好。</p>
+<h2 id="tokens">Tokens</h2>
+<p>相反，我们将使用基于令牌的技术来解决这个问题，每次调用animate()都会产生一个AnimationToken，这将用于直接执行动画，或在任何未决动画之后。 我们可以在token被释放后触发动画，如下所示:</p>
+<pre><code class="language-swift">public final class AnimationToken {
+    deinit {
+        // Perform animation
+    }
+}
+</code></pre>
+<p>这样，我们就可以让顶级的animate()函数保存每个令牌，直到执行动画为止，当一个动画在没有顶级函数的情况下执行时，令牌将立即被释放，从而导致动画的执行没有任何延迟。</p>
+<p>让我们实现AnimationToken，它将保存一个对UIView和它所对应的[Animations]的引用。我们还将添加在执行动画时内部传递完成处理程序的能力，稍后我们将在实际的排序中使用它。</p>
+<pre><code class="language-swift">// We add an enum to describe in which mode we want to animate
+internal enum AnimationMode {
+    case inSequence
+    case inParallel
+}
+
+public final class AnimationToken {
+    private let view: UIView
+    private let animations: [Animation]
+    private let mode: AnimationMode
+    private var isValid = true
+
+    // We don't want the API user to think that they should create tokens
+    // themselves, so we make the initializer internal to the framework
+    internal init(view: UIView, animations: [Animation], mode: AnimationMode) {
+        self.view = view
+        self.animations = animations
+        self.mode = mode
+    }
+
+    deinit {
+        // Automatically perform the animations when the token gets deallocated
+        perform {}
+    }
+
+    internal func perform(completionHandler: @escaping () -&gt; Void) {
+        // To prevent the animation from being executed twice, we invalidate
+        // the token once its animation has been performed
+        guard isValid else {
+            return
+        }
+
+        isValid = false
+
+        switch mode {
+        case .inSequence:
+            view.performAnimations(animations,
+                                   completionHandler: completionHandler)
+        case .inParallel:
+            view.performAnimationsInParallel(animations, 
+                                             completionHandler: completionHandler)
+        }
+    }
+}
+</code></pre>
+<p>正如你在上面看到的，我们在UIView上调用两个新方法;performAnimations()和performAnimationsInParallel()。我们要介绍这些的原因是我们上周添加的动画方法现在会返回一个AnimationToken，而不是实际执行动画。</p>
+<p>让我们从重构之前的方法开始:</p>
+<pre><code class="language-swift">public extension UIView {
+    @discardableResult func animate(_ animations: [Animation]) -&gt; AnimationToken {
+        return AnimationToken(
+            view: self,
+            animations: animations,
+            mode: .inSequence
+        )
+    }
+
+    @discardableResult func animate(inParallel animations: [Animation]) -&gt; AnimationToken {
+        return AnimationToken(
+            view: self,
+            animations: animations,
+            mode: .inParallel
+        )
+    }
+}
+</code></pre>
+<p>如上所示，@discardableResult属性已经添加到animate()方法中。这样，当API用户在新的顶级函数之外调用这些函数时，就不会得到警告，这将导致令牌立即被丢弃。</p>
+<p>接下来，让我们将以前的方法的实现移动到新的方法中(将执行动画)，并添加对completionHandler参数的支持:</p>
+<pre><code class="language-swift">internal extension UIView {
+    func performAnimations(_ animations: [Animation], completionHandler: @escaping () -&gt; Void) {
+        // This implementation is exactly the same as before, only now we call
+        // the completion handler when our exit condition is hit
+        guard !animations.isEmpty else {
+            return completionHandler()
+        }
+
+        var animations = animations
+        let animation = animations.removeFirst()
+
+        UIView.animate(withDuration: animation.duration, animations: {
+            animation.closure(self)
+        }, completion: { _ in
+            self.performAnimations(animations, completionHandler: completionHandler)
+        })
+    }
+
+    func performAnimationsInParallel(_ animations: [Animation], completionHandler: @escaping () -&gt; Void) {
+        // If we have no animations, we can exit early
+        guard !animations.isEmpty else {
+            return completionHandler()
+        }
+
+        // In order to call the completion handler once all animations
+        // have finished, we need to keep track of these counts
+        let animationCount = animations.count
+        var completionCount = 0
+
+        let animationCompletionHandler = {
+            completionCount += 1
+
+            // Once all animations have finished, we call the completion handler
+            if completionCount == animationCount {
+                completionHandler()
+            }
+        }
+
+        // Same as before, only with the call to the animation
+        // completion handler added
+        for animation in animations {
+            UIView.animate(withDuration: animation.duration, animations: {
+                animation.closure(self)
+            }, completion: { _ in
+                animationCompletionHandler()
+            })
+        }
+    }
+}
+</code></pre>
+<h2 id="putting-all-the-pieces-together">Putting all the pieces together</h2>
+<p>现在，我们已经为实现新的顶级animate()函数奠定了所有的基础，这个函数实际上非常简单。 就像当我们执行一个动画序列时，我们只需要定义一个退出条件(使用一个guard语句)， 递归地调用函数，直到所有动画都执行完毕:</p>
+<pre><code class="language-swift">public func animate(_ tokens: [AnimationToken]) {
+    guard !tokens.isEmpty else {
+        return
+    }
+
+    var tokens = tokens
+    let token = tokens.removeFirst()
+
+    token.perform {
+        animate(tokens)
+    }
+}
+</code></pre>
+<h2 id="taking-our-new-feature-for-a-spin">Taking our new feature for a spin</h2>
+<p>好了，让我们试试我们的新功能——协调多个视图动画，所有这些都不需要嵌套闭包!🎉</p>
+<p>上周，我们使用红色矩形来测试我们的API。虽然这样做了，但有点无聊，所以让我们添加一些适当的视图来代替动画:</p>
+<pre><code class="language-swift">let label = UILabel()
+label.text = &quot;Let's animate...&quot;
+label.sizeToFit()
+label.center = view.center
+label.alpha = 0
+view.addSubview(label)
+
+let button = UIButton(type: .system)
+button.setTitle(&quot;...multiple views!&quot;, for: .normal)
+button.sizeToFit()
+button.center.x = view.center.x
+button.center.y = label.frame.maxY + 50
+button.alpha = 0
+view.addSubview(button)
+
+
+让我们执行我们最初设定的动画!🚀
+
+animate([
+    label.animate([
+        .fadeIn(duration: 3),
+        .move(byX: 0, y: -50, duration: 3)
+    ]),
+    button.animate([
+        .fadeIn(duration: 3)
+    ])
+])
+</code></pre>
+<p>我将每一步的动画持续时间设置为3秒，以便能够很容易地看到操场上发生了什么。</p>
+<h2 id="adding-a-spoonful-of-sugar">Adding a spoonful of sugar</h2>
+<p>好了，现在到了奖金环节!  当我们调用上面新的顶级animate()函数时，你可能会注意到一件事， 我们必须添加大量的语法，特别是使用所有的数组字面量([])。</p>
+<p>我们可以减少这种情况的一种方法是，提供接受可变数量参数的api，而不是一个数组。 这样，编译器就可以根据实参自动构造数组，语法更加简洁:</p>
+<pre><code class="language-swift">animate(
+    label.animate(
+        .fadeIn(duration: 3),
+        .move(byX: 0, y: -50, duration: 3)
+    ),
+    button.animate(.fadeIn(duration: 3))
+)
+</code></pre>
+<p>要做到这一点，我们只需要在前面的数组接受实现中添加前传重载:</p>
+<pre><code class="language-swift">public func animate(_ tokens: AnimationToken...) {
+    animate(tokens)
+}
+
+public extension UIView {
+    @discardableResult func animate(_ animations: Animation...) -&gt; AnimationToken {
+        return animate(animations)
+    }
+
+    @discardableResult func animate(inParallel animations: Animation...) -&gt; AnimationToken {
+        return animate(inParallel: animations)
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>现在，我们有了一个声明式动画框架，既可以为单个视图执行动画，也可以为多个视图执行动画🎉</p>
+<p>当然，我们还可以向这个框架添加更多的特性，以使它更有能力，并处理更多的用例.(比如能够使用序列和并行动画嵌套多个顶级animate()调用)， 但我认为我们有了一个良好的开端。</p>
+<p>你可以找到这篇文章的所有代码(结合上一篇文章的内容)在这个分支的动画repo。我还会继续在master上开发这个框架，所以你可以用pull requests来贡献它，或者根据这两篇博文的想法创建你自己的框架和工具。</p>
+<p><a href="https://www.swiftbysundell.com/articles/building-a-declarative-animation-framework-in-swift-part-2/">原文链接</a></p>
+<p><a href="https://github.com/JohnSundell/Animate/blob/post2/Animate.playground/Contents.swift">代码地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l12eWlxBe/" class="tag">
+                    declarative programming
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nk7gw0vRGQ/" class="tag">
+                    animations
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/building-a-declarative-animation-framework-in-swift part-1/">
+                  <h3 class="post-title">
+                    Building a declarative animation framework in Swift - Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

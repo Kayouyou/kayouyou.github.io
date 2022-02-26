@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 07: Setters and Key Paths | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Structs
+
+
+
+
+Key paths
+
+
+
+
+Compiler-generated setters
+
+
+
+
+What’s the point?
+
+
+
+
+
+
+1. Introduction
+在上..." />
+    <meta name="keywords" content="PointFree,key paths" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 07: Setters and Key Paths</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Structs">Structs</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Keypaths">Key paths</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Compiler-generatedsetters">Compiler-generated setters</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 07: Setters and Key Paths -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>在上一集中，我们探讨了函数式setters如何允许我们深入到嵌套结构中执行转换，同时保持结构中的其他内容不变。我们尝试了一些简单的例子，比如嵌套的元组和数组，我们展示了一些非常令人印象深刻的东西，但在一天结束的时候，我们并不是典型的转换元组。相反，我们使用的是带有结构体的真实数据。我们想要把上一集的所有想法带到结构体的世界中，这样我们就可以用一种简单而富有表现力的方式来转换一个深度嵌套的结构体。为了做到这一点，我们要利用Swift的<strong>key paths</strong>!</p>
+<h2 id="2-a-namestructsastructs">2. <a name='Structs'></a>Structs</h2>
+<p>这里我们有一些相关的结构体:</p>
+<pre><code class="language-swift">struct Food {
+  var name: String
+}
+
+struct Location {
+  var name: String
+}
+
+struct User {
+  var favoriteFoods: [Food]
+  var location: Location
+  var name: String
+}
+
+let user = User(
+  favoriteFoods: [
+    Food(name: &quot;Tacos&quot;),
+    Food(name: &quot;Nachos&quot;)
+  ],
+  location: Location(name: &quot;Brooklyn&quot;),
+  name: &quot;Blob&quot;
+)
+</code></pre>
+<p>我们有一个<strong>Food</strong>结构体、一个<strong>Location</strong>结构体和一个<strong>User</strong>结构体，它保存一些Food、一个Location和一个name。我们还有一个示例用户可以使用。</p>
+<p>如果我们想深入用户所在位置的名称，并将其重新定位到洛杉矶，并产生一个全新的用户价值，该怎么办? 最简单的方法是这样的:</p>
+<pre><code class="language-swift">User(
+  favoriteFoods: user.favoriteFoods,
+  location: Location(name: &quot;Los Angeles&quot;),
+  name: user.name
+)
+</code></pre>
+<p>我们通过保持大多数值不变来创建一个全新的用户，但提供一个带有更新名称的新位置。</p>
+<p>这是一种创建新值并转换一小部分的好方法，但正如我们在上一集元组中看到的，我们看到有一种比每次从零开始构建每个新值更好的方法。</p>
+<p>下面是上节课的函数<strong>first</strong>，它的唯一目的是转换元组的第一个组件:</p>
+<pre><code class="language-swift">func first&lt;A, B, C&gt;(_ f: @escaping (A) -&gt; B) -&gt; ((A, C)) -&gt; (B, C) {
+  return { pair in
+    (f(pair.0), pair.1)
+  }
+}
+</code></pre>
+<p>让我们用一些具体的类型来替换这些泛型，它们表示如何转换用户的位置名:</p>
+<pre><code class="language-swift">func userLocationName(_ f: @escaping (String) -&gt; String) -&gt; (User) -&gt; User {
+  return { user in
+    User(
+      favoriteFoods: user.favoriteFoods,
+      location: Location(name: f(user.location.name)),
+      name: user.name
+    )
+  }
+}
+</code></pre>
+<p>有很多的样板，但它至少把<strong>setter</strong>带入了函数的世界。我们可以这样使用它:</p>
+<pre><code class="language-swift">user
+  |&gt; userLocationName { _ in &quot;Los Angeles&quot; }
+// &quot;Los Angeles&quot;
+
+user
+  |&gt; userLocationName { $0 + &quot;!&quot; }
+// &quot;Brooklyn!&quot;
+</code></pre>
+<p>这看起来很好，因为它开始像我们对元组做的那样了。 但缺点是，我们需要为每种类型的每个字段编写这些<strong>setter</strong>函数。它一点也不通用!</p>
+<p>更重要的是:如果我们对这些结构的任何字段进行更改(添加、删除、重命名)，它将破坏所有现有的setter。</p>
+<h2 id="3-a-namekeypathsakey-paths">3. <a name='Keypaths'></a>Key paths</h2>
+<p>幸运的是，我们可以利用一个很棒的Swift特性来做得更好:<strong>Key paths</strong>!</p>
+<p>关键路径是编译器生成的代码，它为结构的每个字段提供了函数式的getter和setter。 只是他们的语法有点奇怪， 很难看出他们有多好。</p>
+<p>要访问键路径，你可以使用下面的特殊语法:</p>
+<pre><code class="language-swift">\User.name // KeyPath&lt;User, String&gt;
+</code></pre>
+<p>这给了我们一个从用户到字符串的key path。 第一个泛型称为键路径的“根”，第二个泛型称为“值”。</p>
+<p>我们可以用两种方式使用这个key path。一种方法是从用户中提取<strong>name</strong>。</p>
+<pre><code class="language-swift">user[keyPath: \User.name] // &quot;Blob&quot;
+</code></pre>
+<p>很好，但是为什么我们要使用属性点语法呢?</p>
+<pre><code class="language-swift">user.name // &quot;Blob&quot;
+</code></pre>
+<p>我们还可以使用这个关键路径在用户中设置<strong>name</strong>:</p>
+<pre><code class="language-swift">var copy = user
+copy[keyPath: \User.name] = &quot;Blobbo&quot;
+</code></pre>
+<p>当键路径有setter时，这意味着它们是KeyPath的一个子类，称为<strong>WritableKeyPath</strong>。</p>
+<p>也很简洁，但为什么我们要关心更简单的属性点语法?</p>
+<pre><code class="language-swift">copy.name = &quot;Blobbo&quot;
+</code></pre>
+<p>这种<strong>key path</strong>的使用并不有趣。有趣的是，Swift给了我们一个编译器生成的值，我们可以用它来获取和设置结构体的属性。 这意味着我们可以将数据的概念与更改数据的操作完全分离。点语法不能做到这一点。</p>
+<h2 id="4-a-namecompiler-generatedsettersacompiler-generated-setters">4. <a name='Compiler-generatedsetters'></a>Compiler-generated setters</h2>
+<p>为了显式地实现这一点，让我们定义一个helper，它将一个可写的键路径提升到一个根的转换键路径世界中。我们甚至将它一般化一点，允许我们提供一个函数，在把值代回根结点之前进一步转换值。</p>
+<pre><code class="language-swift">func prop&lt;Root, Value&gt;(_ kp: WritableKeyPath&lt;Root, Value&gt;)
+  -&gt; (@escaping (Value) -&gt; Value)
+  -&gt; (Root)
+  -&gt; Root {
+
+  return { update in
+    { root in
+      var copy = root
+      copy[keyPath: kp] = update(copy[keyPath: kp])
+      return copy
+    }
+  }
+}
+</code></pre>
+<p>如果你仔细观察，你会注意到这个<strong>prop</strong>函数在keyPath部分之后的签名与我们在元组上定义的第一个和第二个函数相同:<br>
+给定值上的变换我们可以得到根上的变换。</p>
+<p>只要有了这个lil助手，我们就可以在User结构中使用它了。</p>
+<pre><code class="language-swift">prop(\User.name)
+// ((String) -&gt; (String)) -&gt; (User) -&gt; User
+</code></pre>
+<p>我们可能会使用尾随闭包语法来调用带有转换的新函数。</p>
+<pre><code class="language-swift">prop(\User.name) { _ in &quot;Blobbo&quot; }
+// Extra argument in call
+</code></pre>
+<p>但这不起作用:Swift在这里将尾随闭包语法解析为<strong>prop</strong>的第二个参数。但是，我们可以使用括号来表示我们的意图。</p>
+<p>我们可以用圆括号括起闭包，但是后面的语法更便于阅读。幸运的是，我们还可以将对<strong>prop</strong>的调用包装在括号中，并保留后面的闭包。</p>
+<pre><code class="language-swift">(prop(\User.name)) { _ in &quot;Blobbo&quot; }
+// (User) -&gt; User
+</code></pre>
+<p>现在我们有了一个可重用的功能，它将一个User作为输入，并输出一个全新的User! 将用户重命名为“Blobbo”可能不是最具可重用性的事情，但是，我们把用户的名字改为大写怎么样?</p>
+<pre><code class="language-swift">(prop(\User.name)) { $0.uppercased() }
+</code></pre>
+<p>如果我们想转换用户的<strong>location name</strong>呢?  正如我们上次看到的，我们可以使用 &lt;&lt;&lt; 来组合setter。</p>
+<pre><code class="language-swift">prop(\User.location) &lt;&lt;&lt; prop(\Location.name)
+// ((String) -&gt; String) -&gt; (User) -&gt; User
+</code></pre>
+<p>关键路径的一个优点是，它们使用点链接进行组合!</p>
+<pre><code class="language-swift">prop(\User.location.name)
+// ((String) -&gt; String) -&gt; (User) -&gt; User
+</code></pre>
+<p>我们创建的这个函数与前面手工定义的<strong>userLocationName</strong>函数完全相同。 然而，这一次，我们能够使用编译器生成的代码来完成大部分工作!</p>
+<p>现在让我们转换<strong>user</strong>价值。</p>
+<pre><code class="language-swift">user
+  |&gt; (prop(\User.name)) { $0.uppercased() }
+  |&gt; (prop(\User.location.name)) { _ in &quot;Los Angeles&quot; }
+</code></pre>
+<p>因为所有的东西都只是函数，这个东西已经适用于我们之前定义的第一个和第二个元组转换。不需要额外的工作，让我们只是组合函数!</p>
+<p>我们可以将用户嵌入到一个元组中，并查看该组合的运行情况。</p>
+<pre><code class="language-swift">(42, user)
+  |&gt; (second &lt;&lt;&lt; prop(\User.name)) { $0.uppercased() }
+</code></pre>
+<p>这很好，但让我们把它变得更好! Swift的键路径允许在任何可以推断类型的地方使用缩写语法。在我们目前的例子中，我们可以删除很多显式类型:</p>
+<pre><code class="language-swift">prop(\User.location) &lt;&lt;&lt; prop(\.name)
+
+user
+  |&gt; (prop(\.name)) { $0.uppercased() }
+  |&gt; (prop(\.location.name)) { _ in &quot;Los Angeles&quot; }
+
+(42, user)
+  |&gt; (second &lt;&lt;&lt; prop(\.name)) { $0.uppercased() }
+</code></pre>
+<p>这看起来很干净!让我们再看看最后一个例子。</p>
+<pre><code class="language-swift">(42, user)
+  |&gt; (second &lt;&lt;&lt; prop(\.name)) { $0.uppercased() }
+  |&gt; first(incr)
+</code></pre>
+<p>这东西真的很强大! 我们之前使用元组的示例似乎并不适用于我们每天编写的代码，但现在我们看到可组合setter也可以很好地处理我们定义的类型。</p>
+<p>我们在这里仍然使用元组，那么更常见的数据结构如何呢? 让我们来处理数组。</p>
+<p>在<strong>User</strong>结构体中有一个最喜欢的食物数组。</p>
+<pre><code class="language-swift">user.favoriteFoods
+// [Food(name: &quot;Tacos&quot;), Food(name: &quot;Nachos&quot;)]
+</code></pre>
+<p>在上周的章节中，我们使用了<strong>free map</strong>函数遍历数组并对每个元素应用转换。这与我们所有的其他setters组合在一起。</p>
+<p>如果我们想要改变用户最喜欢的食物，我们可以使用<strong>map</strong>方法。</p>
+<pre><code class="language-swift">user.favoriteFoods
+  .map { Food(name: $0.name + &quot; &amp; Salad&quot;) }
+// [Food(name: &quot;Tacos &amp; Salad&quot;), Food(name: &quot;Nachos &amp; Salad&quot;)]
+</code></pre>
+<p>但是，这将返回一个食物数组，而不是一个用户，因此我们要处理的问题是必须从头开始重构一个数组。让我们尝试使用setter。</p>
+<pre><code class="language-swift">prop(\User.favoriteFoods) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.name)
+// ((String) -&gt; String) -&gt; (User) -&gt; User
+</code></pre>
+<p>我们可以将这个setter与可重用转换一起使用。</p>
+<pre><code class="language-swift">let healthier = (prop(\User.favoriteFoods) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.name)) {
+  $0 + &quot; &amp; Salad&quot;
+}
+// (User) -&gt; User
+</code></pre>
+<p>现在我们有了一个可重用的函数，可以自由地通过管道传输数据了!</p>
+<pre><code class="language-swift">user |&gt; healthier
+</code></pre>
+<p>现在我们有一位用户，他最喜欢的食物都配有配菜沙拉。因为这些可重用功能只处理单一类型，所以我们可以将它们串联起来，并多次应用相同的转换。</p>
+<pre><code class="language-swift">user |&gt; healthier |&gt; healthier
+</code></pre>
+<p>我们可以继续将这些转换链接起来!</p>
+<pre><code class="language-swift">user
+  |&gt; healthier
+  |&gt; healthier
+  |&gt; (prop(\.location.name)) { _ in &quot;Miami&quot; } // &quot;Miami&quot;
+  |&gt; (prop(\.name)) { &quot;Healthy &quot; + $0 } // &quot;Healthy Blob&quot;
+</code></pre>
+<p>如果我们把它嵌套到另一个结构中会发生什么。让我们对用户进行元组化!</p>
+<pre><code class="language-swift">(42, user)
+  |&gt; second(healthier)
+  |&gt; second(healthier)
+  |&gt; (second &lt;&lt;&lt; prop(\.location.name)) { _ in &quot;Miami&quot; }
+  |&gt; (second &lt;&lt;&lt; prop(\.name)) { &quot;Healthy &quot; + $0 }
+  |&gt; first(incr)
+</code></pre>
+<p>除了我们的第一行，我们还有一堆可以独立存在的逻辑! 让我们使用合成来构建一个巨大的函数。</p>
+<pre><code class="language-swift">second(healthier)
+  &lt;&gt; second(healthier)
+  &lt;&gt; (second &lt;&lt;&lt; prop(\.location.name)) { _ in &quot;Miami&quot; }
+  &lt;&gt; (second &lt;&lt;&lt; prop(\.name)) { &quot;Healthy &quot; + $0 }
+  &lt;&gt; first(incr)
+</code></pre>
+<p>我们有对<strong>second</strong>元素的所有这些变换，但正如我们在过去看到的，setter分布在复合上，所以我们可以用这个来重塑我们的变换变成更简单的东西。</p>
+<pre><code class="language-swift">second(
+  healthier
+    &lt;&gt; healthier
+    &lt;&gt; (prop(\.location.name)) { _ in &quot;Miami&quot; }
+    &lt;&gt; (prop(\.name)) { &quot;Healthy &quot; + $0 }
+  )
+  &lt;&gt; first(incr)
+</code></pre>
+<p>还有其他我们想要穿越的结构。 例如，如果<strong>Use</strong>r有一个可选字段，您可能希望能够安全地遍历该字段并执行转换。要做到这一点，你需要使用可选的<strong>map</strong>安全地穿越到它。但要做到这一点，你需要一个像数组一样的自由map:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { $0.map(f) }
+}
+</code></pre>
+<p>我们只需要将数组替换为一个问号。</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (A?) -&gt; B? {
+  return { $0.map(f) }
+}
+</code></pre>
+<p>它可以编译，并且正是我们深入研究可选项所需要的函数setter。</p>
+<p>它不仅仅是可选的!我们之前讲过Either和Result类型，它们基本上只是Optional的强化版本，所以如果你混合了这些类型的值，你可能还需要一种方法来遍历这些结构并转换东西。</p>
+<p>好吧，令人惊讶的是，所有这些都是可能的，它和我们已经做过的非常相似。我们鼓励观众在练习中尝试一下!</p>
+<h2 id="5-a-namewhatsthepointawhats-the-point">5. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>当Swift给我们值类型时，我们为什么要这么深入到高阶函数合成的领域? 值类型是用于不可变数据的很好的模型，并为我们提供了一个非常合理的突变模型。我们可以只创建一个副本，进行修改，然后返回新值。</p>
+<pre><code class="language-swift">var newUser = user
+newUser.name = &quot;Blobbo&quot;
+newUser.location.name = &quot;Los Angeles&quot;
+newUser.favoriteFoods = copy.favoriteFoods.map {
+  Food(name: $0.name + &quot; &amp; Salad&quot;)
+}
+</code></pre>
+<p>这真是太好了!最后一行有点吵，但还不错。这还不够好吗?</p>
+<p>Swift在值突变和范围突变方面的能力真的很棒。对于我们在一个局部区域做临时变换的常见情况，这可能是可行的方法。但是，正如我们所看到的，对于更复杂的结构，比如数组和枚举，这种情况就会失控。 我们的特别转换开始吸引越来越多的样板文件，这里有嵌套的映射，那里有if case let，等等。函数设置器将这些繁琐的转换自动化为更简单的、可组合的单元，从而隐藏所有的样板文件。</p>
+<p>除此之外，比较函数式setter和可变值会导致表达式和语句之间的巨大区别。表达式是计算出一个值的代码单元，而语句是执行某个操作的代码单元，没有返回值。</p>
+<p>在这个newUser突变的例子中，我们有一组语句:一个描述如何复制一个用户，然后是一些强制修改它的步骤。</p>
+<p>举一个简单的例子来说明这种区别，让我们以一个整数数组为例。</p>
+<pre><code class="language-swift">let xs = [1, 2, 3]
+
+</code></pre>
+<p>现在让我们用两种不同的方式来转换它，一次作为表达式，一次使用语句。</p>
+<pre><code class="language-swift">xs.map { $0 + 1 }
+
+var ys = [Int]()
+xs.forEach { x in
+  ys.append(x + 1)
+}
+</code></pre>
+<p>第一个是表达式，因为我们是根据它的计算值来计算它，而不是计算它时发生的动作。 我们甚至不需要给它赋值。第二个是由语句组成的，执行语句是为了将它们的效果传达给世界。第一种样式比第二种更好地表达了代码的意图。</p>
+<p>这些函数设置允许我们继续生活在这个表达式的世界里。我们不需要创建许多临时的、可以丢弃的变量，这些变量必须在语句中进行修改才能得到最终值。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SaaEscPbvk/" class="tag">
+                    key paths
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-06-functional-setters/">
+                  <h3 class="post-title">
+                    PointFree Episode 06: Functional Setters
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

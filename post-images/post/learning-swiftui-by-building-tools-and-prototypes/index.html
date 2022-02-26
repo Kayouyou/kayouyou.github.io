@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Learning SwiftUI by building tools and prototypes | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="一年前，在2019年全球开发者大会开幕之前，苹果开发者社区中有很多猜测和争论，关于苹果是否最终会开始发布仅支持swift的框架。
+在当时，苹果将背离其与Objective-C保持完全向后兼容性的既定战略的想法似乎是一个相当激进的想法， 尽管..." />
+    <meta name="keywords" content="developer tools,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Learning SwiftUI by building tools and prototypes</h2>
+            <div class="post-date">2020-06-28</div>
+            
+            <div class="post-content" v-pre>
+              <p>一年前，在2019年全球开发者大会开幕之前，苹果开发者社区中有很多猜测和争论，关于苹果是否最终会开始发布仅支持swift的框架。</p>
+<p>在当时，苹果将背离其与Objective-C保持完全向后兼容性的既定战略的想法似乎是一个相当激进的想法， 尽管如此，这最终还是发生了——随着Combine、SwiftUI和CryptoKit等框架的引入。</p>
+<p>快进到现在，2020年6月，只支持swift框架的概念现在已经不仅仅是一种可能了——至少对于苹果各种sdk的新添加来说，这是一种新常态。但苹果并没有就此止步。今年，在WWDC20上，我们看到了苹果推出的第一个只支持swiftui的框架——WidgetKit。</p>
+<p>现在，根据你问的人的不同，苹果在WWDC20主题演讲中宣布的新的主屏幕小部件只能用SwiftUI来构建，这听起来可能是惊人的，也可能是糟糕的，甚至是可怕的。诚然，SwiftUI在很多方面都席卷了苹果开发者社区，并让许多新开发者开始开发自己的第一款应用，但至少目前人们对SwiftUI的看法存在分歧。</p>
+<p>然而，不管你认为SwiftUI是一种奇妙的新应用开发方式，还是一种还没有完全投入生产的应用，有一点已经很清楚了，那就是SwiftUI将会一直存在下去。</p>
+<p>因此，本周，让我们通过构建内部工具和各种原型，来看看一个学习和探索SwiftUI的可能场所——这是我在过去一年里亲自使用的。</p>
+<h2 id="learning-doesnt-necessarily-mean-deploying">Learning doesn’t necessarily mean deploying</h2>
+<p>“我应该学SwiftUI吗?”毫无疑问，这是我在过去一年里被问到的最常见的问题之一。</p>
+<p>现在，在回答这类问题时，我总是非常谨慎，因为在不熟悉开发者的个人背景的情况下，很难给出任何关于开发者应该或不应该做什么的具体建议。 例如，他们正在开发什么样的应用，他们的用户群是什么样的，他们的团队或公司是如何运作的?</p>
+<p>然而，今年苹果发布的公告明显改变了我对在苹果平台上工作的开发者是否应该学习SwiftUI的默认回答——简单地说“是”。</p>
+<p>重要的是要记住，您不必为了学习它而在您的主要产品代码库中部署某些东西。事实上，我个人尽可能多地学习我的代码之外的东西，不仅仅是SwiftUI，但总的来说。</p>
+<p>虽然在学习的时候有一个具体的用例是很好的，但是有很多方法可以写出非常有价值的代码，而不需要将其发送给客户， 这大大降低了使用我们还未完全熟悉的技术发布应用或功能的固有风险。</p>
+<h2 id="building-internal-tools-and-prototypes">Building internal tools and prototypes</h2>
+<p>特别是SwiftUI，它的语法非常轻量级，这使得它非常适合用于原型设计、构建内部工具和实用程序、用户测试和业余项目等任务。例如，假设我们想要在应用的内部构建中添加一个视图，让开发人员和设计人员都可以预览一组主题中的所有颜色，并且这些主题是使用如下结构体定义的:</p>
+<pre><code class="language-swift">struct Theme {
+    var name: String
+    var isDark: Bool
+    var brandColor: UIColor
+    var activeButtonColor: UIColor
+    var titleColor: UIColor
+    ...
+}
+</code></pre>
+<p>为了让这些预览发生，我们可以使用一点反射来从上述主题类型的实例中提取所有的颜色，然后通过编写少量的SwiftUI代码来呈现它们的列表，就像这样:</p>
+<pre><code class="language-swift">#if INTERNAL_BUILD
+struct ColorList {
+    var entries = [(color: UIColor, name: String)]()
+}
+
+extension Theme {
+    func makeColorList() -&gt; ColorList {
+        let mirror = Mirror(reflecting: self)
+        var list = ColorList()
+
+        for (label, value) in mirror.children {
+            guard let color = value as? UIColor,
+                  let name = label else {
+                continue
+            }
+
+            list.entries.append((color, name))
+        }
+
+        return list
+    }
+}
+
+struct ColorListView: View {
+    var list: ColorList
+
+    var body: some View {
+        List(list.entries, id: \.name) { entry in
+            HStack {
+                Circle()
+                    .fill(Color(entry.color))
+                    .frame(width: 50, height: 50)
+                Text(entry.name)
+            }
+        }
+    }
+}
+#endif
+</code></pre>
+<p>请注意，上面所有的代码都包装在一个定制的INTERNAL_BUILD编译器标记中，这让我们可以避免在应用程序的App Store构建中包含这些代码。</p>
+<p>假设我们的应用程序目前有两个主题——一个是光明模式，一个是黑暗模式——那么让我们添加一个列表视图，让我们选择这两个主题中的哪个预览。我们还将修改每个主题的ColorListView实例，以匹配其相应的系统颜色方案，以使我们的预览更加准确:</p>
+<pre><code class="language-swift">struct ThemeListView: View {
+    var themes: [Theme] = [.light, .dark]
+
+    var body: some View {
+        NavigationView {
+            List(themes, id: \.name) { theme in
+                NavigationLink(theme.name,
+                    destination: ColorListView(
+                        list: theme.makeColorList()
+                    )
+                    .colorScheme(theme.isDark ? .dark : .light)
+                    .navigationBarTitle(Text(theme.name),
+                        displayMode: .inline
+                    )
+                )
+            }
+            .navigationBarTitle(&quot;Select a theme&quot;)
+        }
+    }
+}
+#endif
+</code></pre>
+<p>注意，如果上面的代码是用于生产的，或者用于渲染一个大型的主题列表，那么我们可能不希望在视图的主体中内联执行makeColorList转换。但这就是构建内部工具和原型的美妙之处——我们可以走捷径!</p>
+<p>以上当然只是一个例子，但是如果我们仔细想想，仅仅通过编写少量的SwiftUI代码，我们已经学习了一些基本的概念 -像视图组成，布局，修改器，导航，等等。 此外，除了学习方面，我们还为团队中的开发者和设计师提供了一个非常有用的工具——非常棒!</p>
+<p>SwiftUI在原型设计方面也很出色。就像在构建内部工具时，我们通常希望在任何给定的原型上花费尽可能少的时间，因为创建原型的出发点是快速了解给定的想法或功能是否可行。</p>
+<p>在这种情况下，SwiftUI之所以如此出色，是因为它依赖于强大的默认设置和平台约定，它让我们能够立即构建我们的原型——几乎不需要设置。看看下面的代码示例——这就是现在(从Xcode 12开始)要开始一个基于swiftui的完整应用程序所需要的一切:</p>
+<pre><code class="language-swift">@main struct MyPrototype: App {
+    var body: some Scene {
+        WindowGroup {
+            Text(&quot;Let's start prototyping!&quot;)
+        }
+    }
+}
+</code></pre>
+<h2 id="easing-our-way-into-production">Easing our way into production</h2>
+<p>当然，SwiftUI不仅仅是一个原型工具，它还是一个强大的UI框架，越来越多地被用于开发小型独立应用和大规模制作软件等项目。那么，什么时候以及如何在我们实际交付给客户的代码中使用它才是一个好主意呢?</p>
+<p>除了这是一个年轻的框架外，对于swift的采用来说，最大的限制因素可能是它不能运行于比iOS 13或macOS Catalina更老的操作系统上-对于很多项目来说，这可能是不可接受的，尽管今年晚些时候苹果即将发布的操作系统版本很可能会改变。</p>
+<p>然而，正如去年全球开发者大会结束后发表的文章《Swift范式的转变》(Shifting paradigm in Swift)中所提到的，SwiftUI远非一个“要么全有要么全无”的命题。它与UIKit和AppKit的互操作性非常强，这意味着我们可以只用SwiftUI来构建一个小功能，只提供给iOS 13及以上的用户(目前大多数应用都是这样)。或者，我们可以使用它来实现依赖于更新的系统api的特性，比如小部件或应用程序剪辑。</p>
+<p>就像构建工具、原型和业余项目可以让我们在“更安全的环境”中学习新的框架一样——如果我们开始在现有应用程序的一小部分中采用SwiftUI，我们还可能更快地发现它是否已经为我们的特定用例做好了生产准备。因为尽管苹果和许多第三方开发者已经在生产中部署了SwiftUI，但这并不意味着它会成为所有应用的完美工具，至少在它成为一个成熟的框架之前不会。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>现在最大的问题是，当UIKit和AppKit已经具备了构建一个优秀应用所需的一切时，为什么还要花费所有的时间和精力去学习一个全新的UI框架呢?</p>
+<p>对我来说，除了对学习新技术的兴奋，以及SwiftUI让我在构建各种不同的ui时更加高效之外，这一切都可以归结为对未来的验证。</p>
+<p>如果说我从十年的苹果平台应用开发中学到了什么的话，那就是你的项目越符合苹果平台的发展愿景，效果就越好。UIKit和AppKit可能不会很快消失，但WidgetKit可能不会是苹果发布的最后一个只支持swiftui的框架。</p>
+<p>SwiftUI可能仍然有办法去为了成为最终的UI开发框架,它仍有毛边,但——至少在我看来——这是绝对值得学习,即使你最终只会用它来构建工具和原型。</p>
+<p><a href="https://www.swiftbysundell.com/articles/learning-swiftui-by-building-tools-and-prototypes/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EwwtnDOTL/" class="tag">
+                    developer tools
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/annotating-properties-with-default-decoding-values/">
+                  <h3 class="post-title">
+                    Annotating properties with default decoding values
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

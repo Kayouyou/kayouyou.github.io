@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>50道iOS面试问答 - 3 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+50道iOS面试问答 - 3
+
+1- What is Nil Coalescing &amp; Ternary Operator? (nil合并和三元运算符是什么？)
+2- What kind of JSONSerialization ..." />
+    <meta name="keywords" content="interview" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">50道iOS面试问答 - 3</h2>
+            <div class="post-date">2021-05-26</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gqutb7uuh1j31c00u0q5b.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#50%E9%81%93ios%E9%9D%A2%E8%AF%95%E9%97%AE%E7%AD%94---3">50道iOS面试问答 - 3</a>
+<ul>
+<li><a href="#1--what-is-nil-coalescing--ternary-operator-nil%E5%90%88%E5%B9%B6%E5%92%8C%E4%B8%89%E5%85%83%E8%BF%90%E7%AE%97%E7%AC%A6%E6%98%AF%E4%BB%80%E4%B9%88">1- What is Nil Coalescing &amp; Ternary Operator? (nil合并和三元运算符是什么？)</a></li>
+<li><a href="#2--what-kind-of-jsonserialization-have-readingoptions">2- What kind of JSONSerialization have ReadingOptions?</a></li>
+<li><a href="#3--how-can-you-prevent-a-user-from-doing-said-action-more-than-once-on-their-device">3- How can you prevent a user from doing said action more than once on their device?</a></li>
+<li><a href="#4--what-is-dispatchgroup">4- What is DispatchGroup?</a></li>
+<li><a href="#5--what-is-rgr--red--green--refactor">5- What is RGR ( Red — Green — Refactor)?</a></li>
+<li><a href="#6--where-do-we-use-dependency-injection-">6- Where do we use Dependency Injection ?</a></li>
+<li><a href="#7--please-explain-types-of-notifications">7- Please explain types of notifications.</a></li>
+<li><a href="#8--when-is-a-good-time-for-dependency-injection-in-our-projects">8- When is a good time for dependency injection in our projects?</a></li>
+<li><a href="#9--what-kind-of-order-functions-can-we-use-on-collection-types-">9- What kind of order functions can we use on collection types ?</a></li>
+<li><a href="#10--what-allows-you-to-combine-your-commits-">10- What allows you to combine your commits ?</a></li>
+<li><a href="#11--what-is-the-difference-any-and-anyobject-">11- What is the difference ANY and ANYOBJECT ?</a></li>
+<li><a href="#12--please-explain-soap-and-rest-basics-differences-">12- Please explain SOAP and REST Basics differences ?</a></li>
+<li><a href="#13--what-is-your-favorite-visualize-chart-library">13- What is your favorite Visualize Chart library?</a></li>
+<li><a href="#14--what-is-the-difference-filter-and-map-function">14- What is the difference Filter and Map Function?</a></li>
+<li><a href="#15--what-is-coredata-">15- What is CoreData ?</a></li>
+<li><a href="#16--could-you-explain-associatedtype-">16- Could you explain Associatedtype ?</a></li>
+<li><a href="#17--which-git-command-saves-your-code-without-making-a-commit-">17- Which git command saves your code without making a commit ?</a></li>
+<li><a href="#18--explain-priority-inversion-and-priority-inheritance-%E8%A7%A3%E9%87%8A%E4%BC%98%E5%85%88%E7%BA%A7%E5%8F%8D%E8%BD%AC%E5%92%8C%E4%BC%98%E5%85%88%E7%BA%A7%E7%BB%A7%E6%89%BF">18- Explain Priority Inversion and Priority Inheritance. (解释优先级反转和优先级继承。)</a></li>
+<li><a href="#19--what-is-hashable">19- What is Hashable?</a></li>
+<li><a href="#20--when-do-you-use-optional-chaining-vs-if-let-or-guard">20- When do you use optional chaining vs. if let or guard?</a></li>
+<li><a href="#21--how-many-different-ways-to-pass-data-in-swift-">21- How many different ways to pass data in Swift ?</a></li>
+<li><a href="#22--how-do-you-follow-up-clean-code-for-this-project-">22- How do you follow up clean code for this project ?</a></li>
+<li><a href="#23--explain-to-using-class-and-inheritance-benefits">23- Explain to using Class and Inheritance benefits</a></li>
+<li><a href="#24--whats-the-difference-optional-between-nil-and-none">24- What’s the difference optional between nil and .None?</a></li>
+<li><a href="#25--what-is-graphql-">25- What is GraphQL ?</a></li>
+<li><a href="#26--explain-common-features-of-protocols--superclasses">26- Explain Common features of Protocols &amp; superclasses</a></li>
+<li><a href="#27--what-is-continuous-integration-">27- What is Continuous Integration ?</a></li>
+<li><a href="#28--what-is-the-difference-delegates-and-callbacks">28- What is the difference Delegates and Callbacks?</a></li>
+<li><a href="#29--explain-linked-list">29- Explain Linked List</a></li>
+<li><a href="#30--do-you-know-back-end-development-">30- Do you know Back End development ?</a></li>
+<li><a href="#31--explain-autolayout">31- Explain AutoLayout</a></li>
+<li><a href="#32--what-is-the-disadvantage-to-hard-coding-log-statements--%E7%A1%AC%E7%BC%96%E7%A0%81%E6%97%A5%E5%BF%97%E8%AF%AD%E5%8F%A5%E7%9A%84%E7%BC%BA%E7%82%B9%E6%98%AF%E4%BB%80%E4%B9%88">32- What is the disadvantage to hard-coding log statements ? (硬编码日志语句的缺点是什么)</a></li>
+<li><a href="#33--what-is-pointer-">33- What is Pointer ?</a></li>
+<li><a href="#34--explain-core-ml-pros-and-cons-%E8%A7%A3%E9%87%8Acore-ml%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9">34- Explain Core ML Pros and Cons (解释Core ML的优缺点)</a></li>
+<li><a href="#35--what-is-pair-programming">35- What is pair programming?</a></li>
+<li><a href="#36--explain-blocks">36- Explain blocks</a></li>
+<li><a href="#37--what-is-keychain-">37- What is Keychain ?</a></li>
+<li><a href="#38--what-is-the-biggest-changes-in-usernotifications--usernotifications%E6%9C%80%E5%A4%A7%E7%9A%84%E5%8F%98%E5%8C%96%E6%98%AF%E4%BB%80%E4%B9%88">38- What is the biggest changes in UserNotifications ? (UserNotifications最大的变化是什么?)</a></li>
+<li><a href="#39--explain-the-difference-between-atomic-and-nonatomic-synthesized-properties-%E8%A7%A3%E9%87%8A%E5%8E%9F%E5%AD%90%E5%92%8C%E9%9D%9E%E5%8E%9F%E5%AD%90%E5%90%88%E6%88%90%E5%B1%9E%E6%80%A7%E7%9A%84%E5%8C%BA%E5%88%AB">39- Explain the difference between atomic and nonatomic synthesized properties (解释原子和非原子合成属性的区别)</a></li>
+<li><a href="#40--why-do-we-use-availability-attributes--%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E4%BB%AC%E8%A6%81%E4%BD%BF%E7%94%A8%E5%8F%AF%E7%94%A8%E6%80%A7%E5%B1%9E%E6%80%A7">40- Why do we use availability attributes ? (为什么我们要使用可用性属性?)</a></li>
+<li><a href="#41--how-could-we-get-device-token-">41- How could we get device token ?</a></li>
+<li><a href="#42--what-is-encapsulation-">42- What is Encapsulation ?</a></li>
+<li><a href="#43--what-is-big-o-notation--%E4%BB%80%E4%B9%88%E6%98%AF%E5%A4%A7o%E8%A1%A8%E7%A4%BA%E6%B3%95">43- What is big-o notation ? (什么是大O表示法?)</a></li>
+<li><a href="#44--what-is-dependency-management-%E4%BB%80%E4%B9%88%E6%98%AF%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86">44- What Is Dependency Management? (什么是依赖管理?)</a></li>
+<li><a href="#45--what-is-uml-class-diagrams">45- What is UML Class Diagrams?</a></li>
+<li><a href="#46--explain-throw">46- Explain throw</a></li>
+<li><a href="#47--what-is-protocol-extensions">47- What is Protocol Extensions?</a></li>
+<li><a href="#48--what-is-three-triggers-for-a-local-notification-">48- What is three triggers for a local notification ?</a></li>
+<li><a href="#49--explain-selectors-in-objc">49- Explain Selectors in ObjC</a></li>
+<li><a href="#50--what-is-remote-notifications-attacments-limits-">50- What is Remote Notifications attacment’s limits ?</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="50道ios面试问答-3">50道iOS面试问答 - 3</h2>
+<!-- ![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gqutb7uuh1j31c00u0q5b.jpg) -->
+<h3 id="1-what-is-nil-coalescing-ternary-operator-nil合并和三元运算符是什么">1- What is Nil Coalescing &amp; Ternary Operator? (nil合并和三元运算符是什么？)</h3>
+<p>它很容易返回一个未包装的可选值或默认值。如果我们没有一个值，我们可以设置0或默认值。</p>
+<h3 id="2-what-kind-of-jsonserialization-have-readingoptions">2- What kind of JSONSerialization have ReadingOptions?</h3>
+<ul>
+<li>
+<p>mutableContainers指定数组和字典被创建为变量对象，而不是常量</p>
+</li>
+<li>
+<p>mutableLeaves指定JSON对象图中的leaf strings作为变量String的实例创建。</p>
+</li>
+<li>
+<p>allowFragments指定解析器应该允许非Array或Dictionary实例的顶级对象。</p>
+</li>
+</ul>
+<h3 id="3-how-can-you-prevent-a-user-from-doing-said-action-more-than-once-on-their-device">3- How can you prevent a user from doing said action more than once on their device?</h3>
+<p>苹果在iOS 10中引入了<a href="https://developer.apple.com/documentation/devicecheck">DeviceCheck</a>。 这个API允许我们访问iOS设备中每个设备、每个开发者的数据。该解决方案比UserDefaults或广告标识符更好。DeviceCheck允许我们存储一个布尔值。</p>
+<h3 id="4-what-is-dispatchgroup">4- What is DispatchGroup?</h3>
+<p>DispatchGroup允许工作的聚合同步。我们可以使用它们来提交多个不同的工作项，并在它们全部完成时进行跟踪，即使它们可能在不同的队列上运行。当需要完成所有指定任务才能取得进展时，这种行为会很有帮助。</p>
+<p>最基本的答案是:如果我们需要等待两个异步或同步操作才能继续，那么我们可以使用DispatchGroup。</p>
+<h3 id="5-what-is-rgr-red-green-refactor">5- What is RGR ( Red — Green — Refactor)?</h3>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqutkg1w6zj30b406lglq.jpg" alt="avatar" loading="lazy"></figure>
+<p>红色、绿色和重构是TDD(测试驱动开发)的阶段。</p>
+<ol>
+<li><strong>Red</strong>: 编写少量的测试代码(通常不超过7行代码)，然后观察它是否失败。</li>
+<li><strong>Green</strong>: 编写少量的产品代码。同样，通常不超过7行代码就可以使您的测试通过。</li>
+<li><strong>Refactor</strong>: 测试正在通过，您可以进行更改而不必担心。清理代码。这里有很棒的研讨会笔记。</li>
+</ol>
+<h3 id="6-where-do-we-use-dependency-injection">6- Where do we use Dependency Injection ?</h3>
+<p>我们在iOS应用中使用故事板或xib，然后创建IBOutlets。  IBOutlet是一个与视图相关的属性。它们在视图控制器被实例化时被注入到视图控制器中，这本质上是依赖注入的一种形式。</p>
+<p>依赖注入有几种形式:构造函数注入、属性注入和方法注入。</p>
+<h3 id="7-please-explain-types-of-notifications">7- Please explain types of notifications.</h3>
+<p>有两种类型的通知:远程和本地。 远程通知需要连接到服务器。本地通知不需要服务器连接。本地通知发生在设备上。</p>
+<h3 id="8-when-is-a-good-time-for-dependency-injection-in-our-projects">8- When is a good time for dependency injection in our projects?</h3>
+<p>这里有一些你可以遵循的指导方针。</p>
+<ul>
+<li><strong>Rule 1</strong>. 可测试性对我们来说重要吗?如果是这样，那么在您希望测试的类中确定外部依赖关系是很重要的。 一旦可以注入依赖项，我们就可以很容易地将真实服务替换为模拟服务，从而使测试变得容易。</li>
+<li><strong>Rules 2</strong>. 复杂的类具有复杂的依赖关系，包括应用程序级逻辑，或访问外部资源，如磁盘或网络。 应用程序中的大多数类都很复杂，包括几乎所有控制器对象和大多数模型对象。 最简单的开始方法是在应用程序中选择一个复杂的类，并查找在该类中初始化其他复杂对象的位置。</li>
+<li><strong>Rules 3</strong>. 如果一个对象正在创建其他对象的实例，这些实例是其他对象中的共享依赖项，那么它是依赖项注入的一个很好的候选对象。</li>
+</ul>
+<h3 id="9-what-kind-of-order-functions-can-we-use-on-collection-types">9- What kind of order functions can we use on collection types ?</h3>
+<ul>
+<li><strong>map(_😃:</strong> 在使用提供的闭包转换序列中的每个元素后返回一个结果数组。</li>
+<li><strong>filter(_😃:</strong> 返回满足提供的闭包谓语的元素数组。</li>
+<li><strong>reduce(<em>:</em>😃:</strong>  通过使用提供的闭包组合序列中的每个元素，返回单个值。</li>
+<li><strong>sorted(by:):</strong> 返回基于提供的闭包谓语排序的序列中的元素的数组。</li>
+</ul>
+<h3 id="10-what-allows-you-to-combine-your-commits">10- What allows you to combine your commits ?</h3>
+<pre><code class="language-swift">git squash
+</code></pre>
+<h3 id="11-what-is-the-difference-any-and-anyobject">11- What is the difference ANY and ANYOBJECT ?</h3>
+<p>Any可以表示任何类型的实例，包括函数类型和可选类型，基本数据类等。<br>
+AnyObject代表任何class类型的对象实例。</p>
+<blockquote>
+<p>AnyObject是Any的子集<br>
+所有用class关键字定义的对象就是AnyObject<br>
+所有不是用class关键字定义的对象就不是AnyObject，而是Any</p>
+</blockquote>
+<h3 id="12-please-explain-soap-and-rest-basics-differences">12- Please explain SOAP and REST Basics differences ?</h3>
+<p>它们都帮助我们访问Web服务。SOAP完全依赖XML来提供消息传递服务。 SOAP绝对是Web服务访问的重量级选择。最初由微软开发。</p>
+<p>REST(具象状态传输)提供了一个轻量级的替代方案。 REST在许多情况下依赖于一个简单的URL，而不是使用XML来发出请求。REST可以使用四种不同的HTTP 1.1动词(GET、POST、PUT和DELETE)来执行任务。</p>
+<h3 id="13-what-is-your-favorite-visualize-chart-library">13- What is your favorite Visualize Chart library?</h3>
+<ul>
+<li>
+<p>Charts have support iOS,tvOS, OSX The Apple side of the cross-platform MPAndroidChart.</p>
+</li>
+<li>
+<p>Core Plot is a 2D plotting framework for macOS, iOS, and tvOS</p>
+</li>
+<li>
+<p>TEAChart has iOS support</p>
+</li>
+</ul>
+<p><a href="https://github.com/ameizi/awesome-ios-chart">charts资源</a></p>
+<h3 id="14-what-is-the-difference-filter-and-map-function">14- What is the difference Filter and Map Function?</h3>
+<p>Map，我们传入一个函数来返回数组中每个元素的值。这个函数的返回值表示新数组中的元素。</p>
+<p>我们传入一个函数，对每个元素返回true或false。 如果传递给给定元素的函数返回true，则该元素将包含在final数组中。</p>
+<h3 id="15-what-is-coredata">15- What is CoreData ?</h3>
+<p>Core data是一个对象图管理器，它还能够将对象图持久化到磁盘上的持久化存储中。 对象图就像一个典型的模型视图控制器iOS应用程序中所有不同模型对象的映射。 CoreData还集成了Core Spotlight。</p>
+<p>但是Core Data不是线程安全的，这意味着，如果你在一个线程上加载一个托管对象，你不能把它传递给另一个线程并安全地使用它。当我们想要开始引入线程以提高性能时，这就成了一个问题，所以我们有两个选择。</p>
+<p>第一个是将所有内容都放在主线程上，这意味着它是单线程的。第二种是在后台线程上做改变传递managedobjectid然后在主线程上再次加载这些对象，但这意味着你在主线程上，这让我们回到了开始的地方。 这两种情况都破坏了在Core Data中使用线程的意义，它们会给数据层增加很多复杂性。</p>
+<p>还有另外一个选择，就是将托管对象转换为普通的旧Swift对象，或POSO。</p>
+<h3 id="16-could-you-explain-associatedtype">16- Could you explain Associatedtype ?</h3>
+<p>如果你想创建通用协议，我们可以使用associatedtype。 要了解更多细节，<a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/swift-advanced-protocol-xiang-jie/">请查看这个</a>。</p>
+<h3 id="17-which-git-command-saves-your-code-without-making-a-commit">17- Which git command saves your code without making a commit ?</h3>
+<p>git stash</p>
+<h3 id="18-explain-priority-inversion-and-priority-inheritance-解释优先级反转和优先级继承">18- Explain Priority Inversion and Priority Inheritance. (解释优先级反转和优先级继承。)</h3>
+<p>如果高优先级线程等待低优先级线程，这称为优先级反转。如果低优先级线程暂时继承最高优先级线程的优先级，这称为优先级继承。</p>
+<h3 id="19-what-is-hashable">19- What is Hashable?</h3>
+<p>Hashable允许我们将对象用作字典中的键。 因此，我们可以创建自定义类型，使用hashValue比较它的相等性。</p>
+<h3 id="20-when-do-you-use-optional-chaining-vs-if-let-or-guard">20- When do you use optional chaining vs. if let or guard?</h3>
+<p>当我们并不真正关心操作是否失败时，我们使用可选链接; 否则，我们使用if let或guard。可选链接让我们只在可选有值时运行代码。<br>
+像这样使用？操作符被称为可选链接。</p>
+<p>苹果的文档是这样解释的:</p>
+<blockquote>
+<p>可选链接是一个查询和调用当前可能为nil的可选对象的属性、方法和下标的过程。如果可选对象包含值，则属性、方法或下标调用成功;如果可选值为nil，则属性、方法或下标调用返回nil。多个查询可以被链接在一起，如果链中的任何链接为nil，那么整个链就会优雅地失败。</p>
+</blockquote>
+<h3 id="21-how-many-different-ways-to-pass-data-in-swift">21- How many different ways to pass data in Swift ?</h3>
+<p>There are many different ways such as Delegate, KVO, Segue, and NSNotification, Target-Action, Callbacks.</p>
+<h3 id="22-how-do-you-follow-up-clean-code-for-this-project">22- How do you follow up clean code for this project ?</h3>
+<p>我遵循Github和SwiftLint的Swift项目的风格指南和编码约定。</p>
+<h3 id="23-explain-to-using-class-and-inheritance-benefits">23- Explain to using Class and Inheritance benefits</h3>
+<ul>
+<li>覆盖提供了一种自定义机制</li>
+<li>重用的实现</li>
+<li>子类化提供了重用接口</li>
+<li>模块化</li>
+<li>子类提供动态分派</li>
+</ul>
+<h3 id="24-whats-the-difference-optional-between-nil-and-none">24- What’s the difference optional between nil and .None?</h3>
+<p>没有差别;Optional.None (.None for short) 是初始化一个没有值的可选变量的正确方法, 而nil只是.none的语法糖。</p>
+<h3 id="25-what-is-graphql">25- What is GraphQL ?</h3>
+<p>GraphQL试图解决在应用程序级别为客户端创建查询接口的问题。Apollo iOS是一个强类型、缓存的iOS GraphQL客户端，用Swift编写。</p>
+<h3 id="26-explain-common-features-of-protocols-superclasses">26- Explain Common features of Protocols &amp; superclasses</h3>
+<ul>
+<li>实现重用</li>
+<li>提供定制点数</li>
+<li>界面重用</li>
+<li>通过对重用接口的动态调度支持模块化设计</li>
+</ul>
+<h3 id="27-what-is-continuous-integration">27- What is Continuous Integration ?</h3>
+<p>持续集成允许我们在应用程序开发过程中出现问题时获得早期反馈。有很多可用的持续集成工具。</p>
+<p>Self-hosted server:自托管服务器</p>
+<ul>
+<li>Xcode Server</li>
+<li>Jenkins</li>
+<li>TeamCity</li>
+</ul>
+<p>Cloud solutions:云解决方案</p>
+<ul>
+<li>TravisCI</li>
+<li>Bitrise</li>
+<li>Buddybuild</li>
+</ul>
+<h3 id="28-what-is-the-difference-delegates-and-callbacks">28- What is the difference Delegates and Callbacks?</h3>
+<p>委托和回调之间的区别在于，对于委托，NetworkService会告诉委托“有什么变化了”。 通过回调，委托正在观察NetworkService。</p>
+<h3 id="29-explain-linked-list">29- Explain Linked List</h3>
+<p>链表基本上由我们命名为Node的结构组成。 这些节点基本上有两个东西。 第一个是我们想要保留的。 (我们不必保存单个数据，我们可以保留尽可能多的信息)，另一个是另一个节点的地址信息。</p>
+<p>链表的缺点是，在开始时，有额外的空间使用。 因为链表除了现有信息外，还有一个地址信息。这意味着更多的空间使用。</p>
+<h3 id="30-do-you-know-back-end-development">30- Do you know Back End development ?</h3>
+<p>我决定学习纯后端。你有两个选择。你可以学习node.js + express.js和mongodb。OR, you can learn Vapor or Kitura.</p>
+<p>你不喜欢或使用Firebase吗?</p>
+<h3 id="31-explain-autolayout">31- Explain AutoLayout</h3>
+<p>AutoLayout提供了一个灵活而强大的布局系统，它描述了视图和UI控件如何计算层次结构中的大小和位置。</p>
+<h3 id="32-what-is-the-disadvantage-to-hard-coding-log-statements-硬编码日志语句的缺点是什么">32- What is the disadvantage to hard-coding log statements ? (硬编码日志语句的缺点是什么)</h3>
+<p><strong>首先</strong>，当您开始记录日志时。这开始积累。这可能看起来不多，但每一分钟都在积累。到项目结束时，这些零散的几分钟将等于几小时。</p>
+<p><strong>其次</strong>，每次我们向代码库中添加一个，我们就冒着在代码中注入新的bug的风险。</p>
+<h3 id="33-what-is-pointer">33- What is Pointer ?</h3>
+<p>指针是对内存地址的直接引用。变量作为一个值的透明容器，而指针删除了一个抽象层，让您看到该值是如何存储的。</p>
+<h3 id="34-explain-core-ml-pros-and-cons-解释core-ml的优缺点">34- Explain Core ML Pros and Cons (解释Core ML的优缺点)</h3>
+<p>Pros of Core ML:</p>
+<ul>
+<li>
+<p>很容易添加到你的应用中。</p>
+</li>
+<li>
+<p>不仅适用于深度学习:逻辑回归、决策树和其他“经典”机器学习模型也适用。</p>
+</li>
+<li>
+<p>附带一个方便的转换器工具，支持几种不同的培训包(Keras、Caffe、scikit-learn等)。</p>
+</li>
+</ul>
+<p>Cons:</p>
+<p>Core ML只支持有限数量的模型类型。如果你训练的模型做一些Core ML不支持的事情，那么你就不能使用Core ML。</p>
+<p>转换工具目前只支持少数几个培训包。一个值得注意的遗漏是TensorFlow，它可以说是最流行的机器学习工具。 您可以编写自己的转换器，但这不是新手的工作。 (TensorFlow不被支持的原因是它是一个用于制作通用计算图的低级包，而Core ML工作在更高的抽象级别。)</p>
+<p>没有灵活性，没有控制力。Core ML API非常基础，它只允许你加载一个模型并运行它。 没有办法向模型中添加自定义代码。</p>
+<p>仅支持iOS 11及以上版本。</p>
+<h3 id="35-what-is-pair-programming">35- What is pair programming?</h3>
+<p>结对编程是一种与初级开发人员共享信息的工具。 初级开发人员和高级开发人员并排坐在一起，这是初级开发人员向高级开发人员学习的最佳方式。</p>
+<h3 id="36-explain-blocks">36- Explain blocks</h3>
+<p>block是一种定义单个任务或行为单元的方式，无需编写整个Objective-C类。 它们是匿名函数。</p>
+<h3 id="37-what-is-keychain">37- What is Keychain ?</h3>
+<p>Keychain是一个用于在iOS App中安全持久化数据的API。 它是安全的使用硬件模块，并备份到iCloud。</p>
+<h3 id="38-what-is-the-biggest-changes-in-usernotifications-usernotifications最大的变化是什么">38- What is the biggest changes in UserNotifications ? (UserNotifications最大的变化是什么?)</h3>
+<ul>
+<li>我们可以添加音频、视频和图像。</li>
+<li>我们可以为通知创建自定义接口。</li>
+<li>我们可以使用通知中心中的接口来管理通知。</li>
+<li>新的Notification扩展允许我们在远程通知有效负载被交付之前管理它们。</li>
+</ul>
+<h3 id="39-explain-the-difference-between-atomic-and-nonatomic-synthesized-properties-解释原子和非原子合成属性的区别">39- Explain the difference between atomic and nonatomic synthesized properties (解释原子和非原子合成属性的区别)</h3>
+<p><strong>atomic</strong> : 这是默认行为。 如果一个对象被声明为原子的，那么它就变成了线程安全的。线程安全的意思是，每次该类的特定实例中只有一个线程可以控制该对象。</p>
+<p><strong>nonatomic</strong>: 它不是线程安全的。我们可以使用非原子属性来指定合成访问器直接设置或返回一个值，而不保证从不同线程同时访问相同的值会发生什么。因此，访问非原子属性要比访问原子属性快。</p>
+<h3 id="40-why-do-we-use-availability-attributes-为什么我们要使用可用性属性">40- Why do we use availability attributes ? (为什么我们要使用可用性属性?)</h3>
+<p>苹果想要支持一个系统版本，这意味着我们应该支持iOS13或iOS14。 可用性属性让我们能够支持之前的iOS版本。</p>
+<h3 id="41-how-could-we-get-device-token">41- How could we get device token ?</h3>
+<p>获取设备令牌有两个步骤</p>
+<p>首先，在可以注册远程通知之后，我们必须显示用户的权限屏幕。 如果这些步骤进展顺利，系统将提供设备令牌。如果我们卸载或重新安装应用程序，设备令牌将改变。</p>
+<h3 id="42-what-is-encapsulation">42- What is Encapsulation ?</h3>
+<p>封装是一种面向对象的设计原则，它隐藏了对象的内部状态和功能。 这意味着对象将其状态信息保持为私有。</p>
+<h3 id="43-what-is-big-o-notation-什么是大o表示法">43- What is big-o notation ? (什么是大O表示法?)</h3>
+<p>算法是用来确定输入N大小的工作时间的印象方法。大o表示法等级用最高值表示。</p>
+<h3 id="44-what-is-dependency-management-什么是依赖管理">44- What Is Dependency Management? (什么是依赖管理?)</h3>
+<p>如果我们想集成开源项目，添加一个来自第三方项目的框架，甚至在我们自己的项目中重用代码，依赖关系管理帮助我们管理这些关系。</p>
+<h3 id="45-what-is-uml-class-diagrams">45- What is UML Class Diagrams?</h3>
+<p>UML类图是一组用于软件系统规范的规则和符号，由对象管理组管理和创建。</p>
+<h3 id="46-explain-throw">46- Explain throw</h3>
+<p>通过使用throws关键字，我们告诉编译器它可以抛出错误。 在抛出错误之前，我们需要列出想要抛出的所有可能错误。</p>
+<h3 id="47-what-is-protocol-extensions">47- What is Protocol Extensions?</h3>
+<p>我们可以采用使用扩展的协议，也可以采用原始类型声明的协议。 这允许您将协议添加到您不一定拥有的类型中。</p>
+<h3 id="48-what-is-three-triggers-for-a-local-notification">48- What is three triggers for a local notification ?</h3>
+<p>Location, Calendar, and Time Interval.<br>
+当你手机上的GPS定位在某个位置或地理区域时，就会触发Location通知。<br>
+日历触发器基于分解为日期组件的日历数据。<br>
+时间间隔是计时器停止前的秒数。</p>
+<h3 id="49-explain-selectors-in-objc">49- Explain Selectors in ObjC</h3>
+<p>选择器是Objective-C方法名的内部表示。</p>
+<h3 id="50-what-is-remote-notifications-attacments-limits">50- What is Remote Notifications attacment’s limits ?</h3>
+<p>我们可以通过推送通知发送视频或图像。但是最大有效载荷是4kb。如果我们想发送高质量的附件，我们应该使用通知服务扩展。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1UYNOQrST/" class="tag">
+                    interview
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/50-dao-ios-mian-shi-wen-da-2/">
+                  <h3 class="post-title">
+                    50道iOS面试问答 - 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

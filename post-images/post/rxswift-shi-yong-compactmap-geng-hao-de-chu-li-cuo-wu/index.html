@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>RxSwift: 使用CompactMap更好的处理错误 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+RxSwift: 使用CompactMap更好的处理错误
+
+
+1.1. 经典的RxSwift错误处理
+
+1.1.1. Materialize
+1.1.2. 我们的数据流
+1.1.3. 我们的错误流
+
+
+1.2. RxSwift 5 ..." />
+    <meta name="keywords" content="compactmap,rxswift,errors" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">RxSwift: 使用CompactMap更好的处理错误</h2>
+            <div class="post-date">2021-05-06</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gq8hh65brwj315o0iawim.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#RxSwift:CompactMap">RxSwift: 使用CompactMap更好的处理错误</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#RxSwift">经典的RxSwift错误处理</a>
+<ul>
+<li>1.1.1. <a href="#Materialize">Materialize</a></li>
+<li>1.1.2. <a href="#">我们的数据流</a></li>
+<li>1.1.3. <a href="#-1">我们的错误流</a></li>
+</ul>
+</li>
+<li>1.2. <a href="#RxSwift5andCompactMap">RxSwift 5 and CompactMap</a></li>
+<li>1.3. <a href="#TheRxSwift5CompactMapExample">The RxSwift 5 CompactMap Example</a>
+<ul>
+<li>1.3.1. <a href="#RegardingobserveOnandPerformance">Regarding observeOn and Performance</a></li>
+<li>1.3.2. <a href="#CompactMapUnwrapBonusRound">CompactMap / Unwrap Bonus Round</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namerxswiftcompactmaparxswift-使用compactmap更好的处理错误">1. <a name='RxSwift:CompactMap'></a>RxSwift: 使用CompactMap更好的处理错误</h2>
+<p>研究RxSwift足够长的时间，比如一周左右，你一定会遇到以下代码的一些变体:</p>
+<pre><code class="language-swift">class NoErrorViewModel {
+    var data: Observable&lt;[String]&gt;!
+    var dataService = DataService()
+    init(load: Observable&lt;Void&gt;) {
+        data = load
+            .flatMapLatest { [unowned self] _ in
+                self.dataService.load()
+                    .catchErrorJustReturn([])
+            }
+            .observeOn(MainScheduler.instance)
+            .share()
+    }
+}
+</code></pre>
+<p>这里，我们希望在每次发生加载事件时从数据服务返回一个字符串数组。比如说，在每个*viewWillAppear()*上。</p>
+<p>所以,我们使用flatMapLatest()来包装我们的异步API调用为一个Observable,share()结果只是为了确保多个订阅数据不会因为同样的事件触发多个API调用,然后将结果分配给我们的视图模型的data observable 并返回主线程所以我们可以更新UI。一切都很好。</p>
+<p>但是，为了使事件流保持存活状态，我们需要捕获可能发生的任何错误。如果我们不这样做，并且让错误从flatMapLatest() 流转到 parent stream，那么错误将沿链向下传播，并终止对数据的 any subscriptions。</p>
+<p>这反过来又会阻止任何加载事件加载我们的数据。</p>
+<p>这并不好，所以在flatMap中，我们可以看到调用数据服务之后的语句:</p>
+<pre><code class="language-swift">.catchErrorJustReturn()
+</code></pre>
+<p>它会捕获所有错误并返回一个空数组。</p>
+<p>现在，这是一个很好的例子，但盲目地捕获并吃掉我们的错误并不能真正解决应用在现实环境中的问题。如果我们有一个错误，我们通常需要通知用户发生了一个错误，错误的性质，以及可以做什么。</p>
+<p>静默失败和不返回任何数据实际上不是一个选项。你想启动你的银行应用程序来检查你的余额，但在你的账户里什么都看不到吗?</p>
+<p>Proably not. So let’s do something about it.</p>
+<h3 id="11-a-namerxswifta经典的rxswift错误处理">1.1. <a name='RxSwift'></a>经典的RxSwift错误处理</h3>
+<p>所以现在我们想要返回我们的数据…如果找不到数据就返回一个错误。简而言之，我们的视图模型需要为我们的数据公开一个<em>Observable&lt;[String]&gt;</em>，并为一个错误公开一个<em>Observable<String></em>。</p>
+<p>One trigger, two observables, and we can’t let the error escape the flatMap. How?</p>
+<p>Well, we could return a tuple of an error or our data, or we could map our data into a brand new Swift 5 Result… but we’re not. Instead, we’re going to use one of RxSwift’s lesser known operators: materialize.</p>
+<h4 id="111-a-namematerializeamaterialize">1.1.1. <a name='Materialize'></a>Materialize</h4>
+<p>在flatMapLatest中使用materialize将结果从Observable&lt;[String]&gt;转换为Observable&lt;Event&lt;[String]&gt;&gt;，或者一个 event stream of events。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq8ib801mtj30zk0higqa.jpg" alt="avatar" loading="lazy"></figure>
+<p>An event stream of events? That’s a bit meta, so let’s look at the code in action.</p>
+<pre><code class="language-swift">class MaterializingErrorViewModel {
+    var data: Observable&lt;[String]&gt;!
+    var error: Observable&lt;String&gt;!
+    var dataService = DataService()
+    init(load: Observable&lt;Void&gt;) {
+        let loading = load
+            .flatMapLatest { [unowned self] _ in
+                self.dataService.load().materialize()
+            }
+            .observeOn(MainScheduler.instance)
+            .share()
+        data = loading
+            .map { $0.element }
+            .filter { $0 != nil }
+            .map { $0! }
+        error = loading
+            .map { $0.error?.localizedDescription }
+            .filter { $0 != nil }
+            .map { $0! }
+    }
+}
+</code></pre>
+<p>这里，我们用*flatMapLatest()<em>中的</em>materialize()<em>函数替换了</em>catchErrorJustReturn()*函数。</p>
+<p>然后将该序列的最终结果赋给一个名为loading的临时变量。如果加载操作成功，则结果类型为<em>Event.next&lt;[String]&gt;</em>。如果是错误，则是<em>Event.error(Swift.Error)</em>。</p>
+<p>接下来，我们将临时可观察流分成两个独立的可观察流:一个包含我们的数据，另一个包含我们的错误(如果有的话)。</p>
+<h4 id="112-a-namea我们的数据流">1.1.2. <a name=''></a>我们的数据流</h4>
+<p>我们使用.element访问隐藏在事件内部的数据，它返回Element类型的可选值，这是我们materialize数据值之前的原始类型。</p>
+<p>本例中，将流的数据端转换为可选的字符串数组。然后，我们在nil上过滤可选值，最终的结果是，我们只让实际的数据值通过流。如果事件不包含数据，它就会被阻塞，而我们的可观察对象的任何订阅者都看不到任何东西。</p>
+<p>最后，我们显式地打开我们知道存在的值，给我们第一个例子中的数据，一个<em>Observable&lt;[String]&gt;</em>。</p>
+<h4 id="113-a-name-1a我们的错误流">1.1.3. <a name='-1'></a>我们的错误流</h4>
+<p>我们对错误分支执行相同的操作，使用*$0.error?.localizedDescription*查看我们的materialized流是否包含错误事件，并在过程中提取由API返回的本地化错误。</p>
+<p>然后，我们对数据执行相同的筛选和显式展开序列。result? 一个<em>Observable<String></em>，它包含我们的错误信息，并在错误发生时触发。</p>
+<p>So. One trigger, a data observable, an error observable, and we didn’t let an error escape the flatMap and ruin our observable chain. Life is good.</p>
+<p>Except…</p>
+<p>我不知道你是怎么想的，但对我来说，在我们必须在可观察链的数据端和错误端执行的操作序列中，上面的代码似乎有点多余。</p>
+<p>那么如何解决这个问题呢?</p>
+<p>RxSwift 5 就是救星了。</p>
+<h3 id="12-a-namerxswift5andcompactmaparxswift-5-and-compactmap">1.2. <a name='RxSwift5andCompactMap'></a>RxSwift 5 and CompactMap</h3>
+<p>RxSwift 5为可观察流添加了一个新功能，它对应了Swift序列中添加的一个功能:compactMap。</p>
+<p>在Swift中，对可选值数组使用compactMap()将返回一个新的值数组，其中所有可选值都被过滤掉了。换句话说，它可以转换<em>Array&lt;[String?]&gt;<em>到一个</em>Array&lt;[String]&gt;</em>。</p>
+<p><strong>在RxSwift中，compactMap()执行类似的函数，让我们将流的元素映射到可选值，然后过滤掉进程中产生的任何可选值(nil)</strong>。</p>
+<h3 id="13-a-nametherxswift5compactmapexampleathe-rxswift-5-compactmap-example">1.3. <a name='TheRxSwift5CompactMapExample'></a>The RxSwift 5 CompactMap Example</h3>
+<p>将compactMap()应用到最后一个示例，我们会得到以下结果……</p>
+<pre><code class="language-swift">class CompactMapErrorViewModel {
+    var data: Observable&lt;[String]&gt;!
+    var error: Observable&lt;String&gt;!
+    var dataService = DataService()
+    init(load: Observable&lt;Void&gt;) {
+        let loading = load
+            .flatMapLatest { [unowned self] _ in
+                self.dataService.load().materialize()
+            }
+            .observeOn(MainScheduler.instance)
+            .share()
+        data = loading
+            .compactMap { $0.element }
+        error = loading
+            .compactMap { $0.error?.localizedDescription }
+    }
+}
+</code></pre>
+<p>在每种情况下，compactMap()用单个操作符替换数据和错误上的映射、过滤器、映射序列。</p>
+<p>Much cleaner.</p>
+<h4 id="131-a-nameregardingobserveonandperformancearegarding-observeon-and-performance">1.3.1. <a name='RegardingobserveOnandPerformance'></a>Regarding observeOn and Performance</h4>
+<p>有人可能会问*.observeon(MainScheduler.instance)*在共享加载序列中的位置。</p>
+<p>我们移动observeOn()函数并在每个compactMap()操作下面添加一个不是更好吗?在我们将最终结果切换回主处理线程之前，这似乎会让更多的处理代码留在后台，你是对的。</p>
+<p>它还将在我们的代码中添加两个相当繁重的后台到前台线程上下文切换。因为每个compactMap()函数都是非常轻量级的，所以在这个特定的实例中，我认为最好只执行一次上下文切换。</p>
+<p>另一方面，如果我需要对加载的数组的每个元素执行一些操作，我可能会采取另一种方法，将observeOn()移动到每个分支。</p>
+<pre><code class="language-swift">class CompactMapOperationViewModel {
+    var data: Observable&lt;[String]&gt;!
+    var error: Observable&lt;String?&gt;!
+    var dataService = DataService()
+    init(load: Observable&lt;Void&gt;) {
+        let loading = load
+            .flatMapLatest { [unowned self] _ in
+                self.dataService.load().materialize()
+            }
+            .share()
+        data = loading
+            .compactMap { $0.element?.map { &quot;Hello, \($0)&quot; }
+            .observeOn(MainScheduler.instance)
+         error = loading
+            .map { $0.error?.localizedDescription }
+            .observeOn(MainScheduler.instance)
+    }
+</code></pre>
+<p>如果您有敏锐的眼光，您可能还会注意到，现在可选的错误可观察对象上的最后一个compactMap()被改成了map()。</p>
+<p>在这个修改过的案例中，我们让nil错误字符串事件传递，这反过来让我们在数据成功加载时清除视图控制器错误标签中的任何之前的错误消息。</p>
+<p>这两种情况都应该清楚地表明，您需要考虑您的代码和UI需求以及正在执行的操作，并相应地调整您的编码模式。</p>
+<h4 id="132-a-namecompactmapunwrapbonusroundacompactmap-unwrap-bonus-round">1.3.2. <a name='CompactMapUnwrapBonusRound'></a>CompactMap / Unwrap Bonus Round</h4>
+<p>你可能遇到过一个RxSwift社区扩展库，叫做RXSwiftExt。如果是这样，您可能已经看到甚至使用过名为unwrap()的RXSwiftExt操作符。</p>
+<p>Unwrap :“接受一个可选元素序列并返回一个非可选元素序列，过滤掉任何nil值。”</p>
+<p>Unwrap是RxSwift中的一个方便的小函数，考虑到Swift语言中使用可选选项的流行程度。事实上，它是如此方便，以至于经常有人提议将其添加到核心RxSwift语言本身中。</p>
+<p>然而，看看实现内部，你会看到一些熟悉的东西……</p>
+<pre><code class="language-swift">public func unwrap&lt;T&gt;() -&gt; Observable&lt;T&gt; where Element == T? {
+    return self.filter { $0 != nil }.map { $0! }
+}
+</code></pre>
+<p>是的。这和我们之前看到的过滤器，映射，显式展开序列是一样的。 这意味着在RxSwift 5中你可以这样做:</p>
+<pre><code class="language-swift">let stringIsRequired: Observable&lt;String&gt; = optionalString
+    .compactMap { $0 }
+</code></pre>
+<p>是的。使用compactMap()，相当于unwrap()的功能现在实际上是RxSwift核心的一部分。</p>
+<hr>
+<p>这就是它。RxSwift 5中添加了compactMap()，这让我们可以编写更少的代码，并且性能和内存效率更高，用一个RxSwift操作替换了三个操作。</p>
+<p>作为额外的好处，我们现在可以轻松地unwrap()可选的事件流，而不需要使用其他库或将扩展添加到我们自己的代码库中。</p>
+<p>Enjoy.</p>
+<p><a href="https://michaellong.medium.com/rxswift-better-error-handling-with-compactmap-48a5d314d0f1">原文地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/LCdpwn47w/" class="tag">
+                    compactmap
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/wQerok9iv/" class="tag">
+                    errors
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/controlling-the-timing-of-a-combine-pipeline/">
+                  <h3 class="post-title">
+                    Controlling the timing of a Combine pipeline
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

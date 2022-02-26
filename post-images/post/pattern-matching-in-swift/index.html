@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Pattern matching in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift设计的一个真正优雅的方面是它如何设法将其强大和复杂隐藏在更简单的编程结构背后。 以for循环或switch语句为例——从表面上看，它们在Swift中的工作方式与在其他语言中的工作方式几乎相同-但再深入几层，就会发现它们比最初看起来..." />
+    <meta name="keywords" content="pattern matching" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Pattern matching in Swift</h2>
+            <div class="post-date">2019-02-24</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift设计的一个真正优雅的方面是它如何设法将其强大和复杂隐藏在更简单的编程结构背后。 以for循环或switch语句为例——从表面上看，它们在Swift中的工作方式与在其他语言中的工作方式几乎相同-但再深入几层，就会发现它们比最初看起来要强大得多。</p>
+<p>模式匹配是这种额外功能的一个来源，特别是考虑到它是如何集成到语言的许多不同方面的。本周，让我们来看看其中的一些方面——以及如何通过模式匹配来解锁那些被证明既方便又优雅的编码风格。</p>
+<h2 id="iterative-patterns">Iterative patterns</h2>
+<p>假设我们正在构建一个消息传递应用程序，并且我们正在开发一个函数，该函数遍历列表中的所有消息并删除用户标记的消息。目前，我们已经使用标准的for循环和嵌套的if语句实现了这种迭代，如下所示:</p>
+<pre><code class="language-swift">func deleteMarkedMessages() {
+    for message in messages {
+        if message.isMarked {
+            database.delete(message)
+        }
+    }
+}
+</code></pre>
+<p>上面的方法肯定是可行的——但是可以这样说，如果我们使用一种声明性更强的风格来实现它，那么我们最终会得到一个更优雅的解决方案。一种方法是使用更实用的方法，首先过滤我们的消息数组，只包含被标记的消息，然后对过滤集合中的每个元素应用database.delete函数:</p>
+<pre><code class="language-swift">func deleteMarkedMessages() {
+    messages.filter { $0.isMarked }
+            .forEach(database.delete)
+}
+</code></pre>
+<p>同样，我们有完全有效的代码来完成这项工作，但是——这取决于我们团队的偏好和对函数式编程的熟悉程度——第二种解决方案可能看起来有点复杂。从性能的角度来看，它还要求我们对数组进行两次遍历(一次用于过滤，一次用于应用delete函数)，而不是像原始实现中那样只进行一次遍历。</p>
+<p>虽然有一些方法可以优化第二种实现(例如使用函数组合或延迟集合，我们将在以后的文章中详细讨论这两种方法) - 事实证明，模式匹配可以让我们在两者之间取得相当好的平衡。</p>
+<p>使用where子句，我们可以将要匹配的模式直接附加到原始的for循环上，从而可以摆脱嵌套的if语句 - 两者都使我们的实现更具有声明性，也更简单-像这样:</p>
+<pre><code class="language-swift">func deleteMarkedMessages() {
+    for message in messages where message.isMarked {
+        database.delete(message)
+    }
+}
+</code></pre>
+<p>而这只是冰山一角。for循环不仅可以使用where子句匹配模式，还可以在自己的元素定义中进行匹配。</p>
+<p>举个例子来说吧，我们正在制作一款包含多人配对组件的游戏。 为匹配建模，我们使用一个结构体，它包含了匹配的开始日期和一个可选Player值的数组 - nil表示仍有空位等待补充:</p>
+<pre><code class="language-swift">struct Match {
+    var startDate: Date
+    var players: [Player?]
+}
+</code></pre>
+<p>现在，假设我们想要呈现当前比赛中所有球员的列表，不包括任何空座位。为此，我们需要遍历玩家数组并丢弃所有的nil值——这可以通过使用compactMap转换数组来完成，或者使用嵌套的if语句(就像之前一样) -但多亏了模式匹配，我们也可以使用这个方便的let case语法:</p>
+<pre><code class="language-swift">func makePlayerListView(for players: [Player?]) -&gt; UIView {
+    let view = PlayerListView()
+
+    for case let player? in players {
+        view.addEntryForPlayer(named: player.name,
+                               image: player.image)
+    }
+
+    return view
+}
+</code></pre>
+<p>上面的内容乍一看可能有点陌生，特别是因为许多Swift开发人员可能习惯于只在switch语句或enum声明中看到case关键字。但是如果我们仔细想想，上面的逻辑其实是一样的——因为所有的可选选项实际上都是可选的Optional<Wrapped> enum的值，而且Swift的模式匹配引擎也不是switch语句独有的。</p>
+<h2 id="switching-on-optionals">Switching on optionals</h2>
+<p>继续讨论可选的主题——当对状态建模时，通常使用enum来表示对象或操作可能处于的每个不同的状态。例如，我们可以使用下面的enum来表示加载某种形式数据的状态:</p>
+<pre><code class="language-swift">enum LoadingState {
+    case none
+    case loading
+    case failed(Error)
+}
+</code></pre>
+<p>然而，上面的enum目前包含了一个名为none的case，这并不是真正的加载状态——而是缺少这种状态。而且因为我们已经有了一种内置的方式来表示Swift中缺少一个值——可选——为none设置自定义状态感觉有点多余。所以让我们减少LoadingState枚举，让它看起来像这样:</p>
+<pre><code class="language-swift">enum LoadingState {
+    case loading
+    case failed(Error)
+}
+</code></pre>
+<p>完成上述更改后，我们现在将使用LoadingState?当我们想表示一个可选的加载状态时 - 这看起来是一个完美的选择，但是一开始看起来可能会让处理这个值有点困难， 因为我们必须先打开可选选项，然后再打开它。</p>
+<p>值得庆幸的是，Swift的模式匹配能力再次发挥了作用，因为就像我们在迭代一系列可选选项时在玩家后面使用问号一样，在switch语句中，我们也可以在每个enum后面加上问号，这样就可以一次性处理空值和实际值，就像这样:</p>
+<pre><code class="language-swift">extension ContentViewController: ViewModelDelegate {
+    func viewModel(_ viewModel: ViewModel,
+                   loadingStateDidChangeTo state: LoadingState?) {
+        switch state {
+        case nil:
+            removeLoadingSpinner()
+            removeErrorView()
+            renderContent()
+        case .loading?:
+            removeErrorView()
+            showLoadingSpinner()
+        case .failed(let error)?:
+            removeLoadingSpinner()
+            showErrorView(for: error)
+        }
+    }
+}
+</code></pre>
+<p>上面的方法不仅非常方便，而且通过将所有状态处理代码转换为一条switch语句，还减少了我们需要跟踪的语句和条件的数量——非常棒!👍</p>
+<h2 id="declarative-error-handling">Declarative error handling</h2>
+<p>接下来，让我们切换一下角度，看看Swift的模式匹配功能如何让我们以一种非常声明性的方式实现更细粒度的错误处理。错误处理代码很容易变得非常复杂——特别是当我们想要超越简单地为任何类型的错误显示通用视图时。</p>
+<p>例如，我们想要处理在执行网络请求时可能发生的四组不同的错误:</p>
+<p>由于用户没有访问Internet而导致的错误</p>
+<p>用户的访问令牌无效。</p>
+<p>其他网络相关错误。</p>
+<p>任何其他类型的错误。</p>
+<p>不必使用一系列带有嵌套条件和检查的if和else语句来实现上述操作，相反，我们可以使用许多不同的方式来匹配模式——再次让我们在一个声明性的switch语句中实现所有的逻辑——像这样:</p>
+<pre><code class="language-swift">func handle(_ error: Error) {
+    switch error {
+    // Matching against a group of offline-related errors:
+    case URLError.notConnectedToInternet,
+         URLError.networkConnectionLost,
+         URLError.cannotLoadFromNetwork:
+        showOfflineView()
+    // Matching against a specific error:
+    case let error as HTTPError where error == .unauthorized:
+        logOut()
+    // Matching against our networking error type:
+    case is HTTPError:
+        showNetworkErrorView()
+    // Fallback for other kinds of errors:
+    default:
+        showGenericErrorView(for: error)
+    }
+}
+</code></pre>
+<p>这真是太棒了!😀然而，在上面的例子中有一件事有点“突出”——这就是我们如何在第二种情况中执行类型转换(当与我们自己的HTTPError比较时)，而在第一种情况下，我们可以直接匹配Foundation的URLError实例。这是为什么呢?</p>
+<p>乍一看，Foundation的错误类型似乎从编译器那里得到了某种形式的特殊处理，但事实证明，这一切都归结于模式匹配在底层是如何实现的。所以，是时候深入挖掘了!</p>
+<h2 id="under-the-hood-with-custom-matching">Under the hood with custom matching</h2>
+<p>虽然Swift的模式匹配是通过各种特定的语法特性(比如case let)部分启用的，但与模式匹配给定值的实际逻辑实际上并没有融入编译器或语言本身。就像许多其他看似低级的特性一样，这样的逻辑是使用标准库中的Swift代码实现的。</p>
+<p>特别地，Swift使用~=操作符的各种重载来进行模式匹配 - 这也允许我们定义自己的重载，以与内置功能相同的本机方式实现更多类型的匹配。</p>
+<p>解决HTTPError没有像上面的URLError那样被匹配的问题-让我们定义一个模式匹配器，它将任何错误匹配到一个特定的等价错误类型-像这样:</p>
+<pre><code class="language-swift">func ~=&lt;E: Error &amp; Equatable&gt;(rhs: E, lhs: Error) -&gt; Bool {
+    return (lhs as? E) == rhs
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以使用同样的轻量级语法来匹配我们自己的自定义错误，从而得到错误处理switch语句的最终版本:</p>
+<pre><code class="language-swift">func handle(_ error: Error) {
+    switch error {
+    case URLError.notConnectedToInternet,
+         URLError.networkConnectionLost,
+         URLError.cannotLoadFromNetwork:
+        showOfflineView()
+    case HTTPError.unauthorized:
+        logOut()
+    case is HTTPError:
+        showNetworkErrorView()
+    default:
+        showGenericErrorView(for: error)
+    }
+}
+</code></pre>
+<p>作为一个额外的好处，由于我们没有实现~=操作符重载来硬连接到具体的HTTPError类型，现在我们可以使用与上面相同的语法来匹配任何可能在代码基中使用的对等错误 -不仅在switch语句中，也适用于所有其他类型的模式匹配。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>模式匹配是一个非常强大的特性，它不仅为我们提供了更多用于实现循环、条件语句和switch语句等语法方面的选项-但也让我们减少了代码路径的数量，使我们的逻辑变得更具有声明性，这通常会导致更健壮的代码，更容易测试。</p>
+<p>虽然本文没有介绍Swift中使用模式匹配的其他多种方法，但希望它能让您对内置模式匹配功能和自定义这两种模式有一些了解  - 可以应用于各种情况。与往常一样，仔细考虑在哪些情况下应用模式匹配是很重要的， 在哪些情况下，应该坚持使用更传统的结构——比如标准的if和else语句。</p>
+<p><a href="https://www.swiftbysundell.com/articles/pattern-matching-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/JeEnYVYQc/" class="tag">
+                    pattern matching
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/inline-types-and-functions-in-swift/">
+                  <h3 class="post-title">
+                    Inline types and functions in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

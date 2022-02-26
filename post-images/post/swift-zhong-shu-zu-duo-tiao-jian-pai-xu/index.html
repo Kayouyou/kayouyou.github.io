@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift中数组多条件排序 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+ 在Swift中如何排序的多个属性？
+
+
+1.1. 什么是多重标准和属性排序？
+1.2. 对两个字段上的对象数组进行排序
+1.3. 对三个字段以上的对象数组进行排序
+1.4. The problem
+1.5. 对N个字段上的对象数组..." />
+    <meta name="keywords" content="sort" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift中数组多条件排序</h2>
+            <div class="post-date">2021-05-17</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Swift"> 在Swift中如何排序的多个属性？</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#">什么是多重标准和属性排序？</a></li>
+<li>1.2. <a href="#-1">对两个字段上的对象数组进行排序</a></li>
+<li>1.3. <a href="#-1">对三个字段以上的对象数组进行排序</a></li>
+<li>1.4. <a href="#Theproblem">The problem</a></li>
+<li>1.5. <a href="#N">对N个字段上的对象数组进行排序</a></li>
+</ul>
+</li>
+<li>
+<ol start="2">
+<li><a href="#-1">排序进阶篇</a></li>
+</ol>
+<ul>
+<li>2.1. <a href="#OCNSSortDescriptor">函数的灵活性：使用OC中的NSSortDescriptor</a></li>
+<li>2.2. <a href="#-1">函数作为依据</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameswifta-在swift中如何排序的多个属性">1. <a name='Swift'></a> 在Swift中如何排序的多个属性？</h2>
+<p>如果您按照一个条件或单个属性进行排序，那么排序是很容易的。Swift已经有了这样的功能。</p>
+<p>下面是一个对int型数组进行排序的例子。</p>
+<pre><code class="language-swift">let numbers = [3, 5, 6, 1, 8, 2]
+        
+let sortedNumbers = numbers.sorted { (lhs, rhs) in
+    return lhs &lt; rhs
+}
+
+// [1, 2, 3, 5, 6, 8]
+</code></pre>
+<p>但是有时您需要根据多个条件或属性进行排序。为了演示这一点，让我们以创建一个结构为例。</p>
+<p>这里我们有一个简单的***BlogPost***结构，带有文章的标题和两个统计数据点、页面视图和会话持续时间。</p>
+<pre><code class="language-swift">struct BlogPost {
+    let title: String
+    let pageView: Int
+    let sessionDuration: Double
+}
+</code></pre>
+<p>这是一个样本数据。</p>
+<pre><code class="language-swift">extension BlogPost {
+    static var examples: [BlogPost] = [
+        BlogPost(title: &quot;Alice&quot;, pageView: 1, sessionDuration: 3),
+        BlogPost(title: &quot;Peter&quot;, pageView: 1, sessionDuration: 2),
+        BlogPost(title: &quot;Kofi&quot;, pageView: 1, sessionDuration: 1),
+        BlogPost(title: &quot;Akosua&quot;, pageView: 5, sessionDuration: 2),
+        BlogPost(title: &quot;Abena&quot;, pageView: 4, sessionDuration: 10)
+    ]
+}
+</code></pre>
+<p>如果你想看看哪些帖子表现得很好，你可以从按页面视图排序开始。但正如你所看到的，许多帖子并没有那么受欢迎，也有相同的页面浏览量。在这种情况下，您需要另一个标准或属性来进行进一步的排序。</p>
+<p>这种多属性排序是我们将在本文中讨论的。他们有各种各样的方法来解决这个问题。我将展示最基本的方法，没有任何高级的概念。一旦你理解了基本原理，你就可以随心所欲地进行改进。</p>
+<h3 id="11-a-namea什么是多重标准和属性排序">1.1. <a name=''></a>什么是多重标准和属性排序？</h3>
+<p>多重条件排序是指我们比较第一个条件，并且<em>只有当第一个条件相等时，我们才会转到下一个</em>。我们一直这样做，直到找到一个不相等的标准。</p>
+<p>伪代码看起来像这样:</p>
+<pre><code class="language-swift">let sortedObjects = objects.sorted { (lhs, rhs) in
+    for (lhsCriteria, rhsCriteria) in [(lhsCrtria1, rhsCriteria1), (lhsCrtria2, rhsCriteria2), (lhsCrtria3, rhsCriteria3), ... , (lhsCrtriaN, rhsCriteriaN)] { // &lt;1&gt;
+        if lhsCriteria == rhsCriteria { // &lt;2&gt;
+            continue
+        }
+
+        return lhsCriteria &lt; rhsCriteria // &lt;3&gt;
+    }
+}
+</code></pre>
+<ol>
+<li>
+<p>我们循环遍历条件列表，从最重要的条件(第一个)开始。</p>
+</li>
+<li>
+<p>如果顺序标准是相等的，我们不能决定顺序，我们移动到下一个标准。</p>
+</li>
+<li>
+<p>如果我们可以从条件中决定两个对象之间的顺序，我们就停止并返回结果。</p>
+</li>
+</ol>
+<p>如果您很难理解伪代码，不要担心。我不是伪代码的专业写手。下面的例子应该更清楚。</p>
+<h3 id="12-a-name-1a对两个字段上的对象数组进行排序">1.2. <a name='-1'></a>对两个字段上的对象数组进行排序</h3>
+<p>我们将使用上面提到的相同场景。我们希望根据性能对<strong>BlogPost</strong>进行排序。我们的性能由页面视图(<strong>pageView</strong>)的数量决定，如果博客文章有相同的页面视图，我们使用会话持续时间(<strong>sessionDuration</strong>)。</p>
+<p>下面是我们在前面的示例中使用的一个BlogPost结构和示例数据。</p>
+<pre><code class="language-swift">struct BlogPost {
+    let title: String
+    let pageView: Int
+    let sessionDuration: Double
+}
+
+extension BlogPost {
+    static var examples: [BlogPost] = [
+        BlogPost(title: &quot;Alice&quot;, pageView: 1, sessionDuration: 3),
+        BlogPost(title: &quot;Peter&quot;, pageView: 1, sessionDuration: 2),
+        BlogPost(title: &quot;Kofi&quot;, pageView: 1, sessionDuration: 1),
+        BlogPost(title: &quot;Akosua&quot;, pageView: 5, sessionDuration: 2),
+        BlogPost(title: &quot;Abena&quot;, pageView: 4, sessionDuration: 10)
+    ]
+}
+</code></pre>
+<p>我们衡量性能的方式可以转化为这种代码。</p>
+<pre><code class="language-swift">let popularPosts = BlogPost.examples.sorted { (lhs, rhs) in
+    if lhs.pageView == rhs.pageView { // &lt;1&gt;
+        return lhs.sessionDuration &gt; rhs.sessionDuration
+    }
+    
+    return lhs.pageView &gt; rhs.pageView // &lt;2&gt;
+}
+</code></pre>
+<ol>
+<li>
+<p>如果博客文章有相同的页面视图，我们使用会话持续时间。</p>
+</li>
+<li>
+<p>如果页面浏览量不相等，我们可以根据页面浏览量来决定顺序。(我们按降序排序)</p>
+</li>
+</ol>
+<p>这是我们的结果。</p>
+<pre><code class="language-swift">[BlogPost(title: &quot;Akosua&quot;, pageView: 5, sessionDuration: 2.0), 
+BlogPost(title: &quot;Abena&quot;, pageView: 4, sessionDuration: 10.0), 
+BlogPost(title: &quot;Alice&quot;, pageView: 1, sessionDuration: 3.0), 
+BlogPost(title: &quot;Peter&quot;, pageView: 1, sessionDuration: 2.0), 
+BlogPost(title: &quot;Kofi&quot;, pageView: 1, sessionDuration: 1.0)]
+</code></pre>
+<h3 id="13-a-name-1a对三个字段以上的对象数组进行排序">1.3. <a name='-1'></a>对三个字段以上的对象数组进行排序</h3>
+<p>如您所见，按照两个标准执行排序非常容易。让我们在方程中增加更多的标准。如果博客文章具有相同的性能，我们将按名称对其进行排序。</p>
+<p>让我们在示例中添加更多的博客文章。</p>
+<pre><code class="language-swift">extension BlogPost {
+    static var examples2: [BlogPost] = [
+        BlogPost(title: &quot;Zoo&quot;, pageView: 5, sessionDuration: 2),
+        BlogPost(title: &quot;Alice&quot;, pageView: 1, sessionDuration: 3),
+        BlogPost(title: &quot;Peter&quot;, pageView: 1, sessionDuration: 2),
+        BlogPost(title: &quot;Kofi&quot;, pageView: 1, sessionDuration: 1),
+        BlogPost(title: &quot;Akosua&quot;, pageView: 5, sessionDuration: 2),
+        BlogPost(title: &quot;Abena&quot;, pageView: 4, sessionDuration: 10),
+        BlogPost(title: &quot;Angero&quot;, pageView: 1, sessionDuration: 2)
+    ]
+}
+</code></pre>
+<p>两个和三个标准没有区别。我们可以用和之前一样的逻辑。</p>
+<pre><code class="language-swift">let popularPosts = BlogPost.examples2.sorted { (lhs, rhs) in
+    if lhs.pageView == rhs.pageView {
+        if lhs.sessionDuration == rhs.sessionDuration { // &lt;1&gt;
+            return lhs.title &lt; rhs.title
+        }
+        
+        return lhs.sessionDuration &gt; rhs.sessionDuration
+    }
+    
+    return lhs.pageView &gt; rhs.pageView
+}
+</code></pre>
+<ol>
+<li>我们添加了另一个if来检查博客文章是否有相同的会话持续时间，如果它们有相同的页面访问量和会话持续时间，就按标题进行排序。</li>
+</ol>
+<p>Results:</p>
+<pre><code class="language-swift">[BlogPost(title: &quot;Akosua&quot;, pageView: 5, sessionDuration: 2.0),
+BlogPost(title: &quot;Zoo&quot;, pageView: 5, sessionDuration: 2.0),
+BlogPost(title: &quot;Abena&quot;, pageView: 4, sessionDuration: 10.0),
+BlogPost(title: &quot;Alice&quot;, pageView: 1, sessionDuration: 3.0),
+BlogPost(title: &quot;Angero&quot;, pageView: 1, sessionDuration: 2.0),
+BlogPost(title: &quot;Peter&quot;, pageView: 1, sessionDuration: 2.0),
+BlogPost(title: &quot;Kofi&quot;, pageView: 1, sessionDuration: 1.0)]
+</code></pre>
+<h3 id="14-a-nametheproblemathe-problem">1.4. <a name='Theproblem'></a>The problem</h3>
+<p>我们可以用同样的逻辑来处理2个和3个标准。这里唯一的问题是，条件越多，您需要的if-else嵌套越多。</p>
+<p>这里有一个可能导致末日金字塔的多重标准的例子。</p>
+<pre><code class="language-swift">let popularPosts = BlogPost.examples2.sorted { (lhs, rhs) in
+    if lhs.pageView == rhs.pageView {
+        if lhs.sessionDuration == rhs.sessionDuration { 
+            if lhs.nextCriteria == rhs.nextCriteria { 
+                if lhs.nextCriteria == rhs.nextCriteria { 
+                    ....
+                }
+
+                ...
+            }
+
+            ...
+        }
+        
+        return lhs.sessionDuration &gt; rhs.sessionDuration
+    }
+    
+    return lhs.pageView &gt; rhs.pageView
+}
+</code></pre>
+<h3 id="15-a-namena对n个字段上的对象数组进行排序">1.5. <a name='N'></a>对N个字段上的对象数组进行排序</h3>
+<p>为了解决末日金字塔，让我们回到之前看到的伪代码。</p>
+<pre><code class="language-swift">let sortedObjects = objects.sorted { (lhs, rhs) in
+    for (lhsCriteria, rhsCriteria) in [(lhsCrtria1, rhsCriteria1), (lhsCrtria2, rhsCriteria2), (lhsCrtria3, rhsCriteria3), ... , (lhsCrtriaN, rhsCriteriaN)] {
+        if lhsCriteria == rhsCriteria {
+            continue
+        }
+
+        return lhsCriteria &lt; rhsCriteria
+    }
+}
+</code></pre>
+<p>上面的代码并不是解决这类问题的唯一方法，但键应该是类似的。关键是我们将条件打包到一个集合中，以便进行循环。</p>
+<pre><code class="language-swift">extension BlogPost {
+    static var examples2: [BlogPost] = [
+        BlogPost(title: &quot;Zoo&quot;, pageView: 5, sessionDuration: 2),
+        BlogPost(title: &quot;Alice&quot;, pageView: 1, sessionDuration: 3),
+        BlogPost(title: &quot;Peter&quot;, pageView: 1, sessionDuration: 2),
+        BlogPost(title: &quot;Kofi&quot;, pageView: 1, sessionDuration: 1),
+        BlogPost(title: &quot;Akosua&quot;, pageView: 5, sessionDuration: 2),
+        BlogPost(title: &quot;Abena&quot;, pageView: 4, sessionDuration: 10),
+        BlogPost(title: &quot;Angero&quot;, pageView: 1, sessionDuration: 2)
+    ]
+}
+
+typealias AreInIncreasingOrder = (BlogPost, BlogPost) -&gt; Bool // &lt;1&gt;
+    
+let popularPosts = BlogPost.examples2.sorted { (lhs, rhs) in    
+    let predicates: [AreInIncreasingOrder] = [ // &lt;2&gt;
+        { $0.pageView &gt; $1.pageView },
+        { $0.sessionDuration &gt; $1.sessionDuration},
+        { $0.title &lt; $1.title }
+    ]
+    
+    for predicate in predicates { // &lt;3&gt;
+        if !predicate(lhs, rhs) &amp;&amp; !predicate(rhs, lhs) { // &lt;4&gt;
+            continue // &lt;5&gt;
+        }
+        
+        return predicate(lhs, rhs) // &lt;5&gt;
+    }
+    
+    return false
+}
+</code></pre>
+<ol>
+<li>
+<p>我声明了一个别名<strong>AreInIncreasingOrder</strong>，它匹配排序闭包。这提高了声明谓词集合时的可读性。</p>
+</li>
+<li>
+<p>我们声明了一组谓词。</p>
+</li>
+<li>
+<p>我们循环谓词。</p>
+</li>
+<li>
+<p>这里有一个棘手的部分，我们想检查条件是否可以决定博客帖子的顺序。但是<strong>AreInIncreasingOrder</strong>返回一个布尔值。我们如何检查订单是否相同?在回答这个问题之前，让我们先来看看<strong>AreInIncreasingOrder</strong>的定义。</p>
+</li>
+</ol>
+<p><strong>AreInIncreasingOrder</strong>是一个谓词，如果第一个参数能决定顺序时返回true; 否则返回false。所以，只有当两个参数不是递增顺序时，两个参数才相等。</p>
+<p>这意味着无论我们的参数顺序如何，谓词都必须是 false。换言之 lhs.pageView &lt; rhs.pageView 和 rhs.pageView &lt; lhs.pageView必须等于false才能决定顺序相等。这就是我们 !predicate(lhs, rhs) &amp;&amp; !predicate(rhs, lhs) 这句代码的意思。</p>
+<ol start="5">
+<li>
+<p>如果顺序是相等的，我们继续下一个谓词。</p>
+</li>
+<li>
+<p>如果顺序不相等，我们可以使用谓词来决定顺序。</p>
+</li>
+</ol>
+<p>Results:</p>
+<pre><code class="language-swift">[BlogPost(title: &quot;Akosua&quot;, pageView: 5, sessionDuration: 2.0), 
+BlogPost(title: &quot;Zoo&quot;, pageView: 5, sessionDuration: 2.0), 
+BlogPost(title: &quot;Abena&quot;, pageView: 4, sessionDuration: 10.0), 
+BlogPost(title: &quot;Alice&quot;, pageView: 1, sessionDuration: 3.0), 
+BlogPost(title: &quot;Angero&quot;, pageView: 1, sessionDuration: 2.0), 
+BlogPost(title: &quot;Peter&quot;, pageView: 1, sessionDuration: 2.0),
+BlogPost(title: &quot;Kofi&quot;, pageView: 1, sessionDuration: 1.0)]
+</code></pre>
+<hr>
+<h2 id="2-a-name-1a排序进阶篇">2. <a name='-1'></a>排序进阶篇</h2>
+<h3 id="21-a-nameocnssortdescriptora函数的灵活性使用oc中的nssortdescriptor">2.1. <a name='OCNSSortDescriptor'></a>函数的灵活性：使用OC中的NSSortDescriptor</h3>
+<p>我们从定义一个 Person 类型开始。因为我们想要展示 Objective-C 强大的运行时的工作方式，所以我们将它定义为 NSObject 的子类 (在纯 Swift 中，使用结构体会是更好的选择)。我们将这个类标记为 @objcMembers，这样它的所有成员都将在 Objective-C 中可见</p>
+<pre><code class="language-swift">@objcMembers
+final class Person: NSObject {
+    let first: String
+    let last: String
+    let yearOfBirth: Int
+    init(first: String, last: String, yearOfBirth: Int) {
+        self.first = first
+        self.last = last
+        self.yearOfBirth = yearOfBirth
+        // super.init() 在这里被隐式调用
+    }
+}
+</code></pre>
+<p>接下来我们定义一个数组，其中包含了不同名字和出生年份的人：</p>
+<pre><code class="language-swift">let people = [
+    Person(first: &quot;Emily&quot;, last: &quot;Young&quot;, yearOfBirth: 2002),
+    Person(first: &quot;David&quot;, last: &quot;Gray&quot;, yearOfBirth: 1991),
+    Person(first: &quot;Robert&quot;, last: &quot;Barnes&quot;, yearOfBirth: 1985),
+    Person(first: &quot;Ava&quot;, last: &quot;Barnes&quot;, yearOfBirth: 2000),
+    Person(first: &quot;Joanne&quot;, last: &quot;Miller&quot;, yearOfBirth: 1994),
+    Person(first: &quot;Ava&quot;, last: &quot;Barnes&quot;, yearOfBirth: 1998),
+]
+</code></pre>
+<p>我们想要对这个数组进行排序，规则是先按照姓排序，再按照名排序，最后是出生年份。排序应该遵照用户的区域设置。我们可以使用 NSSortDescriptor 对象来描述如何排序对象，通过它可以表达出各个排序标准 (使用 localizedStandardCompare 来进行遵循区域设置的排序)</p>
+<pre><code class="language-swift">let lastDescriptor = NSSortDescriptor(key: #keyPath(Person.last),
+ascending: true,
+selector: #selector(NSString.localizedStandardCompare(_:)))
+let firstDescriptor = NSSortDescriptor(key: #keyPath(Person.first),
+ascending: true,
+selector: #selector(NSString.localizedStandardCompare(_:)))
+let yearDescriptor = NSSortDescriptor(key: #keyPath(Person.yearOfBirth),
+ascending: true)
+</code></pre>
+<p>要对数组进行排序，我们使用 NSArray 的 sortedArray(using:) 方法。这个方法可以接受一系列排序描述符。为了确定两个元素的顺序，它会先使用第一个描述符，并检查其结果。如果两个元素在第一个描述符下相同，那么它将使用第二个描述符，以此类推：</p>
+<pre><code class="language-swift">let descriptors = [lastDescriptor, firstDescriptor, yearDescriptor]
+(people as NSArray).sortedArray(using: descriptors)
+/*
+[Ava Barnes (1998), Ava Barnes (2000), Robert Barnes (1985),
+David Gray (1991), Joanne Miller (1994), Emily Young (2002)]
+*/
+</code></pre>
+<p>排序描述符用到了 Objective-C 的两个运行时特性：首先，key 是 Objective-C 的键路径，它其实是一个包含属性名字的链表。不要把它和 Swift 4 引入的原生的 (强类型的) 键路径搞混。我们会在稍后再对它进行更多讨论。</p>
+<p>其次是键值编程 (key-value-coding)，它可以在运行时通过键查找一个对象上的对应值。selector 参数接受一个 selector (实际上也是一个用来描述方法名字的字符串)，在运行时，这个 selector 将被用来查找比较函数，当对两个对象进行比较时，这个函数将使用指定键对应的值进行比较。</p>
+<p>这是运行时编程的一个很酷的用例，排序描述符的数组可以在运行时构建，这一点在实现比如用户点击某一列时按照该列进行排序这种需求时会特别有用。</p>
+<p>我们要怎么用 Swift 的 sort 来复制这个功能呢？要复制这个排序的部分功能是很简单的，比如，你想要使用 localizedStandardCompare 来排序一个数组的话：</p>
+<pre><code class="language-swift">var strings = [&quot;Hello&quot;, &quot;hallo&quot;, &quot;Hallo&quot;, &quot;hello&quot;]
+strings.sort { $0.localizedStandardCompare($1) == .orderedAscending}
+strings // [&quot;hallo&quot;, &quot;Hallo&quot;, &quot;hello&quot;, &quot;Hello&quot;]
+</code></pre>
+<p>如果只是想用对象的某一个属性进行排序的话，也非常简单：</p>
+<pre><code class="language-swift">people.sorted { $0.yearOfBirth &lt; $1.yearOfBirth }
+/*
+[Robert Barnes (1985), David Gray (1991), Joanne Miller (1994),
+Ava Barnes (1998), Ava Barnes (2000), Emily Young (2002)]
+*/
+</code></pre>
+<p>不过，当你要把可选值属性与像是 localizedStandardCompare 这样的方法结合起来使用的话，这条路就有点儿走不通了。代码会迅速变得丑陋不堪。例如，我们想用在可选值中定义的 fileExtension 属性来对一个包含文件名的数组进行排序：</p>
+<pre><code class="language-swift">var files = [&quot;one&quot;, &quot;file.h&quot;, &quot;file.c&quot;, &quot;test.h&quot;]
+files.sort { l, r in r.fileExtension.flatMap {
+    l.fileExtension?.localizedStandardCompare($0)
+} == .orderedAscending }
+files // [&quot;one&quot;, &quot;file.c&quot;, &quot;file.h&quot;, &quot;test.h&quot;]
+</code></pre>
+<p>这真的很丑。稍后我们会让可选值的排序稍微容易一些。不过就目前而言，我们甚至还没尝试对多个属性进行排序。要同时排序姓和名，我们可以用标准库的 lexicographicallyPrecedes 方法来进行实现。这个方法接受两个序列，并对它们执行一个电话簿方式的比较，也就是说，这个比较将顺次从两个序列中各取一个元素来进行比较，直到发现不相等的元素。所以，我们可以用姓和名构建两个数组，然后使用 lexicographicallyPrecedes 来比较它们。我们还需要一个函数来执行这个比较，这里我们把使用了 localizedStandardCompare 的比较代码放到这个函数中：</p>
+<pre><code class="language-swift">people.sorted { p0, p1 in
+    let left = [p0.last, p0.first]
+    let right = [p1.last, p1.first]
+    return left.lexicographicallyPrecedes(right) {
+        $0.localizedStandardCompare($1) == .orderedAscending
+    }
+}
+/*
+[Ava Barnes (2000), Ava Barnes (1998), Robert Barnes (1985),
+David Gray (1991), Joanne Miller (1994), Emily Young (2002)]
+*/
+</code></pre>
+<p>至此，我们用了差不多相同的行数重新实现了原来的那个排序方法。不过还有很大的改进空间：在每次比较的时候都构建一个数组是非常没有效率的，比较操作也是被写死的，通过这种方法我们将无法实现对 yearOfBirth 的排序。</p>
+<h3 id="22-a-name-1a函数作为依据">2.2. <a name='-1'></a>函数作为依据</h3>
+<p>我们不会选择去写一个更复杂的函数来进行排序，先回头看看现状。排序描述符的方式要清晰不少，但是它用到了运行时编程。我们写的函数没有使用运行时编程，不过它们不太容易写出来或者读懂。</p>
+<p>除了把排序信息存储在类里，我们还可以定义一个描述对象顺序的函数。其中，最简单的一种实现就是接受两个对象作为参数，并在它们顺序正确的时候，返回 true。这个函数的类型正是标准库中 sort(by:) 和 sorted(by:) 的参数类型。接下来，让我们先定义一个泛型别名来表达这种函数形式的排序描述符：</p>
+<pre><code class="language-swift">/// 一个排序断言，当第一个值应当排在第二个值之前时，返回 `true`
+typealias SortDescriptor&lt;Root&gt; = (Root, Root) -&gt; Bool
+</code></pre>
+<p>现在，就可以用这个别名定义比较 Person 对象的排序描述符了。它可以比较出生年份，也可以比较姓的字符串：</p>
+<pre><code class="language-swift">let sortByYear: SortDescriptor&lt;Person&gt; = { $0.yearOfBirth &lt; $1.yearOfBirth }
+let sortByLastName: SortDescriptor&lt;Person&gt; = {
+    $0.last.localizedStandardCompare($1.last) == .orderedAscending
+}
+</code></pre>
+<p>除了手写这些排序描述符外，我们也可以创建一个函数来生成它们。将相同的属性写两次并不太好，比如在 sortByLastName 中，我们很容易就会不小心弄成 $0.last 和 $1.first 进行比较。而且写排序描述符本身也挺无聊的：想要通过名来排序的时候，很可能你就把姓排序的 sortByLastName 复制粘贴一下，然后再进行修改。</p>
+<p>为了避免复制粘贴，我们可以定义一个函数，它和 NSSortDescriptor 大体相似，但不涉及运行时编程。这个函数的第一个参数是一个名为 key 的函数，此函数接受一个正在排序的数组的元素，并返回这个排序描述符所处理的属性的值。然后，我们使用第二个参数 areInIncreasingOrder 比较 key 返回的结果。最后，用 SortDescriptor 把这两个参数包装一下，就是要返回的排序描述符了：</p>
+<pre><code class="language-swift">/// `key` 函数，根据输入的参数返回要进行比较的元素
+/// `by` 进行比较的断言
+/// 通过用 `by` 比较 `key` 返回值的方式构建 `SortDescriptor` 函数
+func sortDescriptor&lt;Root, Value&gt;( key: @escaping (Root) -&gt; Value, by areInIncreasingOrder: @escaping (Value, Value) -&gt; Bool)
+-&gt; SortDescriptor&lt;Root&gt;
+{
+    return { areInIncreasingOrder(key($0), key($1)) }
+}
+
+</code></pre>
+<blockquote>
+<p>key 函数描述了如何深入一个 Root 类型的元素，并提取出一个和特定排序步骤相关的 Value 类型的值。因为借鉴了泛型参数名字 Root 和 Value，所以它和 Swift 4 引入的 Swift 原生键路径有很多相同之处。我们会在下面讨论怎么用 Swift 的键路径重写这个方法。</p>
+</blockquote>
+<p>有了这个函数，我们就可以用另外一种方式来定义 sortByYear 了：</p>
+<pre><code class="language-swift">let sortByYearAlt: SortDescriptor&lt;Person&gt; =
+sortDescriptor(key: { $0.yearOfBirth }, by: &lt;)
+
+people.sorted(by: sortByYearAlt)
+/*
+[Robert Barnes (1985), David Gray (1991), Joanne Miller (1994),
+Ava Barnes (1998), Ava Barnes (2000), Emily Young (2002)]
+*/ 
+</code></pre>
+<p>甚至，我们还可以为所有实现了 Comparable 的类型定义一个重载版本：</p>
+<pre><code class="language-swift">func sortDescriptor&lt;Root, Value&gt;(key: @escaping (Root) -&gt; Value)
+-&gt; SortDescriptor&lt;Root&gt; where Value: Comparable
+{
+return { key($0) &lt; key($1) }
+}
+let sortByYearAlt2: SortDescriptor&lt;Person&gt; =
+sortDescriptor(key: { $0.yearOfBirth })
+</code></pre>
+<p><em>这两个 sortDescriptor 都使用了返回布尔值的排序函数，因为这是标准库中对于比较断言的约定</em>。但另一方面，Foundation 中像是 localizedStandardCompare 这样的 API，返回的却是一个包含 (升序，降序，相等) 三种值的 ComparisonResult。给 sortDescriptor 增加这种支持也很简单：</p>
+<pre><code class="language-swift">func sortDescriptor&lt;Root, Value&gt;(
+key: @escaping (Root) -&gt; Value,
+ascending: Bool = true,
+by comparator: @escaping (Value) -&gt; (Value) -&gt; ComparisonResult)
+-&gt; SortDescriptor&lt;Root&gt;
+{
+    return { lhs, rhs in
+        let order: ComparisonResult = ascending
+            ? .orderedAscending
+            : .orderedDescending
+        return comparator(key(lhs))(key(rhs)) == order
+    }
+}
+</code></pre>
+<p>这样，我们就可以用简短清晰得多的方式来写 sortByFirstName 了：</p>
+<pre><code class="language-swift">let sortByFirstName: SortDescriptor&lt;Person&gt; =
+sortDescriptor(key: { $0.first }, by: String.localizedStandardCompare)
+people.sorted(by: sortByFirstName)
+/*
+[Ava Barnes (2000), Ava Barnes (1998), David Gray (1991),
+Emily Young (2002), Joanne Miller (1994), Robert Barnes (1985)]
+*/ 
+</code></pre>
+<p>现在，SortDescriptor 和 NSSortDescriptor 就拥有了同样地表达能力，不过它是类型安全的，而且不依赖于运行时编程。</p>
+<p>目前我们只能用一个单一的 SortDescriptor 函数对数组进行排序。如果你还记得，我们曾经用 NSArray.sortedArray(using:) 方法指定了多个比较运算符对数组进行排序。给 Array 甚至是 Sequence 协议添加类似的功能也很简单。不过，我们要添加两个版本的 sort：一个用于原地排序，另一个返回排序后的新数组。</p>
+<p>为了避免添加多个扩展，我们使用了一种不同的实现方式：我们定义了一个把多个排序描述符合并为一个的函数。它的工作方式和 sortedArray(using:) 类似：首先它会使用第一个描述符，并检查比较的结果。如果相等，再使用第二个，第三个，直到全部用完：</p>
+<pre><code class="language-swift">func combine&lt;Root&gt;
+(sortDescriptors: [SortDescriptor&lt;Root&gt;]) -&gt; SortDescriptor&lt;Root&gt; {
+    return { lhs, rhs in
+        for areInIncreasingOrder in sortDescriptors {
+            if areInIncreasingOrder(lhs, rhs) { return true }
+            if areInIncreasingOrder(rhs, lhs) { return false }
+        }
+        return false
+    }
+}
+</code></pre>
+<p>现在我们可以最终把一开始的例子重写为这样：</p>
+<pre><code class="language-swift">let combined: SortDescriptor&lt;Person&gt; = combine(
+    sortDescriptors: [sortByLastName, sortByFirstName, sortByYear]
+)
+people.sorted(by: combined)
+/*
+[Ava Barnes (1998), Ava Barnes (2000), Robert Barnes (1985),
+David Gray (1991), Joanne Miller (1994), Emily Young (2002)]
+*/
+</code></pre>
+<p>最终，我们得到了一个与 Foundation 中的版本在行为和功能上等价的实现方法，但是我们的方式要更安全，也更符合 Swift 的语言习惯。因为 Swift 的版本不依赖于运行时编程，所以编译器有机会对它进行更好的优化。另外，我们也可以使用它排序结构体或非 Objective-C 的对象。</p>
+<p>基于函数的方式有一个不足，那就是函数是不透明的。我们可以获取一个 NSSortDescriptor 并将它打印到控制台，我们也能从排序描述符中获得一些信息，比如键路径，selector 的名字，以及排序顺序等。但是在基于函数的方式中，这些都无法做到。如果这些信息很重要的话，我们可以将函数封装到一个结构体或类中，然后在其中存储一些额外的调试信息。</p>
+<p>把函数作为数据使用的这种方式 (例如：在运行时构建包含排序函数的数组)，把语言的动态行为带到了一个新的高度。这使得像 Swift 这种需要编译的静态语言也可以实现诸如 Objective-C 或 Ruby 中的一部分动态特性。</p>
+<p>我们也看到了合并其他函数的函数的用武之地，它也是函数式编程的构建模块之一。例如，combine(sortDescriptors:) 函数接受一个排序描述符的数组，并将它们合并成了单个的排序描述符。在很多不同的应用场景下，这项技术都非常强大。</p>
+<p>除此之外，我们甚至还可以写一个自定义的运算符，来合并两个排序函数：</p>
+<pre><code class="language-swift">infix operator &lt;||&gt; : LogicalDisjunctionPrecedence
+func &lt;||&gt;&lt;A&gt;(lhs: @escaping (A,A) -&gt; Bool, rhs: @escaping (A,A) -&gt; Bool)
+-&gt; (A,A) -&gt; Bool
+{
+    return { x, y in
+        if lhs(x, y) { return true }
+        if lhs(y, x) { return false }
+        // 否则，它们就是一样的，所以我们检查第二个条件
+        if rhs(x, y) { return true }
+        return false
+    }
+}
+</code></pre>
+<p>大部分时候，自定义运算符不是什么好主意。因为自定义运算符的名字无法描述行为，所以它们通常都比函数更难理解。不过，当使用得当的时候，它们也会非常强大。有了上面的运算符，我们可以重写合并排序的例子：</p>
+<pre><code class="language-swift">let combinedAlt = sortByLastName &lt;||&gt; sortByFirstName &lt;||&gt; sortByYear
+people.sorted(by: combinedAlt)
+/*
+[Ava Barnes (1998), Ava Barnes (2000), Robert Barnes (1985),
+David Gray (1991), Joanne Miller (1994), Emily Young (2002)]
+*/
+</code></pre>
+<p>这样的代码读起来非常清晰，而且可能比原来调用函数进行合并的做法更简洁一些。不过这有一个前提，那就是你 (和这段代码的读者) 都已经习惯了该操作符的意义。相比自定义操作符的版本，我们还是倾向于选择 combine(sortDescriptors:) 函数。它在调用方看来更加清晰，而且显然增强了代码的可读性。除非你正在写一些面向特定领域的代码，否则自定义的操作符很可能都是在用牛刀杀鸡。</p>
+<p>对比我们的版本，Foundation 中的实现仍旧有一个功能上的优势：<strong>不用再写额外的代码就可以处理可选值的情况。比如，如果我们想将 Person 的 last 属性换成可选值字符串，对于使用 NSSortDescriptor 的排序代码，我们什么改变都不需要</strong>。</p>
+<p>但是基于函数的版本就需要一些额外代码。你应该能猜到接下来会发生什么：我们需要再写一个接受函数作为参数，并返回函数的函数。这个函数可以把类似 localizedStandardCompare 这种接受两个字符串并进行比较的普通函数，提升成比较两个字符串可选值的函数。如果两个比较值都是 nil，那么它们相等。如果左侧的值是 nil，而右侧不是的话，返回升序，相反的时候返回降序。最后，如果它们都不是 nil 的话，我们使用 compare 函数来对它们进行比较：</p>
+<pre><code class="language-swift">func lift&lt;A&gt;(_ compare: @escaping (A) -&gt; (A) -&gt; ComparisonResult) -&gt; (A?) -&gt; (A?)
+-&gt; ComparisonResult
+{
+    return { lhs in { rhs in
+            switch (lhs, rhs) {
+                case (nil, nil): return .orderedSame
+                case (nil, _): return .orderedAscending
+                case (_, nil): return .orderedDescending
+                case let (l?, r?): return compare(l)(r)
+            }
+        } 
+    }
+}
+</code></pre>
+<p>这让我们能够将一个普通的比较函数“提升” (lift) 到可选值的作用域中，这样它就能够和我们的 sortDescriptor 函数一起使用了。如果你还记得之前的 files 数组，你会知道因为需要处理可选值的问题，按照 fileExtension 对它进行排序的代码十分难看。不过现在有了新的 lift 函数，它就又变得很清晰了：</p>
+<pre><code class="language-swift">let compare = lift(String.localizedStandardCompare)
+let result = files.sorted(by: sortDescriptor(key: { $0.fileExtension }, by: compare))
+result // [&quot;one&quot;, &quot;file.c&quot;, &quot;file.h&quot;, &quot;test.h&quot;]
+</code></pre>
+<blockquote>
+<p>我们可以为返回 Bool 的函数写一个类似的 lift。在可选值一章中我们提到过，标准库现在不再为可选值提供像是 &gt; 这样的运算符了。因为如果你使用的不小心，可能会产生预想之外的结果，因此它们被删除了。Bool 版本的 lift 函数可以让你轻而易举地将现有的运算符提升为可选值也能使用的函数，以满足你的需求。</p>
+</blockquote>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/-NHOM2ScG/" class="tag">
+                    sort
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-dai-ma-sheng-cheng/">
+                  <h3 class="post-title">
+                     Swift代码生成
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

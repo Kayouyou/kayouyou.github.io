@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Generalizing Swift code | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="决定是否泛化一段代码以适应多个用例有时是相当棘手的。虽然调整函数或类型使其在代码库的多个部分中可用是避免代码重复的好方法，把东西做得太一般化往往会导致代码难以理解和维护——因为它最终需要做太多的事情。
+本周，让我们来看看几个关键因素，它们可..." />
+    <meta name="keywords" content="refactoring,generics,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Generalizing Swift code</h2>
+            <div class="post-date">2019-07-14</div>
+            
+            <div class="post-content" v-pre>
+              <p>决定是否泛化一段代码以适应多个用例有时是相当棘手的。虽然调整函数或类型使其在代码库的多个部分中可用是避免代码重复的好方法，把东西做得太一般化往往会导致代码难以理解和维护——因为它最终需要做太多的事情。</p>
+<p>本周，让我们来看看几个关键因素，它们可以帮助我们在尽可能多地重用代码的同时，避免在过程中使事情变得过于复杂或模糊。</p>
+<h2 id="starting-with-a-specific-implementation">Starting with a specific implementation</h2>
+<p>一般来说，避免过度泛化代码的一种好方法是在构建初始版本时记住一个非常具体的、特定的用例。通常，让一段新代码做好一件事比专注于优化它以便立即重用要容易得多-只要我们确保分离关注点并设计出清晰的api，我们总是可以重构事物，使其在需要时更具可重用性。</p>
+<p>假设我们正在开发某种形式的电子商务应用程序，并且我们已经构建了一个类来让我们基于标识符加载一个产品——看起来像这样:</p>
+<pre><code class="language-swift">class ProductLoader {
+    typealias Handler = (Result&lt;Product, Error&gt;) -&gt; Void
+
+    private let networking: Networking
+    private var cache = [UUID : Product]()
+
+    init(networking: Networking) {
+        self.networking = networking
+    }
+
+    func loadProduct(withID id: UUID,
+                     then handler: @escaping Handler) {
+        // If a cached product exists, then return it directly instead
+        // of performing a network request.
+        if let product = cache[id] {
+            return handler(.success(product))
+        }
+
+        // Load the product over the network, by requesting the
+        // product endpoint with the given ID.
+        networking.request(.product(id: id)) { [weak self] result in
+            self?.handle(result, using: handler)
+        }
+    }
+}
+</code></pre>
+<p>查看上面的代码示例，我们可以看到ProductLoader的主要职责是检查所请求的产品是否已经被缓存，如果没有，启动一个网络请求来加载它。一旦收到一个响应，它就会把它的结果解码成一个产品模型，并缓存它——使用一个私有句柄方法，如下所示:</p>
+<pre><code class="language-swift">private extension ProductLoader {
+    func handle(_ result: Result&lt;Data, Error&gt;,
+                using handler: Handler) {
+        do {
+            let product = try JSONDecoder().decode(
+                Product.self,
+                from: result.get()
+            )
+            cache[product.id] = product
+            handler(.success(product))
+        } catch {
+            handler(.failure(error))
+        }
+    }
+}
+</code></pre>
+<p>目前，上面的类是完全特定于产品的——它所做的工作并不是产品独有的。事实上，我们的ProductLoader只需要能够做三件事:</p>
+<p><em>Check whether a given cache entry exists.<br>
+Ask the injected Networking instance to request an endpoint.<br>
+Decode network response data into models.</em></p>
+<p>看看上面的列表，没有什么突出的东西，我们只想做产品-我们实际上需要执行完全相同的任务集加载任何模型在我们的应用程序-如用户、活动、供应商等。 因此，让我们看看如何将ProductLoader泛化，允许使用相同的代码来加载任何模型。</p>
+<h2 id="generalizing-a-core-piece-of-logic">Generalizing a core piece of logic</h2>
+<p>是什么让我们的ProductLoader如此适合泛化，除了我们在代码库的多个部分需要完全相同的逻辑之外，它的实现只包含非常通用的任务——比如缓存、网络和JSON解码。这将使我们或多或少地保持相同的实现，同时仍将我们的API开放给更多的用例。</p>
+<p>首先，我们将我们的产品加载器重命名为ModelLoader，并使其成为一个通用型，可以与任何符合可解码的模型类型一起工作。我们将让它保持相同的属性和初始化器，除了我们现在还需要一个生成端点的函数作为初始化器的一部分注入-因为不同的模型可能会从不同的服务器端加载:</p>
+<pre><code class="language-swift">class ModelLoader&lt;Model: Decodable&gt; {
+    typealias Handler = (Result&lt;Model, Error&gt;) -&gt; Void
+
+    private let networking: Networking
+    private let endpoint: (UUID) -&gt; Endpoint
+    private var cache = [UUID : Model]()
+
+    init(networking: Networking,
+         endpoint: @escaping (UUID) -&gt; Endpoint) {
+        self.networking = networking
+        self.endpoint = endpoint
+    }
+}
+</code></pre>
+<p>当涉及到我们的主加载方法时，我们将它重命名为loadModel，并让它使用注入的端点函数来产生一个端点，以便在执行网络请求时调用——像这样:</p>
+<pre><code class="language-swift">extension ModelLoader {
+    func loadModel(withID id: UUID,
+                   then handler: @escaping Handler) {
+        if let model = cache[id] {
+            return handler(.success(model))
+        }
+
+        networking.request(endpoint(id)) { [weak self] result in
+            self?.handle(result, using: handler, modelID: id)
+        }
+    }
+}
+</code></pre>
+<p>最后，我们将更新我们的私有句柄方法来解码其泛型Model类型的实例，而不仅仅是Product值。 由于我们不能再依赖解码后的产品ID进行缓存，我们也必须从顶层loadModel方法传递被请求的模型ID:</p>
+<pre><code class="language-swift">private extension ModelLoader {
+    func handle(_ result: Result&lt;Data, Error&gt;,
+                using handler: Handler,
+                modelID: UUID) {
+        do {
+            let model = try JSONDecoder().decode(
+                Model.self,
+                from: result.get()
+            )
+
+            cache[modelID] = model
+            handler(.success(model))
+        } catch {
+            handler(.failure(error))
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在已经成功地将以前的ProductLoader一般化为可以用于加载任何可解码模型的泛型类型——所有这些都无需对其实现或API进行大幅度更改。调用站点的唯一区别是，我们现在将调用loadModel而不是loadProduct，并且在初始化加载器实例时还需要传递一个端点生成函数:</p>
+<pre><code class="language-swift">let productLoader = ModelLoader&lt;Product&gt;(
+    networking: networking,
+    endpoint: Endpoint.product
+)
+
+let userLoader = ModelLoader&lt;User&gt;(
+    networking: networking,
+    endpoint: Endpoint.user
+)
+</code></pre>
+<p>由于端点参数需要一个为给定ID生成Endpoint的函数，所以我们将产品和用户端点作为上面的第一个类函数传递 - 不管我们的服务器端点是用enum描述的，还是用静态工厂方法描述的，它都能很好地工作，就像“构造Swift中的url”。</p>
+<h2 id="domain-specific-conveniences">Domain-specific conveniences</h2>
+<p>对代码进行通用化，使其可以用于多个不同的模型——或者换句话说，在多个领域内——这是减少代码重复和使系统架构更加一致的好方法。然而，这样做也会使弄清给定类型如何适合更大的图景变得更加困难。</p>
+<p>当使用名为ProductLoader的类型时，很明显它做什么以及它属于我们代码库的哪一部分——而ModelLoader听起来可能更模糊。然而，我们有一些方法可以缓解这个问题。一种方法是使用类型别名来返回我们的模型特定的类型名，而不需要在底层维护重复的实现:</p>
+<pre><code class="language-swift">typealias ProductLoader = ModelLoader&lt;Product&gt;
+typealias UserLoader = ModelLoader&lt;User&gt;
+</code></pre>
+<p>我们还可以通过另一种方式来调整ModelLoader，让它感觉与任何给定模型的连接更紧密一些，那就是创建特定于领域的便利api——例如让我们跳过endpoint参数，而使用便利初始化器来内联它:</p>
+<pre><code class="language-swift">// Note how we can extend our type alias directly, which is
+// equivalent to extending ModelLoader where Model == Product.
+extension ProductLoader {
+    convenience init(networking: Networking) {
+        self.init(networking: networking,
+                  endpoint: Endpoint.product)
+    }
+}
+</code></pre>
+<p>做上面的事情可能看起来没有必要，但是它会对我们新的ModelLoader的使用方便性产生很大的影响——特别是当我们在整个代码库中创建多个ModelLoader实例时。 它也可以是一个很好的方式，使它向后兼容我们的旧的ProductLoader，因为如果我们添加方便，使我们的新API完全匹配我们的旧API，就不需要更新调用站点。</p>
+<h2 id="the-power-of-shared-abstractions">The power of shared abstractions</h2>
+<p>泛化代码的好处不仅限于减少代码重复——泛化一组核心逻辑也是创建公共基础的好方法，我们可以在此基础上构建强大的共享抽象。</p>
+<p>例如，假设我们不断迭代我们的应用，在某些时候我们发现我们需要在几个不同的地方一次加载多个模型。由于我们现在有了通用的ModelLoader，所以不必为每种模型编写重复的逻辑，我们可以简单地扩展它以添加我们需要的API - 它允许我们加载任意类型的模型的数组，给定任意序列的id:</p>
+<pre><code class="language-swift">extension ModelLoader {
+    typealias MultiHandler = (Result&lt;[Model], Error&gt;) -&gt; Void
+
+    // We let any sequence be passed here, since some parts of
+    // our code base might be storing IDs using an Array, while
+    // others might be using a Dictionary, or a Set.
+    func loadModels&lt;S: Sequence&gt;(
+        withIDs ids: S,
+        then handler: @escaping MultiHandler
+    ) where S.Element == UUID {
+        var iterator = ids.makeIterator()
+        var models = [Model]()
+
+        func loadNext() {
+            guard let nextID = iterator.next() else {
+                return handler(.success(models))
+            }
+
+            loadModel(withID: nextID) { result in
+                do {
+                    try models.append(result.get())
+                    loadNext()
+                } catch {
+                    handler(.failure(error))
+                }
+            }
+        }
+
+        loadNext()
+    }
+}
+</code></pre>
+<p>请注意，上面的例子并不是一次加载多个模型的最有效方式——因为它是完全连续的。有关并行执行一组任务的更彻底的实现，请参见“Swift中的基于任务的并发”</p>
+<p>就像我们之前在通用核心api之上添加特定于领域的便利一样，我们可以做同样的事情来包装上面的loadModels方法，以创建它的特定于模型的版本-比如这个，它让我们在一个给定的捆绑包中加载所有的产品，然后应用折扣给它们:</p>
+<pre><code class="language-swift">extension ModelLoader where Model == Product {
+    func loadProducts(in bundle: Product.Bundle,
+                      then handler: @escaping MultiHandler) {
+        loadModels(withIDs: bundle.productIDs) { result in
+            do {
+                let products = try result.get().map {
+                    $0.applying(bundle.discount)
+                }
+
+                handler(.success(products))
+            } catch {
+                handler(.failure(error))
+            }
+        }
+    }
+}
+</code></pre>
+<p>使用上面的设置——底部是通用的核心逻辑，顶部是特定于领域的api -在代码重用和保持顶层api尽可能简单之间，这是一种实现“两全之美”的好方法。</p>
+<h2 id="we-still-need-domain-specific-types">We still need domain-specific types</h2>
+<p>然而，并不是所有的代码都应该通用化——即使我们可以使用类型别名和扩展来扩展泛型类型，有时候我们只需要一个好的老式的特定于领域的API。当一个类型正在执行一个真正只在给定域中有意义的任务时，最好是把它硬连接起来，好地执行单个任务，而不是过度抽象。</p>
+<p>下面是此类类型的一个例子，一个处理购买的控制器类——目前，这是我们只需要在产品领域内执行的逻辑:</p>
+<pre><code class="language-swift">class ProductPurchasingController {
+    typealias Handler = (Result&lt;Void, Error&gt;) -&gt; Void
+
+    private let loader: ProductLoader
+    private let paymentController: PaymentController
+
+    init(loader: ProductLoader,
+         paymentController: PaymentController) {
+        self.loader = loader
+        self.paymentController = paymentController
+    }
+
+    func purchaseProduct(with id: UUID,
+                         then handler: @escaping Handler) {
+        loader.loadModel(withID: id) { result in
+            // Perform purchase
+            ...
+        }
+    }
+}
+</code></pre>
+<p>请注意上面的ProductPurchasingController如何通过ProductLoader类型别名使用我们新的ModelLoader API。 除了它调用loadModel而不是loadProduct之外，实际上没有人知道它实际上使用的是完全泛型的类型 - 它非常适合我们目前工作的领域。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在处理逻辑实际上没有绑定到任何特定领域的类型或函数时 -将该逻辑推广到多个不同的场景中可以重用，这是一种很好的方法，既可以统一我们的代码基础的核心，避免代码重复，也可以在该逻辑之上构建强大的共享抽象。</p>
+<p>然而，虽然尝试概括我们所有的低级逻辑是很诱人的，但有时这样做只会造成不必要的复杂性，而没有任何真正的好处。关键往往是找到足够通用的逻辑，使其能够很好地泛化，并有多个可用的具体用例，以便应用它。</p>
+<p><a href="https://www.swiftbysundell.com/articles/generalizing-swift-code/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/YJu26CfU2/" class="tag">
+                    refactoring
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/customizing-codable-types-in-swift/">
+                  <h3 class="post-title">
+                    Customizing Codable types in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

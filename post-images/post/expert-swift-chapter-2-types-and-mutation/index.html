@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Expert Swift - Chapter 2: Types &amp; Mutation | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Expert Swift Chapter 2: Types &amp; Mutation
+
+The fundamental types
+Modeling with types
+
+Difference 1: Automatic initi..." />
+    <meta name="keywords" content="expert swift,type system" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Expert Swift - Chapter 2: Types &amp; Mutation</h2>
+            <div class="post-date">2021-08-17</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gtk89m51zfj61400u0qdp02.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#expert-swift-chapter-2-types--mutation">Expert Swift Chapter 2: Types &amp; Mutation</a>
+<ul>
+<li><a href="#the-fundamental-types">The fundamental types</a></li>
+<li><a href="#modeling-with-types">Modeling with types</a>
+<ul>
+<li><a href="#difference-1-automatic-initialization">Difference 1: Automatic initialization</a></li>
+<li><a href="#difference-2-copy-semantics">Difference 2: Copy semantics</a></li>
+<li><a href="#difference-3-scope-of-mutation">Difference 3: Scope of mutation</a>
+<ul>
+<li><a href="#value-semantics-through-immutability">Value semantics through immutability</a></li>
+</ul>
+</li>
+<li><a href="#difference-4-heap-versus-stack">Difference 4: Heap versus stack</a></li>
+<li><a href="#difference-5-lifetime-and-identity">Difference 5: Lifetime and identity</a></li>
+<li><a href="#more-differences">More differences</a></li>
+<li><a href="#defining-a-point">Defining a Point</a></li>
+</ul>
+</li>
+<li><a href="#functions-and-methods">Functions and methods</a>
+<ul>
+<li><a href="#mutating-and-self">Mutating and self</a></li>
+<li><a href="#static-methods-and-properties">Static methods and properties</a>
+<ul>
+<li><a href="#going-deterministic">Going deterministic</a></li>
+</ul>
+</li>
+<li><a href="#enumerations">Enumerations</a></li>
+<li><a href="#types-as-documentation">Types as documentation</a></li>
+<li><a href="#improving-type-ergonomics">Improving type ergonomics</a></li>
+<li><a href="#associated-values">Associated values</a></li>
+<li><a href="#using-rawrepresentable">Using RawRepresentable</a></li>
+</ul>
+</li>
+<li><a href="#quadtree">QuadTree</a>
+<ul>
+<li><a href="#implementing-quadtree">Implementing QuadTree</a></li>
+<li><a href="#copying">Copying</a></li>
+<li><a href="#implementing-quadtree-methods">Implementing QuadTree methods</a></li>
+</ul>
+</li>
+<li><a href="#key-points">Key points</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="expert-swift-chapter-2-types-mutation">Expert Swift Chapter 2: Types &amp; Mutation</h1>
+<p>类型是什么? 它是数据的逻辑分组，以及一组可以使用它执行的操作。 在Swift中，您可以使用标准类型和自定义类型来构建程序。在你的程序运行之前，Swift编译器通常可以在一个称为类型检查的过程中使用类型信息来保证正确性。</p>
+<p>初学者第一次接触不熟悉的类型，如<strong>Optional</strong>，可能会发现类型检查错误很麻烦，而且有点神秘。但是，通过对程序进行类型检查，类型系统可以确保正确使用软件并进行许多优化。 Swift的类型系统是代码安全高效的关键。随着您成为更高级的实践者，您的编程视角可能会变得更以类型为中心。</p>
+<p>Swift强调其类型的可变值语义。在本章中，您将回顾Swift提供的重要名义类型。值类型(枚举和结构)、引用类型(类)和<strong>mutation</strong>规则共同支持可变值语义，您可以在自己的Swift类型中采用这种语义。</p>
+<h2 id="the-fundamental-types">The fundamental types</h2>
+<p>Swift类型系统由少量基本类型组成。这些类型包括所谓的命名类型(协议、枚举、结构和类)以及复合类型(函数和元组)。这些类型中的每一种都有一组独特的属性，使其在特定情况下非常有用。</p>
+<p>正如前一章所讨论的，所有标准库类型，如Bool、Int、Double、String、Optional、Array和Dictionary，都是这些基本类型的巧妙组合，这令人难以置信。它展示了你可以用它们做什么的能力。</p>
+<blockquote>
+<p>Note: 协议和泛型也很神奇。本书有完整的章节介绍协议类型和泛型类型，因为它们非常强大和重要。您还将在第4章“泛型”中简要介绍类型的类型或元类型。</p>
+</blockquote>
+<p>在本章中，您将探索由类、结构和枚举创建命名的具体类型的属性。虽然其中一些内容可能只是综述，但它将为探索一些更高级的主题提供一个平台。</p>
+<h2 id="modeling-with-types">Modeling with types</h2>
+<p>二维几何是探索类型系统的一个重要问题领域，因为它在数学上定义得很好，而且易于可视化。首先打开Geometry初学者playground，并为point类型添加以下两个定义:</p>
+<pre><code class="language-swift">struct StructPoint {
+  var x, y: Double
+}
+
+class ClassPoint {
+  var x, y: Double
+  init(x: Double, y: Double) { (self.x, self.y) = (x, y) }
+}
+</code></pre>
+<p>这两种模型都是x-y平面上的一个点。但是已经有五个基本的区别你应该意识到。</p>
+<h3 id="difference-1-automatic-initialization">Difference 1: Automatic initialization</h3>
+<p>第一个，也是最明显的区别是类类型中需要一个初始化式。如果没有声明，编译器将为结构体声明一个内部成员初始化式。 这个初始化器只是一个一个地分配成员属性。您必须为类定义一个初始化式，因为x和y需要初始化。</p>
+<blockquote>
+<p>Note: 如果为结构体定义了初始化式，编译器不会为您定义基于成员的初始化式。 一个常见的技巧是<strong>在扩展中定义您的初始化式</strong>，如果您同时需要编译器生成的初始化式和自定义的初始化式。</p>
+</blockquote>
+<h3 id="difference-2-copy-semantics">Difference 2: Copy semantics</h3>
+<p>第二个主要也是最重要的区别是复制语义。 类具有引用语义，结构具有值语义。 值语义说，给定两个实例A和B，不可能通过更改A来影响值B，反之亦然。</p>
+<p>使用引用语义，可以从一个对象影响另一个对象。来查看一个例子，通过将这个添加到你的playground的最后并运行它:</p>
+<pre><code class="language-swift">let structPointA = StructPoint(x: 0, y: 0)
+var structPointB = structPointA
+structPointB.x += 10
+print(structPointA.x) // not affected, prints 0.0
+
+let classPointA = ClassPoint(x: 0, y: 0)
+let classPointB = classPointA
+classPointB.x += 10
+print(classPointA.x) // affected, prints 10.0
+</code></pre>
+<p>对于引用语义，更改类<strong>classPointB</strong>会影响类<strong>classPointA</strong>，因为这两个变量都指向相同的内存。这种现象并不适用于<strong>structPointA</strong>和<strong>structPointB</strong> 这种具有值语义的独立副本的结构体。</p>
+<h3 id="difference-3-scope-of-mutation">Difference 3: Scope of mutation</h3>
+<p>Swift支持实例级变异模型。这意味着通过使用引入器关键字let而不是var，您可以锁定一个mutation实例。这就是为什么必须在上面的代码中用var声明structPointB。如果不这样做，x坐标就不能加10。编译器会用一个错误来阻止这一点。</p>
+<p>注意，即使let引入了classPointB，您也可以用类版本修改x坐标。mutation控制应用于引用本身，而不是底层属性数据。</p>
+<h4 id="value-semantics-through-immutability">Value semantics through immutability</h4>
+<p>从上面的例子可以知道，类是具有引用语义的引用类型。是否可能给出一个类值语义? 答案是肯定的，最简单的方法是通过不变性。 只需用let声明所有属性，使它们不可变。 因为您不能从任何地方修改任何东西，这就满足了值语义的定义。函数式语言通常以性能为代价使用严格的不变性来实现值语义。</p>
+<blockquote>
+<p>Note: Objective-C uses a type-level mutation model. For example, NSString is immutable. But NSMutableString, which derives from NSString, adds mutability. However, if you have a pointer to an NSString, you can’t be 100 percent sure it doesn’t point to an NSMutableString that another client could modify. Defensive copies become necessary, making this a less efficient, less safe and more error-prone programming model.</p>
+</blockquote>
+<p>在StructPoint中用var声明x和y属性的美妙之处在于，如果你用var声明实例，用let声明不可变，它们就可以是可变的。这就是为什么您通常希望使用var为结构声明属性，因为您可以在使用点控制每个实例的可变性。</p>
+<h3 id="difference-4-heap-versus-stack">Difference 4: Heap versus stack</h3>
+<p>一般的经验法则是类使用堆内存，而结构和枚举使用栈内存。因为栈分配比堆分配快几个数量级，这就是值类型获得快速声誉的地方。每个执行线程都有自己的堆栈，只有通过修改最上面的元素才能改变堆栈。因此，在堆栈上分配和释放不需要昂贵的并发锁或花哨的分配策略。分配和释放可以在单个时钟滴答声中通过单个加或减指令执行。</p>
+<p>相反，堆由多个线程共享，需要使用并发锁保护。操作系统必须防止堆碎片，如果分配和释放不同大小的内存块，可能会发生堆碎片。 因此，即使堆分配已经进行了高度优化，它最终还是不确定的，可能需要执行数千甚至数百万条指令。</p>
+<p>下面是上面代码在内存中分配的示意图:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtj0el5f3tj60x40o6dhd02.jpg" alt="avatar" loading="lazy"></figure>
+<p>结构放在堆栈上，而类同时放在堆栈和堆上。堆内存中的引用计数跟踪对象的生命周期，因为引用类型是共享的。只有当引用计数降为0时，才会调用deinit并释放内存。</p>
+<blockquote>
+<p>Note: 堆用于类，栈用于结构和枚举，这只是一般的经验法则。 As you saw in the previous chapter, the Swift compiler starts by allocating everything on the heap and then reasons about the object’s lifetime to determine whether it can be allocated on the stack. For example, an escaping closure that closes over a local structure will need to put that object on the heap to extend the structure’s lifetime beyond its scope. On the other hand, a class that is created, that performs some action and then goes out of scope might be optimized away entirely and just include the instructions necessary to complete the operation.</p>
+</blockquote>
+<h3 id="difference-5-lifetime-and-identity">Difference 5: Lifetime and identity</h3>
+<p>值类型，比如结构和枚举，通常存在于堆栈中，复制成本很低。值类型没有生命周期的概念。引用确实有生命周期，因此，您可以为它们定义一个deinit函数。它们还自动具有唯一身份标识，因为它们驻留在内存中的特定位置，您可以使用它们来标识它们。</p>
+<blockquote>
+<p>Note: 可以通过指定唯一的属性来给出值类型标识。 The Identifiable protocol, 它添加了一个Hashable(和Equatable) id属性，完成了这个任务。SwiftUI框架定义了属性包装器，比如@State，它在简单值类型中注入生命周期。</p>
+</blockquote>
+<h3 id="more-differences">More differences</h3>
+<p>这个简单的例子没有说明类和结构之间的其他区别。最引人注目的是继承，类使用它来实现运行时多态性。类动态分派它们的方法，而结构体不会发生这种情况，除非使用协议。分派对于不属于协议的结构方法是静态发生的。在下一章中，您将学习更多关于协议调度的知识。</p>
+<blockquote>
+<p>Note:  您可以将类中的方法标记为final，这可能会产生反虚拟化的副作用，使它们运行得更快。编译器可以使用来自访问控制和整个模块优化的提示来证明一个方法不能被覆盖和优化。</p>
+</blockquote>
+<h3 id="defining-a-point">Defining a Point</h3>
+<p>鉴于上述差异，使用轻量级值类型代表你的Point可能是一个不错的选择。用那个设计。把这个添加到playground上:</p>
+<pre><code class="language-swift">struct Point: Equatable {
+  var x, y: Double
+}
+
+struct Size: Equatable {
+  var width, height: Double
+}
+
+struct Rectangle: Equatable {
+  var origin: Point
+  var size: Size
+}
+</code></pre>
+<p>This defines Point, Size and Rectangle with Equatable conformance. 对于值类型，如果存储的属性也是Equatable类型，编译器将为您生成required <mark>方法。 引用类型(也就是类)要求您自己为Equatable编写</mark>方法，为Hashable编写hash(into:)。</p>
+<p>价值语义学的另一个基本特征是它们的<strong>compose</strong>。 矩形有值语义，因为它是值类型，点和大小都有值语义。 此外，因为Swift数组具有值语义，所以Rectangle数组也具有值语义。</p>
+<blockquote>
+<p>Note: 代码合成发生在编译器的类型检查阶段。 当您采用一个协议时，编译器检查该类型是否满足(<strong>witnesses</strong>)该协议。如果没有，它通常会发出一个错误。在Equatable的特殊情况下，如果类型是值类型，则如果存储的所有属性也是Equatable，则它将尝试自动合成==。 类似的过程也发生在Hashable、codebable和CaseIterable上。与其他类型不同的是，codebable为值类型和引用类型合成代码。</p>
+</blockquote>
+<h2 id="functions-and-methods">Functions and methods</h2>
+<p>到目前为止，自定义类型只有存储属性形式的数据。但是当你加入运算时，事情就变得有趣了。为了热身，向Point类型添加两个方法:</p>
+<pre><code class="language-swift">// 1st draft version
+extension Point {
+  func flipped() -&gt; Self {
+    Point(x: self.y, y: self.x)
+  }
+
+  mutating func flip() {
+    let temp = self
+    self.x = temp.y
+    self.y = temp.x
+  }
+}
+</code></pre>
+<p>这里有两种简单的方法来交换一个点的x和y坐标。 方法的名称遵循Swift API设计指南([https://swift.org/documentation/api-design-guidelines/])中描述的可变和不可变结对的“<strong>fluent</strong>”用法。</p>
+<p>函数flipped()使用self，而flip函数既使用又修改self。出于这个原因，您需要声明它正在发生变异。两个函数都包含交换逻辑，这是重复的。</p>
+<p>用这个版本替换上面的代码来完成清理重复代码:</p>
+<pre><code class="language-swift">extension Point {
+  func flipped() -&gt; Self {
+    Point(x: y, y: x)
+  }
+
+  mutating func flip() {
+    self = flipped()
+  }
+}
+</code></pre>
+<p>对self的不必要的引用消失了，交换逻辑只是在<strong>flipped</strong>中。 在本例中，实现很简单，所以重复不是什么大问题。 但是当你有更复杂的不可变和可变功能对时，你会喜欢这个模式。</p>
+<h3 id="mutating-and-self">Mutating and self</h3>
+<p>对于type方法，Swift编译器将<strong>self: Self</strong>作为不可见参数隐式传递。这就是为什么你可以在函数体中使用它。通过一个<strong>mutating</strong>的方法，Swift传递一个不可见的<strong>self: inout Self</strong>。如果您还记得，<strong>inout</strong>的语义在进入函数时进行复制，然后在退出函数时进行复制。这个对应于被调用的属性观察者<strong>willSet</strong>和<strong>didSet</strong>。此外，<strong>inout</strong>有效地从函数生成一个输入和额外的返回值。</p>
+<blockquote>
+<p>Note: 类的方法(例如，引用类型)不使用<strong>inout</strong>。  如果你想想<strong>self: inout Self</strong>做了什么，这是有道理的。引用类型上的Inout只能防止整个实例被重新分配给另一个实例。</p>
+</blockquote>
+<h3 id="static-methods-and-properties">Static methods and properties</h3>
+<p>使用扩展添加一个静态属性和方法到你的point类型，添加到这个playgroud:</p>
+<pre><code class="language-swift">extension Point {
+  static var zero: Point {
+    Point(x: 0, y: 0)
+  }
+
+  static func random(inRadius radius: Double) -&gt; Point {
+    guard radius &gt;= 0 else {
+      return .zero
+    }
+
+    let x = Double.random(in: -radius ... radius)
+    let maxY = (radius * radius - x * x).squareRoot()
+    let y = Double.random(in: -maxY ... maxY)
+    return Point(x: x, y: y)
+  }
+}
+</code></pre>
+<p>这段代码创建了一个静态属性<strong>zero</strong>，它只是原点上的一个点。静态方法<strong>random</strong>创建一个以指定半径为边界的随机<strong>point</strong>。 首先确定x的值，然后用勾股定理确定允许的y值的最大界限，这样它就会在圆内。</p>
+<h4 id="going-deterministic">Going deterministic</h4>
+<p>Swift默认的<strong>Double.random(in:)<strong>使用</strong>SystemRandomNumberGenerator()</strong>，这是加密安全的。这个选项是一个很好的默认选项，因为它可以防止潜在的攻击者猜测您的随机数。</p>
+<p>有时，您希望您的随机值是确定的和可重复的。对于持续集成测试来说，这一点尤其重要。您希望这些类型的测试在响应代码更改(错误的合并或重构)时失败，而不是由于新的、未尝试的输入值。幸运的是，Swift标准库支持使用重载方法**Double.random(in:using:)**来生成您自己的生成器，其中using参数接受您选择的伪随机数生成器。</p>
+<p>尽管标准库不包括这些可重复的伪随机源之一，但是自己制作一个伪随机源是很容易的。 在网上有很多关于制作“优秀的”随机生成器的研究。 这里有一个来自维基百科的不错的例子。**The Permuted Congruential Generator **([https://en.wikipedia.org/wiki/Permuted_congruential_generator])可以把列出的C代码翻译成Swift。把这个添加到你的plaground:</p>
+<pre><code class="language-swift">struct PermutedCongruential: RandomNumberGenerator {
+  private var state: UInt64
+  private let multiplier: UInt64 = 6364136223846793005
+  private let increment: UInt64 = 1442695040888963407
+
+  private func rotr32(x: UInt32, r: UInt32) -&gt; UInt32 {
+    (x &amp;&gt;&gt; r) | x &amp;&lt;&lt; ((~r &amp;+ 1) &amp; 31)
+  }
+
+  private mutating func next32() -&gt; UInt32 {
+    var x = state
+    let count = UInt32(x &amp;&gt;&gt; 59)
+    state = x &amp;* multiplier &amp;+ increment
+    x ^= x &amp;&gt;&gt; 18
+    return rotr32(x: UInt32(truncatingIfNeeded: x &amp;&gt;&gt; 27),
+                            r: count)
+  }
+
+  mutating func next() -&gt; UInt64 {
+    UInt64(next32()) &lt;&lt; 32 | UInt64(next32())
+  }
+
+  init(seed: UInt64) {
+    state = seed &amp;+ increment
+    _ = next()
+  }
+}
+</code></pre>
+<p>这段代码包含一些对本书不重要的数学细节。 (但是，你会在第五章“Numerics &amp; Ranges”中看到更多关于c风格的不安全二进制算法，如&amp;&gt;&gt;，&amp;*和&amp;+。) 需要注意的关键是如何将内部细节和状态标记为私有。作为这种类型的用户，您只需要知道它是用一个64位整数作为种子的，并且它会产生一个伪随机64位整数。这种隐藏是实际的封装;它驯服了复杂性，使类型易于使用和推理。您将在本书中看到封装的使用，并在第14章“<strong>API Design Tips &amp; Tricks</strong>”中进行进一步讨论。</p>
+<p>要使用这个伪随机源，请创建一个overload的Point.random。把这个添加到你的playground:</p>
+<pre><code class="language-swift">extension Point {
+  static func random(inRadius radius: Double,
+                     using randomSource: 
+                       inout PermutedCongruential) -&gt; Point {
+    guard radius &gt;= 0 else {
+      return .zero
+    }
+
+    let x = Double.random(in: -radius...radius, 
+                          using: &amp;randomSource)
+    let maxY = (radius * radius - x * x).squareRoot()
+    let y = Double.random(in: -maxY...maxY, 
+                          using: &amp;randomSource)
+    return Point(x: x, y: y)
+  }
+}
+</code></pre>
+<p>它很像使用系统随机数生成器的上一个版本。作为静态方法，<strong>random(in:using:)<strong>也不会触及Point的实例。但是请注意可变状态是如何在函数中流动的，因为</strong>randomSource</strong>是一个<strong>inout</strong>参数。这种通过参数处理副作用的方法比使用全局变量来跟踪伪随机状态的设计要好得多。 它显式地向用户显示副作用，从而允许对其进行控制。</p>
+<blockquote>
+<p>Note: 不幸的是，这个随机函数是特定于 PermutedCongruential 这个具体类型的。 在第4章“<strong>Generics</strong>”中，您将看到使用符合RandomNumberGenerator的任何类型的技术，包括SystemRandomNumberGenerator()。 如果你想看到这个函数写得通用且没有逻辑重复，请查看本章最后的资源文件夹中的 <strong>RandomPointGeneric</strong> playground。</p>
+</blockquote>
+<p>在你的playground上用下面的代码测试确定性随机数:</p>
+<pre><code class="language-swift">var pcg = PermutedCongruential(seed: 1234)
+for _ in 1...10 {
+  print(Point.random(inRadius: 1, using: &amp;pcg))
+}
+</code></pre>
+<p>这些看起来像是随机数，但却是可复制的。 如果起始种子为1234，第10个随机点总是<strong>point (x: 0.43091531644250813, y: 0.3236366519677818)</strong>。</p>
+<h3 id="enumerations">Enumerations</h3>
+<p>Swift枚举是另一种功能强大的值类型，可以为有限的状态集建模。</p>
+<pre><code class="language-swift">enum Quadrant: CaseIterable, Hashable {
+  case i, ii, iii, iv
+
+  init?(_ point: Point) {
+    guard !point.x.isZero &amp;&amp; !point.y.isZero else {
+      return nil
+    }
+
+    switch (point.x.sign, point.y.sign) {
+    case (.plus, .plus):
+      self = .i
+    case (.minus, .plus):
+      self = .ii
+    case (.minus, .minus):
+      self = .iii
+    case (.plus, .minus):
+      self = .iv
+    }
+  }
+}
+</code></pre>
+<p>这段代码为二维平面中的象限创建了一个抽象。CaseIterable一致性允许您访问allCases数组。Hashable意味着您可以将其用作Set的元素，或将其用作Dictionary的键。你可以让初始化器失效，因为x轴或y轴上的点没有被定义为象限。 <strong>可选的初始化器允许您自然地记录这种可能性</strong>。</p>
+<pre><code class="language-swift">Quadrant(Point(x: 10, y: -3)) // evaluates to .iv
+Quadrant(.zero) // evaluates to nil
+</code></pre>
+<h3 id="types-as-documentation">Types as documentation</h3>
+<p>类型可以作为文档。 例如，如果你有一个返回Int的函数，你不需要担心这个函数是否会返回3.14159或“Giraffe”。 这是不可能发生的。从某种意义上说，编译器排除了所有这些疯狂的可能性。</p>
+<blockquote>
+<p>Historical note: 最著名的软件工程失败之一是1999年的火星气候轨道器。  加州喷气推进实验室的工程师们用以牛顿秒为单位的公制脉冲值来编写他们的函数。相比之下，位于科罗拉多州的洛克希德·马丁航天公司(Lockheed Martin aerospace)的工程师们用英磅-秒来编写他们的函数。 想象一下，如果这两组用类型明确地表示了单元。 这样做可能会避免导致太空探测器跳过(或在火星大气层中燃烧)昂贵错误(1.25亿美元以上)。</p>
+</blockquote>
+<p><strong>Foundation</strong>有一套可扩展的类型，用于处理常见的物理单位，如长度、温度和角度。考虑角度，它可以用多种单位表示。把这个添加到playground:</p>
+<pre><code class="language-swift">let a = Measurement(value: .pi/2,
+                    unit: UnitAngle.radians)
+
+let b = Measurement(value: 90,
+                    unit: UnitAngle.degrees)
+
+a + b  // 180 degrees
+</code></pre>
+<p>变量a是一个直角，用弧度表示，b是一个直角，用度表示。 你可以把它们加起来，得到它们是180度。+操作符在值相加之前将它们转换为基本单元。</p>
+<p>当然，Swift允许定义标准数学函数的重载。你可以创建一个类型安全版本的cos()和sin()。</p>
+<pre><code class="language-swift">func cos(_ angle: Measurement&lt;UnitAngle&gt;) -&gt; Double {
+  cos(angle.converted(to: .radians).value)
+}
+
+func sin(_ angle: Measurement&lt;UnitAngle&gt;) -&gt; Double {
+  sin(angle.converted(to: .radians).value)
+}
+
+cos(a)  // 0
+cos(b)  // 0
+sin(a)  // 1
+sin(b)  // 1
+</code></pre>
+<p>该函数取一个角度，并在将其传递给标准的cos()和sin()函数之前显式地将其转换为弧度。使用这个新的API，编译器可以检查以确保您传递的是角度类型，而不是一些无意义的东西。</p>
+<blockquote>
+<p>Note: 一些流行的框架处理角度类型。 除了<strong>Foundation</strong>的测量类型之外，SwiftUI还定义了一个<strong>Angle</strong>，明确地以度或弧度初始化。 为官方Swift numerics包提出了一个通用版本，该版本对所有不同的浮点类型进行抽象。</p>
+</blockquote>
+<h3 id="improving-type-ergonomics">Improving type ergonomics</h3>
+<p>关于Swift的一个伟大的事情是你可以扩展你甚至没有源代码的现有类型的功能和互操作性。 例如，假设您希望您的程序处理<strong>polar coordinates</strong>。你会经常用到角度，所以加上这个:</p>
+<pre><code class="language-swift">typealias Angle = Measurement&lt;UnitAngle&gt;
+
+extension Angle {
+  init(radians: Double) {
+    self = Angle(value: radians, unit: .radians)
+  }
+  init(degrees: Double) {
+    self = Angle(value: degrees, unit: .degrees)
+  }
+  var radians: Double {
+    converted(to: .radians).value
+  }
+  var degrees: Double {
+    converted(to: .degrees).value
+  }
+}
+</code></pre>
+<p><strong>Typealias</strong>为<strong>Angle</strong>提供了一个更短的描述性拼写。你现在可以回去改进你的<strong>sin</strong>和<strong>cos</strong>实现，像这样:</p>
+<pre><code class="language-swift">func cos(_ angle: Angle) -&gt; Double {
+  cos(angle.radians)
+}
+func sin(_ angle: Angle) -&gt; Double {
+  sin(angle.radians)
+} 
+</code></pre>
+<p>你可能会同意这样看起来更好看。现在，你可以定义一个极坐标类型:</p>
+<pre><code class="language-swift">struct Polar: Equatable {
+  var angle: Angle
+  var distance: Double
+}
+</code></pre>
+<p>因为你想在xy坐标和极坐标之间轻松切换，你可以为它们添加类型转换初始化器:</p>
+<pre><code class="language-swift">// Convert polar-coordinates to xy-coordinates
+extension Point {
+  init(_ polar: Polar) {
+    self.init(x: polar.distance * cos(polar.angle),
+              y: polar.distance * sin(polar.angle))
+  }
+}
+
+// Convert xy-coordinates to polar coordinates
+extension Polar {
+  init(_ point: Point) {
+    self.init(angle: Angle(radians: atan2(point.y, point.x)),
+              distance: hypot(point.x, point.y))
+  }
+}
+</code></pre>
+<p>请注意您的抽象是如何相互构建的，从而创建一个更强大的工作环境。您的类型允许您逐层隐藏复杂性。</p>
+<p>现在，你可以很容易地从xy坐标到极坐标，反之亦然，就像这样:</p>
+<pre><code class="language-swift">let coord = Point(x: 4, y: 3)
+Polar(coord).angle.degrees // 36.87
+Polar(coord).distance      // 5
+</code></pre>
+<p>强类型意味着您不能意外地混淆极坐标和xy坐标，但是您仍然可以在您想要的两种坐标之间轻松切换。</p>
+<h3 id="associated-values">Associated values</h3>
+<p>Swift中的枚举功能非常强大，因为它们允许您将信息与特定情况关联起来。例如，你可以创建一组固定的形状:</p>
+<pre><code class="language-swift">enum Shape {
+  case point(Point)
+  case segment(start: Point, end: Point)
+  case circle(center: Point, radius: Double)
+  case rectangle(Rectangle)
+}
+</code></pre>
+<p>如您所见，组合类型很容易。你可以在你的应用程序中简洁地建模有效的状态，甚至防止无效的状态被表示从而被编译。</p>
+<h3 id="using-rawrepresentable">Using RawRepresentable</h3>
+<p>你的工具箱里还有一个重要的工具。您可能在没有意识到的情况下使用了RawRepresentable进行枚举。打开starter playground RawRepresentable并添加以下内容:</p>
+<pre><code class="language-swift">enum Coin {
+  case penny, nickel, dime, quarter
+}
+</code></pre>
+<p>当你用整数、字符或字符串返回枚举时，由于编译器的魔力，它变成了<strong>RawRepresentable</strong>。 将前面的定义替换为:</p>
+<pre><code class="language-swift">enum Coin: Int {
+  case penny = 1, nickel = 5, dime = 10, quarter = 25
+}
+</code></pre>
+<p>RawRepresentable意味着你可以创建并获取原始值。这也意味着类型是Equatable, Hashable and Codable，而这一切都是free。</p>
+<pre><code class="language-swift">let lucky = Coin(rawValue: 1)
+lucky?.rawValue  // returns Optional(1)
+let notSoMuch = Coin(rawValue: 2)
+</code></pre>
+<p>您可以直接使用RawRepresentable来创建简单的检查类型。考虑一下这个例子:</p>
+<pre><code class="language-swift">struct Email: RawRepresentable {
+  var rawValue: String
+
+  init?(rawValue: String) {
+    guard rawValue.contains(&quot;@&quot;) else {
+      return nil
+    }
+    self.rawValue = rawValue
+  }
+}
+</code></pre>
+<p>这种简单类型提供了一种文档形式。考虑使用它的函数的签名:</p>
+<pre><code class="language-swift">func send(message: String, to recipient: Email) throws { 
+  // some implementation 
+}
+</code></pre>
+<p>这个函数更容易使用，因为形参标签明确了消息和接收者的去向，而且由于编译器可以检查特定的类型，所以很难误用。 电子邮件的类型意味着它只能传递格式良好的电子邮件地址。(在本例中，检查只是确保地址中有@，但您可以使其任意严格。)</p>
+<p>与其使用isValid这样的属性，不如通过返回nil或在无法创建有效实例时抛出更具体的错误，使自定义类型的初始化器失败。这种显式失败模式允许您setup代码，以便编译器强制您检查错误。这样做的好处是:<strong>当您编写一个使用类型的函数时，您不必担心可能无效的不成熟实例。 这种模式将数据验证和错误处理推到软件堆栈的上层，并让下层有效地运行，无需额外的检查。</strong></p>
+<h2 id="quadtree">QuadTree</h2>
+<p>现在，通过为<strong>CGPoints</strong>构建<strong>QuadTree</strong>四叉树类型，您将获得更多的类型经验。这个示例将向您展示如何在使用类类型进行存储时实现可变值语义。</p>
+<p>四叉树是在区域内寻找点的一种有效的树数据结构。不再需要<strong>O(n)<strong>来寻找匹配区域中的点，只需要</strong>O(log n)</strong>。 它通过将点放在节点(或桶)中来实现这一点。当一个节点达到最大容量并溢出时，它创建新的子节点，将空间分成四个相等的部分。当需要查找点时，您可以有效地对这些节点进行二分搜索。</p>
+<p>最后的演示应用程序将让你添加一些点，然后通过拖动你的手指在一个区域找到点。</p>
+<p>它看起来像这样:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtk6uw3m3wj60b60j0js002.jpg" alt="avatar" loading="lazy"></figure>
+<p>这些点是四叉树中的点，矩形表示树如何划分空间。较重的方形和较大的圆点是一组你可以移动的发现点。当以传统树的形式绘制时，四叉树的数据结构是这样的:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtk6wphc9uj60jw0jcq3m02.jpg" alt="avatar" loading="lazy"></figure>
+<p>每个节点有0个子节点或4个子节点。QuadTree类型本身是一个轻量级的值类型。 它在树的顶部有一个指向引用类型<strong>Node</strong>的私有属性<strong>root</strong>。复制四叉树很便宜，因为副本共享节点引用。从图形上看，共享看起来是这样的:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtk6y93qxlj60kw0ia75b02.jpg" alt="avatar" loading="lazy"></figure>
+<p>当一个共享实例决定通过添加点来修改树时，为了保持良好的值语义，它必须创建树的深度副本并添加点。这个过程称为<strong>copy-on-write(写时复制)</strong>，有时简称为CoW。从图像上看，你会得到这样的结果:</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtk6zv41aoj60ya0jojtb02.jpg" alt="avatar" loading="lazy"></figure>
+<p>在本例中，您在添加新点之前进行了复制。节点容量溢出，将自身细分为4个子节点。</p>
+<h3 id="implementing-quadtree">Implementing QuadTree</h3>
+<p>通过打开QuadTree Xcode启动项目开始QuadTree的实现。使用文件导航器来熟悉项目中的文件。浏览这五个文件，不要过多担心细节。</p>
+<ul>
+<li>AppMain.swift:  包含SwiftUI应用程序的基本定义。</li>
+<li>ContentView.swift: 顶层用户界面。 它定义了用于添加或查找点的选择器、显示已查找点数量的位置和一个清除按钮。 它还包含用于插入和查找点的拖动手势。</li>
+<li>QuadTree.swift: 终止四叉树的定义。这是你工作的地方。</li>
+<li>QuadTreeView.swift:  画点和矩形的画布。 它查找视图的大小并将其报告给视图模型，这样点就可以存储在从0到1的标准化坐标中。</li>
+<li>QuadTreeViewModel.swift: 将模型(您的QuadTree实例)连接到用户界面。这个文件包含应用程序的所谓业务逻辑。</li>
+</ul>
+<p>此时，您可以构建并运行应用程序，但还不能插入和查找点。为了实现这一点，您需要填写四叉树类型。</p>
+<p>打开QuadTree.swift，它包含一个骨架定义。</p>
+<p>在四叉树定义中，添加私有嵌套类Node:</p>
+<pre><code class="language-swift">private final class Node {
+  let maxItemCapacity = 4
+  var region: CGRect
+  var points: [CGPoint] = []
+  var quad: Quad?
+
+  init(region: CGRect, points: [CGPoint] = [], quad: Quad? = nil) {
+    self.region = region
+    self.quad = quad
+    self.points = points
+    self.points.reserveCapacity(maxItemCapacity)
+    precondition(points.count &lt;= maxItemCapacity)
+  }
+
+  struct Quad {
+    // more to come...
+  }
+}
+</code></pre>
+<p>嵌套类Node将为四叉树完成繁重的工作。每个节点实例保留一个<strong>region</strong>，在溢出之前最多可以容纳4个点(the bucket size)，溢出后在Quad的结构中又细分为四个节点。</p>
+<blockquote>
+<p>注意:bucket的大小被设置为4，所以您可以很容易地看到发生了什么。根据插入和查找时间的分析，实际的实现可能会有更大的bucket大小。</p>
+</blockquote>
+<p>接下来，将其添加到Node内的Quad定义中:</p>
+<pre><code class="language-swift">var northWest: Node
+var northEast: Node
+var southWest: Node
+var southEast: Node
+
+var all: [Node] { [northWest, northEast, southWest, southEast] }
+
+init(region: CGRect) {
+  let halfWidth = region.size.width * 0.5
+  let halfHeight = region.size.height * 0.5
+
+   northWest =
+     Node(region: CGRect(x: region.origin.x, 
+                         y: region.origin.y,
+                         width: halfWidth, height: halfHeight))
+   northEast =
+     Node(region: CGRect(x: region.origin.x + halfWidth, 
+                         y: region.origin.y,
+                         width: halfWidth, height: halfHeight))
+   southWest =
+     Node(region: CGRect(x: region.origin.x, y: 
+                         region.origin.y + halfHeight,
+                         width: halfWidth, height: halfHeight))
+   southEast =
+     Node(region: CGRect(x: region.origin.x + halfWidth, 
+                         y: region.origin.y + halfHeight,
+                         width: halfWidth, height: halfHeight))
+}
+
+// more to come...
+</code></pre>
+<p>这段代码定义了Quad的四个子节点。初始化器很冗长，但它所做的只是将父区域划分为四个相等的子区域。</p>
+<p>你需要能够创建一个深度复制的Node，所以添加这个初始化器和复制方法到Quad:</p>
+<pre><code class="language-swift">init(northWest: Node, northEast: Node,
+     southWest: Node, southEast: Node) {
+  self.northWest = northWest
+  self.northEast = northEast
+  self.southWest = southWest
+  self.southEast = southEast
+}
+
+func copy() -&gt; Quad {
+  Quad(northWest: northWest.copy(),
+       northEast: northEast.copy(),
+       southWest: southWest.copy(),
+       southEast: southEast.copy())
+}
+</code></pre>
+<p>这就完成了Quad的定义。</p>
+<h3 id="copying">Copying</h3>
+<p>上面的代码需要Node上的copy()方法，所以现在将它添加到Node的主体中:</p>
+<pre><code class="language-swift">func copy() -&gt; Node {
+  Node(region: region, points: points, quad: quad?.copy())
+}
+</code></pre>
+<p>这个函数将解决四个编译器错误。有些令人惊讶的是，添加这一点允许<strong>Node和Quad</strong>从根节点递归地复制自己，一直复制到树。</p>
+<p>接下来，添加一个helper方法，通过将其添加到Node定义中来细分Node:</p>
+<pre><code class="language-swift">func subdivide() {
+  precondition(quad == nil, &quot;Can't subdivide a node already subdivided&quot;)
+  quad = Quad(region: region)
+}
+</code></pre>
+<p>它所做的只是将quad赋值给一个实例。你上面写的初始化式完成了<strong>rectangle division</strong>的实际工作。前提条件确保您不会再细分一个已经细分过的节点。 如果计算成本低，检查你的假设总是一个好主意。</p>
+<p>接下来，为Node写入insert。添加:</p>
+<pre><code class="language-swift">@discardableResult
+func insert(_ point: CGPoint) -&gt; Bool {
+  // 1
+  guard region.contains(point) else {
+    return false
+  }
+  // 2
+  if let quad = quad {
+    return quad.northWest.insert(point) ||
+      quad.northEast.insert(point) ||
+      quad.southWest.insert(point) ||
+      quad.southEast.insert(point)
+  }
+  else {
+    // 3
+    if points.count == maxItemCapacity {
+      subdivide()
+      return insert(point)
+    }
+    else {
+      points.append(point)
+      return true
+    }
+  }
+}
+</code></pre>
+<p>该函数返回Bool值，如果插入该点则为true，如果未插入则为false。</p>
+<p>下面是这个函数的功能概要:</p>
+<ol>
+<li>首先，检查点是否在区域内。如果不是，提前退出并返回false。</li>
+<li>检查节点是否被细分。 如果有，函数将尝试将这个点插入到<strong>quad</strong>的每个节点中。 逻辑或||短路 并立即停止插入。</li>
+<li>如果节点已达到最大容量，则对该节点进行细分，并再次尝试插入。 否则，只添加点并返回true。</li>
+</ol>
+<p>为Node定义的最后一个方法是在区域中查找点。将此方法添加到Node类型中:</p>
+<pre><code class="language-swift">func find(in searchRegion: CGRect) -&gt; [CGPoint] {
+  guard region.intersects(searchRegion) else {
+    return []
+  }
+  var found = points.filter { searchRegion.contains($0) }
+  if let quad = quad {
+    found += quad.all.flatMap { $0.find(in: searchRegion) }
+  }
+  return found
+}
+</code></pre>
+<p>这段代码首先检查搜索区域是否与节点负责的区域重叠。如果没有，则不返回points。这个返回值是递归的 <strong>base case</strong>。 接下来，它过滤区域中的点，并将它们添加到<strong>found</strong>列表中。最后，如果节点已被细分，它将遍历<strong>quads</strong>并递归地调用find(in:)，在返回<strong>found</strong>列表之前向它添加点。</p>
+<h3 id="implementing-quadtree-methods">Implementing QuadTree methods</h3>
+<p>现在您已经完成了Node类型，可以实现QuadTree的方法了。首先，添加一个私有属性到QuadTree上:</p>
+<pre><code class="language-swift">private var root: Node
+</code></pre>
+<p>QuadTree的初始化指定了它所处理的空间区域。将实现替换为:</p>
+<pre><code class="language-swift">init(region: CGRect) {
+  root = Node(region: region)
+}
+</code></pre>
+<p>接下来，用以下内容替换QuadTree中的<strong>find(in:)和points():</strong></p>
+<pre><code class="language-swift">func find(in searchRegion: CGRect) -&gt; [CGPoint] {
+  root.find(in: searchRegion)
+}
+
+func points() -&gt; [CGPoint] {
+  find(in: root.region)
+}
+</code></pre>
+<p>**find (in:)**只是委托给根节点。Points()通过从根节点向下查找所有点来收集它们。</p>
+<p>接下来，替换**regions()**的占位符，该占位符返回每个Node负责的区域:</p>
+<pre><code class="language-swift">private func collectRegions(from node: Node) -&gt; [CGRect] {
+  var results = [node.region]
+  if let quad = node.quad {
+    results += quad.all.flatMap { collectRegions(from: $0) }
+  }
+  return results
+}
+
+func regions() -&gt; [CGRect] {
+  collectRegions(from: root)
+}
+</code></pre>
+<p>regions()调用私有助手方法<strong>collectreregions (from:)</strong>，它递归地收集所有节点的所有区域。</p>
+<p>最后，用下面的实现替换insert方法:</p>
+<pre><code class="language-swift">@discardableResult
+mutating func insert(_ point: CGPoint) -&gt; Bool {
+  if !isKnownUniquelyReferenced(&amp;root) {
+    root = root.copy()
+  }
+  guard root.insert(point) else {
+    return false
+  }
+  count += 1
+  return true
+}
+</code></pre>
+<p>这个函数被标记为@discardableResult，因为客户端可能不希望检查插入是否成功。 它可能失败的唯一方法是，如果您试图插入一个点，该点位于四叉树初始化器指定的区域之外。</p>
+<p>这段代码就是“<strong>写时复制(copy-on-write)</strong>”奇迹发生的地方。Swift有一个特殊的函数<strong>isKnownUniquelyReferenced()</strong>，如果只有一个实例，则返回true。</p>
+<p>属性<strong>count</strong>的存在是为了不需要递归遍历所有节点就能知道四叉树的点计数(<strong>O(1)</strong>)。只有在插入成功时，它才会递增。插入的成功与否取决于初始化的区域四叉树的原始大小。</p>
+<blockquote>
+<p>Note:  要在发生变化时维护值语义，必须为每个发生变化的方法创建底层存储的深度副本。如果实例不是共享的，则不复制实例是一种优化。 如果存在额外的副本，则可以防止这种优化。 SwiftUI框架有特殊的属性包装器@State和@Published，用于管理UI更新。 不幸的是，这些包装器会产生一个额外的副本，这会干扰isKnownUniquelyReferenced优化。 如果你仔细观察QuadTreeViewModel.swift，你会发现quadTree不是一个@Published属性，而是直接调用objectWillChange.send()来处理UI更新。 这样做可以防止额外的复制，额外的复制将在添加几百个点后让界面掉帧卡顿。</p>
+</blockquote>
+<p>构建并运行应用程序。拖动你的手指来添加一些点。 如果您点击逐个添加点，您将看到区域在第5次点击时进行细分，因为节点溢出了最大容量。但在区域中寻找点是QuadTree的亮点。它不需要遍历整个点列表，而是可以快速关注某个特定区域。你可以通过切换到查找模式并拖动小查找框来尝试。 快速找到区域中的点是<strong>QuadTree</strong>用于碰撞检测和压缩应用的原因。</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtk7x2bkb3j60ek0p275f02.jpg" alt="avatar" loading="lazy"></figure>
+<h2 id="key-points">Key points</h2>
+<p>Swift是一种强类型语言，它允许编译器在程序运行前检查程序的正确性。你越擅长处理类型，就越容易编写正确的程序。</p>
+<p>以下是本章中需要牢记的一些要点:</p>
+<ul>
+<li>结构、枚举和类是Swift用来创建其他具体类型的基本命名类型，包括Bool、Int、Optional、String、Array等。</li>
+<li>创建自定义类型来优雅地解决domain的问题。</li>
+<li>结构和枚举都是值类型。类是引用类型。</li>
+<li>任何类型都可以设计为具有值语义。</li>
+<li>获取值语义最直接的方法是使用只包含其他具有值语义的类型的值类型(结构或枚举)。</li>
+<li>所有标准类型，包括String、Array、Set和Dictionary，都已经具有值语义，这使得它们很容易组合成具有值语义的更大类型。</li>
+<li>使类不可变是为引用类型提供值语义的一种方法。</li>
+<li>值类型通常在堆栈上复制，而引用类型则在堆上分配并进行引用计数。</li>
+<li>引用类型有一个内置的生命期和标识概念。</li>
+<li>实例方法秘密地传入了<strong>self:Self</strong>。</li>
+<li>值类型的可变实例方法传递<strong>inout self</strong>。</li>
+<li>枚举建模状态的有限集。</li>
+<li>避免初始化不完整的无效对象。相反，创建可失败的初始化器。</li>
+<li>一组好的类型可以作为编译器检查的文档。</li>
+<li>通过将基础测量类型定义为具体类型，可以减少使用不同单元的误差。</li>
+<li>Swift可以让你改善你甚至不拥有的类型的使用过程中的人机工学。</li>
+<li>协议RawRepresentable允许您创建简单的、表达性的类型。</li>
+<li>写时复制(Copy-on-write)是赋予引用类型改变值语义的一种方法。</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fhJM3gN7U/" class="tag">
+                    expert swift
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/JQK7bx_qF/" class="tag">
+                    type system
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/expert-swift-chapter-1-introduction/">
+                  <h3 class="post-title">
+                    Expert Swift - Chapter 1: Introduction
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

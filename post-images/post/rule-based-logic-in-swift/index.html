@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Rule-based logic in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="当考虑代码架构或系统设计时，很容易只考虑代码库所使用的总体概念和抽象-比如我们是否使用view models、logic controllers或presenters，以及我们如何在核心逻辑和UI之间进行通信。
+然而，尽管这些更大的概念非常..." />
+    <meta name="keywords" content="refactoring,code structure,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Rule-based logic in Swift</h2>
+            <div class="post-date">2019-07-28</div>
+            
+            <div class="post-content" v-pre>
+              <p>当考虑代码架构或系统设计时，很容易只考虑代码库所使用的总体概念和抽象-比如我们是否使用view models、logic controllers或presenters，以及我们如何在核心逻辑和UI之间进行通信。</p>
+<p>然而，尽管这些更大的概念非常重要，我们也可以通过改进一些局部的和次要的细节来对我们的代码库的整体结构和质量产生很大的影响。 单个函数是如何构造的，我们如何在类型或特性中做出局部决策，以及我们的各种逻辑是如何耦合或解耦的?</p>
+<p>本周，让我们来看看一种实现这种局部改进的技术，即将大型函数重构为专用的、基于规则的系统-以及如何在更大的范围内提高清晰度和质量。</p>
+<h2 id="handling-events">Handling events</h2>
+<p>几乎所有现代应用程序都有一个共同点，尤其是那些运行在日益复杂的操作系统上的应用程序-就像iOS和macOS -他们必须处理各种不同的事件。我们不仅要处理用户输入和数据或状态的变化，还需要响应各种系统事件——从设备旋转、推送通知、深度链接等等。</p>
+<p>让我们看一个此类事件处理的例子，在这个例子中，我们使用URLHandler类型响应系统要求应用程序打开给定URL的请求。举个例子，假设我们正在构建一个音乐应用程序，它处理艺术家、专辑和用户信息——因此我们的URL处理代码可能看起来像这样:</p>
+<pre><code class="language-swift">struct URLHandler {
+    let navigationController: UINavigationController
+
+    func handle(_ url: URL) {
+        // Verify that the passed URL is something we can handle:
+        guard url.scheme == &quot;music-app&quot;,
+              !url.pathComponents.isEmpty,
+              let host = url.host else {
+                return
+        }
+
+        // Route to the appropriate view controller, depending on
+        // the initial component (or host) of the URL:
+        switch host {
+        case &quot;profile&quot;:
+            let username = url.pathComponents[0]
+            let vc = ProfileViewController(username: username)
+            navigationController.pushViewController(vc, animated: true)
+        case &quot;album&quot;:
+            let id = Album.ID(url.pathComponents[0])
+            let vc = AlbumViewController(albumID: id)
+            navigationController.pushViewController(vc, animated: true)
+        
+            ...
+        }
+    }
+}
+</code></pre>
+<p>上面的代码可以工作，但是从架构的角度来看，它确实有一些问题。首先，由于我们的URLHandler目前直接负责为我们的应用程序的所有特性创建视图控制器，它需要知道很多有关所有细节的信息，这些细节远远超出了URL处理的范围。例如，它需要知道如何解析标识符，我们的各种视图控制器接受什么样的参数，等等。</p>
+<p>这不仅使我们的代码具有强耦合性——这很可能使重构这样的任务比它们需要的困难得多-它也需要上面的handle方法是相当大的，它几乎可以保证继续增长，因为我们不断添加新功能或深度链接功能到我们的应用程序。</p>
+<h2 id="following-the-rules">Following the rules</h2>
+<p>我们不再把所有的URL处理代码放到一个方法或类型中，而是看看能否重构它，使其更加解耦。想想看，当涉及到URL处理(或任何其他类型的事件处理代码)等任务时，我们通常会评估一组预定义的规则，以便将发生的事件与一组要执行的逻辑匹配起来。</p>
+<p>让我们接受这一点，看看如果我们将代码建模为显式规则会发生什么。我们将从一个规则类型开始——我们称之为URLRule——并为URL处理上下文中评估规则所需的信息添加属性:</p>
+<pre><code class="language-swift">struct URLRule {
+    /// The host name that the rule requires in order to be evaluated.
+    var requiredHost: String
+    /// Whether the URL's path components array needs to be non-empty.
+    var requiresPathComponents: Bool
+    /// The body of the rule, which takes a set of input, and either
+    /// produces a view controller, or throws an error.
+    var evaluate: (Input) throws -&gt; UIViewController
+}
+</code></pre>
+<p>虽然将视图控制器的概念从我们的URL处理代码中解耦也很好，为了保持简单，我们不会在重构过程中这样做。 关于如何编写解耦导航代码的一些想法，请参见“Swift中的导航”。</p>
+<p>接下来，让我们定义在计算时将被传递的输入类型，以及一个方便的错误类型，当给定的输入不符合它的要求时，规则可以轻松抛出:</p>
+<pre><code class="language-swift">extension URLRule {
+    struct Input {
+        var url: URL
+        var pathComponents: [String]
+        var queryItems: [URLQueryItem]
+    }
+
+    struct MismatchError: Error {}
+}
+</code></pre>
+<p>上面，我们对URL中大多数规则感兴趣的部分进行了分解，这减少了每个规则必须进行的处理和分析的数量-让他们专注于自己的内在逻辑。沿着这些线，我们还可以使用通用规则操作的便利api来扩展我们的输入类型，例如可以轻松地访问给定查询项的值:</p>
+<pre><code class="language-swift">extension URLRule.Input {
+    func valueForQueryItem(named name: String) -&gt; String? {
+        let item = queryItems.first { $0.name == name }
+        return item?.value
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们可以开始定义一些规则了!让我们从前面比较简单的一个开始，它将概要文件URL host匹配到ProfileViewController—像这样:</p>
+<pre><code class="language-swift">extension URLRule {
+    static var profile: URLRule {
+        return URLRule(
+            requiredHost: &quot;profile&quot;,
+            requiresPathComponents: true,
+            evaluate: { input in
+                ProfileViewController(
+                    username: input.pathComponents[0]
+                )
+            }
+        )
+    }
+}
+</code></pre>
+<p>注意，因为我们声明了上面的规则要求每个URL的path组件都是非空的，所以我们可以安全地访问第一个组件，而不必处理可选的或编写任何本地验证代码。</p>
+<p>很酷!但这是一个非常简单的例子，所以让我们继续看一些更复杂的东西。下面是一个与艺术家宿主相匹配的规则，它还执行对所请求艺术家的ID的内联验证，以及解析一个可选的查询参数:</p>
+<pre><code class="language-swift">extension URLRule {
+    static var artist: URLRule {
+        return URLRule(
+            requiredHost: &quot;artist&quot;,
+            requiresPathComponents: true,
+            evaluate: { input in
+                let rawID = input.pathComponents[0]
+
+                guard let id = Artist.ID(rawID) else {
+                    throw MismatchError()
+                }
+
+                let songID = input.valueForQueryItem(named: &quot;song&quot;)
+                                  .flatMap(Song.ID.init)
+
+                return ArtistViewController(
+                    artistID: id,
+                    highlightedSongID: songID
+                )
+            }
+        )
+    }
+}
+</code></pre>
+<p>面我们可以看到，我们添加的便利api，例如MismatchError类型和检索查询项值的方法，已经非常方便了--因为它们让我们用最少的样板来实现完全解耦的逻辑。</p>
+<p>最后，让我们来看看如何将特定的依赖项注入到每个规则中，而不需要通过任何其他类型来传递它们。 我们所要做的只是将规则需要的依赖项作为参数传递给创建该规则的静态工厂方法，就像这样:</p>
+<pre><code class="language-swift">extension URLRule {
+    static func search(using loader: SearchResultsLoader) -&gt; URLRule {
+        return URLRule(
+            requiredHost: &quot;search&quot;,
+            requiresPathComponents: false,
+            evaluate: { input in
+                SearchViewController(
+                    loader: loader,
+                    query: input.valueForQueryItem(named: &quot;q&quot;)
+                )
+            }
+        )
+    }
+}
+</code></pre>
+<p>上述方法的美妙之处在于，通过将我们对事件的处理分解为明确分离的规则，我们最终都得到了完全解耦的代码(这使我们能够完全隔离地处理、测试和修改每个规则)，我们还使我们的逻辑可读性提高了很多——用小函数而不是一个庞大的switch语句。</p>
+<h2 id="creating-and-evaluating-rules">Creating and evaluating rules</h2>
+<p>现在让我们真正开始使用我们的新系统，我们要做的第一件事是将我们所有的各种规则(可以在任意多个不同的地方定义)组合到一个ruleset。值得庆幸的是，这很容易做到，因为我们使用简单的静态工厂方法实现了我们的规则——这使我们能够使用非常好的点语法构造一个规则集:</p>
+<pre><code class="language-swift">let rules: [URLRule] = [
+    .profile,
+    .artist,
+    .album,
+    .playlist,
+    .search(using: searchResultsLoader)
+]
+</code></pre>
+<p>接下来，我们需要一种方法来将将要计算的任何URL转换为规则所期望的输入类型，因此让我们扩展URLRule。输入时使用一个方便的初始化器，这样做:</p>
+<pre><code class="language-swift">extension URLRule.Input {
+    init(url: URL) {
+        // A URL's path components include slashes, which we're
+        // not interested in, so we'll simply filter them out:
+        let pathComponents = url.pathComponents.filter {
+            $0 != &quot;/&quot;
+        }
+
+        let queryItems = URLComponents(
+            url: url,
+            resolvingAgainstBaseURL: false
+        ).flatMap { $0.queryItems }
+
+        self.init(
+            url: url,
+            pathComponents: pathComponents,
+            queryItems: queryItems ?? []
+        )
+    }
+}
+</code></pre>
+<p>最后，是时候重构URLHandler了，用我们的新规则集替换它以前的内联逻辑。 虽然我们将规则定义为URLRule值的数组，但为了避免每次处理URL时都必须遍历该数组(就复杂性而言，这是一个O(n)操作)，我们将根据需要的主机名对规则进行分组，如下所示:</p>
+<pre><code class="language-swift">struct URLHandler {
+    private let navigationController: UINavigationController
+    private let rules: [String : [URLRule]]
+
+    init(navigationController: UINavigationController,
+         rules: [URLRule]) {
+        self.navigationController = navigationController
+        self.rules = Dictionary(grouping: rules) { $0.requiredHost }
+    }
+
+    ...
+}
+</code></pre>
+<p>最后一个难题是更新我们的handle方法，删除它的大量switch语句，代替遍历给定url主机的规则，一旦我们找到了匹配，我们就会把那个规则产生的视图控制器推到我们的导航堆栈上:</p>
+<pre><code class="language-swift">struct URLHandler {
+    ...
+    
+    func handle(_ url: URL) {
+        guard url.scheme == &quot;music-app&quot;,
+              let host = url.host,
+              let rules = rules[host] else {
+            return
+        }
+
+        let input = URLRule.Input(url: url)
+
+        for rule in rules {
+            if rule.requiresPathComponents {
+                guard !input.pathComponents.isEmpty else {
+                    continue
+                }
+            }
+        
+            guard let vc = try? rule.evaluate(input) else {
+                continue
+            }
+
+            // As soon as we've encountered a rule that successfully
+            // matches the given URL, we'll stop our iteration:
+            navigationController.pushViewController(vc, animated: true)
+            return
+        }
+    }
+}
+</code></pre>
+<p>关于上面的实现需要注意的一点是，我们故意丢弃规则抛出的任何错误，因为在本例中我们只使用错误作为控制流。虽然我们也可以让规则在不匹配的情况下返回nil，但通过使用错误来指示失败，我们都可以让规则轻松地调用抛出函数本身，我们也明确了规则的失败结果应该是什么。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>当函数的逻辑都是关于评估一组相当大的规则时，将该逻辑的各个部分提取为实际的规则值既可以使我们的代码更易于阅读和维护，也可以使我们完全隔离地迭代每个规则的单独逻辑。在引入额外的抽象时，就像我们上面所做的那样，确实会带来复杂性的代价——当我们处理从一开始就不应该耦合在一起的代码时，这种代价通常是值得的。</p>
+<p>构建代码作为一组规则当然不只是适用于URL处理——这同样的技术可以用于基于规则的错误处理,决定如何呈现一个给定的视图或视图控制器,或任何其他类型的逻辑,遵循相同的线性模式评估规则。要查看这个模式的完整示例，请查看Splash，这个语法高亮显示工具支持这个网站，它使用基于规则的系统来决定如何高亮每个代码标记。</p>
+<p><a href="https://www.swiftbysundell.com/articles/rule-based-logic-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/YJu26CfU2/" class="tag">
+                    refactoring
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/utilizing-value-semantics-in-swift/">
+                  <h3 class="post-title">
+                    Utilizing value semantics in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

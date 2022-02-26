@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>使用MainActor属性在主队列上的自动调度UI更新 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+使用MainActor属性在主队列上的自动调度UI更新
+
+手动主队列调用
+main actor
+自定义UI相关类
+总结
+
+
+
+
+使用MainActor属性在主队列上的自动调度UI更新
+在苹果平台上并发的一个挑战是应用的UI在很大程度上只..." />
+    <meta name="keywords" content="main actor,async/await" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">使用MainActor属性在主队列上的自动调度UI更新</h2>
+            <div class="post-date">2021-07-13</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gsfq8hqr5fj31ak0u0neb.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#%E4%BD%BF%E7%94%A8mainactor%E5%B1%9E%E6%80%A7%E5%9C%A8%E4%B8%BB%E9%98%9F%E5%88%97%E4%B8%8A%E7%9A%84%E8%87%AA%E5%8A%A8%E8%B0%83%E5%BA%A6ui%E6%9B%B4%E6%96%B0">使用MainActor属性在主队列上的自动调度UI更新</a>
+<ul>
+<li><a href="#%E6%89%8B%E5%8A%A8%E4%B8%BB%E9%98%9F%E5%88%97%E8%B0%83%E7%94%A8">手动主队列调用</a></li>
+<li><a href="#main-actor">main actor</a></li>
+<li><a href="#%E8%87%AA%E5%AE%9A%E4%B9%89ui%E7%9B%B8%E5%85%B3%E7%B1%BB">自定义UI相关类</a></li>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="使用mainactor属性在主队列上的自动调度ui更新">使用MainActor属性在主队列上的自动调度UI更新</h1>
+<p>在苹果平台上并发的一个挑战是应用的UI在很大程度上只能在主线程上更新。 因此，无论何时我们(直接或间接)在后台线程上执行任何工作，我们总是必须确保在访问与渲染UI相关的任何属性、方法或函数之前跳回主队列。</p>
+<p>理论上，这听起来很简单。在实践中，在后台队列中执行UI更新是非常常见的，这可能会导致小毛病，甚至使应用程序处于不一致或未定义的状态，这反过来可能导致崩溃和其他错误。</p>
+<h2 id="手动主队列调用">手动主队列调用</h2>
+<p>到目前为止，这个问题最常用的解决方案是将所有与UI相关的更新打包到对DispatchQueue的异步调用中。当在后台队列有任何机会，这些更新将会触发，例如在这样的情况下:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let userID: User.ID
+    private let loader: UserLoader
+    private lazy var nameLabel = UILabel()
+    private lazy var biographyLabel = UILabel()
+    ...
+
+    private func loadUser() {
+        loader.loadUser { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let user):
+                    self?.nameLabel.text = user.name
+                    self?.biographyLabel.text = user.biography
+                case .failure(let error):
+                    self?.showError(error)
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>虽然上面的模式确实有效，但必须始终记住执行DispatchQueue.main调用肯定不是很方便，也很容易出错。 在某些情况下尤其如此，比如在观察 Combine publishers 时，或者在实现某些委托方法时，给定的代码段是否确实在后台队列上运行可能不是很明显。</p>
+<h2 id="main-actor">main actor</h2>
+<p>值得庆幸的是，Swift 5.5引入了一个可能会变得更加健壮和几乎完全自动的解决方案，以此来解决这个非常常见的问题——<strong>main actor</strong>。</p>
+<blockquote>
+<p>请注意，Swift 5.5作为Xcode 13的一部分正在测试中。</p>
+</blockquote>
+<p>那么，我们究竟如何在那个main actor上***run***我们的代码呢? 我们要做的第一件事就是让异步代码使用新的async/await模式，这也是Swift 5.5并发特性套件的一部分。在这种情况下，这可以通过创建一个新的、 async/await-powered的loadUser方法来实现，也就是我们上面的视图控制器正在调用的方法——它只需要使用Swift的新的continuation API封装一个默认的、基于completion handler-based的版本:</p>
+<pre><code class="language-swift">extension UserLoader {
+    func loadUser() async throws -&gt; User {
+        try await withCheckedThrowingContinuation { continuation in
+            loadUser { result in
+                switch result {
+                case .success(let user):
+                    continuation.resume(returning: user)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>To learn more about the above pattern, check out my friend Vincent Pradeilles’ WWDC by Sundell &amp; Friends article “<a href="https://wwdcbysundell.com/2021/wrapping-completion-handlers-into-async-apis/">Wrapping completion handlers into async APIs</a>”.</p>
+</blockquote>
+<p>有了上述条件，我们现在可以使用一个async block，连同Swift的标准do, try catch错误处理机制，从我们的ProfileViewController中调用loader新的async/await驱动API:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    ...
+    
+    private func loadUser() {
+        async {
+            do {
+                let user = try await loader.loadUser()
+                nameLabel.text = user.name
+                biographyLabel.text = user.biography
+            } catch {
+                showError(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>等等，上面的代码如何在不调用DispatchQueue.main.async的情况下工作呢? 如果loadUser在后台队列上执行它的工作，这是否意味着我们的UI现在将错误地地更新在后台队列上?</p>
+<p>这就是<strong>main actor</strong>登场的地方。如果我们看一下UILabel和UIViewController的声明，我们可以看到它们都被添加了新的@MainActor属性:</p>
+<pre><code class="language-swift">@MainActor class UILabel: UIView
+@MainActor class UIViewController: UIResponder
+</code></pre>
+<p>这意味着，当使用Swift的新并发系统时，这些类(及其任何子类，包括我们的ProfileViewController)上的所有属性和方法将自动在主队列上设置、调用和访问。所有这些调用都将通过系统提供的MainActor自动路由，它总是在主线程上执行所有工作——完全消除了我们手动调用DispatchQueue.main.async的需要。<strong>Really cool!</strong></p>
+<h2 id="自定义ui相关类">自定义UI相关类</h2>
+<p>但是，如果我们从事的是完全自定义的类型，我们也希望获得上述类型的能力，那会怎么样呢? 例如，当实现一个在SwiftUI视图中使用的ObservableObject时，我们需要确保只在主队列中分配它的@Published-marked属性，所以如果我们也能在这些情况下利用MainActor是不是很好?</p>
+<p>好消息是—— we can! 就像很多UIKit的内置类现在都被@MainActor注解了一样，我们也可以把这个属性应用到我们自己的类上——给它们同样的自动主线线程调度行为:</p>
+<pre><code class="language-swift">@MainActor class ListViewModel: ObservableObject {
+    @Published private(set) var result: Result&lt;[Item], Error&gt;?
+    private let loader: ItemLoader
+    ...
+
+    func load() {
+        async {
+            do {
+                let items = try await loader.loadItems()
+                result = .success(items)
+            } catch {
+                result = .failure(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>但有一点需要特别指出的是，所有这些只有在我们使用Swift的新并发系统时才有效。所以当使用其他并发模式时，例如完成处理程序，那么@MainActor属性不起作用-这意味着下面的代码仍然会导致我们的result属性在后台队列上被错误地赋值:</p>
+<pre><code class="language-swift">@MainActor class ListViewModel: ObservableObject {
+    ...
+
+    func load() {
+        loader.loadItems { [weak self] result in
+            self?.result = result
+        }
+    }
+}
+</code></pre>
+<p>乍一看，这似乎是一个奇怪的限制，但考虑到角色只能使用新的async/await系统异步访问时，这是有意义的。 因此，如果我们在一个完全同步的上下文中操作(我们上面的完成处理程序实际上是这样的，即使它可能在后台线程上被调用)，系统没有办法自动将代码分派给main actor。</p>
+<h2 id="总结">总结</h2>
+<p>随着时间的推移，一旦我们的大部分异步代码被迁移到Swift的新并发系统中，MainActor将或多或少地消除我们在主队站上手动调度UI更新的需要。当然,这并不意味着在设计我们的api和架构时不再需要考虑线程和其他并发问题, 但至少很常见的意外问题在后台队列更新UI, 在某种程度上,希望这个问题成为过去式。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/dyC9vh0CS/" class="tag">
+                    main actor
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rKVwHAq49U/" class="tag">
+                    async/await
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/coordinators-part-ii/">
+                  <h3 class="post-title">
+                    Coordinators Part II
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

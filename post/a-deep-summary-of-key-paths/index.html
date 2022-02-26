@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A deep summary of Key Paths | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="键路径
+Swift 4 中添加了键路径 (key paths) 的概念。键路径是一个指向属性的未调用的引用，它和对某个方法的未使用的引用很类似。键路径也为 Swift 的类型系统补全了缺失的很大一块拼图。在之前，你无法像引用方法 (比如 S..." />
+    <meta name="keywords" content="a deep summary,summary,key paths" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A deep summary of Key Paths</h2>
+            <div class="post-date">2021-04-23</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="键路径">键路径</h2>
+<p>Swift 4 中添加了键路径 (key paths) 的概念。<em>键路径是一个指向属性的未调用的引用，它和对某个方法的未使用的引用很类似</em>。键路径也为 Swift 的类型系统补全了缺失的很大一块拼图。在之前，你无法像引用方法 (比如 String.uppercased) 那样引用一个类型的属性 (比如 String.count)。和 Objective-C 及 Foundation 中的键路径相比，除了拥有共同的名字以外，Swift 中的键路径有很大不同。</p>
+<p>键路径表达式以一个反斜杠开头，比如 \String.count。反斜杠是为了将键路径和同名的类型属性区分开来 (假如 String 也有一个 static count 属性的话，String.count 返回的就会是这个属性值了)。<em>类型推断对键路径也是有效的，在上下文中如果编译器可以推断出类型的话，你可以将类型名省略，只留下 .count</em>。</p>
+<blockquote>
+<p>虽然键路径和函数类型引用有紧密的关系，但很不幸的是 Swift 中它们的语法是不同的。不过，Swift 团队表达过在未来的版本中，为函数类型引用也引入这种反斜杠语法的兴趣。</p>
+</blockquote>
+<p>正如其名，键路径描述了一个值从根开始的层级路径。举例来说，在下面的 Person 和 Address 类型中，\Person.address.street 表达了一个人的街道住址的键路径：</p>
+<pre><code class="language-swift">struct Address {
+    var street: String
+    var city: String
+    var zipCode: Int
+}
+struct Person {
+    let name: String
+    var address: Address
+}
+let streetKeyPath = \Person.address.street
+// Swift.WritableKeyPath&lt;Person, Swift.String&gt;
+let nameKeyPath = \Person.name // Swift.KeyPath&lt;Person, Swift.String&gt;
+</code></pre>
+<p>键路径可以由任意的存储和计算属性组合而成，其中还可以包括可选链操作符。编译器会自动为所有类型生成 [keyPath:] 的下标方法。你通过这个方法来“调用”某个键路径。对键路径的调用，也就是在某个实例上访问由键路径所描述的属性。所以，&quot;Hello&quot;[keyPath: .count] 等效于 &quot;Hello&quot;.count。或者在我们现在的例子中：</p>
+<pre><code class="language-swift">let simpsonResidence = Address(street: &quot;1094 Evergreen Terrace&quot;,
+city: &quot;Springfield&quot;, zipCode: 97475)
+var lisa = Person(name: &quot;Lisa Simpson&quot;, address: simpsonResidence)
+lisa[keyPath: nameKeyPath] // Lisa Simpson
+</code></pre>
+<p>如果你检查上面两个键路径变量的类型，你会注意到 nameKeyPath 的类型是 <em>KeyPath&lt;Person, String&gt;。这个键路径是强类型的，它表示该键路径可以作用于 Person，并返回一个 String</em>。而 <em>streetKeyPath 是一个 WritableKeyPath，这是因为构成这个键路径的所有属性都是可变的，所以这个可写键路径本身允许其中的值发生变化:</em></p>
+<pre><code class="language-swift">lisa[keyPath: streetKeyPath] = &quot;742 Evergreen Terrace”
+</code></pre>
+<p>对 nameKeyPath 做同样的操作会造成错误，因为它背后的属性不是可变的。</p>
+<p><em><strong>键路径不仅可以描述属性，我们也可以用它们来描述下标操作</strong></em>。例如，可以用下面这样的语法提取数组里第二个 person 对象的 name 属性：=</p>
+<pre><code class="language-swift">var bart = Person(name: &quot;Bart Simpson&quot;, address: simpsonResidence)
+let people = [lisa, bart]
+people[keyPath: \.[1].name] // Bart Simpson
+</code></pre>
+<p>同样的语法也可用于在键路径中包含字典下标。</p>
+<h3 id="可以通过函数建模的键路径">可以通过函数建模的键路径</h3>
+<p><strong>一个将基础类型 Root 映射为类型为 Value 的属性的键路径，和一个具有 (Root) -&gt; Value 类型的函数十分类似。而对于可写的键路径来说，则对应着一对获取和设置值的函数</strong>。相对于这样的函数，键路径除了在语法上更简洁外，<em><strong>最大的优势在于它们是值。你可以测试键路径是否相等，也可以将它们用作字典的键 (因为它们遵守 Hashable)。另外，不像函数，键路径是不包含状态的，所以它也不会捕获可变的状态。如果使用普通的函数的话，这些都是无法做到的</strong></em>。</p>
+<p><em><strong>键路径还可以通过将一个键路径附加到另一个键路径的方式来生成</strong></em>。这么做时，类型必须要匹配；如果你有一个从 A 到 B 的键路径，那么你要附加的键路径的根类型必须为 B，得到的将会是一个从 A 到 C 的键路径，其中 C 是所附加的键路径的值的类型：</p>
+<pre><code class="language-swift">// KeyPath&lt;Person, String&gt; + KeyPath&lt;String, Int&gt; = KeyPath&lt;Person, Int&gt;
+let nameCountKeyPath = nameKeyPath.appending(path: \.count)
+// Swift.KeyPath&lt;Person, Swift.Int&gt;
+</code></pre>
+<p>让我们用键路径代替函数来重写本章前面提到的排序描述符。我们之前通过一个 (Root) -&gt; Value 函数来定义了 sortDescriptor：</p>
+<pre><code class="language-swift">typealias SortDescriptor&lt;Root&gt; = (Root, Root) -&gt; Bool
+func sortDescriptor&lt;Root, Value&gt;(key: @escaping (Root) -&gt; Value)
+-&gt; SortDescriptor&lt;Root&gt; where Value: Comparable {
+    return { key($0) &lt; key($1) }
+}
+// 使用
+let streetSD: SortDescriptor&lt;Person&gt; = sortDescriptor { $0.address.street }
+</code></pre>
+<p>我们可以通过键路径来添加一种排序描述符的构建方式。通过键路径的下标来访问值：</p>
+<pre><code class="language-swift">func sortDescriptor&lt;Root, Value&gt;(key: KeyPath&lt;Root, Value&gt;) -&gt; SortDescriptor&lt;Root&gt; where Value: Comparable {
+    return { $0[keyPath: key] &lt; $1[keyPath: key] }
+}
+// 使用
+let streetSDKeyPath: SortDescriptor&lt;Person&gt; =
+sortDescriptor(key: \.address.street)
+</code></pre>
+<p>不过虽然拥有一个接受键路径的 sortDescriptor 很有用，不过它并没有给我们和函数一样的灵活度。键路径依赖 Value 满足 Comparable 这一前提。只使用键路径的话，我们无法很轻易地使用另一种排序断言 (比如，使用忽略大小写的按区域设置的比较)。</p>
+<h3 id="可写键路径-swift-通过键路径实现双向绑定">可写键路径 - swift 通过键路径实现双向绑定</h3>
+<p>可写键路径比较特殊：<em>你可以用它来读取或者写入一个值</em>。因此，它和一对函数等效：一个负责获取属性值 ((Root) -&gt;Value)，另一个负责设置属性值 ((inout Root, Value) -&gt; Void)。相比于只读键路径，可写键路径要复杂的多。首先，它将很多代码包括在了简洁的语法中。将 streetKeyPath 与等效的 getter 和 setter 对进行比较：</p>
+<pre><code class="language-swift">let streetKeyPath = \Person.address.street
+let getStreet: (Person) -&gt; String = { person in
+    return person.address.street
+}
+let setStreet: (inout Person, String) -&gt; () = { person, newValue in
+    person.address.street = newValue
+}
+// 使用 Setter
+lisa[keyPath: streetKeyPath] = &quot;1234 Evergreen Terrace&quot;
+setStreet(&amp;lisa, &quot;1234 Evergreen Terrace&quot;)
+</code></pre>
+<p>可写键路径对于数据绑定特别有用，你想将两个属性互相绑定：属性 1 发生变化的时候，属性 2 的值会自动更新，反之亦然。比如，你可以将一个 model.name 属性绑定到 textField.text 上。API 的用户需要指定如何读写 model.name 和 textField.text，而键路径所解决的正是这个问题</p>
+<p>我们还需要对属性的变化进行观察。在 Cocoa 中，我们使用键值观察机制来达到这个目的，不过这样的方式只能作用于类上面，并局限在 Apple 平台上。Foundation 提供了一种新的类型安全的 KVO 的 API，它们可以将 Objective-C 世界中基于字符串的键路径隐藏起来。NSObject 上的 observe(_:options:changeHandler:) 方法将会对一个 (Swift 的强类型) 键路径进行观察，并在属性发生变化的时候调用 handler。<em>不要忘记你还需要将要观察的属性标记为 @objc dynamic，否则 KVO 将不会工作</em>。</p>
+<p>我们的目标是在两个 NSObject 之间实现双向绑定，不过让我们从单向绑定开始：每当 self 上的被观察值变更，我们就同时变更另一个对象。键路径可以让我们的代码更加泛用，而不必拘泥于某个特定的属性：调用者只需要指定两个对象以及两个键路径，这个方法就可以处理其他的事情：</p>
+<pre><code class="language-swift">extension NSObjectProtocol where Self: NSObject {
+    func observe&lt;A, Other&gt;(_ keyPath: KeyPath&lt;Self, A&gt;,
+    writeTo other: Other, _ otherKeyPath: ReferenceWritableKeyPath&lt;Other, A&gt;)
+    -&gt; NSKeyValueObservation
+    where A: Equatable, Other: NSObjectProtocol
+    {
+        return observe(keyPath, options: .new) { _, change in
+            guard let newValue = change.newValue,
+                other[keyPath: otherKeyPath] != newValue else {
+                return // prevent endless feedback loop
+            }
+            other[keyPath: otherKeyPath] = newValue 
+        }
+    }
+}
+</code></pre>
+<p>这段代码中有不少值得一说的东西。<br>
+首先，我们对所有 NSObject 的子类定义了这个方法，通过扩展 NSObjectProtocol 而不是 NSObject，我们可以使用 Self。<br>
+ReferenceWritableKeyPath 和 WritableKeyPath 很相似，不过它可以让我们对 (other 这样的) 使用 let 声明的引用变量进行写操作 (我们会在随后讨论细节)。<br>
+为了避免不必要的写操作，我们只在值发生改变时才对 other 进行写入。<br>
+返回值 NSKeyValueObservation 是一个 token，调用者使用这个 token 来控制观察的生命周期：属性观察会在这个 token 对象被销毁或者调用者调用了它的 invalidate 方法时停止。</p>
+<p>有了 observe(<em>:writeTo:</em>😃，双向绑定也就很直接了：我们对两个对象都调用 observe，它们将返回两个观察 token：</p>
+<pre><code class="language-swift">extension NSObjectProtocol where Self: NSObject {
+    func bind&lt;A, Other&gt;(_ keyPath: ReferenceWritableKeyPath&lt;Self,A&gt;,
+    to other: Other,
+    _ otherKeyPath: ReferenceWritableKeyPath&lt;Other,A&gt;)
+    -&gt; (NSKeyValueObservation, NSKeyValueObservation)
+    where A: Equatable, Other: NSObject
+    {
+        let one = observe(keyPath, writeTo: other, otherKeyPath)
+        let two = other.observe(otherKeyPath, writeTo: self, keyPath)
+        return (one,two)
+    }
+}
+</code></pre>
+<p>现在，我们可构建两个不同的对象，Person 和 TextField，然后将 name 和 text 属性互相绑定：</p>
+<pre><code class="language-swift">final class Person: NSObject {
+    @objc dynamic var name: String = &quot;&quot;
+}
+class TextField: NSObject {
+    @objc dynamic var text: String = &quot;&quot;
+}
+let person = Person()
+let textField = TextField()
+let observation = person.bind(\.name, to: textField, \.text)
+person.name = &quot;John&quot;
+textField.text // John
+textField.text = &quot;Sarah&quot;
+person.name // Sarah
+</code></pre>
+<blockquote>
+<p>如果你很熟细函数式编程，可写键路径可能会让你想起函数式编程中的透镜 (lenses)。它们紧密相关：通过一个 WritableKeypath&lt;Root, Value&gt;，你可以创建一个 Lens&lt;Root, Value&gt;。透镜的概念在像是 Haskell 或 PureScript 这样的纯函数式语言中非常有用，不过因为 Swift 内建支持可变性，所以在 Swift 里它没有那么有用。</p>
+</blockquote>
+<h3 id="键路径层级">键路径层级</h3>
+<p>键路径有五种不同的类型，每种类型都在前一种上添加了更加精确的描述及功能：</p>
+<ul>
+<li>
+<p>AnyKeyPath 和 (Any) -&gt; Any? 类型的函数相似。</p>
+</li>
+<li>
+<p>PartialKeyPath<Source> 和 (Source) -&gt; Any? 函数相似。</p>
+</li>
+<li>
+<p>KeyPath&lt;Source, Target&gt; 和 (Source) -&gt; Target 函数相似。</p>
+</li>
+<li>
+<p>WritableKeyPath&lt;Source, Target&gt; 和 (Source) -&gt; Target 与 (inout Source, Target) -&gt; () 这一对函数相似。</p>
+</li>
+<li>
+<p>ReferenceWritableKeyPath&lt;Source, Target&gt; 和 (Source) -&gt; Target 与 (Source, Target) -&gt; () 这一对函数相似。第二个函数可以用 Target 来更新 Source 的值，且要求 Source 是一个引用类型。<em><strong>对 WritableKeyPath 和 ReferenceWritableKeyPath 进行区分是必要的，前一个类型的 setter 要求它的参数是 inout 的。</strong></em></p>
+</li>
+</ul>
+<p>这几种键路径的层级结构现在是通过类的继承来实现的。理想状态下，这些特性应该由协议来完成，但是 Swift 的泛型系统还缺少一些使之可行的特性。这种类的层级有意地保持了对外不可见，这样以便于未来在更新时，现有的代码也不会被破坏。</p>
+<p>我们前面也提到，<em>键路径不同于函数，它们是满足 Hashable 的，而且在将来它们很有可能还会满足 Codable</em>。这也是为什么我们强调 AnyKeyPath 和 (Any) -&gt; Any 只是相似的原因。<em>虽然我们能够将一个键路径转换为对应的函数，但是我们无法做相反的操作</em>。</p>
+<h3 id="对比-objective-c-的键路径">对比 Objective-C 的键路径</h3>
+<p>在 Foundation 和 Objective-C 中，键路径是通过字符串来建模的 (我们会将它们称为 Foundation 键路径，以区别 Swift 的键路径)。<em>由于 Foundation 键路径是字符串，它们不含有任何的类型信息。从这个角度看，它们和 AnyKeyPath 类似。如果一个 Foundation 键路径拼写错误、没有正确生成、或者它的类型不匹配的话，程序可能会崩溃</em>。(Swift 中的 #keyPath 指令对拼写错误的问题进行了一些改善，编译器可以检查特定名字所对应的属性是否存在。) <em>Swift 的 KeyPath、WritableKeypath 和 ReferenceWritableKeyPath 从构造开始就是正确的：它们不可能被拼错，也不会有类型错误</em>。</p>
+<p>很多 Cocoa API 在原本用函数会更好的地方使用了 (Foundation) 键路径。这其中有一部分是历史原因：匿名函数 (或者在 Objective-C 中所谓的 block) 其实是相对最近才添加的特性，而键路径的存在则要长久得多。在 block 被引入 Objective-C 之前，想要在不用键路径 &quot;address.street&quot; 的条件下，表达类似 { $0.address.street } 这样的函数是很困难的。</p>
+<p>参考书籍<br>
+<a href="https://objccn.io/products/advanced-swift/">Swift进阶</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/BKc_eiC_7/" class="tag">
+                    a deep summary
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/mQbhOOb5q/" class="tag">
+                    summary
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SaaEscPbvk/" class="tag">
+                    key paths
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-tip-of-property-wrapper-wei-codable-jie-ma-she-ding-mo-ren-zhi/">
+                  <h3 class="post-title">
+                    A tip of Property Wrapper - use type constraints transform value to set default value for Codable 
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

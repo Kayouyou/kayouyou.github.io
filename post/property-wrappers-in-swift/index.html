@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Property wrappers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在处理表示某种状态形式的属性时，通常会有某种关联逻辑，每次修改值时都会触发这种逻辑。 例如，我们可能会根据一组规则验证每个新值，我们可能会以某种方式转换我们分配的值，或者我们可能会在值发生更改时通知一组观察者。
+在这种情况下，Swift 5..." />
+    <meta name="keywords" content="properties" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Property wrappers in Swift</h2>
+            <div class="post-date">2020-01-19</div>
+            
+            <div class="post-content" v-pre>
+              <p>在处理表示某种状态形式的属性时，通常会有某种关联逻辑，每次修改值时都会触发这种逻辑。 例如，我们可能会根据一组规则验证每个新值，我们可能会以某种方式转换我们分配的值，或者我们可能会在值发生更改时通知一组观察者。</p>
+<p>在这种情况下，Swift 5.1的属性包装特性非常有用，因为它使我们能够直接将这些行为和逻辑附加到属性本身-这通常为代码重用和泛化提供了新的机会。 本周，让我们来看看属性包装是如何工作的，并探索一些可以在实践中使用它们的例子。</p>
+<h2 id="transparently-wrapping-a-value">Transparently wrapping a value</h2>
+<p>顾名思义，属性包装器本质上是一种类型，它包装给定的值，以便为其附加额外的逻辑-通过@propertyWrapper属性注释，可以使用结构或类来实现。 除此之外，唯一的实际要求是，每个属性包装器类型都应该包含一个存储的属性wrappedValue，它告诉Swift要包装的是哪个底层值。</p>
+<p>例如，假设我们想要创建一个属性包装器，它会自动将分配给它的所有字符串值大写。这可能是这样实现的:</p>
+<pre><code class="language-swift">@propertyWrapper struct Capitalized {
+    var wrappedValue: String {
+        didSet { wrappedValue = wrappedValue.capitalized }
+    }
+
+    init(wrappedValue: String) {
+        self.wrappedValue = wrappedValue.capitalized
+    }
+}
+</code></pre>
+<p>注意，我们需要显式地将传入初始化器的任何字符串大写，因为属性观察者只有在值或对象完全初始化之后才会触发。</p>
+<p>要将我们的新属性包装器应用到任何字符串属性上，我们只需要用@Capitalized注释它- Swift将自动匹配上述类型的注释。</p>
+<p>下面是我们如何确保用户类型的姓和名总是大写的</p>
+<pre><code class="language-swift">struct User {
+    @Capitalized var firstName: String
+    @Capitalized var lastName: String
+}
+</code></pre>
+<p>关于属性包装器很酷的一点是它们的行为是完全透明的，这意味着我们仍然可以像处理普通字符串一样处理上面的两个属性 - 初始化用户类型和修改其属性值时:</p>
+<pre><code class="language-swift">// John Appleseed
+var user = User(firstName: &quot;john&quot;, lastName: &quot;appleseed&quot;)
+
+// John Sundell
+user.lastName = &quot;sundell&quot;
+</code></pre>
+<p>类似地，只要属性包装器定义了init(wrappedValue:)初始化式(就像大写类型所做的那样) -然后我们甚至可以在本地为包装好的属性赋值默认值，像这样:</p>
+<pre><code class="language-swift">struct Document {
+    @Capitalized var name = &quot;Untitled document&quot;
+}
+</code></pre>
+<p>因此，属性包装器使我们能够透明地包装和修改任何存储的属性——使用@ propertywrapper标记的类型的组合， 以及与该类型的名称匹配的注释。但这仅仅是个开始。</p>
+<h2 id="a-propertys-properties">A property’s properties</h2>
+<p>属性包装器也可以拥有自己的属性，这允许进一步定制，甚至可以将依赖项注入到我们的包装器类型中。</p>
+<p>举个例子，假设我们正在开发一个消息应用程序，它使用Foundation的UserDefaults API将各种用户设置和其他轻量级数据存储在磁盘上。这样做通常需要编写某种形式的映射代码，以便将每个值与它的底层UserDefaults存储进行同步-这通常需要为我们想要存储的每一段数据进行复制。</p>
+<p>然而，通过在一个通用属性包装器中实现这种逻辑，我们可以轻松地重用它-这样做可以让我们简单地附加我们的包装器到任何我们想要由UserDefaults支持的属性。这样的包装器可能看起来像这样:</p>
+<pre><code class="language-swift">@propertyWrapper struct UserDefaultsBacked&lt;Value&gt; {
+    let key: String
+    var storage: UserDefaults = .standard
+
+    var wrappedValue: Value? {
+        get { storage.value(forKey: key) as? Value }
+        set { storage.setValue(newValue, forKey: key) }
+    }
+}
+</code></pre>
+<p>就像任何其他结构一样，上面的UserDefaultsBacked类型会自动为所有有默认值的属性获得一个带有默认参数的memberwise初始化器 - 这意味着我们可以通过指定我们希望每个属性支持的UserDefaults键来初始化它的实例:</p>
+<pre><code class="language-swift">struct SettingsViewModel {
+    @UserDefaultsBacked&lt;Bool&gt;(key: &quot;mark-as-read&quot;)
+    var autoMarkMessagesAsRead
+
+    @UserDefaultsBacked&lt;Int&gt;(key: &quot;search-page-size&quot;)
+    var numberOfSearchResultsPerPage
+}
+</code></pre>
+<p>编译器将自动推断每个属性的类型，基于我们用哪种类型专门化了泛型userdefaultsback包装器。</p>
+<p>上面的设置使我们的新属性包装器易于使用，无论何时我们想要一个属性被UserDefaults.standard支持，但是，由于我们参数化了该依赖关系，如果愿意，我们也可以选择使用自定义实例-例如为了方便测试，或者能够在同一个应用组内的多个应用之间共享值:</p>
+<pre><code class="language-swift">extension UserDefaults {
+    static var shared: UserDefaults {
+        let combined = UserDefaults.standard
+        combined.addSuite(named: &quot;group.johnsundell.app&quot;)
+        return combined
+    }
+}
+
+struct SettingsViewModel {
+    @UserDefaultsBacked&lt;Bool&gt;(key: &quot;mark-as-read&quot;, storage: .shared)
+    var autoMarkMessagesAsRead
+
+    @UserDefaultsBacked&lt;Int&gt;(key: &quot;search-page-size&quot;, storage: .shared)
+    var numberOfSearchResultsPerPage
+}
+</code></pre>
+<p>更多关于使用UserDefaults在多个应用程序之间共享数据的信息，请查看“Swift中UserDefaults的力量”。</p>
+<p>然而，我们上面的实现有一个相当大的缺陷。即使上面的两个属性都声明为非可选，它们的实际值仍然是可选的， 因为我们的UserDefaultsBacked类型指定了Value?作为其wrappedValue属性的类型。</p>
+<p>幸运的是，这个缺陷可以很容易地修复。我们所要做的就是给我们的包装器添加一个defaultValue属性，当我们的UserDefaults存储没有包含我们属性的键值时，我们就会使用这个属性:</p>
+<pre><code class="language-swift">@propertyWrapper struct UserDefaultsBacked&lt;Value&gt; {
+    let key: String
+    let defaultValue: Value
+    var storage: UserDefaults = .standard
+
+    var wrappedValue: Value {
+        get {
+            let value = storage.value(forKey: key) as? Value
+            return value ?? defaultValue
+        }
+        set {
+            storage.setValue(newValue, forKey: key)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以把两个属性都变成非可选的了，像这样:</p>
+<pre><code class="language-swift">struct SettingsViewModel {
+    @UserDefaultsBacked(key: &quot;mark-as-read&quot;, defaultValue: true)
+    var autoMarkMessagesAsRead: Bool
+
+    @UserDefaultsBacked(key: &quot;search-page-size&quot;, defaultValue: 20)
+    var numberOfSearchResultsPerPage: Int
+}
+</code></pre>
+<p>这是非常好的。然而，我们的一些UserDefaults值实际上可能是可选的， 如果我们必须不断地指定nil作为这些属性的默认值，这将是很不幸的，因为这不是我们不使用属性包装时必须做的事情。</p>
+<p>为了解决这个问题，让我们在包装器中添加一个方便的API，只要它的值类型符合expressiblebynuliliter(可选的符合) - 我们将自动插入nil作为默认值:</p>
+<pre><code class="language-swift">extension UserDefaultsBacked where Value: ExpressibleByNilLiteral {
+    init(key: String, storage: UserDefaults = .standard) {
+        self.init(key: key, defaultValue: nil, storage: storage)
+    }
+}
+</code></pre>
+<p>有了上述的改变，我们现在可以轻松地使用我们的UserDefaultsBacked包装器，包含可选和非可选值:</p>
+<pre><code class="language-swift">struct SettingsViewModel {
+    @UserDefaultsBacked(key: &quot;mark-as-read&quot;, defaultValue: true)
+    var autoMarkMessagesAsRead: Bool
+
+    @UserDefaultsBacked(key: &quot;search-page-size&quot;, defaultValue: 20)
+    var numberOfSearchResultsPerPage: Int
+
+    @UserDefaultsBacked(key: &quot;signature&quot;)
+    var messageSignature: String?
+}
+</code></pre>
+<p>然而，还有一件事我们需要考虑，因为我们现在可以将nil赋值给UserDefaultsBacked属性。为了避免在这种情况下崩溃，我们必须更新我们的属性包装器，在继续将其存储在当前UserDefaults实例中之前，首先检查是否有任何赋值为nil，如下所示:</p>
+<pre><code class="language-swift">// Since our property wrapper's Value type isn't optional, but
+// can still contain nil values, we'll have to introduce this
+// protocol to enable us to cast any assigned value into a type
+// that we can compare against nil:
+private protocol AnyOptional {
+    var isNil: Bool { get }
+}
+extension Optional: AnyOptional {
+    var isNil: Bool { self == nil }
+}
+@propertyWrapper struct UserDefaultsBacked&lt;Value&gt; {
+    ...
+    var wrappedValue: Value {
+        get { ... }
+        set {
+            if let optional = newValue as? AnyOptional, optional.isNil {
+                storage.removeObject(forKey: key)
+            } else {
+                storage.setValue(newValue, forKey: key)
+            }
+        }
+    }
+}
+</code></pre>
+<p>属性包装器是作为实际类型实现的，这一事实为我们提供了很多功能——因为我们可以为它们提供属性、初始化器，甚至扩展-这反过来又使我们能够使我们的调用站点真正整洁和干净，并充分利用Swift健壮的类型系统。</p>
+<h2 id="decoding-and-overriding">Decoding and overriding</h2>
+<p>尽管为了利用值语义，大多数属性包装器可能会被实现为结构体，但有时我们可能希望通过使用类来选择引用语义。</p>
+<p>例如，假设我们正在进行一个项目，该项目使用功能标志来进行测试，并逐步推出新功能和实验，我们想要构建一个属性包装器，它允许我们以不同的方式指定这些标记。 因为我们想要在我们的代码库中共享这些值，所以我们将这个包装器作为一个类来实现:</p>
+<pre><code class="language-swift">@propertyWrapper final class Flag&lt;Value&gt; {
+    let name: String
+    var wrappedValue: Value
+
+    fileprivate init(name: String, defaultValue: Value) {
+        self.name = name
+        self.wrappedValue = defaultValue
+    }
+}
+</code></pre>
+<p>有了我们的新包装类型，现在我们可以开始在一个封装的FeatureFlags类型中定义我们的标志为属性——它将作为我们应用程序中所有特性标志的单一真实来源:</p>
+<pre><code class="language-swift">struct FeatureFlags {
+    @Flag(name: &quot;feature-search&quot;, defaultValue: false)
+    var isSearchEnabled: Bool
+
+    @Flag(name: &quot;experiment-note-limit&quot;, defaultValue: 999)
+    var maximumNumberOfNotes: Int
+}
+</code></pre>
+<p>在这一点上，上面的标志属性包装器可能有点多余，因为它实际上除了存储其包装后的值之外什么也不做——但这即将改变。</p>
+<p>使用特性标志的一种非常常见的方式是通过网络下载它们的值，例如每次应用程序启动时，或者根据特定的时间间隔。然而，即使在使用Codable时，通常也会涉及到大量的样板-考虑到我们很可能想要回退到我们的应用程序的默认值的标志，可能还没有添加到我们的后端 (或者那些在测试或展示完成后被删除的)。</p>
+<p>因此，让我们使用我们的标志属性包装器来实现这种形式的解码。因为我们想使用每个标志的名称作为它的编码键，我们要做的第一件事是定义一个新的CodingKey类型，让我们这样做:</p>
+<pre><code class="language-swift">private struct FlagCodingKey: CodingKey {
+    var stringValue: String
+    var intValue: Int?
+
+    init(name: String) {
+        stringValue = name
+    }
+    // These initializers are required by the CodingKey protocol:
+    init?(stringValue: String) {
+        self.stringValue = stringValue
+    }
+    init?(intValue: Int) {
+        self.intValue = intValue
+        self.stringValue = String(intValue)
+    }
+}
+</code></pre>
+<p>接下来，我们将需要一种方法来引用我们的每个标志，而不需要知道它们的泛型类型-但我们不会使用全类型擦除，我们会添加一个名为decoodableflag的协议， 这将使每个标志能够根据其值类型解码自己的值:</p>
+<pre><code class="language-swift">private protocol DecodableFlag {
+    typealias Container = KeyedDecodingContainer&lt;FlagCodingKey&gt;
+    func decodeValue(from container: Container) throws
+}
+</code></pre>
+<p>除了让我们的服务器完全控制我们的应用程序的功能标志， 如果能够为单个标记添加本地覆盖也会非常有用。 这样，我们就可以在编写UI测试时准确指定使用哪些值，并在工作时轻松启用新特性。因此，让我们也将该功能添加到我们的Flag wrapper中，我们将再次使用UserDefaults来实现这一点 (它有一些隐藏的特性，可以解析命令行参数)，给我们一个像这样的解码实现:</p>
+<pre><code class="language-swift">extension Flag: DecodableFlag where Value: Decodable {
+    fileprivate func decodeValue(from container: Container) throws {
+        // This enables us to pass an override using a command line
+        // argument matching the flag's name:
+        if let value = UserDefaults.standard.value(forKey: name) {
+            if let matchingValue = value as? Value {
+                wrappedValue = matchingValue
+                return
+            }
+        }
+        let key = FlagCodingKey(name: name)
+
+        // We only want to attempt to decode a value if it's present,
+        // to enable our app to fall back to its default value
+        // in case the flag is missing from our backend data:
+        if let value = try container.decodeIfPresent(Value.self, forKey: key) {
+            wrappedValue = value
+        }
+    }
+}
+</code></pre>
+<p>最后，让我们通过使FeatureFlags符合Decodable的要求来完成我们的解码实现。在这里，我们将使用反射来动态迭代我们的每个标志属性，然后我们将要求每个标志尝试使用当前解码容器解码其值，如下所示:</p>
+<pre><code class="language-swift">extension FeatureFlags: Decodable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: FlagCodingKey.self)
+        for child in Mirror(reflecting: self).children {
+            guard let flag = child.value as? DecodableFlag else {
+                continue
+            }
+            try flag.decodeValue(from: container)
+        }
+    }
+}
+</code></pre>
+<p>虽然我们确实需要实现一些底层基础设施，但现在我们已经有了一个非常灵活的特性标志系统-可以在服务器端和客户端指定标志值，支持通过命令行参数重写标志，以及通过向我们的FeatureFlags类型中添加@ flag注释属性来定义新标志。</p>
+<h2 id="projected-values">Projected values</h2>
+<p>正如我们到目前为止在本文中所探讨的，属性包装器的主要优点之一是，它们使我们能够以一种完全不影响调用站点的方式向属性添加逻辑和行为 - 值的读写方式完全相同，而不管属性是否被包装。</p>
+<p>然而，有时我们实际上可能想要访问属性包装器本身，而不是它所包装的值。在使用苹果新的SwiftUI框架构建ui时，这种情况尤其常见，该框架大量使用属性包装器来实现各种数据绑定api。</p>
+<p>例如，这里我们正在构建一个QuantityView，它允许使用Stepper视图指定某种形式的数量。 为了将该状态块绑定到我们的视图，我们已经用@State对它进行了注释，然后我们让stepper直接访问该包装好的状态 (而不仅仅是它当前的Int值)通过在它的前面加上$ -像这样:</p>
+<pre><code class="language-swift">struct QuantityView: View {
+    ...
+    @State private var quantity = 1
+    var body: some View {
+        // Passing a wrapped property prefixd with &quot;$&quot; passes
+        // the property wrapper itself, rather than its value:
+        Stepper(&quot;Quantity: \(quantity)&quot;,
+            value: $quantity,
+            in: 1...99
+        )
+    }
+}
+</code></pre>
+<p>上面的特性可能看起来像是为SwiftUI量身定做的，但实际上它是一个可以添加到任何属性包装器的功能， 例如我们前面提到的Flag类型。上面属性的“美元前缀”版本就是它的包装器的投影值，并通过向任何包装器类型添加projectedValue属性来实现:</p>
+<pre><code class="language-swift">@propertyWrapper final class Flag&lt;Value&gt; {
+    var projectedValue: Flag { self }
+    ...
+}
+</code></pre>
+<p>与此类似，任何标记注释的属性现在都可以作为投影值传递——也就是说，作为对其包装器本身的引用。 这不是SwiftUI附带的，事实上我们也可以在使用UIKit时采用同样的模式-例如，让UIViewController在初始化时接受一个Flag实例。</p>
+<p>下面是一个例子，我们如何实现一个视图控制器，让我们在使用应用程序的调试构建时，打开或关闭给定的基于布尔的特性标志:</p>
+<pre><code class="language-swift">class FlagToggleViewController: UIViewController {
+    private let flag: Flag&lt;Bool&gt;
+    private lazy var label = UILabel()
+    private lazy var toggle = UISwitch()
+
+    init(flag: Flag&lt;Bool&gt;) {
+        self.flag = flag
+        super.init(nibName: nil, bundle: nil)
+    }
+    ...
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        label.text = flag.name
+        toggle.isOn = flag.wrappedValue
+
+        toggle.addTarget(self,
+            action: #selector(toggleFlag),
+            for: .valueChanged
+        )
+        
+        ...
+    }
+
+    @objc private func toggleFlag() {
+        flag.wrappedValue = toggle.isOn
+    }
+}
+
+</code></pre>
+<p>为了初始化上面的视图控制器，我们将使用与使用SwiftUI传递@State引用时相同的基于$-prefix的语法:</p>
+<pre><code class="language-swift">let flags: FeatureFlags = ...
+
+let searchToggleVC = FlagToggleViewController(
+    flag: flags.$isSearchEnabled
+)
+</code></pre>
+<p>我们肯定会在以后的文章中更多地探讨上述属性包装的使用——因为它可以使我们的代码更具声明性， 实现基于属性的观察api，执行相当复杂的数据绑定，等等。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>属性包装无疑是Swift 5.1中最令人兴奋的新特性之一——因为它为代码重用和自定义打开了许多大门，并提供了强大的新方法来实现属性级功能。即使在像SwiftUI这样的声明性框架之外，属性包装器也有很多潜在的用例，其中很多用例不需要我们对整个代码做任何大的更改——因为属性包装器的操作大多是完全透明的。</p>
+<p>然而，这种透明度既可能是一种优势，也可能是一种劣势。一方面，它使我们能够以与未包装属性完全相同的方式访问和分配包装属性 - 但另一方面，风险是我们最终会在一个可能相当不明显的抽象后面隐藏太多的功能。</p>
+<p><a href="https://www.swiftbysundell.com/articles/property-wrappers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/2-HyEvrbK/" class="tag">
+                    properties
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/access-control/">
+                  <h3 class="post-title">
+                    Access Control
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

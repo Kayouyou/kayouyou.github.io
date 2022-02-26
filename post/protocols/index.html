@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Protocols | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="虽然很多语言都支持协议的概念(也被称为“接口”)，Swift却将协议作为其整体设计的真正基石——苹果甚至将Swift称为“面向协议的编程语言”。
+从本质上讲，协议使我们能够定义api和需求，而不必将它们绑定到特定的类型或实现上。 例如，假设..." />
+    <meta name="keywords" content="protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Protocols</h2>
+            <div class="post-date">2020-04-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>虽然很多语言都支持协议的概念(也被称为“接口”)，Swift却将协议作为其整体设计的真正基石——苹果甚至将Swift称为“面向协议的编程语言”。</p>
+<p>从本质上讲，协议使我们能够定义api和需求，而不必将它们绑定到特定的类型或实现上。 例如，假设我们正在开发某种形式的音乐播放器，并且我们目前已经将回放代码实现为player类中的两个独立方法 -一个用于播放歌曲，一个用于播放专辑:</p>
+<pre><code class="language-swift">class Player {
+    private let avPlayer = AVPlayer()
+
+    func play(_ song: Song) {
+        let item = AVPlayerItem(url: song.audioURL)
+        avPlayer.replaceCurrentItem(with: item)
+        avPlayer.play()
+    }
+
+    func play(_ album: Album) {
+        let item = AVPlayerItem(url: album.audioURL)
+        avPlayer.replaceCurrentItem(with: item)
+        avPlayer.play()
+    }
+}
+</code></pre>
+<p>看看上面的实现，我们肯定有大量的代码重复，因为我们的两个玩法方法都需要做或多或少完全相同的事情-将正在播放的资源转换为AVPlayerItem，然后使用AVPlayer实例播放它。</p>
+<p>这是协议可以帮助我们以更优雅的方式解决的问题之一。 首先，让我们定义一个名为Playable的新协议，它将要求每个符合它的类型来实现一个audioURL属性:</p>
+<pre><code class="language-swift">protocol Playable {
+    var audioURL: URL { get }
+}
+</code></pre>
+<p>上面的get关键字用于指定为了符合我们的新协议，一个类型只需要声明一个只读的audioURL属性—它不必是可写的。</p>
+<p>然后，我们可以通过两种方式使不同类型符合我们的新协议。一种方法是将一致性声明为类型声明本身的一部分——例如:</p>
+<pre><code class="language-swift">struct Song: Playable {
+    var name: String
+    var album: Album
+    var audioURL: URL
+    var isLiked: Bool
+}
+</code></pre>
+<p>另一种方法是通过一个扩展来声明一致性——如果一个类型已经满足了协议的所有要求(下面我们的专辑模型就是这种情况)，那么只需要使用一个空扩展就可以了:</p>
+<pre><code class="language-swift">struct Album {
+    var name: String
+    var imageURL: URL
+    var audioURL: URL
+    var isLiked: Bool
+}
+
+extension Album: Playable {}
+
+</code></pre>
+<p>有了以上的改变，我们现在可以大大简化我们的播放器类-通过合并我们之前的两个播放方法，而不是接受一个具体的类型(如歌曲或专辑)，现在接受任何符合我们新的Playable协议的类型:</p>
+<pre><code class="language-swift">class Player {
+    private let avPlayer = AVPlayer()
+
+    func play(_ resource: Playable) {
+        let item = AVPlayerItem(url: resource.audioURL)
+        avPlayer.replaceCurrentItem(with: item)
+        avPlayer.play()
+    }
+}
+</code></pre>
+<p>那是好得多! 然而，上面的协议有一个小问题，那就是它的名字。虽然一开始可玩性似乎是个合适的名字，但它暗示了符合它的类型实际上可以执行回放，但事实并非如此。相反，因为我们的协议都是关于把一个实例转换成一个音频URL，让我们把它重命名为AudioURLConvertible——为了让事情更清楚:</p>
+<pre><code class="language-swift">// Renaming our declaration:
+protocol AudioURLConvertible {
+    var audioURL: URL { get }
+}
+
+// Song's conformance to it:
+struct Song: AudioURLConvertible {
+    ...
+}
+
+// The Album extension:
+extension Album: AudioURLConvertible {}
+
+// And finally how we use it within our Player class:
+class Player {
+    private let avPlayer = AVPlayer()
+
+    func play(_ resource: AudioURLConvertible) {
+        ...
+    }
+}
+</code></pre>
+<p>另一方面，让我们来看看一个协议，它确实需要一个操作(或者换句话说，一个方法)，这使得它非常适合典型的“-able”命名后缀。 在这种情况下，我们需要一个变化的方法，因为我们想让任何符合我们协议的类型在它们的实现中改变它们自己的状态(即改变属性值):</p>
+<pre><code class="language-swift">protocol Likeable {
+    mutating func markAsLiked()
+}
+
+extension Song: Likeable {
+    mutating func markAsLiked() {
+        isLiked = true
+    }
+}
+</code></pre>
+<p>因为大多数符合我们新的Likeable的类型都可能(没有双关语的意思)像Song一样实现我们的markaslike方法要求，我们也可以选择将islike属性作为我们的需求(并通过添加set关键字来要求它是可变的)。</p>
+<pre><code class="language-swift">protocol Likeable {
+    var isLiked: Bool { get set }
+}
+</code></pre>
+<p>很酷的是，如果我们仍然希望我们的API是something. markaslike()，那么我们可以很容易地使用协议扩展实现它 -  允许我们向所有符合给定协议的类型添加新的方法和计算属性:</p>
+<pre><code class="language-swift">extension Likeable {
+    mutating func markAsLiked() {
+        isLiked = true
+    }
+}
+</code></pre>
+<p>有了上面的这些，我们现在可以让Song和Album都符合Likeable，而不需要写任何额外的代码——因为它们都声明了一个可变的islike属性:</p>
+<pre><code class="language-swift">extension Song: Likeable {}
+extension Album: Likeable {}
+</code></pre>
+<p>除了支持代码重用和统一类似的实现之外，协议在重构时，或者当我们想用一个实现有条件地替换另一个实现时，也非常有用。</p>
+<p>举个例子，假设我们想要测试之前的Player类的一个新实现——它将歌曲和其他回放项目排队，而不是立即开始播放它们。其中一种方法当然是将逻辑添加到我们最初的玩家实现中，但这可能很快就会变得混乱——特别是当我们想要执行多个测试并尝试更多种类的变体时。</p>
+<p>相反，让我们通过实现一个协议来为我们的核心回放API创建一个抽象。在这种情况下，我们将简单地命名它为PlayerProtocol，并使它需要我们的single play方法从以前:</p>
+<pre><code class="language-swift">protocol PlayerProtocol {
+    func play(_ resource: AudioURLConvertible)
+}
+</code></pre>
+<p>使用我们的新协议，我们现在可以随心所欲地执行各种不同的玩家变体 - 每一个都可以有自己的私有实现细节，同时仍然与完全相同的公共API兼容:</p>
+<pre><code class="language-swift">class EnqueueingPlayer: PlayerProtocol {
+    private let avPlayer = AVQueuePlayer()
+
+    func play(_ resource: AudioURLConvertible) {
+        let item = AVPlayerItem(url: resource.audioURL)
+        avPlayer.insert(item, after: nil)
+        avPlayer.play()
+    }
+}
+
+extension Player: PlayerProtocol {}
+</code></pre>
+<p>有了上面的条件，我们现在可以有条件地使用我们的播放器实现，通过使创建应用程序的播放器的代码返回一个PlayerProtocol -instance，而不是一个具体的类型:</p>
+<pre><code class="language-swift">func makePlayer() -&gt; PlayerProtocol {
+    if Settings.useEnqueueingPlayer {
+        return EnqueueingPlayer()
+    } else {
+        return Player()
+    }
+}
+</code></pre>
+<p>最后，让我们回到Swift是一种“面向协议的语言”的最初声明。到目前为止，我们已经看到Swift确实支持许多强大的基于协议的特性——但到底是什么使语言本身面向协议呢?</p>
+<p>在许多方面，这归结为标准库是如何设计的——它利用协议扩展等特性来优化自己的内部实现，并使我们能够使用相同的扩展在众多协议之上编写自己的功能。</p>
+<p>例如，我们可以采用标准库的集合协议(所有集合，如Array和Set，都符合该协议)，并在存储的元素符合Numeric时给它一个sum方法 - 这是数字类型(如Int和Double)遵守的另一个标准库协议:</p>
+<pre><code class="language-swift">extension Collection where Element: Numeric {
+    func sum() -&gt; Element {
+        // The reduce method is implemented using a protocol extension
+        // within the standard library, which in turn enables us
+        // to use it within our own extensions as well:
+        reduce(0, +)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以很容易地对任何数字集合求和，例如Int值数组:</p>
+<pre><code class="language-swift">let numbers = [1, 2, 3, 4]
+numbers.sum() // 10
+</code></pre>
+<p>因此，协议之所以如此有用，是因为它们使我们能够创建抽象，让我们可以将实现细节隐藏在共享接口后面——这反过来又使共享使用这些接口的代码变得更容易——而且它们也使我们能够自定义和扩展标准库的各种api。</p>
+<p><a href="https://www.swiftbysundell.com/basics/protocols/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-guide-to-the-swiftui-layout-system-part-2/">
+                  <h3 class="post-title">
+                    A guide to the SwiftUI layout system - Part 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

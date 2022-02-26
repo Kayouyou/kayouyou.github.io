@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 08: Getters and Key Paths | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Properties
+
+
+
+
+Key paths as getters
+
+
+
+
+Sorting
+
+
+
+
+Reduce
+
+
+
+
+Operator overload?
+
+
+
+
+What’s the po..." />
+    <meta name="keywords" content="getter,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 08: Getters and Key Paths</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Properties">Properties</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Keypathsasgetters">Key paths as getters</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Sorting">Sorting</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Reduce">Reduce</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Operatoroverload">Operator overload?</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 08: Getters and Key Paths -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>在上两集中，我们深入探讨了<strong>setter</strong>函数的世界，并看到了它们如何让我们精确地操作大型数据结构。这只是事情的一半!<strong>getters</strong>?让我们来探索如何从结构中访问数据，探索getter是如何组成的，并看看关键路径如何在这一过程中进一步帮助我们!</p>
+<h2 id="2-a-namepropertiesaproperties">2. <a name='Properties'></a>Properties</h2>
+<p>类和结构通常将它们的数据存储在属性中，访问属性的方式与使用点语法的方法非常相似，但是在必须调用方法的地方，属性会立即返回它们的值。</p>
+<pre><code class="language-swift">struct User {
+  let id: Int
+  let email: String
+}
+</code></pre>
+<p>我们可以实例化一个用户并使用点语法访问它的属性。</p>
+<pre><code class="language-swift">let user = User(id: 1, email: &quot;blob@pointfree.co&quot;)
+user.id // 1
+user.email // &quot;blob@pointfree.co&quot;
+</code></pre>
+<p>属性就像没有参数的方法，反过来又像只有一个参数的函数，<strong>self</strong>就是隐式参数。 这有点神奇，因为它是我们最喜欢的函数组合形状!</p>
+<p>当然，它们不能很好地进行开箱即用，但是短闭包使这变得非常容易。</p>
+<p>比如，如果我们想从用户中提取id并将其转换为字符串:</p>
+<pre><code class="language-swift">{ (user: User) in user.id } &gt;&gt;&gt; String.init
+// (User) -&gt; String
+</code></pre>
+<p>这个可以，但是有点吵。Swift为我们提供了一个更强大的语言功能。</p>
+<h2 id="3-a-namekeypathsasgettersakey-paths-as-getters">3. <a name='Keypathsasgetters'></a>Key paths as getters</h2>
+<p>Swift有一个强大的编译器生成的语言特性，它允许我们在没有实例的情况下引用属性访问:关键路径(key paths)。语法看起来有点滑稽。</p>
+<pre><code class="language-swift">\User.id // KeyPath&lt;User, Int&gt;
+</code></pre>
+<p>这里我们有一个<strong>KeyPath</strong>，它是根容器类型<em>User</em>和被访问的值类型的泛型，在本例中是<em>Int</em>类型。</p>
+<p>那么我们可以用这些关键路径做什么呢? 我们可以用它们来访问一个值的属性。</p>
+<pre><code class="language-swift">user[keyPath: \User.id] // 1
+</code></pre>
+<p>当我们使用点语法时，这似乎不是特别有用。</p>
+<pre><code class="language-swift">user.id // 1
+</code></pre>
+<p>但是正如我们在过去所看到的，在抽象中引用这种功能的能力可以解锁所有类型的组合。除此之外，Swift还免费提供编译器生成的代码! 我们应该能够利用这一点来简化我们之前的写作尝试:</p>
+<pre><code class="language-swift">{ (user: User) in user.id } &gt;&gt;&gt; String.init
+</code></pre>
+<p>左边只是一个函数，它接受User并返回该用户的属性值，这正是键路径<strong>getter</strong>提供的功能。</p>
+<p>让我们定义一个函数，给定一个键路径，它将生成一个<strong>getter</strong>函数。</p>
+<pre><code class="language-swift">func get&lt;Root, Value&gt;(_ kp: KeyPath&lt;Root, Value&gt;) -&gt; (Root) -&gt; Value {
+  return { root in
+    root[keyPath: kp]
+  }
+}
+</code></pre>
+<p>How do we use this?</p>
+<pre><code class="language-swift">get(\User.id) // (User) -&gt; Int
+</code></pre>
+<p>我们得到一个全新的从用户到Int的免费函数! 这很整洁。这正是我们之前组合所需要的。</p>
+<pre><code class="language-swift">get(\User.id) &gt;&gt;&gt; String.init
+// (User) -&gt; String
+</code></pre>
+<p>Swift也有“计算”属性的概念，这些属性不直接存储数据，而是存储逻辑。</p>
+<p>计算属性实际上只是伪装的函数，但它们让我们能够隐藏私有的实现细节，将getter-setter函数对统一到一个单独的构造中，并在调用点包含更少的视觉噪声。对于什么时候应该使用计算属性而不是方法，并没有编译器强制的规则，但一般感觉是，对于给定的状态，属性访问应该是廉价且可预测的。</p>
+<p>让我们向用户添加一个computed属性。</p>
+<pre><code class="language-swift">extension User {
+  var isStaff: Bool {
+    return self.email.hasSuffix(&quot;@pointfree.co&quot;)
+  }
+}
+</code></pre>
+<p>它包含了一些检查电子邮件是否有某个后缀的逻辑。</p>
+<pre><code class="language-swift">user.isStaff // true
+</code></pre>
+<p>Swift也为这些计算属性生成关键路径!</p>
+<pre><code class="language-swift">\User.isStaff // KeyPath&lt;User, Bool&gt;
+</code></pre>
+<p>我们可以像以前一样使用它。</p>
+<pre><code class="language-swift">user[keyPath: \User.isStaff] // true
+</code></pre>
+<p>当然，这不是使用关键路径的实际方法。但是，我们的<strong>get</strong>函数使它立即变得有用。</p>
+<pre><code class="language-swift">get(\User.isStaff) // (User) -&gt; Bool
+</code></pre>
+<p>由于getter可以被认为是专注于较大结构的一部分的函数，所以它们可以被认为是非常基本的转换函数。标准库中有一种高阶方法，它采用这些转换函数，可以很好地与关键路径组合在一起:<strong>map</strong>。 例如，假设我们有一个用户数组。</p>
+<pre><code class="language-swift">let users = [
+  User(id: 1, email: &quot;blob@pointfree.co&quot;),
+  User(id: 2, email: &quot;protocol.me.maybe@appleco.example&quot;),
+  User(id: 3, email: &quot;bee@co.domain&quot;),
+  User(id: 4, email: &quot;a.morphism@category.theory&quot;)
+]
+</code></pre>
+<p>我们可以用一个闭包来映射它，以生成一个电子邮件地址数组。</p>
+<pre><code class="language-swift">users
+  .map { $0.email }
+</code></pre>
+<p>看看关键路径是如何工作的，我们可能希望这样:</p>
+<pre><code class="language-swift">users
+  .map(\User.email)
+</code></pre>
+<p>不幸的是，该语言还不支持将键路径转换为getter函数，标准库也没有定义接受键路径的映射重载。</p>
+<p>我们可以自己定义重载。遍历属性是map的一种非常常见的操作。</p>
+<pre><code class="language-swift">extension Sequence {
+  func map&lt;Value&gt;(_ kp: KeyPath&lt;Element, Value&gt;) -&gt; [Value] {
+    return self.map { $0[keyPath: kp] }
+  }
+}
+</code></pre>
+<p>现在我们可以传递一个关键路径!</p>
+<pre><code class="language-swift">users
+  .map(\User.email)
+</code></pre>
+<p>如果我们利用类型推断，我们得到的东西甚至比点语法版本更短。</p>
+<pre><code class="language-swift">users
+  .map(\.email)
+</code></pre>
+<p>这个看起来很漂亮!现在我们可能还想这样写:</p>
+<pre><code class="language-swift">users
+  .filter(\.isStaff)
+</code></pre>
+<p>但我们需要另一个超载。这不是很好地扩展。我们真的想为标准库中每个相关的高阶函数定义重载吗? 那么其他第三方代码呢?</p>
+<p>幸运的是，我们已经定义了一个桥接! 我们可以在所有这些情况下使用get。</p>
+<p>我们可以使用带有Swift的<strong>map</strong>的<strong>get</strong>，而不是依赖于我们的临时超载。</p>
+<pre><code class="language-swift">users
+  .map(get(\.email))
+</code></pre>
+<p>我们可以将<strong>get</strong>传递给标准库方法，而不是依赖于<strong>filter</strong>的键路径重载。</p>
+<pre><code class="language-swift">users
+  .filter(get(\.isStaff))
+</code></pre>
+<p>我们不需要定义任何重载。我们可以免费使用所有这些api的关键路径。</p>
+<p>现在我们把关键路径放到函数世界里，我们甚至可以把它们组合在一起。</p>
+<p>我们来回顾一下<strong>map</strong>的一个性质。我们看到可以对数组进行两次<strong>map</strong>:</p>
+<pre><code class="language-swift">users
+  .map(get(\.email))
+  .map(get(\.count))
+// [17, 33, 13, 26]
+</code></pre>
+<p>我们看到，这可以用一个单一的<strong>map</strong>和组合来重写。</p>
+<pre><code class="language-swift">users
+  .map(get(\.email) &gt;&gt;&gt; get(\.count))
+// [17, 33, 13, 26]
+</code></pre>
+<p>这也是一个很好的性能提升! 一次遍历而不是两次遍历。</p>
+<p>不过，关键路径是自己组成的!这里不需要箭头运算符。</p>
+<pre><code class="language-swift">users
+  .map(get(\.email.count))
+// [17, 33, 13, 26]
+</code></pre>
+<p><strong>Getter</strong>组合解锁了很多好东西。我们可以将i<strong>sStaff</strong> getter与!操作符结合。</p>
+<pre><code class="language-swift">users
+  .filter(get(\.isStaff) &gt;&gt;&gt; (!))
+</code></pre>
+<p>以这种顺序使用前缀操作符可能读起来有点奇怪，但幸运的是，我们使用了反向组合来解决这个问题!</p>
+<pre><code class="language-swift">users
+  .filter((!) &lt;&lt;&lt; get(\.isStaff))
+</code></pre>
+<p>我们可以很容易地将这些单元插入到<strong>map和filter</strong>中，并且可以自由地将这些getter转换与其他函数组合在一起，这真是令人惊讶!</p>
+<h2 id="4-a-namesortingasorting">4. <a name='Sorting'></a>Sorting</h2>
+<p>还有哪些高阶函数可以从键路径组合中受益?排序呢?</p>
+<p>按照属性排序是很常见的，但是Swift在这里并没有真正帮助我们，没有开箱即用。我们总是被拉到点语法的世界。</p>
+<pre><code class="language-swift">user
+  .sorted(by: { $0.email &lt; $1.email })
+</code></pre>
+<p>这并不糟糕，但我们可以想象，在深度嵌套的属性上进行排序会有点麻烦。</p>
+<pre><code class="language-swift">users
+  .sorted(by: { $0.email.count &lt; $1.email.count })
+</code></pre>
+<p>这变得越来越冗长了。我们必须根据我们排序的嵌套属性在每一边重复我们自己。这个属性只是一个键路径，也许我们可以从键路径世界找到另一个桥梁来执行sorted期望的函数。</p>
+<p>排序到底是什么样的?</p>
+<pre><code class="language-swift">users.sorted(by: &lt;#(User, User) throws -&gt; Bool#&gt;)
+</code></pre>
+<p>它接受一个非常特定的函数:一个接受一对元素并返回其中一个是否应该出现在另一个之前。</p>
+<p>我们应该能够生成这种类型的函数，但要深入到User并对嵌套属性进行排序。我们就这么做吧。</p>
+<pre><code class="language-swift">func their&lt;Root, Value&gt;(
+  _ f: @escaping (Root) -&gt; Value,
+  _ g: @escaping (Value, Value) -&gt; Bool
+  )
+  -&gt; (Root, Root)
+  -&gt; Bool {
+
+    return { g(f($0), f($1)) }
+}
+</code></pre>
+<p>这里有很多东西，但需要注意的是我们可以把从<strong>Root到Value</strong>的转换单独应用到两个根上。这允许我们创建一个全新的功能，关心Values。</p>
+<p>如何使用这个函数?</p>
+<pre><code class="language-swift">users
+  .sorted(by: their(get(\.email), &lt;))
+</code></pre>
+<p>不坏!我们可以用一个字符来反转排序。</p>
+<pre><code class="language-swift">users
+  .sorted(by: their(get(\.email), &gt;))
+</code></pre>
+<p>我们还可以更深入地研究，并根据用户电子邮件地址的字符数进行排序。</p>
+<pre><code class="language-swift">users
+  .sorted(by: their(get(\.email.count), &gt;))
+</code></pre>
+<p>不坏!我们设法避免了定义重载。我们的组合器很好地插入了现有的方法。我们已经构建了一些可以使用任何函数的东西，而不仅仅是关键路径!还有什么其他的方法可以受益呢?</p>
+<p><strong>max</strong>怎么样?它接受一个函数(User, User) -&gt; Bool。</p>
+<pre><code class="language-swift">users
+  .max(by: their(get(\.email), &lt;))
+</code></pre>
+<p>我们也可以用<strong>min</strong>做同样的事!</p>
+<pre><code class="language-swift">users
+  .min(by: their(get(\.email), &lt;))
+</code></pre>
+<p>诚然，指定&lt;有点奇怪，因为它是获得最大值或最小值的唯一有效方法。也许我们可以定义一个超载来帮助你。</p>
+<pre><code class="language-swift">func their&lt;Root, Value: Comparable&gt;(
+  _ f: @escaping (Root) -&gt; Value
+  )
+  -&gt; (Root, Root)
+  -&gt; Bool {
+
+    return their(f, &lt;)
+}
+</code></pre>
+<p>通过将<strong>Value</strong>约束为<strong>Comparable</strong>，可以为<strong>Comparable</strong>类型定义一个默认版本。</p>
+<p>现在我们的<strong>max和min</strong>就不用担心额外的参数了。</p>
+<pre><code class="language-swift">users
+  .max(by: their(get(\.email)))
+
+users
+  .min(by: their(get(\.email)))
+</code></pre>
+<p>这也有助于<strong>sorted</strong>，因为我们的默认值可能是升序的。</p>
+<p>不坏!我们采用了三个标准库方法，并定义了一个连接关键路径的方法。</p>
+<h2 id="5-a-namereduceareduce">5. <a name='Reduce'></a>Reduce</h2>
+<p>让我们再看一个高阶函数:<strong>reduce</strong>。这是一个有趣的函数，它取一个起始值，然后通过一个转换函数传递每个元素，将数据折叠到其中。</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .reduce(0, +)
+// 6
+</code></pre>
+<p>如果我们的数据结构更复杂怎么办?如果我们想根据数据的深度嵌套属性来减少数据，该怎么办?</p>
+<pre><code class="language-swift">struct Episode {
+  let title: String
+  let viewCount: Int
+}
+
+let episodes = [
+  Episode(title: &quot;Functions&quot;, viewCount: 961),
+  Episode(title: &quot;Side Effects&quot;, viewCount: 841),
+  Episode(title: &quot;UIKit Styling with Functions&quot;, viewCount: 1089),
+  Episode(title: &quot;Algebraic Data Types&quot;, viewCount: 729),
+]
+</code></pre>
+<p>如果我们想要合计所有这些剧集的观看次数，我们可以编写以下代码:</p>
+<pre><code class="language-swift">episodes
+  .reduce(0) { $0 + $1.viewCount }
+</code></pre>
+<p>这段代码很短，但主要依赖于我们一眼就能记住$0和$1指的是什么。</p>
+<p>让我们专注于形状，看看我们是否可以写一个函数来连接这些世界，让它更清晰一点，我们如何在更大的值的子结构的基础上积累。</p>
+<pre><code class="language-swift">func combining&lt;Root, Value&gt;(
+  _ f: @escaping (Root) -&gt; Value,
+  by g: @escaping (Value, Value) -&gt; Value
+  )
+  -&gt; (Value, Root)
+  -&gt; Value {
+
+    return { value, root in
+      g(value, f(root)) }
+    }
+}
+</code></pre>
+<p>我们如何使用它?</p>
+<pre><code class="language-swift">episodes.reduce(0, combining(get(\.viewCount), by: +))
+</code></pre>
+<p>这有点冗长，但它更易于阅读，并且是由小型的可组合单元构建的。</p>
+<h2 id="6-a-nameoperatoroverloadaoperator-overload">6. <a name='Operatoroverload'></a>Operator overload?</h2>
+<p>我们在很多地方看到了get的好处，我相信我们还会看到更多! 在这里接受额外的噪音可能是明智的，但是……我们已经有一段时间没有引入操作员了，我认为我们可以尝试一些东西，使这个过程更轻量化。</p>
+<pre><code class="language-swift">prefix operator ^
+prefix func ^ &lt;Root, Value&gt;(kp: KeyPath&lt;Root, Value&gt;) -&gt; (Root) -&gt; Value {
+  return get(kp)
+}
+</code></pre>
+<p>前缀运算符的一个好处是，我们不必担心优先级或结合性!</p>
+<p>我们如何使用这个运算符?</p>
+<pre><code class="language-swift">^\User.id
+// (User) -&gt; Int
+</code></pre>
+<p>这就是我们的<strong>getter</strong> ! 我们可以直接把它传递给<strong>map</strong>。</p>
+<pre><code class="language-swift">users.map(^\.id) // [1, 2, 3, 4]
+</code></pre>
+<p>这看起来不错!非常接近我们定义的原始<strong>map</strong>重载。那其他的例子呢?</p>
+<p>我们可以映射用户电子邮件的字符数。</p>
+<pre><code class="language-swift">users.map(^\.email.count)
+// [17, 33, 13, 26]
+</code></pre>
+<p>我们仍然有能力将这些功能向前组合成新的功能。</p>
+<pre><code class="language-swift">users.map(^\.email.count &gt;&gt;&gt; String.init)
+// [&quot;17&quot;, &quot;33&quot;, &quot;13&quot;, &quot;26&quot;]
+</code></pre>
+<p>我们不需要什么仪式就能过滤。</p>
+<pre><code class="language-swift">users.filter(^\.isStaff)
+
+// or
+
+users.filter((!) &lt;&lt;&lt; ^\.isStaff)
+</code></pre>
+<p>这不是魔术!它只是函数复合。 **!**运算符只是一个接受一个布尔参数并否定它的函数。这样很好。</p>
+<p>我们之前的桥接呢? 我们可以根据用户的电子邮件进行分类。</p>
+<pre><code class="language-swift">users.sorted(by: their(^\.email))
+</code></pre>
+<p>甚至按降序排列。</p>
+<pre><code class="language-swift">users.sorted(by: their(^\.email, &gt;))
+</code></pre>
+<p>Our max and min work just as before.</p>
+<pre><code class="language-swift">users.max(by: their(^\.email.count))
+users.min(by: their(^\.email.count))
+</code></pre>
+<p>所有这些例子都集中在他们所关心的事情上。<strong>get</strong>函数非常短，但它似乎足够常见，如果可以的话，可以避免使用操作符。</p>
+<p>不过，我们引入了一个新的操作员。它符合我们的要求吗?</p>
+<ol>
+<li>与前面的操作符不同，这个操作符在Swift中已经存在，但作为中缀操作符，而不是前缀操作符。作为前缀操作符，它似乎不太可能造成太多的混淆，但它肯定与现有的符号空间重叠。</li>
+<li>它有现有技术和良好的形状吗? 它的形状很好，有点像一个向上的箭头，就好像它把一条关键路径提升到函数世界。这个形状还唤起了Objective-C的块语法，它们本身就是函数。其他语言有类似的功能吗? Ruby使用前缀&amp;来做类似的事情，但我们不能使用相同的符号，因为前缀&amp;是为Swift中的inout调用站点保留的。</li>
+<li>它是在解决一个普遍的问题吗? Swift到处都有属性访问，所以是的。</li>
+</ol>
+<p>它并没有很好地解决问题，但取决于你使用它的频率，它可能是一个有价值的添加，以减少括号和噪音。</p>
+<h2 id="7-a-namewhatsthepointawhats-the-point">7. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>我们引入了一个<strong>get</strong>函数，它只处理<strong>KeyPath</strong>值，这是我们在日常工作中不经常处理的东西。有时它会让事情变得更短。有时它没有!我们应该关心这种事情吗?</p>
+<p>我们是这样认为的! 我们认为它有助于展示关键路径是多么强大，以及为什么编译器生成的代码也是如此! 关键路径对我们的日常代码、语法和所有内容来说有些陌生，但让我们关注它们给我们带来了什么。</p>
+<p>这一整集基本上是在庆祝一个简单的功能:<strong>get</strong>。它所做的只是打开了一条通往函数世界的关键路径。这让我们能够立即使用许多其他库代码，从map和filter开始。只要编译器可以为我们工作，我们要做的工作就会少一些。让我们拥抱这些吧!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/B33P59knf/" class="tag">
+                    getter
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-07-setters-and-key-paths/">
+                  <h3 class="post-title">
+                    PointFree Episode 07: Setters and Key Paths
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

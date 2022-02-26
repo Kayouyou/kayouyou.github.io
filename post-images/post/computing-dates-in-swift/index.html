@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Computing dates in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="计算各种日期和时间戳的任务乍一看可能很简单。我们都知道一分钟由60秒组成，一小时由60分钟组成，一天有24个小时 -然而，正确计算和修改日期通常需要一个更复杂的模型。
+值得庆幸的是，Apple提供了一套完整的日期和日历api作为Founda..." />
+    <meta name="keywords" content="dates,foundation" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Computing dates in Swift</h2>
+            <div class="post-date">2019-09-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>计算各种日期和时间戳的任务乍一看可能很简单。我们都知道一分钟由60秒组成，一小时由60分钟组成，一天有24个小时 -然而，正确计算和修改日期通常需要一个更复杂的模型。</p>
+<p>值得庆幸的是，Apple提供了一套完整的日期和日历api作为Foundation的一部分，虽然其中一些api乍一看可能有点复杂-它们使我们能够编写日期处理代码，将各种异常情况和文化差异考虑在内，而不需要我们自己了解任何这些情况。</p>
+<p>本周，让我们来看看几个例子，看看我们如何使用这些api——它们如何使我们能够轻松地使计算日期的方式更准确，以及如何在它们之上构建我们自己的轻量级抽象，使Swift中处理日期变得更容易。</p>
+<h2 id="not-always-a-time-interval-away">Not always a time interval away</h2>
+<p>TimeInterval类型(实际上只是Double的类型别名)使我们能够将时间表示为秒间隔-当我们想要计算不久的将来的日期时，这是非常有用的。 例如在这个例子中，我们正在安排一个通知在20秒后显示:</p>
+<pre><code class="language-swift">let date = Date().addingTimeInterval(20)
+schedule(notification, for: date)
+</code></pre>
+<p>然而，随着时间间隔的增加，上述计算日期的方法很快就会失效 -简单地增加一些秒到当前日期不会考虑的事情，如闰秒，日光节约时间的变化，或其他时间修正和调整。</p>
+<p>例如，尽管下面的代码可能会给出一个从技术上讲距离秒数24小时的日期，它不会总是“明天”-因为时间调整可能会把结果日期推到下一天或前一天，或以其他方式影响一天的感知时间:</p>
+<pre><code class="language-swift">let tomorrow = Date().addingTimeInterval(60 * 60 * 24)
+</code></pre>
+<p>虽然在处理日期时并不总是需要绝对的精度，如果我们的代码假设明天不仅仅是“24小时后的绝对时间”，而是“与现在相同的时间，但是明天”，那么使用手动计算的时间间隔可能会导致一些非常棘手的错误。</p>
+<p>为了以一种更健壮的方式计算后者，让我们使用Foundation的日历类型，它使我们能够根据特定的日历(最常见的是公历)操作日期，精度达到纳秒级:</p>
+<pre><code class="language-swift">// Calendar.current gives us access to a calendar that’s
+// configured according to the user’s system settings:
+let calendar = Calendar.current
+let date = Date()
+
+// Define which date components that we want to be considered
+// when looking for tomorrow’s date. This essentially decides
+// what level of precision that we’d like:
+let components = calendar.dateComponents(
+    [.hour, .minute, .second, .nanosecond],
+    from: date
+)
+
+let tomorrow = calendar.nextDate(
+    after: date,
+    matching: components,
+    matchingPolicy: .nextTime
+)
+</code></pre>
+<p>如果我们计划存储上述日历值以供进一步使用，那么使用Calendar.autoupdatingCurrent访问它会更好，因为它将跟踪用户可能对其系统范围的日历首选项所做的任何更改</p>
+<p>虽然上面给出的日期实际上与现在的时间相同，但只是明天，但是每次我们想执行这样的日期计算时都要编写所有这些代码，这很快就会重复-所以让我们把它移动到一个扩展的日期代替:</p>
+<pre><code class="language-swift">extension Date {
+    func sameTimeNextDay(
+        inDirection direction: Calendar.SearchDirection = .forward,
+        using calendar: Calendar = .current
+    ) -&gt; Date {
+        let components = calendar.dateComponents(
+            [.hour, .minute, .second, .nanosecond],
+            from: self
+        )
+        
+        return calendar.nextDate(
+            after: self,
+            matching: components,
+            matchingPolicy: .nextTime,
+            direction: direction
+        )!
+    }
+}
+</code></pre>
+<p>Calendar经常从它的各种api返回一个可选的日期，因为使用的DateComponents可能包含无效的单元组合(例如指定2月31日为日期)。 然而，在上面的例子中，我们确信输入是有效的，所以我们强制对结果展开包装。</p>
+<p>上面我们还添加了指定SearchDirection的支持，这使我们能够在计算下一个日期时向前或向后移动-这反过来使我们能够创建两个方便的api，一个用于访问明天的当前时间，一个用于做同样的事情，但代替昨天:</p>
+<pre><code class="language-swift">extension Date {
+    static var currentTimeTomorrow: Date {
+        return Date().sameTimeNextDay()
+    }
+    
+    static var currentTimeYesterday: Date {
+        return Date().sameTimeNextDay(inDirection: .backward)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以简单地将. currenttimetomorrow或. currenttimeyesterday传递给任何接受date的API，这实际上比通过添加时间间隔手动计算日期要简单得多——同时也更加健壮。</p>
+<h2 id="from-time-intervals-to-date-intervals">From time intervals to date intervals</h2>
+<p>除了在时间上向前或向后移动日期之外，Calendar还包含了一套用于按照时间间隔处理日期的api。虽然日期值代表一个时间点，但我们对时间的感知通常更多地围绕天、周、年等间隔——而不是绝对的时间戳。</p>
+<p>例如，假设我们正在开发一个应用程序，它可以在用户当前时区的午夜刷新显示给每个用户的内容。 因此，我们不会不断尝试从服务器获取新内容，而是将所有已加载的内容缓存到当天午夜——只在第二天开始时执行新请求。</p>
+<p>让我们调用日历上的startOfDay方法，并结合新添加的currentTimeTomorrow便利API，而不必手动计算与第二天开始相对应的确切日期，就像这样:</p>
+<pre><code class="language-swift">func contentDidLoad(_ content: Content) {
+    let refreshDate = calendar.startOfDay(for: .currentTimeTomorrow)
+    cache(content, until: refreshDate)
+}
+</code></pre>
+<p>然而，虽然上面的内容会告诉我们新内容应该准备好的确切日期，但并非所有的时钟都是完全同步的 - 这意味着，如果我们在那个确切的日期执行我们的网络请求，我们可能仍然会得到昨天的内容作为响应，如果我们的服务器的时钟稍微落后于我们的客户端时钟。</p>
+<p>为了解决这个问题，让我们再次利用TimeInterval的帮助，简单地在我们的刷新日期中添加100秒，以便给我们一个“缓冲区”，它应该足以解释客户端和服务器端时钟之间的任何差异:</p>
+<pre><code class="language-swift">func contentDidLoad(_ content: Content) {
+    let refreshDate = calendar.startOfDay(for: .currentTimeTomorrow)
+    cache(content, until: refreshDate.addingTimeInterval(100))
+}
+</code></pre>
+<p>以上是基于时间间隔的日期操作的一个很好的用例，因为我们希望以绝对秒来转移日期，而不是检索人类可读的时间。</p>
+<p>除了计算一个给定的间隔的开始，如一天，日历也使我们能够搜索完整的间隔，如在给定日期之后的下一个周末:</p>
+<pre><code class="language-swift">let nextWeekend = calendar.nextWeekend(startingAfter: Date())!
+
+showPartySchedulingView(
+    withStartDate: nextWeekend.start,
+    endDate: nextWeekend.end
+)
+</code></pre>
+<p>最后，我们还可以使用Calendar检索给定日期所属的时间间隔。例如，下面是我们如何检索当前日、月和年的开始和结束日期:</p>
+<pre><code class="language-swift">let date = Date()
+let today = calendar.dateInterval(of: .day, for: date)
+let currentMonth = calendar.dateInterval(of: .month, for: date)
+let currentYear = calendar.dateInterval(of: .year, for: date)
+</code></pre>
+<p>沿着同样的路线，这里是我们如何计算下一年的日期间隔，通过向当前日期添加一年，然后使用该日期检索我们的间隔:</p>
+<pre><code class="language-swift">let components = DateComponents(year: 1)
+let todayNextYear = calendar.date(byAdding: components, to: Date())!
+let nextYear = calendar.dateInterval(of: .year, for: todayNextYear)
+</code></pre>
+<p>上面我们使用DateComponents来操作当前日期，我们在初始示例中也使用了它来指定日期搜索的粒度。就像URLComponents可以用来定义组成URL的各个组件一样，datecomponent值可以用于在搜索日期或更改日期时引用各种时间单位(例如小时、天和年)。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>时间在世界各地(和历史上)不同文化中如何表现的差异，以及我们的日历和时间测量系统如何包括校正机制——比如闰日和夏令时——使得日期的计算比最初看起来要复杂得多。</p>
+<p>然而,大多数的复杂系统可以为我们处理的,只要我们使用正确的api来执行日期计算,虽然本文没有覆盖所有这样的api—— 我希望它可以作为你的代码下一步需要向前或向后旅行的参考。</p>
+<p><a href="https://www.swiftbysundell.com/articles/full-length/#filter">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/3-ndVuUVh/" class="tag">
+                    dates
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWHkY3onB/" class="tag">
+                    foundation
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/5-small-but-significant-improvements-in-swift-51/">
+                  <h3 class="post-title">
+                    5 small but significant improvements in Swift 5.1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

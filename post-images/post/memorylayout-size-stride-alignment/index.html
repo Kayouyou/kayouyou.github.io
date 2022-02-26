@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>MemoryLayout: Size, Stride, Alignment | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Size
+
+
+1.1. Memory Layout
+1.2. Back to Size
+
+
+
+
+Stride
+
+
+
+
+Alignment
+
+
+3.1. Simple Swift Types
+3.2. Compound Types
+3..." />
+    <meta name="keywords" content="memory layout,memory management" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">MemoryLayout: Size, Stride, Alignment</h2>
+            <div class="post-date">2021-10-08</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Size">Size</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#MemoryLayout">Memory Layout</a></li>
+<li>1.2. <a href="#BacktoSize">Back to Size</a></li>
+</ul>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Stride">Stride</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Alignment">Alignment</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#SimpleSwiftTypes">Simple Swift Types</a></li>
+<li>3.2. <a href="#CompoundTypes">Compound Types</a></li>
+<li>3.3. <a href="#CalculatingAlignment">Calculating Alignment</a></li>
+</ul>
+</li>
+<li>
+<ol start="4">
+<li><a href="#OneLastComplication">One Last Complication</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#TheClosingBrace">The Closing Brace</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # MemoryLayout: Size, Stride, Alignment -->
+<p>Swift结构体实例的内存布局的基础知识。</p>
+<p>当您在内存中处理Swift类型时，需要考虑三个属性:大小、步幅和对齐(<strong>size, stride, and alignment</strong>)。</p>
+<h2 id="1-a-namesizeasize">1. <a name='Size'></a>Size</h2>
+<p>让我们从两个简单的结构体开始:</p>
+<pre><code class="language-swift">struct Year {
+  let year: Int
+}
+
+struct YearWithMonth {
+  let year: Int
+  let month: Int
+}
+</code></pre>
+<p>我的直觉告诉我，<strong>YearWithMonth</strong>的实例比<strong>Year</strong>的实例更大——它在内存中占据了更多的空间。但我们是科技人员;我们如何用硬数字来验证直觉呢?</p>
+<h3 id="11-a-namememorylayoutamemory-layout">1.1. <a name='MemoryLayout'></a>Memory Layout</h3>
+<p>我们可以使用MemoryLayout类型来检查关于类型在内存中的外观的一些属性。</p>
+<p>要根据结构体的类型查找其大小，请使用size属性和泛型参数:</p>
+<pre><code class="language-swift">let size = MemoryLayout&lt;Year&gt;.size
+</code></pre>
+<p>如果你有一个该类型的实例，使用size(ofValue:)静态函数:</p>
+<pre><code class="language-swift">let instance = Year(year: 1984)
+let size = MemoryLayout.size(ofValue: instance)
+</code></pre>
+<p>在这两种情况下，大小都报告为8字节。</p>
+<p>结构体YearWithMonth的大小是16字节，这并不奇怪。</p>
+<h3 id="12-a-namebacktosizeaback-to-size">1.2. <a name='BacktoSize'></a>Back to Size</h3>
+<p>结构体的大小似乎很直观——计算每个属性的大小之和。对于像这样的结构:</p>
+<pre><code class="language-swift">struct Puppy {
+  let age: Int
+  let isTrained: Bool
+}
+</code></pre>
+<p>大小应该匹配其属性的大小:</p>
+<pre><code class="language-swift">MemoryLayout&lt;Int&gt;.size + MemoryLayout&lt;Bool&gt;.size
+// returns 9, from 8 + 1
+
+MemoryLayout&lt;Puppy&gt;.size
+// returns 9
+</code></pre>
+<p>似乎一切顺利! [旁白:真的吗?😈]</p>
+<h2 id="2-a-namestrideastride">2. <a name='Stride'></a>Stride</h2>
+<p>当您在一个缓冲区(例如数组)中处理多个实例时，类型的<strong>stride</strong>就变得非常重要。</p>
+<p>如果我们有一个连续的小狗数组，每个小狗的大小为9个字节，那么在内存中会是什么样子呢?</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7vbx3ay5j60jb0483yn02.jpg" alt="avatar" loading="lazy"></figure>
+<p>事实证明，并非如此。❌</p>
+<p><strong>stride</strong>决定了两个元素之间的距离，它将大于或等于大小。</p>
+<pre><code class="language-swift">MemoryLayout&lt;Puppy&gt;.size
+// returns 9
+
+MemoryLayout&lt;Puppy&gt;.stride
+// returns 16
+</code></pre>
+<p>所以布局实际上是这样的:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7vdk4zzlj60im056mxc02.jpg" alt="avatar" loading="lazy"></figure>
+<p>也就是说，如果您有一个指向第一个元素的字节指针，并且想要移动到第二个元素，那么stride就是指针向前移动所需要的字节距离。</p>
+<p>为什么<strong>size和stride</strong>会不同? 这就把我们带到了内存布局的最终神奇数字。</p>
+<h2 id="3-a-namealignmentaalignment">3. <a name='Alignment'></a>Alignment</h2>
+<blockquote>
+<p>1字节（byte）=8位（bit）</p>
+</blockquote>
+<blockquote>
+<p>在16位系统中，1字（word）=2字节（byte）=16位（bit）</p>
+</blockquote>
+<blockquote>
+<p>在32位系统中，1字（word）=4字节（byte）=32位（bit）</p>
+</blockquote>
+<blockquote>
+<p>在64位系统中，1字（word）=8字节（byte）=64位（bit）</p>
+</blockquote>
+<p>想象一下，计算机每次获取8位，或者一个字节的内存。请求字节1或字节7分别需要相同的时间。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7vhuxaowj60ba04hmx402.jpg" alt="avatar" loading="lazy"></figure>
+<p>然后你升级到一台16位计算机，它可以访问16位字的数据。你仍然有旧的软件想要通过字节访问数据，但是想象一下这里可能的魔法: 如果软件需要字节0和字节1，计算机现在可以对<em>word 0</em>进行一次内存访问，并将16位结果分割。</p>
+<p>在这种理想情况下，字节级内存访问速度是原来的两倍!🎉</p>
+<p>现在假设一个流氓程序输入了一个16位的值:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7vl3203jj609h05o0sr02.jpg" alt="avatar" loading="lazy"></figure>
+<p>然后你向计算机请求字节位置3的16位字。问题是值没有对齐。 要读它，电脑需要先读位置1的单词，把它切成两半，再读位置2的单词，把它切成两半，然后把两半粘贴在一起。这是两次单独的16位内存读取来访问一个16位值——速度比正常速度慢两倍!😭</p>
+<p>在一些系统上，非对齐访问比慢更糟糕——它是不被完全允许的，并且会使程序崩溃。</p>
+<h3 id="31-a-namesimpleswifttypesasimple-swift-types">3.1. <a name='SimpleSwiftTypes'></a>Simple Swift Types</h3>
+<p>在Swift中，像Int和Double这样的简单类型的<em>alignment</em>值与它们的<em>size</em>相同。一个32位(4字节)整数的大小为4个字节，需要对齐到4个字节。</p>
+<pre><code class="language-swift">MemoryLayout&lt;Int32&gt;.size
+// returns 4
+MemoryLayout&lt;Int32&gt;.alignment
+// returns 4
+MemoryLayout&lt;Int32&gt;.stride
+// returns 4
+</code></pre>
+<p><strong>stride</strong>也是4，这意味着连续缓冲区中的值间隔为4字节。不需要填充。</p>
+<h3 id="32-a-namecompoundtypesacompound-types">3.2. <a name='CompoundTypes'></a>Compound Types</h3>
+<p>现在回到我们的Puppy结构体，它有一个Int和一个Bool属性。再考虑一下在<strong>buffer</strong>中值彼此紧挨着的情况:</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7vx38wbcj60iv0503yr02.jpg" alt="avatar" loading="lazy"></figure>
+<p>Bool值的位置很好，因为它们 <strong>alignment=1</strong>。但是第二个整数没有对齐。它是一个64位(8字节)值，对齐方式为8，并且它的字节位置不是8的倍数。❌</p>
+<p>记住，这种类型的stride是16，这意味着缓冲区实际上看起来像这样:</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7vzrgi2lj60j405174j02.jpg" alt="avatar" loading="lazy"></figure>
+<p>我们保留了结构体中所有值的对齐要求:第二个整数位于字节16，是8的倍数。</p>
+<p>这就是为什么结构体的stride可以大于它的size:增加足够的填充来满足对齐要求。</p>
+<h3 id="33-a-namecalculatingalignmentacalculating-alignment">3.3. <a name='CalculatingAlignment'></a>Calculating Alignment</h3>
+<p>在我们旅程的最后，Puppy结构类型的对齐是什么?</p>
+<pre><code class="language-swift">MemoryLayout&lt;Puppy&gt;.alignment
+// returns 8
+</code></pre>
+<p>结构类型的对齐是其所有属性的最大对齐。在Int类型和Bool类型之间，Int类型的对齐值更大，为8，因此结构体使用它。</p>
+<p>stride然后变成大小四舍五入到对齐的下一个倍数。在我们的例子中:</p>
+<ul>
+<li>the size is 9</li>
+<li>9 is not a multiple of 8</li>
+<li>the next multiple of 8 after 9 is 16</li>
+<li>therefore, the stride is 16</li>
+</ul>
+<h2 id="4-a-nameonelastcomplicationaone-last-complication">4. <a name='OneLastComplication'></a>One Last Complication</h2>
+<p>考虑我们最初的Puppy，并与AlternatePuppy进行对比:</p>
+<pre><code class="language-swift">struct Puppy {
+  let age: Int
+  let isTrained: Bool
+} // Int, Bool
+
+struct AlternatePuppy { 
+  let isTrained: Bool
+  let age: Int
+} // Bool, Int
+</code></pre>
+<p><strong>AlternatePuppy</strong>结构体仍然是8的对齐和16的步幅，但是:</p>
+<pre><code class="language-swift">MemoryLayout&lt;AlternatePuppy&gt;.size
+// returns 16
+</code></pre>
+<p>发生了什么? ! 我们所做的只是改变了性质的顺序。为什么现在的大小不同了?还是应该是9，不是吗?Bool类型，后跟Int类型，如下所示:</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7w7h2pmtj60f0056jrh02.jpg" alt="avatar" loading="lazy"></figure>
+<p>也许您看到了这里的问题:8字节整数不再对齐!这在内存中是这样的:</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7w89e6bfj60e804z0st02.jpg" alt="avatar" loading="lazy"></figure>
+<p>结构本身必须对齐，结构内部的属性也必须保持对齐。 填充在元素之间移动，整个结构的大小就被扩展了。</p>
+<p>在这种情况下，步幅仍然是16，所以从Puppy到AlternatePuppy的有效变化是填充的位置。这些结构体呢?</p>
+<pre><code class="language-swift">struct CertifiedPuppy1 {
+  let age: Int
+  let isTrained: Bool
+  let isCertified: Bool
+} // Int, Bool, Bool
+
+struct CertifiedPuppy2 {
+  let isTrained: Bool
+  let age: Int
+  let isCertified: Bool
+} // Bool, Int, Bool
+
+</code></pre>
+<p>这两个结构的大小、步幅和对齐方式是什么?🤔(剧透)</p>
+<h2 id="5-a-nametheclosingbraceathe-closing-brace">5. <a name='TheClosingBrace'></a>The Closing Brace</h2>
+<p>最后，假设你有一个<strong>UnsafeRawPointer</strong>(在C语言中也叫**void ***)，你知道它指向的是什么类型的东西。size、stride和alignment在哪里?</p>
+<ul>
+<li>Size是从指针中读取所有数据所需的字节数。</li>
+<li>Stride 为进入缓冲区中下一项所要前进的字节数。</li>
+<li>Alignment是每个实例需要的“可被整除”的数字。如果你正在分配内存来复制数据，你需要指定正确的对齐方式(例如allocate(byteCount: 100, alignment: 4))。</li>
+</ul>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gv7wdm388zj60hy07baaa02.jpg" alt="avatar" loading="lazy"></figure>
+<p>对于我们大多数人来说，大多数时候，我们可能会处理高级集合，比如数组和集合，而不需要考虑底层的内存布局。</p>
+<p>在其他情况下，您可以在平台上使用较低级别的api，或者与C代码进行互操作。如果你有一个Swift结构体数组并且需要你的C代码读它(反之亦然)你需要担心分配一个缓冲区使用正确的alignment,确保结构体内部填充对齐,并确保你有合适的stride,这样你就可以正确地解释数据。</p>
+<p>正如我们所看到的，即使是计算大小也不像看起来那么简单——每个属性的大小和对齐之间有一些相互作用，决定了结构的总体大小。所以理解了这三种就意味着你正在成为内存大师。</p>
+<p>更多？</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Data_structure_alignment">“Data structure alignment” on Wikipedia</a></li>
+<li><a href="https://github.com/apple/swift/blob/main/docs/ABI/TypeLayout.rst">“Type Layout” article in the Swift docs, explaining how to calculate size, stride, and alignment for a struct</a></li>
+<li><a href="https://github.com/apple/swift-llvm/blob/stable/lib/IR/Constants.cpp#L1800-L1811">getAlignOf source in LLVM</a></li>
+<li><a href="https://developer.apple.com/documentation/swift/unsafemutablerawpointer/2949781-allocate">UnsafeMutableRawPointer.allocate() with size and alignment</a></li>
+</ul>
+<p>🔗<a href="https://swiftunboxed.com/internals/size-stride-alignment/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Qadcjrg41/" class="tag">
+                    memory layout
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_oT-GALgc/" class="tag">
+                    memory management
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/unsafe-territory-understanding-raw-bytes-and-pointers-in-swift/">
+                  <h3 class="post-title">
+                    Unsafe Territory! Understanding Raw Bytes and Pointers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

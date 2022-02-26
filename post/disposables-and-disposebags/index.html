@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Disposables and DisposeBags? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Disposables and DisposeBags?
+
+
+1.1. Redundancy
+1.2. Solution? The Variadic DisposeBag
+
+
+
+
+
+1. Disposables and Dispos..." />
+    <meta name="keywords" content="disposebag" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Disposables and DisposeBags?</h2>
+            <div class="post-date">2021-05-11</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gqegz7w1xcj30ry0c3acq.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#DisposablesandDisposeBags">Disposables and DisposeBags?</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Redundancy">Redundancy</a></li>
+<li>1.2. <a href="#SolutionTheVariadicDisposeBag">Solution? The Variadic DisposeBag</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namedisposablesanddisposebagsadisposables-and-disposebags">1. <a name='DisposablesandDisposeBags'></a>Disposables and DisposeBags?</h2>
+<p>我相信你知道，Disposables 和 DisposeBags 是RxSwift对Swift的ARC内存管理的让步。</p>
+<p>当你订阅(subscribe)、绑定(bind)或驱动(drive)RxSwift Observable时，该订阅返回一个Disposable。这个Disposable对象基本上是对该订阅和该订阅的整个Observable chain 的引用。</p>
+<p>在该disposable对象被释放之前，订阅链存在(除非订阅收到一个completed 或error事件，但那是另一回事)。</p>
+<p>所以。底线是，subscriptions 返回 disposables，为了正确地控制订阅的生命周期，我们需要持有它。</p>
+<p>为了方便起见，这些disposables通常被插入到一个被创建并附加到UIViewController(或在某些情况下附加到一个视图模型或其他对象)的DisposeBag中。</p>
+<p>DisposeBag就是字面意思，一个装废弃物品的袋子(或集合)。</p>
+<p>这对我们有什么帮助呢?</p>
+<p>当视图控制器被释放时，它的变量(包括袋子)也被释放。当disposeBag被释放时，它的deinit函数会对它包含的所有disposable对象调用dispose。</p>
+<p>这些disposables，会释放它们对所有可观测对象的引用，这些可观测对象也会释放它们对可观测对象的引用，如此循环下去，直到我们完成。</p>
+<p>一切都被妥善释放，没有泄露，大家都很高兴。</p>
+<p>除了一个小问题</p>
+<h3 id="11-a-nameredundancyaredundancy">1.1. <a name='Redundancy'></a>Redundancy</h3>
+<p>那么，让我们假设你正在使用RxSwift，并且你正在使用MVVM(模型-视图-视图模型)架构。</p>
+<p>在这个特定的屏幕上，我们的视图模型公开了一组可观察对象，我们的视图控制器将这些可观察对象绑定到一组标签。非常基础的东西。 代码是这样的。</p>
+<pre><code class="language-swift">class MVVMViewController: UIViewController {
+    @IBOutlet weak var firstNameLabel: UILabel!
+    @IBOutlet weak var lastNameLabel: UILabel!
+    @IBOutlet weak var addressLabel: UILabel!
+    @IBOutlet weak var cityLabel: UILabel!
+    @IBOutlet weak var stateLabel: UILabel!
+    @IBOutlet weak var zipLabel: UILabel!
+    private var viewModel = MyViewModel()
+    private var disposeBag = DisposeBag()
+    func setupSubscriptions() {
+        viewModel.firstName
+            .bind(to: firstNameLabel.rx.text)
+            .disposed(by: disposeBag)
+        viewModel.lastName
+                .bind(to: lastNameLabel.rx.text)
+                .disposed(by: disposeBag)
+        viewModel.address
+                .bind(to: addressLabel.rx.text)
+                .disposed(by: disposeBag)
+        viewModel.city
+                .bind(to: cityLabel.rx.text)
+                .disposed(by: disposeBag)
+        viewModel.state
+                .bind(to: stateLabel.rx.text)
+                .disposed(by: disposeBag)
+        viewModel.zip
+                .bind(to: zipLabel.rx.text)
+                .disposed(by: disposeBag)
+    }
+}
+</code></pre>
+<p>这些都非常简单，但是您可能已经注意到上面示例中有一点冗余的样板代码? 这是正确的。每一个订阅(绑定)都返回一个必须添加到disposeBag的一次性文件。每个人都返回它。每一个都要维护。这是无法回避的。</p>
+<p>Or is there?</p>
+<h3 id="12-a-namesolutionthevariadicdisposebagasolution-the-variadic-disposebag">1.2. <a name='SolutionTheVariadicDisposeBag'></a>Solution? The Variadic DisposeBag</h3>
+<p>Now check out the following code.</p>
+<pre><code class="language-swift">class RxSwiftViewController: UIViewController {
+    @IBOutlet weak var firstNameLabel: UILabel!
+    @IBOutlet weak var lastNameLabel: UILabel!
+    @IBOutlet weak var addressLabel: UILabel!
+    @IBOutlet weak var cityLabel: UILabel!
+    @IBOutlet weak var stateLabel: UILabel!
+    @IBOutlet weak var zipLabel: UILabel!
+    private var viewModel = MyViewModel()
+    private var disposeBag = DisposeBag()
+    func setupSubscriptions() {
+        disposeBag.insert(
+            viewModel.firstName.bind(to: firstNameLabel.rx.text),
+            viewModel.lastName.bind(to: lastNameLabel.rx.text),
+            viewModel.address.bind(to: addressLabel.rx.text),
+            viewModel.city.bind(to: cityLabel.rx.text),
+            viewModel.state.bind(to: stateLabel.rx.text),
+            viewModel.zip.bind(to: zipLabel.rx.text)
+        )
+    }
+}
+</code></pre>
+<p>多干净!但是那些一次性的呢? RxSwift 4.3增加了一个可变版本的DisposeBag的插入函数。可变函数可以有一个或多个参数。在这种情况下是一个或多个一次性物品。</p>
+<p>因为如果你查看dispose (by: disposeBag)内部，你会发现只有一行代码:disposeBag.insert(self)。</p>
+<p>因此，我们不需要获取每个订阅的结果并将其函数式地链接到dispose(by:)，而是绕过中间人，直接将它们添加到disposeBag中。</p>
+<p>我认为您会同意代码绝对更简洁，并且通过消除一些样板文件，我们可以更好地表达函数的意图。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/U1g6q7-VZ/" class="tag">
+                    disposebag
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/modular-architecture-in-ios-part-2/">
+                  <h3 class="post-title">
+                    Modular Architecture in iOS - Part 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

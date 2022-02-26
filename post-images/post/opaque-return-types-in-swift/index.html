@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Opaque return types in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在Swift 5.1中引入的不透明返回类型是一种语言特性，它可能与SwiftUI和使用它构建视图时使用的一些视图类型联系最为紧密。 但是，就像支持Swift DSL的其他特性一样，不透明返回类型是一个通用特性，可以在许多不同的上下文中使用。..." />
+    <meta name="keywords" content="generics,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Opaque return types in Swift</h2>
+            <div class="post-date">2020-07-12</div>
+            
+            <div class="post-content" v-pre>
+              <p>在Swift 5.1中引入的不透明返回类型是一种语言特性，它可能与SwiftUI和使用它构建视图时使用的一些视图类型联系最为紧密。 但是，就像支持Swift DSL的其他特性一样，不透明返回类型是一个通用特性，可以在许多不同的上下文中使用。</p>
+<p>本周，让我们仔细看看不透明的返回类型——它们如何与SwiftUI一起使用和不使用，以及它们如何与类似的泛型编程技术(如类型擦除)相比较。</p>
+<h2 id="inferred-hidden-return-types">Inferred, hidden return types</h2>
+<p>不透明的返回类型基本上使我们能够做两件事。首先，它们让我们利用Swift编译器的类型推断功能，以避免必须声明给定函数或计算属性将返回的确切类型，其次，它们向那些api的调用者隐藏那些推断类型。</p>
+<p>让我们来看看这在实践中意味着什么，假设我们已经构建了以下SwiftUI视图，它使用VStack垂直渲染两个文本视图:</p>
+<pre><code class="language-swift">struct TextView: View {
+    var title: String
+    var subtitle: String
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(title).bold()
+            Text(subtitle).foregroundColor(.secondary)
+        }
+    }
+}
+</code></pre>
+<p>上面我们使用了一个不透明的返回类型，some View，用于我们的视图body，这是构建SwiftUI视图时的常见约定。</p>
+<p>这样做的原因是SwiftUI大量使用了Swift的类型系统来执行诸如diffing之类的任务，并在我们的视图层次结构中确保完整的类型安全-这意味着我们最终会得到非常复杂的返回类型，即使是简单的视图，因为我们的整个视图层次结构本质上被编码到类型系统本身。</p>
+<p>例如，上述视图的body结果为以下类型:</p>
+<pre><code class="language-swift">VStack&lt;TupleView&lt;(Text, Text)&gt;&gt;
+</code></pre>
+<p>如果你现在正在做一个基于swiftui的项目，试着在你的一个视图的主体上调用type(of:)，我相信你会看到一个更复杂的类型，特别是当这个视图有修饰符的时候。</p>
+<p>因此，我们不需要显式地指定SwiftUI视图的确切类型是一件非常好的事情，因为如果不这样做，我们就必须在改变每个视图的层次结构时修改每个视图的返回类型，这将使SwiftUI更难使用。</p>
+<h2 id="single-return-types-required">Single return types required</h2>
+<p>然而，使用不透明的返回类型确实要求给定函数或属性内的所有代码分支总是返回完全相同的类型——否则编译器将无法为我们推断出该类型。当我们处理某种形式的条件逻辑时，这可能会导致一些棘手的情况，例如为了决定是显示加载微调器还是显示SwiftUI视图的实际内容——就像在这个ProductView中:</p>
+<pre><code class="language-swift">struct ProductView: View {
+    @ObservedObject var viewModel: ProductViewModel
+
+    var body: some View {
+        switch viewModel.state {
+        case .isLoading:
+            return Wrap(UIActivityIndicatorView()) {
+                $0.startAnimating()
+            }
+        case .finishedLoading:
+            return TextView(
+                title: viewModel.productName,
+                subtitle: viewModel.formattedPrice
+            )
+        }
+    }
+}
+</code></pre>
+<p>尝试编译上述代码将会给出如下错误:</p>
+<pre><code class="language-swift">Function declares an opaque return type, but the return
+statements in its body do not have matching underlying types.
+</code></pre>
+<p>解决这个问题的一种方法是使用类型擦除来为我们的两个switch案例提供相同的返回类型——在本例中是AnyView - 这是一个内置的包装器，允许我们删除SwiftUI视图的底层类型，像这样:</p>
+<pre><code class="language-swift">struct ProductView: View {
+    @ObservedObject var viewModel: ProductViewModel
+    var body: some View {
+        switch viewModel.state {
+        case .isLoading:
+            return AnyView(Wrap(UIActivityIndicatorView()) {
+                $0.startAnimating()
+            })
+        case .finishedLoading:
+            return AnyView(TextView(
+                title: viewModel.productName,
+                subtitle: viewModel.formattedPrice
+            ))
+        }
+    }
+}
+</code></pre>
+<p>现在我们的代码已经编译好了，但是每当我们的某个视图中有某种形式的条件时，总是必须执行上述类型的包装可能会有点乏味，所以让我们再研究一些其他的路径。</p>
+<p>在Swift 5.3中，对函数构建器(function builders)特性做了两个关键更改，SwiftUI使用该特性可以将多个单独的表达式组合成一个返回类型。 首先，我们现在可以在函数生成器支持的函数、属性或闭包中使用switch语句——其次，每个视图主体现在都继承了视图协议本身声明的@ViewBuilder属性。</p>
+<p>这意味着一旦我们准备好升级到Swift 5.3和Xcode 12，我们就可以通过删除AnyView的用法来重构上面的ProductView，以及return关键字——它给出了以下实现:</p>
+<pre><code class="language-swift">struct ProductView: View {
+    @ObservedObject var viewModel: ProductViewModel
+
+    var body: some View {
+        switch viewModel.state {
+        case .isLoading:
+            ProgressView()
+        case .finishedLoading:
+            TextView(
+                title: viewModel.productName,
+                subtitle: viewModel.formattedPrice
+            )
+        }
+    }
+}
+</code></pre>
+<p>上面我们也用苹果各种平台上内置的ProgressView替换了UIActivityIndicatorView的内嵌包装。</p>
+<p>这真的很酷，但也许更有趣的是，我们可以在Swift 5.2中复制或多或少完全相同的行为。通过手动添加@ViewBuilder属性到我们的视图的body属性，我们可以使用一个if/else组合语句来实现相同的条件逻辑，尽管与使用详尽的switch语句相比，用一种稍微不那么可靠的方式:</p>
+<pre><code class="language-swift">struct ProductView: View {
+    @ObservedObject var viewModel: ProductViewModel
+
+    @ViewBuilder var body: some View {
+        if viewModel.state == .isLoading {
+            Wrap(UIActivityIndicatorView()) {
+                $0.startAnimating()
+            }
+        } else {
+            TextView(
+                title: viewModel.productName,
+                subtitle: viewModel.formattedPrice
+            )
+        }
+    }
+}
+</code></pre>
+<p>因此，在SwiftUI的上下文中，使用不透明的返回类型来让我们从主体实现中返回任何视图表达式，而不必指定任何显式类型 - 只要每个代码分支返回相同的类型，这在很多情况下可以使用ViewBuilder完成。</p>
+<h2 id="type-erasure-beyond-swiftui">Type erasure beyond SwiftUI</h2>
+<p>现在，让我们走出SwiftUI的领域，探索如何在其他上下文中也使用不透明的返回类型。我们可能想到的一个初始用例是使用不透明的返回类型来执行自动类型擦除 -例如，当建立一个组合驱动的数据管道时，能够返回一些发布者， 而不必精确地指定给定表达式返回的发布者类型，如下所示:</p>
+<pre><code class="language-swift">struct ModelLoader&lt;Model: Decodable&gt; {
+    var urlSession = URLSession.shared
+    var decoder = JSONDecoder()
+    var url: URL
+
+    func load() -&gt; some Publisher {
+        urlSession.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: Model.self, decoder: decoder)
+    }
+}
+</code></pre>
+<p>表面上看，上面的用例与在SwiftUI上下文中使用不透明的返回类型极为相似-在这种情况下，我们会有一个相当大的问题。</p>
+<p>不透明类型与常规类型擦除的一个关键区别是，它们不保留关于底层类型的任何信息，这意味着从上述加载方法返回的发布者不会知道所加载的通用模型类型。</p>
+<p>所以如果我们希望保存这种类型信息，在这种情况下，我们肯定会这样做，那么最好使用类型擦除来代替 - 当使用Combine时，可以使用AnyPublisher和eraseToAnyPublisher操作符:</p>
+<pre><code class="language-swift">struct ModelLoader&lt;Model: Decodable&gt; {
+    var urlSession = URLSession.shared
+    var decoder = JSONDecoder()
+    var url: URL
+
+    func load() -&gt; AnyPublisher&lt;Model, Error&gt; {
+        urlSession.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: Model.self, decoder: decoder)
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>然而，在某些情况下，我们可能希望丢弃上述类型的泛型类型信息，在这些情况下，不透明的返回类型可能被证明非常有用。</p>
+<h2 id="using-protocol-types-directly">Using protocol types directly</h2>
+<p>让我们看一下最后一个例子，在这个例子中，我们定义了一个任务协议，用于为一系列异步任务建模，这些任务可以成功或失败，而不返回任何特定的值:</p>
+<pre><code class="language-swift">protocol Task {
+    typealias Handler = (Result&lt;Void, Error&gt;) -&gt; Void
+    func perform(then handler: @escaping Handler)
+}
+</code></pre>
+<p>通过上面的方法，我们可以直接使用我们的任务协议，并像其他类型一样引用它，例如通过从一个方法返回一个符合标准的实例，像这样:</p>
+<pre><code class="language-swift">struct DataUploader {
+    var fileManager = FileManager.default
+    var urlSession = URLSession.shared
+
+    func taskForUploading(_ data: Data, to url: URL) -&gt; Task {
+        let file = File(data: data, manager: fileManager)
+
+        return FileUploadingTask(
+            file: file,
+            url: url,
+            session: urlSession
+        )
+    }
+}
+</code></pre>
+<p>然而，如果我们想要向我们的任务协议中添加任何Self或关联类型的需求，那么我们就会开始遇到问题。例如，我们可能想要求所有的任务也符合内置的可识别协议，以便能够根据每个任务的ID跟踪它:</p>
+<pre><code class="language-swift">protocol Task: Identifiable {
+    typealias Handler = (Result&lt;Void, Error&gt;) -&gt; Void
+    func perform(then handler: @escaping Handler)
+}
+</code></pre>
+<p>在进行上述更改时，当我们直接引用Task时，我们将开始得到以下类型的编译错误，例如在上面的DataUploader实现中:</p>
+<pre><code class="language-swift">Protocol 'Task' can only be used as a generic constraint
+because it has Self or associated type requirements.
+</code></pre>
+<p>在这种情况下，使用不透明的返回类型可能是一个很好的选择，因为只需在Task前面添加some关键字，我们将能够继续使用完全相同的实现之前:</p>
+<pre><code class="language-swift">struct DataUploader {
+    ...
+
+    func taskForUploading(_ data: Data, to url: URL) -&gt; some Task {
+        ...
+    }
+}
+</code></pre>
+<p>上述方法的另一种替代方法是使用我们实际返回的具体类型作为方法的返回类型(在上面的例子中是FileUploadingTask)， 但这并不总是实用的也不是我们想要公开的公共API的一部分。</p>
+<p>作为另一个例子，假设我们想要添加一个方便的API，让我们可以轻松地将一个任务链接到另一个任务。为了实现这一点，我们可以创建一个私有的ChainedTask类型，它接受两个与任务一致的实例，并在执行时依次调用它们——像这样:</p>
+<pre><code class="language-swift">private struct ChainedTask&lt;First: Task, Second: Task&gt;: Task {
+    let id = UUID()
+    var first: First
+    var second: Second
+
+    func perform(then handler: @escaping Handler) {
+        first.perform { [second] result in
+            switch result {
+            case .success:
+                second.perform(then: handler)
+            case .failure:
+                handler(result)
+            }
+        }
+    }
+}
+</code></pre>
+<p>注意，我们仍然必须为我们的第一个和第二个属性使用泛型类型，因为some关键字不能应用于编译器不能推断出具体类型的属性。</p>
+<p>然后为我们的新ChainedTask类型创建一个公共API，我们可以使用一个非常类似于swift的设计，并通过一个方法来扩展任务协议本身，该方法返回一个隐藏在不透明的某些任务返回类型后面的ChainedTask实例:</p>
+<pre><code class="language-swift">extension Task {
+    func chained&lt;T: Task&gt;(to nextTask: T) -&gt; some Task {
+        ChainedTask(first: self, second: nextTask)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以将两个独立的任务合并为一个任务，而不需要了解实际执行我们工作的底层类型:</p>
+<pre><code class="language-swift">let uploadingTask = uploader.taskForUploading(data, to: url)
+let confirmationTask = ConfirmationUITask()
+let chainedTask = uploadingTask.chained(to: confirmationTask)
+
+chainedTask.perform { result in
+    switch result {
+    case .success:
+        // Handle successful outcome
+    case .failure(let error):
+        // Error handling
+    }
+}
+</code></pre>
+<p>因此，不透明的返回类型也可以用于在更简单的公共API后面隐藏泛型类型信息，这是一项值得记住的伟大技术，特别是在构建可重用的Swift库时。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>不透明的返回类型确实可以被描述为swift领域之外的一种特定的语言特性，但是了解它们是如何工作的仍然是非常有价值的  - 这样可以更容易地理解我们在SwiftUI视图中使用它们时可能遇到的问题，也可以证明它们在处理通用协议时非常有用。</p>
+<p><a href="https://www.swiftbysundell.com/articles/opaque-return-types-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/type-inference /">
+                  <h3 class="post-title">
+                    Type inference
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

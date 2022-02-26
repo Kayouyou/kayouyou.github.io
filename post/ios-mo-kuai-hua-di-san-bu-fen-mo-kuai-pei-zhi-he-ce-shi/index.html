@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title> iOS模块化第三部分:模块配置和测试 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+  iOS模块化第三部分:模块配置和测试
+
+
+1.1. Setting up CocoaPods with multiple modules
+1.2. Testing feature modules as part of the m..." />
+    <meta name="keywords" content="modular" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title"> iOS模块化第三部分:模块配置和测试</h2>
+            <div class="post-date">2021-05-14</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#iOS:">  iOS模块化第三部分:模块配置和测试</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#SettingupCocoaPodswithmultiplemodules">Setting up CocoaPods with multiple modules</a></li>
+<li>1.2. <a href="#Testingfeaturemodulesaspartofthemainapp">Testing feature modules as part of the main app</a></li>
+<li>1.3. <a href="#Sharingtestlogicbetweenmodules">Sharing test logic between modules</a></li>
+<li>1.4. <a href="#Comingupnext">Coming up next</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameiosa-ios模块化第三部分模块配置和测试">1. <a name='iOS:'></a>  iOS模块化第三部分:模块配置和测试</h2>
+<p>在本系列的前几篇文章中，我讨论了将iOS代码基拆分为模块的好处以及如何实现这一点。我建议在继续这篇文章之前阅读这些文章。😎</p>
+<p>在本文中，我将介绍:</p>
+<ul>
+<li>使用多个模块设置CocoaPods</li>
+<li>测试功能模块作为主应用程序的一部分</li>
+<li>在模块之间共享测试逻辑</li>
+</ul>
+<p>我将在iOS模块化系列的最后一篇文章中保存模块间的<strong>共享配置</strong>。</p>
+<h3 id="11-a-namesettingupcocoapodswithmultiplemodulesasetting-up-cocoapods-with-multiple-modules">1.1. <a name='SettingupCocoaPodswithmultiplemodules'></a>Setting up CocoaPods with multiple modules</h3>
+<p>如果您使用CocoaPods，您需要确保为每个需要它们的目标安装依赖项。所有的依赖都必须安装到主应用程序目标上。</p>
+<p>为了避免在多个地方更新pod版本号，最好定义可重用的方法。假设一个Podfile就是Ruby，你可以这样做:</p>
+<pre><code class="language-swift"># sources
+source 'https://github.com/CocoaPods/Specs.git'
+
+# global config
+platform :ios, '11.0'
+use_frameworks!
+workspace 'FunkySocial'
+
+# methods to ensure the same version of each library is used across targets
+
+def networkAndParsingPods
+  pod 'JSONUtilities', '5.0.0'
+  pod 'TABResourceLoader', '7.2.1'
+end
+
+def uiPods
+  pod 'AdobeMobileSDK', '~&gt; 4.13'
+end
+
+# targets
+
+target 'FunkySocial' do
+  project 'FunkySocial/FunkySocial'
+  networkAndParsingPods
+  uiPods
+  target 'FunkySocialTests' do
+  end
+end
+
+target 'ProfileUI' do
+  project 'ProfileUI'
+  uiPods
+  target 'ProfileUITests' do
+  end
+end
+
+target 'Profile' do
+  project 'Profile'
+  networkAndParsingPods
+  target 'ProfileTests' do
+  end
+end
+</code></pre>
+<p>参见上面Podfile中的networkAndParsingPods和uiPods方法。它们在目标部分中被引用。这消除了重复的pod 引用，并避免任何机会的pod版本的差异。</p>
+<h3 id="12-a-nametestingfeaturemodulesaspartofthemainappatesting-feature-modules-as-part-of-the-main-app">1.2. <a name='Testingfeaturemodulesaspartofthemainapp'></a>Testing feature modules as part of the main app</h3>
+<p>通常，你会希望在主应用程序的单元测试执行时为你的特性模块运行单元测试。这意味着在开发时，您不需要切换方案来测试不同的特性模块。在持续集成方面，只需指定要执行的单个方案的单元测试，所有依赖模块的测试将同时运行。</p>
+<p>您可以通过编辑main scheme 来实现这一点。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhwxz8mizj30jc03at8s.jpg" alt="avatar" loading="lazy"></figure>
+<p>选择你的scheme(如上图中的FunkySocial)，然后点击编辑Scheme…</p>
+<p>从左边的面板中选择Test，并选择出现在右边面板底部的+按钮。</p>
+<p>在接下来出现的窗口中，选择希望与主应用程序的测试同时运行的所有测试目标。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhwxynto4j30b40ctmxk.jpg" alt="avatar" loading="lazy"></figure>
+<p>当你选择了所有的测试目标，点击Add。</p>
+<p>你最终会得到这样的结果:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhx2ui91dj310s0aamxu.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="13-a-namesharingtestlogicbetweenmodulesasharing-test-logic-between-modules">1.3. <a name='Sharingtestlogicbetweenmodules'></a>Sharing test logic between modules</h3>
+<p>就像我们在模块之间共享公共产品代码一样，通过从公共模块公开它，可能需要共享公共测试逻辑。我们不想把它放在Common中，因为它不是生产代码。</p>
+<p>因此，我们将所有共享测试逻辑定义在TestHelpers模块中。</p>
+<p>此模块可能包含从文件加载模拟JSON或创建共享模拟对象等函数。</p>
+<p>将TestHelpers模块链接到你的测试目标与将特性模块嵌入你的主应用程序略有不同</p>
+<p>选择Test target，例如ProfileTests。您将在General选项卡上注意到，没有办法添加嵌入式二进制文件或链接框架。</p>
+<p>相反，请转到Build Phases选项卡。展开the Link Binary with Libraries部分，并点击+按钮。你会看到如下对话:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhwy1gt6xj30b80cu0sx.jpg" alt="avatar" loading="lazy"></figure>
+<p>搜索你的TestHelpers模块，然后点击Add。</p>
+<p>对需要在其中共享代码的每个模块执行此操作。</p>
+<h3 id="14-a-namecomingupnextacoming-up-next">1.4. <a name='Comingupnext'></a>Coming up next</h3>
+<p>在本系列的下一篇文章中，我将介绍一种在主应用程序和特性模块之间共享配置的健壮的、经过尝试和测试的方法，以及如何注入该配置以进行单元测试。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/GAkD_BWre/" class="tag">
+                    modular
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/ios-mo-kuai-hua-di-2-bu-fen-jiang-gong-zuo-qu-fen-jie-wei-mo-kuai/">
+                  <h3 class="post-title">
+                    iOS模块化第二部分:将工作区分解为模块
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

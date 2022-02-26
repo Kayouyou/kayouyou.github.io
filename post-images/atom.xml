@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git</id>
+    <title>Kayouyou&apos;s Den</title>
+    <updated>2022-02-26T09:10:02.941Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git"/>
+    <link rel="self" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml"/>
+    <subtitle>The wise build bridges, while the foolish build barriers.</subtitle>
+    <logo>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png</logo>
+    <icon>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico</icon>
+    <rights>All rights reserved 2022, Kayouyou&apos;s Den</rights>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 58:What Is a Parser?: Part 3]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-58what-is-a-parser-part-3/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-58what-is-a-parser-part-3/">
+        </link>
+        <updated>2022-01-15T11:35:32.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 57:What Is a Parser?: Part 2]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-57what-is-a-parser-part-2/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-57what-is-a-parser-part-2/">
+        </link>
+        <updated>2022-01-15T11:34:38.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 56:What Is a Parser?: Part 1]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-56what-is-a-parser-part-1/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-56what-is-a-parser-part-1/">
+        </link>
+        <updated>2022-01-15T11:33:50.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 108:Composable SwiftUI Bindings: Case Paths]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-108composable-swiftui-bindings-case-paths/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-108composable-swiftui-bindings-case-paths/">
+        </link>
+        <updated>2022-01-11T11:30:51.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 109:Composable SwiftUI Bindings: The Point]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-109composable-swiftui-bindings-the-point/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-109composable-swiftui-bindings-the-point/">
+        </link>
+        <updated>2022-01-10T11:32:04.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 107:Composable SwiftUI Bindings: The Problem]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-107composable-swiftui-bindings-the-problem/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-107composable-swiftui-bindings-the-problem/">
+        </link>
+        <updated>2021-12-18T04:23:37.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 99:Ergonomic State Management: Part 2]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-99ergonomic-state-management-part-2/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-99ergonomic-state-management-part-2/">
+        </link>
+        <updated>2021-12-18T04:22:34.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 98:Ergonomic State Management: Part 1]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-98ergonomic-state-management-part-1/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-98ergonomic-state-management-part-1/">
+        </link>
+        <updated>2021-12-18T04:22:10.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 97:Adaptive State Management: The Point]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-97adaptive-state-management-the-point/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-97adaptive-state-management-the-point/">
+        </link>
+        <updated>2021-12-18T04:21:30.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PointFree Episode 96:Adaptive State Management: Actions]]></title>
+        <id>https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-96adaptive-state-management-actions/</id>
+        <link href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-96adaptive-state-management-actions/">
+        </link>
+        <updated>2021-12-18T04:18:40.000Z</updated>
+    </entry>
+</feed>

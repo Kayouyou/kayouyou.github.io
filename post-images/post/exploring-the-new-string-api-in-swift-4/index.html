@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Exploring the new String API in Swift 4 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="既然2017年全球开发者大会已经结束(如果你问我的话，我认为这是自2014年以来最好的一次)，Xcode 9测试版也已经发布，许多Swift开发者开始着手使用Swift 4。今年新版本的真正优点在于，它更多的是对语言的改进，而不是完全的改进..." />
+    <meta name="keywords" content="strings" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Exploring the new String API in Swift 4</h2>
+            <div class="post-date">2017-06-11</div>
+            
+            <div class="post-content" v-pre>
+              <p>既然2017年全球开发者大会已经结束(如果你问我的话，我认为这是自2014年以来最好的一次)，Xcode 9测试版也已经发布，许多Swift开发者开始着手使用Swift 4。今年新版本的真正优点在于，它更多的是对语言的改进，而不是完全的改进(就像Swift 2和3那样)， 这将使大多数代码库的升级变得更加容易。</p>
+<p>其中一个改进是String API，它在Swift 4中变得更容易使用(同时也增强了功能)。在Swift的过去版本中，字符串API经常被拿来作为一个例子，说明Swift有时是如何在正确性而不是易用性上走得太远，处理字符和子字符串的方式很麻烦。</p>
+<p>本周，让我们看看如何在Swift 4中处理字符串，以及如何在各种情况下利用新的、改进的API</p>
+<h2 id="multi-line-string-literals">Multi-line string literals</h2>
+<p>有时，我们的应用程序或脚本中有更长的静态字符串，它们跨越了多行。在Swift 4之前，我们必须对字符串做一些类似inline \n的操作，通过字符串的扩展添加appendOnNewLine()方法-在脚本的情况下-多次调用print()来为一个长输出添加换行符。</p>
+<pre><code class="language-swift">func printHelp() {
+    print(&quot;🚘  Test Drive&quot;)
+    print(&quot;--------------&quot;)
+    print(&quot;Quickly try out any Swift pod or framework in a playground.&quot;)
+    print(&quot;\nUsage:&quot;)
+    print(&quot;- Simply pass a list of pod names or URLs that you want to test drive.&quot;)
+    print(&quot;- You can also specify a platform (iOS, macOS or tvOS) using the '-p' option&quot;)
+    print(&quot;- To use a specific version or branch, use the '-v' argument (or '-m' for master)&quot;)
+    print(&quot;\nExamples:&quot;)
+    print(&quot;- testdrive Unbox Wrap Files&quot;)
+    print(&quot;- testdrive https://github.com/johnsundell/unbox.git Wrap Files&quot;)
+    print(&quot;- testdrive Unbox -p tvOS&quot;)
+    print(&quot;- testdrive Unbox -v 2.3.0&quot;)
+    print(&quot;- testdrive Unbox -v swift3&quot;)
+}
+</code></pre>
+<p>下面是如何在Swift 4中使用多行字符串字面值来表示它(请原谅奇怪的语法高亮显示):</p>
+<pre><code class="language-swift">func printHelp() {
+    print(
+        &quot;&quot;&quot;
+        🚘  Test Drive
+        --------------
+        Quickly try out any Swift pod or framework in a playground.
+
+        Usage:
+        - Simply pass a list of pod names or URLs that you want to test drive.
+        - You can also specify a platform (iOS, macOS or tvOS) using the '-p' option
+        - To use a specific version or branch, use the '-v' argument (or '-m' for master)
+
+        Examples:
+        - testdrive Unbox Wrap Files
+        - testdrive https://github.com/johnsundell/unbox.git Wrap Files
+        - testdrive Unbox -p tvOS
+        - testdrive Unbox -v 2.3.0
+        - testdrive Unbox -v swift3
+        &quot;&quot;&quot;
+    )
+}
+</code></pre>
+<p>正如您在上面看到的，当使用多行文字时，代码变得更有表现力和清晰。我们不再需要添加多个\n来添加换行符，相反，我们只需在字符串中添加实际的换行符，这样，甚至在运行脚本之前，就可以非常容易地看到输出的确切样子。</p>
+<p>在缩进方面，多行文字使用底部的&quot;&quot;&quot;来确定字符串的基本缩进。 因此，所有与引号对齐的东西在字符串中都不会有额外的缩进。</p>
+<h2 id="strings-are-collections-again">Strings are collections (again!)</h2>
+<p><em>在Swift 1中，String符合当时所谓的CollectionType (Swift 3+中的Collection)，这意味着您可以对它们执行所有类型的集合操作(如forEach()、filter()等)。 你也可以在Swift 2和3中这样做，通过访问字符属性，但这很快导致更难阅读代码。</em></p>
+<p>在Swift 4中，字符串仍然是集合，这意味着你可以简单地将它们视为“字符的集合”。这可能非常有用，例如，如果你想从字符串中过滤某些字符(让我们以感叹号为例):</p>
+<pre><code class="language-swift">let filtered = string.filter { $0 != &quot;!&quot; }
+</code></pre>
+<h2 id="the-new-substring-type">The new Substring type</h2>
+<p>Swift 4引入了一种处理子字符串的新方法，使用不同的子字符串类型。现在它已经从大多数返回子字符串的方法中返回(比如split())，并且引入了一个新的下标API，可以让你快速访问子字符串:</p>
+<pre><code class="language-swift">// Access a substring from a given index until the end
+let substring = string[index...]
+</code></pre>
+<p>让我们看一个示例，通过截断用户输入的文本，将其限制为特定长度，从而返回子字符串。在Swift 3中，你可以这样写:</p>
+<pre><code class="language-swift">extension String {
+    func truncated() -&gt; String {
+        return String(characters.prefix(truncationLimit))
+    }
+}
+</code></pre>
+<p>好消息是，由于Swift 4的大部分源代码与Swift 3兼容，完全相同的代码在Swift 4以及工作。但更好的消息是，由于Swift 4中的字符串是集合，我们可以简化上述操作，直接处理字符串:</p>
+<pre><code class="language-swift">extension String {
+    func truncated() -&gt; Substring {
+        return prefix(truncationLimit)
+    }
+}
+</code></pre>
+<p>上面的代码使用了prefix() API，该API返回多达n个元素的子序列，同时还执行边界检查(以便在我们的集合中不会遇到错误-在这种情况下，我们的字符串-包含小于n个元素)。</p>
+<p>从上面可以看到，truncated()方法的返回类型现在是新的子字符串类型。字符串可以是不同的类型，乍一看可能有点麻烦， 它在记忆的可预测性方面给了我们很大的优势。</p>
+<p>为了避免创建许多冗余副本，Swift字符串使用“写时复制”方法，只在需要时执行副本。 这意味着子字符串经常与它们的父字符串共享内存中相同的底层缓冲区。 但是在truncated()的情况下，我们不希望仅仅为了能够使用截断的子字符串而将整个未截断的字符串保留在内存中。</p>
+<p>通过给我们一个子字符串类型，而不是完整字符串，Swift现在“强制”我们在需要时显式地执行复制，这样就可以释放父字符串的内存。我们可以简单地从截断的子字符串中创建一个新的字符串，如下所示:</p>
+<pre><code class="language-swift">label.text = String(userInput.truncated())
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>由于几乎所有的Swift应用程序和脚本都处理字符串，所以很高兴看到这些API的改进。我认为新的API在正确性和易用性之间取得了很好的平衡， 同时也要求程序员对复制做出深思熟虑的选择——就像Substring的情况一样。</p>
+<p>还有更多我在这篇文章中没有提到的字符串API的改进-如Unicode 9支持更简单的字符管理和轻松访问底层Unicode代码点，组成字符的能力。</p>
+<p>我们将在接下来的文章中深入研究字符串处理和编码，以及其他新的Swift 4 api和在WWDC上宣布的新框架和工具。所以请继续关注!😉</p>
+<p><a href="https://www.swiftbysundell.com/articles/exploring-the-new-string-api-in-swift-4/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/-e6COW1bj/" class="tag">
+                    strings
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-deep-dive-into-grand-central-dispatch-in-swift/">
+                  <h3 class="post-title">
+                    A deep dive into Grand Central Dispatch in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

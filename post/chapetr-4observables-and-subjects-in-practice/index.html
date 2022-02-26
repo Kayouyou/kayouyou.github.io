@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Chapetr 4：Observables &amp; Subjects in Practice | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Chapetr 4：Observables &amp; Subjects in Practice
+
+Getting started
+Using a subject/relay in a view controller
+Adding ph..." />
+    <meta name="keywords" content="subjects,observables,rxswift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Chapetr 4：Observables &amp; Subjects in Practice</h2>
+            <div class="post-date">2021-05-24</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#chapetr-4observables--subjects-in-practice">Chapetr 4：Observables &amp; Subjects in Practice</a>
+<ul>
+<li><a href="#getting-started">Getting started</a></li>
+<li><a href="#using-a-subjectrelay-in-a-view-controller">Using a subject/relay in a view controller</a></li>
+<li><a href="#adding-photos-to-the-collage">Adding photos to the collage</a></li>
+<li><a href="#driving-a-complex-view-controller-ui">Driving a complex view controller UI</a></li>
+<li><a href="#talking-to-other-view-controllers-via-subjects">Talking to other view controllers via subjects</a></li>
+<li><a href="#creating-an-observable-out-of-the-selected-photos">Creating an observable out of the selected photos</a></li>
+<li><a href="#observing-the-sequence-of-selected-photos">Observing the sequence of selected photos</a></li>
+<li><a href="#disposing-subscriptions--review">Disposing subscriptions — review</a></li>
+<li><a href="#creating-a-custom-observable">Creating a custom observable</a></li>
+<li><a href="#wrapping-an-existing-api">Wrapping an existing API</a></li>
+<li><a href="#rxswift-traits-in-practice">RxSwift traits in practice</a>
+<ul>
+<li><a href="#single">Single</a></li>
+<li><a href="#maybe">Maybe</a></li>
+<li><a href="#completable">Completable</a></li>
+</ul>
+</li>
+<li><a href="#subscribing-to-your-custom-observable">Subscribing to your custom observable</a></li>
+<li><a href="#challenges">Challenges</a>
+<ul>
+<li><a href="#challenge-1-its-only-logical-to-use-a-single">Challenge 1: It’s only logical to use a Single</a></li>
+<li><a href="#challenge-2-add-custom-observable-to-present-alerts">Challenge 2: Add custom observable to present alerts</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="chapetr-4observables-subjects-in-practice">Chapetr 4：Observables &amp; Subjects in Practice</h2>
+<p>在这本书的这一点上，你了解了如何观察和不同类型的主题工作，你已经学会了如何创建和实验与他们在Swift playground。</p>
+<p>然而，在日常开发情况中，比如将UI绑定到数据模型，或者呈现一个新的控制器并从它获得输出，看到可观察对象的实际使用可能有点困难。</p>
+<p>对于如何将这些新获得的技能应用到现实世界中有些不确定是可以的。在这本书中，你将通过理论章节，如第2章，“Observables”，和第3章，“Subjects”，以及实际步骤章节-就像这一个!</p>
+<p>在“… in practice”章节中，你将开发一个完整的应用程序。入门级Xcode项目将包括所有非rx代码。你的任务将是添加RxSwift框架，并使用你新获得的反应性技能添加其他功能。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqt9nw89dfj30wk0t6aw7.jpg" alt="avatar" loading="lazy"></figure>
+<p>这并不意味着在学习的过程中你不会学到一些新东西——恰恰相反!</p>
+<p>在本章中，你将使用RxSwift和你新的可观察到的超能力创建一个应用程序，让用户创建漂亮的照片拼贴-以响应式的方式。</p>
+<h3 id="getting-started">Getting started</h3>
+<p>打开本章的starter项目:[Combinestagram]。你得试几次才能把舌头卷起来才念对名字，不是吗?它可能不是最畅销的名字，但它可以。</p>
+<p>安装所有的pod并打开Combinestagram.xcworkspace。请参阅第1章“Hello RxSwift”，了解如何做到这一点的细节。</p>
+<p>Select Assets/Main.storyboard and you’ll see the interface of the app you will bring to life:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqt9pv9etfj31080hct9d.jpg" alt="avatar" loading="lazy"></figure>
+<p>在第一个屏幕中，用户可以看到当前的照片拼贴，并有按钮来清除当前的照片列表或将完成的拼贴保存到磁盘。此外，当用户点击右上方的+按钮时，他们将被带到故事板的第二个视图控制器中，在那里他们将看到相机滚动中的照片列表。用户可以通过点击缩略图将照片添加到拼贴画中。</p>
+<p>视图控制器和故事板已经连接起来了，你也可以通过UIImage+collage.swift查看实际的拼贴是如何组合在一起的。</p>
+<p>在本章中，你将集中精力把你的新技能应用到实践中。是时候开始了!</p>
+<h3 id="using-a-subjectrelay-in-a-view-controller">Using a subject/relay in a view controller</h3>
+<p>你将通过添加一个BehaviorRelay&lt;[UIImage]&gt;属性到控制器类，并在它的value中存储选定的照片。正如您在第3章“Subjects”中所了解的，BehaviorRelay类的工作原理与普通变量非常相似:您可以在任何需要的时候手动更改它们的value属性。</p>
+<p>打开MainViewController.swift，并在MainViewController的主体中添加以下内容:</p>
+<pre><code class="language-swift">private let bag = DisposeBag()
+private let images = BehaviorRelay&lt;[UIImage]&gt;(value: [])
+</code></pre>
+<p>因为没有其他类将使用这两个常量，所以将它们定义为private。Encapsulation FTW!</p>
+<p>dispose bag 属于视图控制器。一旦视图控制器被释放，你所有的可观察对象订阅也会被释放:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqta0an0k4j30oe0j8ab0.jpg" alt="avatar" loading="lazy"></figure>
+<p>这使得Rx订阅内存管理非常简单:简单地把subscriptions扔到包里，它们将和视图控制器的释放一起被处理。</p>
+<p>然而，这不会发生在这个特定的视图控制器，因为它是根视图控制器，它不会在应用退出之前被释放。在本章后面的章节中，你会看到这个巧妙的处置-释放机制在故事板中的另一个控制器中起作用。</p>
+<p>首先，你的应用程序总是基于同一张照片构建拼贴画。不用担心;这是一张来自巴塞罗那乡村的漂亮照片，已经包含在应用的资产目录中。每次用户点击+，您将再次将相同的照片添加到<strong>images</strong>中。</p>
+<p>找到**actionAdd()**并添加以下内容:</p>
+<pre><code class="language-swift">let newImages = images.value
+  + [UIImage(named: &quot;IMG_1907.jpg&quot;)!]
+images.accept(newImages)
+</code></pre>
+<p>首先，通过中继的value属性获取中继发出的最新图像集合，然后再向其附加一张图像。不要介意在UIImage初始化后强制展开，我们通过跳过错误处理来保持事情简单。</p>
+<p>接下来，使用中继的**accept(_)**将更新后的图像集发送给订阅了该中继的任何观察者。</p>
+<p><strong>images</strong> relay的初始值是一个空数组，每次用户点击+按钮，由<strong>images</strong>产生的可观察序列就会发出一个新的.next事件，并以新数组作为元素。</p>
+<p>要允许用户清除当前选择，向上滚动并向**actionClear()**添加以下内容:</p>
+<pre><code class="language-swift">images.accept([])
+</code></pre>
+<p>在这一章的部分中，只需几行代码，就可以很好地处理用户输入。现在可以继续观察图像并在屏幕上显示结果。</p>
+<h3 id="adding-photos-to-the-collage">Adding photos to the collage</h3>
+<p>现在您已经连接了images，您可以观察变化并相应地更新拼贴预览。</p>
+<p>在viewDidLoad()中，创建以下对图像的订阅。即使它是一个中继，你也可以直接订阅它，因为它符合<strong>ObservableType</strong>，就像<strong>Observable</strong>本身一样:</p>
+<pre><code class="language-swift">images
+  .subscribe(onNext: { [weak imagePreview] photos in
+    guard let preview = imagePreview else { return }
+
+    preview.image = photos.collage(size: preview.frame.size)
+  })
+  .disposed(by: bag)
+</code></pre>
+<p>订阅由图像发出的.next事件。对于每个事件，你可以使用为UIImage类型的数组提供的**collage(images:size:)**辅助方法创建一个拼贴。最后，将这个订阅添加到视图控制器的dispose包中。</p>
+<p>在本章中，你将在**viewDidLoad()**中订阅你的可观察对象。在本书的后面，您将研究如何将它们提取到单独的类中，并在最后一章中将它们构造成一个MVVM体系结构。现在你有了拼贴UI;用户可以通过点击+栏项目(或Clear)来更新图像，然后依次更新UI。</p>
+<p>运行应用程序，并给它一个尝试!如果你把这张照片加四次，你的拼贴画就会像这样:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtapzkbshj30kg0d4th7.jpg" alt="avatar" loading="lazy"></figure>
+<p>哇，好简单!</p>
+<p>当然，这个应用程序现在有点无聊，但不用担心——你很快就会添加从相机滚动中选择照片的功能。</p>
+<h3 id="driving-a-complex-view-controller-ui">Driving a complex view controller UI</h3>
+<p>当您使用当前的应用程序时，您会注意到UI可以更聪明一些，以改善用户体验。例如:</p>
+<ul>
+<li>如果还没有选中任何照片，或者用户刚刚清除了选中的照片，你可以禁用Clear按钮。</li>
+<li>同样，如果没有任何照片被选中，保存按钮也不需要启用。</li>
+<li>你也可以为奇数照片禁用保存，因为那会在拼贴中留下一个空白位置。</li>
+<li>如果把一张拼贴图的数量限制在6张就好了，因为更多的照片看起来会有点奇怪。</li>
+<li>最后，如果视图控制器标题反映了当前的选择，那就太好了。</li>
+</ul>
+<p>如果您花点时间再看一遍上面的列表，您肯定会看到这些修改对于实现非响应性的方式是相当麻烦的。</p>
+<p>幸运的是，使用RxSwift，你只需再次订阅图像，并从代码中的单个位置更新UI。</p>
+<p>在viewDidLoad()中添加这个订阅:</p>
+<pre><code class="language-swift">images
+  .subscribe(onNext: { [weak self] photos in
+      self?.updateUI(photos: photos)
+  })
+  .disposed(by: bag)
+</code></pre>
+<p>每当照片选择发生变化时，就调用updateUI(photos:)。你还没有这个方法，所以把它添加到类体中的任何地方:</p>
+<pre><code class="language-swift">private func updateUI(photos: [UIImage]) {
+  buttonSave.isEnabled = photos.count &gt; 0 &amp;&amp; photos.count % 2 == 0
+  buttonClear.isEnabled = photos.count &gt; 0
+  itemAdd.isEnabled = photos.count &lt; 6
+  title = photos.count &gt; 0 ? &quot;\(photos.count) photos&quot; : &quot;Collage&quot;
+}
+</code></pre>
+<p>在上面的代码中，您将根据上面的规则集更新完整的UI。所有的逻辑都在一个地方，易于阅读。再次运行应用程序，你会看到所有的规则，当你和UI交互时:</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtazu0g8zj30kl0c6diz.jpg" alt="avatar" loading="lazy"></figure>
+<p>到目前为止，你可能已经开始看到Rx应用于iOS应用程序的真正好处了。如果你仔细看一下你在本章中写的所有代码，你会发现只有几行简单的代码驱动了整个UI!</p>
+<h3 id="talking-to-other-view-controllers-via-subjects">Talking to other view controllers via subjects</h3>
+<p>在本章的这一节中，你将连接<strong>PhotosViewController</strong>类到主视图控制器，以便让用户从他们的Camera Roll中选择任意的照片。这会产生更有趣的拼贴画!</p>
+<p>首先，你需要把<strong>PhotosViewController</strong>推到导航堆栈中。打开<strong>MainViewController.swift</strong>并找到<strong>actionAdd()</strong>。注释掉现有代码，并在其位置上添加以下代码:</p>
+<pre><code class="language-swift">let photosViewController = storyboard!.instantiateViewController(
+  withIdentifier: &quot;PhotosViewController&quot;) as! PhotosViewController
+
+navigationController!.pushViewController(photosViewController, animated: true)
+</code></pre>
+<p>在上面，你从项目的故事板实例化<strong>PhotosViewController</strong>，并把它推到导航堆栈中。运行应用程序，点击+查看相机滚动。</p>
+<p>当你第一次这么做的时候，你需要授权访问你的照片库:</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtbaycsfbj30ko0d2t9l.jpg" alt="avatar" loading="lazy"></figure>
+<p>点击OK你会看到照片控制器的样子。您的设备上的实际照片可能不同，您可能需要返回并在授予访问权限后再次尝试。</p>
+<p>第二次，您应该会看到包含在iPhone模拟器中的示例照片。</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtbuxy4zgj30ks0diahm.jpg" alt="avatar" loading="lazy"></figure>
+<p>如果你正在使用已建立的Cocoa模式构建一个应用程序，你的下一步将是添加一个委托协议，以便照片控制器可以与你的主控制器(即，非反应方式)进行对话:</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtbvn63mwj310k0jsdh9.jpg" alt="avatar" loading="lazy"></figure>
+<p>然而，有了RxSwift，你就有了一个通用的方式来在任何两个类之间进行通信——Observable!不需要定义特殊的协议，因为Observable可以将任何类型的消息传递给任何一个或多个感兴趣的团体——观察者。</p>
+<h3 id="creating-an-observable-out-of-the-selected-photos">Creating an observable out of the selected photos</h3>
+<p>接下来，你将向<strong>PhotosViewController</strong>添加一个主题，每当用户从Camera Roll中点击一张照片时，它会发出一个.next事件。打开PhotosViewController.swift，并在顶部添加以下内容:</p>
+<pre><code class="language-swift">import RxSwift
+</code></pre>
+<p>你想要添加一个PublishSubject来公开所选的照片，但你不希望这个主题公开访问，因为这将允许其他类调用onNext(_)并让主题发出值。您可能想在其他地方这样做，但不是在这种情况下。</p>
+<p>添加以下属性到PhotosViewController:</p>
+<pre><code class="language-swift">private let selectedPhotosSubject = PublishSubject&lt;UIImage&gt;()
+var selectedPhotos: Observable&lt;UIImage&gt; {
+  return selectedPhotosSubject.asObservable()
+}
+</code></pre>
+<p>在这里，您定义了一个private PublishSubject(将发出选中的照片)和一个名为selectedPhotos(公开主题的可观察对象)的公共属性。</p>
+<p>订阅这个属性是主控制器能够观察照片序列的方式，而不能够干扰它。</p>
+<p>PhotosViewController已经包含了从Camera Roll读取照片并在集合视图中显示它们的代码。您所需要做的就是添加代码，以便在用户点击集合视图单元格时发出选中的照片。</p>
+<p>向下滚动到collectionView(_:didSelectItemAt:)。里面的代码获取选定的图像并显示收集单元格，以给用户一些视觉反馈。</p>
+<p>接下来，imageManager.requestImage(…)获取选定的照片，并在其完成闭包中为您提供图像和信息参数。在那个闭包中，你想从selectedPhotosSubject发出.next事件。</p>
+<p>在闭包内部，就在guard语句之后，添加:</p>
+<pre><code class="language-swift">if let isThumbnail = info[PHImageResultIsDegradedKey as NSString] as? Bool, !isThumbnail {
+  self?.selectedPhotosSubject.onNext(image)
+}
+</code></pre>
+<p>您可以使用info字典来检查图像是缩略图还是asset的完整版本。imageManager.requestImage(…)将对每个大小调用一次闭包。如果你收到了全尺寸的图像，你可以调用你的主题的onNext(_)并提供完整的照片。</p>
+<p>这就是将一个可观察序列从一个视图控制器公开给另一个视图控制器所需要的全部内容。没有必要委托协议或任何其他类似的诡计。</p>
+<p>作为奖励，一旦你删除了协议，控制器之间的关系就变得非常简单:</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtcakii9lj30ya0iimy4.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="observing-the-sequence-of-selected-photos">Observing the sequence of selected photos</h3>
+<p>你的下一个任务是返回到MainViewController.swift并添加代码来完成上述模式的最后一部分:即，观察所选的照片序列。</p>
+<p>找到actionAdd()，并在将控制器推入导航堆栈的那一行之前添加以下内容:</p>
+<pre><code class="language-swift">photosViewController.selectedPhotos
+  .subscribe(
+    onNext: { [weak self] newImage in
+
+    },
+    onDisposed: {
+      print(&quot;Completed photo selection&quot;)
+    }
+  )
+  .disposed(by: bag)
+</code></pre>
+<p>在你推送控制器之前，你要订阅它的selectedPhotos可观察对象上的事件。您对两个事件感兴趣:.next，这意味着用户已经点击了照片，以及当订阅被处理时。稍后您就会明白为什么需要它。</p>
+<p>在onNext闭包中插入以下代码以使一切正常工作。这和之前的代码一样，但这次它添加了Camera Roll中的照片:</p>
+<pre><code class="language-swift">guard let images = self?.images else { return }
+images.accept(images.value + [newImage])
+</code></pre>
+<p>运行应用程序，从Camera Roll中选择一些照片，然后返回查看结果。太酷了!</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtcdo701dj30ki0j2qhx.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="disposing-subscriptions-review">Disposing subscriptions — review</h3>
+<p>代码看起来像预期的那样工作，但请尝试以下方法:向拼贴画添加一些照片，返回主屏幕并检查控制台。</p>
+<p>您是否看到“已完成照片选择”的信息?您向上次订阅的onDispose闭包中添加了打印，但它从未被调用!<br>
+这意味着订阅永远不会被释放，永远不会释放它的内存!</p>
+<p>怎么会这样? 你订阅一个可观察序列并把它扔到主屏幕的dispose包中。当bag对象被释放时，或者当序列通过一个错误或completed事件完成时，这个订阅(如前面章节所讨论的)将被处理掉。</p>
+<p>因为你既没有破坏主视图控制器来释放它的袋子属性，也没有完成照片序列，你的订阅只是挂在应用程序的生命周期!</p>
+<p>为了给观察者一些闭包，当控制器从屏幕上消失时，你可以发出一个.completed事件。这将通知所有观察者订阅已经完成，以帮助进行自动处理。</p>
+<p>打开PhotosViewController.swift，并在控制器的viewWillDisappear(_:)中添加一个对主题的onComplete()方法的调用:</p>
+<pre><code class="language-swift">selectedPhotosSubject.onCompleted()
+</code></pre>
+<p>完美!现在，你已经为本章的最后一部分做好了准备:把一个普通的老的无聊的函数转换成一个超级棒的和幻想的反应类。</p>
+<h3 id="creating-a-custom-observable">Creating a custom observable</h3>
+<p>到目前为止，你已经尝试了BehaviorRelay、PublishSubject和Observable。最后，你将创建自己的自定义Observable，并将一个普通的旧回调API转换为响应类。你将使用照片框架来保存照片拼贴-因为你已经是一个RxSwift的老手，你要做它的反应方式!</p>
+<p>你可以在phpholibrary本身上添加一个响应式扩展，但为了保持简单，在本章中，你将创建一个新的自定义类PhotoWriter:</p>
+<figure data-type="image" tabindex="11"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqthimf943j310q08kmy4.jpg" alt="avatar" loading="lazy"></figure>
+<p>创建一个Observable来保存照片很简单:如果图像被成功写入磁盘，你将发出它的资产ID和一个.completed事件，或者一个.error事件。</p>
+<h3 id="wrapping-an-existing-api">Wrapping an existing API</h3>
+<p>Open Classes/PhotoWriter.swift -这个文件包含了一些定义来帮助你入门。</p>
+<p>首先，像往常一样，添加RxSwift框架的导入:</p>
+<pre><code class="language-swift">import RxSwift
+</code></pre>
+<p>然后，向<strong>PhotoWriter</strong>添加一个新的静态方法，它将创建一个可观察对象，你将把它返回给想要保存照片的代码:</p>
+<pre><code class="language-swift">static func save(_ image: UIImage) -&gt; Observable&lt;String&gt; {
+  return Observable.create { observer in
+	
+  }
+}
+</code></pre>
+<p>save(_:)将返回一个Observable<String>，因为在保存照片之后，你将发出一个元素:所创建资产的唯一本地标识符。</p>
+<p>create(_)会创建一个新的Observable，你需要在最后一个闭包中添加所有的逻辑。</p>
+<p>在Observable.create(_)参数闭包中添加如下内容:</p>
+<pre><code class="language-swift">var savedAssetId: String?
+PHPhotoLibrary.shared().performChanges({
+
+}, completionHandler: { success, error in
+
+})
+</code></pre>
+<p>在performChanges(_:completionHandler:)的第一个闭包参数中，你将从提供的图像中创建一个照片资产;在第二个中，您将发出资产ID或.error事件。</p>
+<p>在第一个闭包中添加:</p>
+<pre><code class="language-swift">let request = PHAssetChangeRequest.creationRequestForAsset(from: image)
+savedAssetId = request.placeholderForCreatedAsset?.localIdentifier
+</code></pre>
+<p>你通过使用PHAssetChangeRequest.creationRequestForAsset(from:)创建一个新的照片资产，并将其标识符存储在savedAssetId中。接下来插入completionHandler闭包:</p>
+<pre><code class="language-swift">DispatchQueue.main.async {
+  if success, let id = savedAssetId {
+    observer.onNext(id)
+    observer.onCompleted()
+  } else {
+    observer.onError(error ?? Errors.couldNotSavePhoto)
+  }
+}
+</code></pre>
+<p>如果您获得了一个成功的响应，并且savedAssetId包含一个有效的资产ID，那么您将触发一个.next事件和一个.completed事件。如果出现错误，则会发出自定义错误或默认错误。</p>
+<p>这样，你的可观察序列逻辑就完成了。</p>
+<p>Xcode应该已经警告你你错过了一个返回语句。作为最后一步，你需要从外部闭包中返回一个Disposable，所以在Observable.create({})中添加最后一行:</p>
+<pre><code class="language-swift">return Disposables.create()
+</code></pre>
+<p>这就很好地结束了这个课程。完整的save()方法应该是这样的:</p>
+<pre><code class="language-swift">static func save(_ image: UIImage) -&gt; Observable&lt;String&gt; {
+  return Observable.create({ observer in
+    var savedAssetId: String?
+    PHPhotoLibrary.shared().performChanges({
+      let request = PHAssetChangeRequest.creationRequestForAsset(from: image)
+      savedAssetId = request.placeholderForCreatedAsset?.localIdentifier
+    }, completionHandler: { success, error in
+      DispatchQueue.main.async {
+        if success, let id = savedAssetId {
+          observer.onNext(id)
+          observer.onCompleted()
+        } else {
+          observer.onError(error ?? Errors.couldNotSavePhoto)
+        }
+      }
+    })
+    return Disposables.create()
+  })
+}
+</code></pre>
+<p>如果你一直在关注，你可能会问自己，“为什么我们需要一个只触发一个.next事件的Observable ?”</p>
+<p>花点时间思考一下你在之前的章节中学到了什么。例如，你可以使用以下任何一种方法来创建一个Observable:</p>
+<ul>
+<li>Observable.never():创建一个从不触发任何元素的可观察序列。</li>
+<li>Observable.just(_😃:发出一个元素和一个.completed事件。</li>
+<li>Observable.empty():不触发紧跟.completed事件的元素。</li>
+<li>Observable.error(_):不触发任何元素，只触发一个.error事件。</li>
+</ul>
+<p>如你所见，可观察对象可以产生0个或多个.next事件的任意组合，可能以.completed或.error结束。</p>
+<p>在PhotoWriter的特殊情况下，您只对一个事件感兴趣，因为保存操作只完成一次。如果成功写入，则使用.next + .completed，如果特定写入失败，则使用.error。</p>
+<p>如果你尖叫“<em>But what about Single?</em>”“对了。的确，那Single呢?</p>
+<h3 id="rxswift-traits-in-practice">RxSwift traits in practice</h3>
+<p>在第二章“Observables”中，你有机会学习了RxSwift特性:在特定情况下非常方便的可观察对象实现的特殊变体。</p>
+<p>在这一章中，你将做一个快速的回顾，并在Combinestagram项目中使用一些特性!让我们从Single开始。</p>
+<h4 id="single">Single</h4>
+<p>正如你在第2章中所知道的，Single是一个可观察的特化。它表示一个序列，该序列只能触发一次.success(Value)事件或.error事件。实际上，一个.success就是.next +.completed。</p>
+<figure data-type="image" tabindex="12"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqti8gs14bj30le056jrr.jpg" alt="avatar" loading="lazy"></figure>
+<p>这种特性在保存文件、下载文件、从磁盘加载数据或任何产生值的异步操作等情况下都很有用。你可以将Single分为两种不同的用例:</p>
+<ol>
+<li>
+<p>就像本章前面提到的PhotoWriter.save(<em>)。 你可以直接创建一个Single而不是Observable。事实上，你将更新PhotoWriter中的save(</em>)方法来创建一个Single，这是本章的挑战之一。</p>
+</li>
+<li>
+<p>为了更好地表达您使用序列中的单个元素的意图，并确保如果序列发出多个元素，订阅将出错。<br>
+为了实现这一点，你可以订阅任何可观察对象，并使用. asSingle()将其转换为Single。您将在读完本部分后尝试这一方法。</p>
+</li>
+</ol>
+<h4 id="maybe">Maybe</h4>
+<p>Maybe和Single非常相似，唯一不同的是可观察对象在成功完成时不会发出一个值。</p>
+<figure data-type="image" tabindex="13"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtifowyzlj30ym05g3z2.jpg" alt="avatar" loading="lazy"></figure>
+<p>如果我们继续使用与照片相关的例子想象一下这个用例，你的应用程序在它自己的自定义相册中存储照片。您将相册标识符保存在UserDefaults中，并在每次“打开”相册并在其中写入一张照片时使用该ID。你可以设计一个open(albumId:) -&gt; Maybe<String>方法来处理以下情况:</p>
+<ul>
+<li>
+<p>如果具有给定ID的相册仍然存在，只需触发一个.completed事件。</p>
+</li>
+<li>
+<p>如果用户同时删除了相册，创建一个新的相册，并使用新的ID发出一个.next事件，这样您就可以在UserDefaults中保存它。</p>
+</li>
+<li>
+<p>如果出现了错误，而您根本无法访问Photos库，则发出一个.error事件。</p>
+</li>
+</ul>
+<p>就像其他特性一样，你可以使用一个“普通的(vanilla)”可观察对象来实现同样的功能，但是也许可以为你编写代码和程序员以后修改代码提供更多的上下文。</p>
+<p>和Single一样，你也可以使用Maybe直接创建一个Maybe.create({ ... })，或者通过.asmaybe()转换任何可观察序列。</p>
+<h4 id="completable">Completable</h4>
+<p>最后要提到的特征是可完成性。这个Observable的变体只允许在订阅被释放之前发出一个.completed或.error事件。</p>
+<figure data-type="image" tabindex="14"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtij87lc8j30n0054q39.jpg" alt="avatar" loading="lazy"></figure>
+<p>您可以使用ignoreElements()操作符将可观察序列转换为可完成序列，在这种情况下，所有接下来的事件将被忽略，只触发一个已完成或错误事件，就像Completable所要求的那样。</p>
+<p>您还可以使用completable创建一个Completable.create { ... }的代码与创建其他可观察对象或特征的代码非常相似。</p>
+<p>您可能会注意到，Completable不允许发送任何值，并想知道为什么需要这样的序列。您会惊讶于许多只用知道异步操作是否成功的用例。</p>
+<p>在回到Combinestagram之前，让我们看一个例子。假设你的应用程序在用户处理文档时自动保存文档。您希望在后台队列中异步保存文档，并在完成后，如果操作失败，在屏幕上显示一个小通知或警告框。</p>
+<p>假设您将保存逻辑包装到一个函数saveDocument() -&gt; Completable中。这就是表达其余逻辑的简单程度:</p>
+<pre><code class="language-swift">saveDocument()
+  .andThen(Observable.from(createMessage))
+  .subscribe(onNext: { message in
+    message.display()
+  }, onError: { e in
+    alert(e.localizedDescription)
+  })
+</code></pre>
+<p><strong>andThen</strong>操作符允许你在一个成功事件上链接更多的可完成或可观察对象，并订阅最终结果。如果它们中的任何一个发出错误，您的代码将陷入最后的onError闭包。</p>
+<p>我假设您很高兴听到您将在本书后面的两个章节中使用Completable。现在回到Combinestagram和手头的问题!</p>
+<h3 id="subscribing-to-your-custom-observable">Subscribing to your custom observable</h3>
+<p>当前的功能——将照片保存到照片库——属于那些具有特殊特性的特殊用例之一。你的PhotoWriter.save(_)可观察对象只会发出一次(新的资产ID)，或者它会出错，因此这是Single的一个很好的例子。</p>
+<p>现在是最甜蜜的部分:利用您的定制设计的Observable，并在此过程中狠狠地踢你的屁股!</p>
+<p>打开MainViewController.swift，并在actionSave()动作方法中为Save按钮添加以下内容:</p>
+<pre><code class="language-swift">guard let image = imagePreview.image else { return }
+
+PhotoWriter.save(image)
+  .asSingle()
+  .subscribe(
+    onSuccess: { [weak self] id in
+      self?.showMessage(&quot;Saved with id: \(id)&quot;)
+      self?.actionClear()
+    },
+    onError: { [weak self] error in
+      self?.showMessage(&quot;Error&quot;, description: error.localizedDescription)
+    }
+  )
+  .disposed(by: bag)
+</code></pre>
+<p>在上面你调用PhotoWriter.save(image)来保存当前的拼贴画。然后你将返回的Observable转换为Single，确保你的订阅最多只能获得一个元素，并在成功或出错时显示一条消息。此外，如果写操作成功，则清除当前拼贴。</p>
+<blockquote>
+<p>意:如果源序列发出多个元素，那么asSingle()通过抛出错误来确保您最多获得一个元素。</p>
+</blockquote>
+<p>给应用程序最后一次胜利的运行，建立一个漂亮的照片拼贴并保存到磁盘。</p>
+<figure data-type="image" tabindex="15"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtisjvr6xj30ko0lagm2.jpg" alt="avatar" loading="lazy"></figure>
+<p>不要忘记检查您的照片应用程序的结果!</p>
+<figure data-type="image" tabindex="16"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtiswzvmzj30kq0lg7pw.jpg" alt="avatar" loading="lazy"></figure>
+<p>至此，您已经完成了本书的第一部分——祝贺您!</p>
+<p>你不再是一个年轻的学徒，而是一个经验丰富的RxSwift绝地武士。然而，不要被诱惑去接受黑暗的一面。你很快就会开始联网、线程切换和错误处理的战斗!</p>
+<p>在此之前，您必须继续培训并学习RxSwift最强大的一个方面。在第二节“Operators and Best Practices”中，操作符将让你把你的可观察的超能力提升到一个全新的水平</p>
+<h3 id="challenges">Challenges</h3>
+<p>在进入下一部分之前，有两个挑战等着您。你将再次创建一个自定义的可观察对象——但是这次有一点变化。</p>
+<h4 id="challenge-1-its-only-logical-to-use-a-single">Challenge 1: It’s only logical to use a Single</h4>
+<p>您可能已经注意到，在将照片保存到Camera Roll时，使用.assingle()并没有获得太多好处。可观察序列最多已经触发了一个元素!</p>
+<p>嗯，你是对的，但是重点是提供一个关于.single()的温和介绍。现在您可以在这个挑战中自己改进代码了。</p>
+<p>打开PhotoWriter.swift并更改save(_)的返回类型为Single<String>。然后替换可观测。与Single.create创建。</p>
+<pre><code class="language-swift">//observable
+static func save(_ image: UIImage) -&gt; Observable&lt;String&gt; {
+    return Observable.create { observer in
+      var savedAssetId: String?
+      PHPhotoLibrary.shared().performChanges({
+        let request = PHAssetChangeRequest.creationRequestForAsset(from: image)
+        savedAssetId = request.placeholderForCreatedAsset?.localIdentifier
+
+      }, completionHandler: { success, error in
+        DispatchQueue.main.async {
+          if success, let id = savedAssetId {
+            observer.onNext(id)
+            observer.onCompleted()
+          } else {
+            observer.onError(error ?? Errors.couldNotSavePhoto)
+          }
+        }
+      })
+      return Disposables.create()
+    }
+}
+//single
+static func save(_ image: UIImage) -&gt; Single&lt;String&gt; {
+    return Single.create(subscribe: { observer in
+
+      var savedAssetId: String?
+      PHPhotoLibrary.shared().performChanges({
+        let request = PHAssetChangeRequest.creationRequestForAsset(from: image)
+        savedAssetId = request.placeholderForCreatedAsset?.localIdentifier
+      }, completionHandler: { success, error in
+        DispatchQueue.main.async {
+          if success, let id = savedAssetId {
+            observer(.success(id))
+          } else {
+            observer(.error(error ?? Errors.couldNotSavePhoto))
+          }
+        }
+      })
+      return Disposables.create()
+    })
+}
+</code></pre>
+<p>这应该可以清除大多数错误。还有最后一件事需要注意:Observable.create接收一个观察者作为参数，因此您可以发出多个值和/或终止事件。Single.create将接收作为闭包的参数，您只能使用该闭包一次来发出.success(T)或.error(E)值。</p>
+<p>自己完成转换，记住参数是一个闭包而不是一个观察者对象，所以可以这样调用:single(.success(id))。</p>
+<h4 id="challenge-2-add-custom-observable-to-present-alerts">Challenge 2: Add custom observable to present alerts</h4>
+<p>打开MainViewController.swift并滚动到文件的底部。找到starter项目附带的showMessage(_:description:)方法。</p>
+<p>该方法在屏幕上显示一个警告，并在用户单击Close按钮以取消警告时运行一个回调。这听起来非常类似于你已经为PHPhotoLibrary.performChanges(_)所做的，不是吗?</p>
+<p>要完成这个挑战，编写以下代码:</p>
+<ul>
+<li>添加一个扩展方法到UIViewController，它在屏幕上显示一个带有给定标题和消息的警报，并返回一个Completable。</li>
+<li>添加一个关闭按钮，允许用户关闭警报。</li>
+<li>当订阅被取消时，取消警报控制器，这样就不会有任何悬空警报。</li>
+</ul>
+<p>最后，使用新的可完成函数在showMessage(_:description:)中显示警报。</p>
+<pre><code class="language-swift">extension UIViewController {
+  func alert(title: String, text: String?) -&gt; Completable {
+    return Completable.create { [weak self] completable in
+      let alertVC = UIAlertController(title: title, message: text, preferredStyle: .alert)
+      alertVC.addAction(UIAlertAction(title: &quot;Close&quot;, style: .default, handler: {_ in
+        completable(.completed)
+      }))
+      self?.present(alertVC, animated: true, completion: nil)
+      return Disposables.create {
+        self?.dismiss(animated: true, completion: nil)
+      }
+    }
+  }
+}
+</code></pre>
+<p><a href="https://e.coding.net/kayouyou/rxswift-books/RxSwift.git">代码地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hTOsaF_cT/" class="tag">
+                    subjects
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/RdD9gnxqo/" class="tag">
+                    observables
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-nei-cun-an-quan/">
+                  <h3 class="post-title">
+                    Swift 内存安全
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

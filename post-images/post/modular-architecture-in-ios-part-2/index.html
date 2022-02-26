@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Modular Architecture in iOS - Part 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+* 1. [Modular Architecture in iOS: Dependencies](#ModularArchitectureiniOS:Dependencies)
+* 2. [Types of Dependencies.](..." />
+    <meta name="keywords" content="modular,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Modular Architecture in iOS - Part 2</h2>
+            <div class="post-date">2021-05-11</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<pre><code>* 1. [Modular Architecture in iOS: Dependencies](#ModularArchitectureiniOS:Dependencies)
+* 2. [Types of Dependencies.](#TypesofDependencies.)
+* 3. [Assets as dependencies.](#Assetsasdependencies.)
+* 4. [Fonts](#Fonts)
+* 5. [Fonts in Code](#FontsinCode)
+* 6. [Fonts in Storyboards](#FontsinStoryboards)
+* 7. [Images.](#Images.)
+	* 7.1. [From Storyboards.](#FromStoryboards.)
+	* 7.2. [From Code.](#FromCode.)
+* 8. [Using the Right Bundle.](#UsingtheRightBundle.)
+* 9. [Boundaries.](#Boundaries.)
+* 10. [Exposing an interface.](#Exposinganinterface.)
+* 11. [Notifications](#Notifications)
+* 12. [Configuring tools](#Configuringtools)
+* 13. [Finally](#Finally)
+</code></pre>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h3 id="1-a-namemodulararchitectureiniosdependenciesamodular-architecture-in-ios-dependencies">1. <a name='ModularArchitectureiniOS:Dependencies'></a>Modular Architecture in iOS: Dependencies</h3>
+<p>不久前我写了一篇关于iOS中的模块化架构的文章。为了使它简短易读，我不得不删去许多细节。所以，我想扩展一点，写一些细节。</p>
+<p>我将在本文中介绍一些内容:</p>
+<ul>
+<li>Types of dependencies.</li>
+<li>Sharing fonts among modules and the app.</li>
+<li>Sharing images and asset catalogs.</li>
+<li>Working with Bundles and Storyboards.</li>
+<li>The Boundaries of a module.</li>
+</ul>
+<p>一切都将在一个由一组模块组成的应用程序上下文中:核心模块(用于实体和业务逻辑)、网络和场景模块(如登录场景和主场景)。每个模块都可以独立运行，并依赖于其他模块。</p>
+<h3 id="2-a-nametypesofdependenciesatypes-of-dependencies">2. <a name='TypesofDependencies.'></a>Types of Dependencies.</h3>
+<p>依赖的一种类型是纯代码，比如我们经常编写的代码，或者我们导入的第三方服务，比如sdk。这是我们作为开发人员每天都要处理的依赖类型。</p>
+<p>我不会详细介绍我们在Swift中可以使用的不同形式的依赖注入。这是另一篇文章的好主题，而且已经有很多好主题了。 我只是想提一下，Stephen Celis的“<a href="https://vimeo.com/291588126">Controlling the world</a>”是我这些天最常用的方法。</p>
+<p>我发现，它节省了大量用于在复杂的对象图中传递参数的样板代码，以实现完全依赖注入。</p>
+<p>另一种依赖类型是assets，如声音、字体和图像。资产可以被认为是一种依赖类型，因为它们可能位于有问题的模块或应用程序之外。毕竟，资产可以通过代码提供和生成。让我来详细说明一下。</p>
+<h3 id="3-a-nameassetsasdependenciesaassets-as-dependencies">3. <a name='Assetsasdependencies.'></a>Assets as dependencies.</h3>
+<p>任何应用程序通常都使用屏幕上使用的一组字体、图标和颜色。例如，类似于用户图标的图像可能在登录模块中使用，也需要在主模块中使用。有些资产在应用程序的许多部分中重复使用。对于字体来说尤其如此。</p>
+<p>挑战在于如何定义assets，以便我们可以在任何地方使用它们。</p>
+<p>一个简单的方法是在每个使用它们的模块中复制资产。这种解决方案具有复制带来的所有问题和危险，比如包大小的增加和更新资产时可能出现的不一致。</p>
+<p>更好的方法是在一个地方定义事物，这样我们就可以在任何地方使用它们。正如您将看到的，有时这并不完全可能。我发现处理图像和字体之间有细微的差别。</p>
+<h3 id="4-a-namefontsafonts">4. <a name='Fonts'></a>Fonts</h3>
+<p>我们需要一种方法来在一个地方定义字体，并在多个模块和应用程序本身中使用它们。另外，从代码和故事板中访问它们也很好。</p>
+<p>通过代码访问字体非常简单，只要我们引用正确的bundle(参见使用正确的bundle)。一种选择是在核心模块中定义字体，每个高级模块和应用程序本身都会使用这些字体。</p>
+<p>核心模块可以提供对作为UIFont构建器的公共Structs形式的字体的访问。像R.swift和Sourcery这样的工具可以帮助实现这一过程。你可以定义一个暴露字体的结构，像这样:</p>
+<pre><code class="language-swift">public enum Fonts :String, CaseIterable {
+    case robotoBlackItalic = &quot;Roboto-BlackItalic&quot;
+    case robotoBlack = &quot;Roboto-Black&quot;
+    case robotoBoldItalic = &quot;Roboto-BoldItalic&quot;
+    case robotoBold = &quot;Roboto-Bold&quot;
+    
+    static var installed = false
+}
+</code></pre>
+<h3 id="5-a-namefontsincodeafonts-in-code">5. <a name='FontsinCode'></a>Fonts in Code</h3>
+<p>为了能够引用和使用外部模块中定义的字体，我们需要注册这些字体，以便应用程序可以使用它们。这个助手函数可以做到这一点:</p>
+<pre><code class="language-swift">public extension Fonts {
+    static func install(from bundles: [Bundle] = [ Environment.bundle() ] ) {
+        Fonts.installed = true
+        for each in Fonts.allCases {
+            for bundle in bundles {
+                if let cfURL = bundle.url(forResource:each.rawValue, withExtension: &quot;ttf&quot;) {
+                    CTFontManagerRegisterFontsForURL(cfURL as CFURL, .process, nil)
+                } else {
+                    assertionFailure(&quot;Could not find font:\(each.rawValue) in bundle:\(bundle)&quot;)
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>然后，要使用字体，只需调用size来获得UIFont实例。</p>
+<pre><code class="language-swift">public extension Fonts {
+    func size(_ size : CGFloat) -&gt; UIFont {
+        if Fonts.installed == false {
+            Fonts.install()
+        }
+        return UIFont(name: self.rawValue, size:  size)!
+    }
+}
+</code></pre>
+<h3 id="6-a-namefontsinstoryboardsafonts-in-storyboards">6. <a name='FontsinStoryboards'></a>Fonts in Storyboards</h3>
+<p>在故事板中使用字体要求我们配置项目，并指出应用程序将使用的自定义字体。以下是相关步骤:</p>
+<ol>
+<li>在模块中导入字体，例如Core。这里将包含不同模块中使用的所有字体。确保字体是目标的一部分</li>
+</ol>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqec6u279ij30ko0980t1.jpg" alt="avatar" loading="lazy"></figure>
+<ol start="2">
+<li>配置应用info.plist，这样故事板就能看到这些字体。</li>
+</ol>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqec6x905mj30y8052gm6.jpg" alt="avatar" loading="lazy"></figure>
+<pre><code class="language-swift">Inside App's Info.plist
+&lt;key&gt;UIAppFonts&lt;/key&gt;
+&lt;array&gt;
+&lt;string&gt;Roboto-Black.ttf&lt;/string&gt;
+&lt;string&gt;Roboto-BlackItalic.ttf&lt;/string&gt;
+&lt;string&gt;Roboto-Bold.ttf&lt;/string&gt;
+&lt;string&gt;Roboto-BoldItalic.ttf&lt;/string&gt;
+...
+&lt;/array&gt;
+</code></pre>
+<h3 id="7-a-nameimagesaimages">7. <a name='Images.'></a>Images.</h3>
+<p>图像通常作为assets目录的一部分或在模块或应用的Bundle中。我们访问模块之外的图像的方式是不同的:从故事板和代码。</p>
+<h4 id="71-a-namefromstoryboardsafrom-storyboards">7.1. <a name='FromStoryboards.'></a>From Storyboards.</h4>
+<p>如果我们想在故事板中引用一个图像，没有办法指定图像可能来自的框架或包。我们被限制在故事板附带的特定Target中声明的资产目录中。</p>
+<p>这是相当令人失望的，因为从这个特定框架中包含的资产目录中加载这个图像是想当然了。这是使用故事板当前形式的另一个缺点。</p>
+<p>所以，答案是在Assets Catalog中组织图像，在不可避免的情况下拥有重复的资产。即使我们使用共享资产目录，当应用被构建时，每个目录都会被复制到每个module的.framework中。这是一种只定义一次并避免错误的好方法。但明显的缺点是，应用的规模会不断扩大。</p>
+<p>你可以做的一件事是拥有一个共享的资产目录，并将其包含在你需要的所有模块中。请记住上文提到的复制费用。</p>
+<h4 id="72-a-namefromcodeafrom-code">7.2. <a name='FromCode.'></a>From Code.</h4>
+<p>从代码中访问图像更容易，因为我们没有故事板强加的限制。我们可以使用模块中公开的图像，只要模块与正确的Bundle一起工作以获得图像，就没有问题。</p>
+<h3 id="8-a-nameusingtherightbundleausing-the-right-bundle">8. <a name='UsingtheRightBundle.'></a>Using the Right Bundle.</h3>
+<p>有很多方法将bundle作为带有默认值的参数接收。默认值是nil，这意味着使用Bundle.main。如果我们运行应用，那个bundle将是app bundle。如果我们正在运行一个模块的测试应用程序，这个bundle将是测试应用程序bundle。</p>
+<p>例如，UIStoryboard(name:， bundle:)， UIImage(named:， bundle:)， DataAsset(name:， bundle:)。等。</p>
+<p>因此，指定正确的bundle非常重要。例如，如果我们想为一个特定的场景创建一个模块，该模块很可能包括故事板、图像和nib文件。如果我们没有引用正确的bundle，就会出现运行时错误。</p>
+<p>指定正确bundle的方法是使用期望目标中的类来实例化它，如下所示:</p>
+<pre><code class="language-swift">public var bundle: Bundle? {
+    return Bundle(for: DummyModuleClass.self)
+}
+</code></pre>
+<p>通常，我定义了一个DummyModuleClass，它不做任何测试，不测试是否可以从playgrounds访问内容，或者在本例中，不测试实例化正确的Bundle。</p>
+<h3 id="9-a-nameboundariesaboundaries">9. <a name='Boundaries.'></a>Boundaries.</h3>
+<p>每个模块根据它从外部世界使用的内容和它向外部世界公开的内容来定义其边界。我们的责任是在使用模块之前传递配置模块所需的信息。</p>
+<p>通过有明确定义的边界，每个模块都可以公开在使用模块之前需要调用的配置函数。该函数可以断言所有值都是正确的，并只配置每个模块。</p>
+<h3 id="10-a-nameexposinganinterfaceaexposing-an-interface">10. <a name='Exposinganinterface.'></a>Exposing an interface.</h3>
+<p>模块应该公开一组有限的类、结构和协议。保持最低限度可以让我们专注于重要的事情。</p>
+<p>我们可以使用不同的模式和技术。基于协议的方法是一种选择，例如使用委托。另一种方法可以基于函数和类型别名，而不是协议。</p>
+<p>在任何情况下，定义其所需依赖项的模块与具体实现无关。在不关心具体实现的情况下引用协议实例或函数。</p>
+<h3 id="11-a-namenotificationsanotifications">11. <a name='Notifications'></a>Notifications</h3>
+<p>某些事件可能需要公开给模块的某些对象的广播状态。公开可订阅的通知枚举可能是个好主意。</p>
+<h3 id="12-a-nameconfiguringtoolsaconfiguring-tools">12. <a name='Configuringtools'></a>Configuring tools</h3>
+<p>许多工具需要一些构建阶段脚本在编译源代码之后或之前运行。我经常使用的工具有SwiftLint, Sourcery, R.swift等。</p>
+<p>为每个模块指定正确的文件夹很重要。例如，对于Sourcery，我们可能需要使用不同的模板，并输出不同的.generated文件。</p>
+<p>请记住在正确的模块上定义(或重新定义)正确的构建阶段脚本，并使用正确的路径和文件名。</p>
+<h3 id="13-a-namefinallyafinally">13. <a name='Finally'></a>Finally</h3>
+<p><strong>Good O.O. design always pays off.</strong></p>
+<p><strong>Good O.O. design always pays off.</strong></p>
+<p>有了这种体系结构，特别是当项目逐渐向它迁移时，良好的OO设计的好处是显而易见的。将模块从单片设计转换为模块化设计是非常痛苦的。但是如果我们正确地完成工作并创建松散耦合的抽象，那么这个过程就不太可能是痛苦的。</p>
+<p><strong>在清晰的空间封装功能。</strong></p>
+<p>通过定义一个明确的边界，我们需要指定一个模块将从外部使用的所有函数。这让我们可以在一个空间中编写和查看模块调用的所有功能。这样可以很清楚地了解模块是如何配置的。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/GAkD_BWre/" class="tag">
+                    modular
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/modular-architecture-in-ios-part-1/">
+                  <h3 class="post-title">
+                    Modular Architecture in iOS - Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

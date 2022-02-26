@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Programmatic navigation in SwiftUI project | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+1. Storing the navigation variables in the centralized AppState
+2. Broadcasting navigation parameters through external..." />
+    <meta name="keywords" content="programmatic navigation,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Programmatic navigation in SwiftUI project</h2>
+            <div class="post-date">2021-08-29</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gtvhpijvm2j60ew09d3yz02.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#1-storing-the-navigation-variables-in-the-centralized-appstate">1. Storing the navigation variables in the centralized AppState</a></li>
+<li><a href="#2-broadcasting-navigation-parameters-through-external-publisher">2. Broadcasting navigation parameters through external Publisher</a></li>
+<li><a href="#navigation-through-multiple-views">Navigation through multiple views</a></li>
+<li><a href="#list-doesnt-correctly-support-programmatic-navigation">List doesn’t correctly support programmatic navigation</a></li>
+</ul>
+<!-- /TOC -->
+<p>在这个竞争激烈的市场中，开发者竭尽所能地在自己的手机应用中获得吸引人的用户体验。这不仅包括在他们的应用程序中创建惊人的功能，还包括将其原生整合集成到iOS系统中。</p>
+<p>在这些整合中，有一些技术允许在启动应用时显示特定的应用页面，而不是默认的<strong>landing</strong>屏幕:</p>
+<ul>
+<li>深度链接与通用链接或自定义URL方案</li>
+<li>本地和远程通知</li>
+<li>Siri 快捷指令</li>
+<li>焦点搜索</li>
+<li>主屏幕快捷操作</li>
+<li>接力传送</li>
+</ul>
+<p>虽然你可以很容易地找到这些功能的教程，但有一个主题我还没有考虑到:</p>
+<blockquote>
+<p>根据深度链接指令，我们如何以编程方式导航到SwiftUI应用程序中的自定义内容屏幕?</p>
+</blockquote>
+<p>在UIKit中有很多方法可以实现这一点(大部分都很难看)，但<strong>SwiftUI</strong>引入了一个全新的范例，用它自己的方式来构建UI的屏幕导航。</p>
+<p>在SwiftUI应用程序中<strong>AppDelegate</strong>的一个继承函数是<strong>SceneDelegate</strong>，它继承了这两个方法来为应用程序提供导航指令:</p>
+<pre><code class="language-swift">func scene(_ scene: UIScene, continue userActivity: NSUserActivity)
+    
+func scene(_ scene: UIScene, openURLContexts URLContexts: Set&lt;UIOpenURLContext&gt;)
+</code></pre>
+<p>这里的挑战是将这条指令转发到SwiftUI的视图层次结构，以便显示正确的内容。</p>
+<p>默认情况下，我们只有在<strong>ContentView</strong>创建的<strong>scene(_:, willConnectTo:, options:)</strong>，没有访问底层视图的方法。</p>
+<p>切换显示内容的唯一方法是更改绑定到视图的状态。</p>
+<p>视图可以绑定两种不同类型的状态:</p>
+<ul>
+<li>本地的 @State 变量</li>
+<li>在外部ObservableObject上定义的变量(带或不带@Published属性)</li>
+</ul>
+<p>让我们以一个TabView (UITabBarController的替代品)作为实验对象，并构建一个简单的应用程序，如下所示:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtvhv8iqj8j60gt08faa102.jpg" alt="avatar" loading="lazy"></figure>
+<p>切换选项卡的<strong>view-state</strong>绑定可以使用@State来构建:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    
+    @State var selectedTab: Tab = .home
+    
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            Text(&quot;Home Screen&quot;)
+                .tabItem { Text(&quot;Home&quot;) }
+                .tag(Tab.home)
+            Text(&quot;More Screen&quot;)
+                .tabItem { Text(&quot;More&quot;) }
+                .tag(Tab.more)
+        }
+    }
+}
+
+extension ContentView {
+    enum Tab: Hashable {
+        case home
+        case more
+    }
+}
+</code></pre>
+<p>…and using ObservableObject:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    
+    @ObservedObject var viewModel: ViewModel
+    // Alternatively:
+    // @EnvironmentObject var viewModel: ViewModel
+    
+    var body: some View {
+        TabView(selection: $viewModel.selectedTab) {
+            Text(&quot;First Screen&quot;)
+                .tabItem { Text(&quot;First&quot;) }
+                .tag(Tab.home)
+            Text(&quot;Second Screen&quot;)
+                .tabItem { Text(&quot;Second&quot;) }
+                .tag(Tab.favorites)
+        }
+    }
+}
+
+extension ContentView {
+    class ViewModel: ObservableObject {
+        var selectedTab: ContentView.Tab = .home { 
+            willSet { objectWillChange.send() }
+        }
+        // Alternatively:
+        // @Published var selectedTab: ContentView.Tab = .home
+    }
+}
+
+extension CountriesList {
+    enum Tab: Hashable {
+        case home
+        case favorites
+    }
+}
+</code></pre>
+<p>当我们使用<strong>属性@State、@ObservedObject或@EnvironmentObject</strong>在变量名前面输入$时，我们将检索一个类型为<strong>Binding</strong>的特殊实体。</p>
+<p><strong>Binding</strong>是可以传递的访问令牌，它提供对值的直接读写访问，而无需授予所有权(就保留引用类型而言)或复制(对于值类型)。</p>
+<p>当用户在<strong>TabView</strong>中选择一个选项卡时，它会通过<strong>Binding</strong>单方面改变这个值，并将<em>关联的.tag(…)赋给selectedTab</em>变量。@State和ObservableObject的工作方式是一样的</p>
+<p>程序员还可以在任何时候给<strong>selectedTab</strong>变量赋值，TabView会立即切换显示的tab。</p>
+<p>这是SwiftUI编程导航的关键。</p>
+<p>每个切换显示层次结构的视图，无论是<strong>TabView、NavigationView还是.sheet()</strong>，现在都使用<strong>Binding</strong>来控制显示的内容。</p>
+<p>因此，如果我们能够访问<strong>SceneDelegate中的Binding</strong>(或实际底层状态)，我们就能够告诉SwiftUI视图显示我们想要的屏幕，而不是默认的屏幕。</p>
+<p>解决这个问题有两种方法。</p>
+<h2 id="1-storing-the-navigation-variables-in-the-centralized-appstate">1. Storing the navigation variables in the centralized AppState</h2>
+<p>第一种方法意味着创建一个共享的应用状态，通过根视图上的.environmentObject(…)方法注入到视图层次结构中:</p>
+<pre><code class="language-swift">class AppState: ObservableObject {
+    @Published var selectedTab: ContentView.Tab = .home
+    @Published var showActionSheet: Bool = false
+}
+
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+
+    lazy var appState = AppState()
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, 
+               options connectionOptions: UIScene.ConnectionOptions) {
+        let contentView = ContentView()
+            .environmentObject(appState)
+        ...
+    }
+    
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set&lt;UIOpenURLContext&gt;) {
+        // Parse the deep link
+        if /*Deep link leads to the More tab*/ {
+            appState.selectedTab = .more
+            appState.showActionSheet = true
+        }
+    }
+}
+
+struct ContentView: View {
+    
+    @EnvironmentObject var appState: AppState
+    
+    var body: some View {
+        TabView(selection: $appState.selectedTab) {
+            MoreTabView().tag(ContentView.Tab.more)
+            ...
+        }
+    }
+}
+
+struct MoreTabView: View {
+    
+    @EnvironmentObject var appState: AppState
+    
+    var body: some View {
+        Text(&quot;More Tab&quot;)
+        .actionSheet(isPresented: $appState.showActionSheet) {
+            ActionSheet(title: ...)
+        }
+    }
+}
+</code></pre>
+<h2 id="2-broadcasting-navigation-parameters-through-external-publisher">2. Broadcasting navigation parameters through external Publisher</h2>
+<p>第二种方法是使用来自Combine的Publisher来发送导航状态更新的指令:</p>
+<pre><code class="language-swift">struct NavigationCoordinator: EnvironmentKey {
+    let selectedTab = PassthroughSubject&lt;ContentView.Tab, Never&gt;()
+    let showActionSheet = PassthroughSubject&lt;Bool, Never&gt;()
+}
+
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+
+    lazy var navigation = NavigationCoordinator()
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
+               options connectionOptions: UIScene.ConnectionOptions) {
+        let contentView = ContentView()
+            .environment(\.navigationCoordinator, navigation)
+        ...
+    }
+    
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set&lt;UIOpenURLContext&gt;) {
+        // Parse the deep link
+        if /*Deep link leads to the More tab*/ {
+            navigation.selectedTab.send(.more)
+            navigation.showActionSheet.send(true)
+        }
+    }
+}
+
+struct ContentView: View {
+    
+    @Environment(\.navigationCoordinator) var navigation: NavigationCoordinator
+    @State var selectedTab: Tab = .home
+    
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            MoreTabView().tag(ContentView.Tab.more)
+            ...
+        }
+        .onReceive(navigation.selectedTab) {
+            self.selectedTab = $0
+        }
+    }
+}
+
+struct MoreTabView: View {
+    
+    @Environment(\.navigationCoordinator) var navigation: NavigationCoordinator
+    @State var showActionSheet: Bool = false
+    
+    var body: some View {
+        Text(&quot;More Tab&quot;)
+        .actionSheet(isPresented: $showActionSheet) {
+            ActionSheet(title: ...)
+        }
+        .onReceive(navigation.showActionSheet) {
+            self.showActionSheet = $0
+        }
+    }
+}
+</code></pre>
+<p>这取决于你使用哪种方法，但在概念上是有区别的。</p>
+<p>第一种方法确保选择的导航参数保持选中状态，即使内容视图还不能选中它。某些视图可能会显示加载指示符，但一旦它完成并显示最终的子视图层次结构，其中一个子视图最终可以选择导航参数并相应地进行操作。</p>
+<p>这对于第二种方法是无效的，除非您将<strong>PassthroughSubject</strong>更改为<strong>CurrentValueSubject</strong>以始终保持导航状态。但是在本例中，您需要在导航完成后手动重置该值。</p>
+<p>对于第一种方法，你不需要重置导航状态，因为<strong>App state</strong>(包含导航参数)是整个程序的唯一真实来源，而SwiftUI会在用户继续在应用中导航时更新这些值。</p>
+<h2 id="navigation-through-multiple-views">Navigation through multiple views</h2>
+<p>使用上面描述的方法之一，您可以以编程方式导航到任何深度的屏幕(<a href="https://github.com/nalexn/clean-architecture-swiftui/blob/master/CountriesSwiftUI/System/AppEnvironment.swift#L21">示例)</a>。</p>
+<p>唯一的要求是:对于每个“navigatable”视图，在到达深度链接的目标视图的过程中，您需要在AppState或广播消息中分配单独的导航参数。</p>
+<p>然后，在**scene(_ scene, openURLContexts:)**中，你需要一次切换所有的导航参数，然后SwiftUI视图层次结构将一步过渡到目标屏幕。</p>
+<h2 id="list-doesnt-correctly-support-programmatic-navigation">List doesn’t correctly support programmatic navigation</h2>
+<p>当我在示例项目中实现深度链接时，我发现了通过List进行程序化导航的一个隐藏缺陷</p>
+<p>考虑这个简单的设置:</p>
+<pre><code class="language-swift">struct Item: Identifiable {
+    let id: String
+    let name: String
+}
+
+struct ContentView: View {
+    
+    @State var items: [Item] = /*An array of 100 items*/
+    @EnvironmentObject var appState: AppState
+    
+    var body: some View {
+        NavigationView {
+            List(items) { item in
+	            NavigationLink(
+	                destination: ItemDetailsView(item: item),
+	                tag: item.id,
+	                selection: self.$appState.selectedItemId) {
+	                    Text(item.name)
+	                }
+	        }
+            .navigationBarTitle(&quot;Items&quot;)
+        }
+    }
+}
+
+</code></pre>
+<p>该应用程序只是显示了一个包含100个文本条目的列表。让我们假设，我们实现了一个深度链接，它为具有指定id的项目打开ItemDetailsView。我们试着用URL这样:</p>
+<blockquote>
+<p>https://www.100items.com/details?id=5</p>
+</blockquote>
+<p>．． 和它的工作原理。应用程序启动并解析URL，将5分配给<strong>appState.selectedItemId</strong>，并立即显示推到列表顶部的ItemDetailsView。</p>
+<p>到目前为止还好。但一旦你尝试另一个id，比如75:</p>
+<blockquote>
+<p>https://www.100items.com/details?id=75</p>
+</blockquote>
+<p>代码以同样的方式工作，但是List并没有推送ItemDetailsView。</p>
+<p>这是怎么回事?我们知道id为75的项目存在于列表中，但由于某些原因，细节屏幕没有被推送。</p>
+<p>结果是，我们正在推入的List项必须在List中当前可见，以便编程导航工作。</p>
+<p>一旦你滚动列表使目标项目可见，你会看到一个不吸引人的效果:滚动突然停止，导航堆栈上没有动画的细节视图出现:</p>
+<p>List的优化方式与UITableView相同，因此它跟踪显示的项目并根据需要惰性加载内容。</p>
+<p>因此，List不知道id=75的Item，所以它什么也不做，直到它知道它实际上是在数组中。</p>
+<p>如果我们可以访问List的滚动偏移量来调整它，这个错误可以修复，但是我们不能:没有API来改变List的偏移量。</p>
+<p>我现在看到的这个问题的一个修复是将目标项移动到数组中的第一个位置，以便List能够正确地拾取NavigationLink。 或者，我们可以不依赖于通过List进行程序化导航</p>
+<p>支持深度链接的示例项目可以在Github上找到。它最初是为了说明文章<strong>Clean Architecture for SwiftUI</strong>而创建的，我推荐你也去看看。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z27avV2xu/" class="tag">
+                    programmatic navigation
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/clean-architecture-for-swiftui/">
+                  <h3 class="post-title">
+                    Clean Architecture for SwiftUI
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

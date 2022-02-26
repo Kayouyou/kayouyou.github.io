@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 16: Dependency Injection Made Easy | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+An example application
+
+
+
+
+Dependency injection
+
+
+
+
+Controlling time
+
+
+
+
+Current
+
+
+
+
+Controlling th..." />
+    <meta name="keywords" content="PointFree,dependency injection" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 16: Dependency Injection Made Easy</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Anexampleapplication">An example application</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Dependencyinjection">Dependency injection</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Controllingtime">Controlling time</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Current">Current</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Controllingtheworld">Controlling the world</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Onelessprotocol">One less protocol</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#Onemoredependency">One more dependency</a></li>
+</ol>
+</li>
+<li>
+<ol start="9">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 16: Dependency Injection Made Easy -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>今天我们将重新讨论我们过去讨论过的一个话题:副作用。在第二集中，我们深入介绍了副作用是如何类似于函数的隐藏输入和输出的，演示了它们如何使测试变得困难，以及它们如何引入微妙的bug。副作用是复杂的，需要注意。</p>
+<p>那一集的例子有点做作，所以今天我们将看一些更真实的代码，并探索我们如何快速而无痛苦地提取和控制副作用。</p>
+<p>这是一种我们在实践中反复使用的方法，随着时间的推移，它已经证明了自己。我们希望其他人也能得到同样的好处!</p>
+<h2 id="2-a-nameanexampleapplicationaan-example-application">2. <a name='Anexampleapplication'></a>An example application</h2>
+<p>这是一个示例应用程序:从GitHub实时获取Point-Free repos的表格视图。代码定义了一个GitHub API客户端，一个嵌套的Repo模型，以及从GitHub API获取Repo所需的业务逻辑。</p>
+<pre><code class="language-swift">struct GitHub {
+  struct Repo: Decodable {
+    var archived: Bool
+    var description: String?
+    var htmlUrl: URL
+    var name: String
+    var pushedAt: Date?
+  }
+
+  func fetchRepos(onComplete completionHandler: (@escaping (Result&lt;[GitHub.Repo], Error&gt;) -&gt; Void)) {
+    self.dataTask(&quot;orgs/pointfreeco/repos&quot;, completionHandler: completionHandler)
+  }
+
+  private func dataTask&lt;T: Decodable&gt;(_ path: String, completionHandler: (@escaping (Result&lt;T, Error&gt;) -&gt; Void)) {
+    let request = URLRequest(url: URL(string: &quot;https://api.github.com/&quot; + path)!)
+    URLSession.shared.dataTask(with: request) { data, urlResponse, error in
+      do {
+        if let error = error {
+          throw error
+        } else if let data = data {
+          let formatter = DateFormatter()
+          formatter.dateFormat = &quot;yyyy-MM-dd'T'HH:mm:ssZZZZZ&quot;
+          formatter.locale = Locale(identifier: &quot;en_US_POSIX&quot;)
+          formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+          let decoder = JSONDecoder()
+          decoder.dateDecodingStrategy = .formatted(formatter)
+          decoder.keyDecodingStrategy = .convertFromSnakeCase
+          completionHandler(.success(try decoder.decode(T.self, from: data)))
+        } else {
+          fatalError()
+        }
+      } catch let finalError {
+        completionHandler(.failure(finalError))
+      }
+      }.resume()
+  }
+}
+</code></pre>
+<p>我们还有一个分析客户端，它嵌套了一个<strong>Event</strong>结构体，描述我们想知道的常见事情，比如有多少人升级到了最新的iOS。</p>
+<pre><code class="language-swift">struct Analytics {
+  struct Event {
+    var name: String
+    var properties: [String: String]
+
+    static func tappedRepo(_ repo: GitHub.Repo) -&gt; Event {
+      return Event(
+        name: &quot;tapped_repo&quot;,
+        properties: [
+          &quot;repo_name&quot;: repo.name,
+          &quot;build&quot;: Bundle.main.object(forInfoDictionaryKey: &quot;CFBundleVersion&quot;) as? String ?? &quot;Unknown&quot;,
+          &quot;release&quot;: Bundle.main.object(forInfoDictionaryKey: &quot;CFBundleShortVersionString&quot;) as? String ?? &quot;Unknown&quot;,
+          &quot;screen_height&quot;: String(describing: UIScreen.main.bounds.height),
+          &quot;screen_width&quot;: String(describing: UIScreen.main.bounds.width),
+          &quot;system_name&quot;: UIDevice.current.systemName,
+          &quot;system_version&quot;: UIDevice.current.systemVersion,
+          ]
+      )
+    }
+  }
+
+  private func track(_ event: Analytics.Event) {
+    print(&quot;Tracked&quot;, event)
+  }
+}
+</code></pre>
+<p>我们的事件跟踪函数只会打印到控制台，但当应用发布时，我们会用另一个网络事件代替它。</p>
+<p>最后，我们有一个<strong>ReposViewController</strong>，一个表视图控制器，请求从我们的GitHub客户端在<strong>viewDidLoad</strong>上的<strong>repo</strong>，按摩数据，并填充我们的表视图数据源的结果或显示一个失败的警告。</p>
+<pre><code class="language-swift">class ReposViewController: UITableViewController {
+  var repos: [GitHub.Repo] = [] {
+    didSet {
+      self.tableView.reloadData()
+    }
+  }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+
+    self.title = &quot;Point-Free Repos&quot;
+    self.view.backgroundColor = .white
+
+    GitHub().fetchRepos { [weak self] result in
+      DispatchQueue.main.async {
+        switch result {
+        case let .success(repos):
+          self?.repos = repos
+            .filter { !$0.archived }
+            .sorted(by: {
+              guard let lhs = $0.pushedAt, let rhs = $1.pushedAt else { return false }
+              return lhs &gt; rhs
+            })
+        case let .failure(error):
+          let alert = UIAlertController(
+            title: &quot;Something went wrong&quot;,
+            message: error.localizedDescription,
+            preferredStyle: .alert
+          )
+          self?.present(alert, animated: true, completion: nil)
+        }
+      }
+    }
+  }
+
+  override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -&gt; Int {
+    return self.repos.count
+  }
+
+  override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+    let repo = self.repos[indexPath.row]
+
+    let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+    cell.textLabel?.text = repo.name
+    cell.detailTextLabel?.text = repo.description
+
+    let dateComponentsFormatter = DateComponentsFormatter()
+    dateComponentsFormatter.allowedUnits = [.day, .hour, .minute, .second]
+    dateComponentsFormatter.maximumUnitCount = 1
+    dateComponentsFormatter.unitsStyle = .abbreviated
+
+    let label = UILabel()
+    if let pushedAt = repo.pushedAt {
+      label.text = dateComponentsFormatter.string(from: pushedAt, to: Date())
+    }
+    label.sizeToFit()
+
+    cell.accessoryView = label
+
+    return cell
+  }
+
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    let repo = self.repos[indexPath.row]
+    Analytics().track(.tappedRepo(repo))
+    let vc = SFSafariViewController(url: repo.htmlUrl)
+    self.present(vc, animated: true, completion: nil)
+  }
+}
+</code></pre>
+<p>我们的表格视图控制器是简单配置自己的cells,显示回购信息和相对上次更新时的日期，处理自己的cell行为,当一个cell被选中,我们使用我们的分析服务跟踪tap事件和推出一个新的视图控制器。</p>
+<p>这段代码是在应用程序中构建任何屏幕的合理的第一步，但我们想要改进它，第一步是什么?</p>
+<p>让我们关注一下副作用，比如分析事件和<strong>GitHub API</strong>请求。我们想要控制这些效果，因为它们正在控制我们以及我们如何运行应用程序。就像它的情况，没有活跃的互联网连接时这个应用程序不能运行，所以没有活跃的互联网连接，我们不能在这个应用程序上工作。</p>
+<h2 id="3-a-namedependencyinjectionadependency-injection">3. <a name='Dependencyinjection'></a>Dependency injection</h2>
+<p>解决这个问题的常用方法是使用“依赖项注入”:我们可以提取我们对外部世界的依赖，将它们注入到我们的代码中，然后我们还可以注入模拟依赖。</p>
+<p>在Swift中使用面向协议的编程来解决依赖注入是很常见的。让我们看看它是什么样的。</p>
+<p>通常，当我们想要控制一个依赖时，我们会让它符合一个协议。我们可以创建一个GitHub协议来描述我们对GitHub的依赖:</p>
+<pre><code class="language-swift">protocol GitHubProtocol {
+  func fetchRepos(onComplete completionHandler: (@escaping (Result&lt;[GitHub.Repo], Error&gt;) -&gt; Void))
+}
+</code></pre>
+<p>我们所需要做的就是让我们的GitHub客户端符合GitHub协议，然后一切都会建立起来。</p>
+<pre><code class="language-swift">struct GitHub: GitHubProtocol {
+  // …
+}
+</code></pre>
+<p>有了协议，我们需要关心它的东西。 我们的repos视图控制器当前实例化我们的客户端并直接调用它，但现在我们需要用这个依赖来代替注入它。Let’s do so at initialization.</p>
+<pre><code class="language-swift">class ReposViewController: UITableViewController {
+  let gitHub: GitHubProtocol
+
+  init(gitHub: GitHubProtocol) {
+    self.gitHub = gitHub
+    super.init(nibName: nil, bundle: nil)
+  }
+
+  required init?(coder aDecoder: NSCoder) {
+    fatalError(&quot;init(coder:) has not been implemented&quot;)
+  }
+  // …
+}
+</code></pre>
+<p>我们确保将该类型引用为<strong>GitHubProtocol</strong>，以便将来可以注入另一个模拟类型。我们还需要为必需的<strong>NSCoding</strong>初始化器<strong>NSCoding</strong>添加样板。</p>
+<p>现在视图控制器使用<strong>self</strong>。而不是初始化客户端本身，我们在初始化时传递一个<strong>gitHub</strong>客户端给我们的视图控制器。</p>
+<pre><code class="language-swift">let reposViewController = ReposViewController(gitHub: GitHub())
+</code></pre>
+<p>这就是让所有东西都能工作所需要的一切!</p>
+<p>这就是所谓的“依赖注入”! GitHub是一个依赖:我们不控制它，所以我们使用一个客户端与它交互。与其让我们的视图控制器凭空捏造出一个活的GitHub客户端, 倒不如我们给了它一个属性，并允许它在初始化时注入这个依赖。</p>
+<p>现在我们只需要一些其他符合<strong>github</strong>协议的东西，我们可以很容易地传递它。</p>
+<p>让我们创建一个<strong>GitHub</strong>客户端模拟版本并使其符合此协议。</p>
+<pre><code class="language-swift">struct GitHubMock: GitHubProtocol {
+  func fetchRepos(onComplete completionHandler: @escaping (Result&lt;[GitHub.Repo], Error&gt;) -&gt; Void) {
+  completionHandler(
+    .success(
+      GitHub.Repo(
+        archived: false,
+        description: &quot;Blob's blog&quot;,
+        htmlUrl: URL(&quot;https://www.pointfree.co&quot;,
+        name: &quot;Bloblog&quot;,
+        pushedAt: Date(timeIntervalSinceReferenceData: 547000000)
+      )
+    )
+  )
+}
+</code></pre>
+<p>我们只是用一个模拟回购返回一个成功的有效负载到完成处理程序。</p>
+<p><strong>GitHubMock</strong>符合<strong>GitHubProtocol</strong>，所以我们可以在实例化repo视图控制器时交换它。</p>
+<pre><code class="language-swift">let reposViewController = ReposViewController(gitHub: GitHubMock())
+</code></pre>
+<p>一切编译和运行!我们没有向GitHub发出网络请求，也不必担心是否有网络连接或GitHub故障。 我们快速创建的模拟数据也会显示出来，这意味着我们可以修改并查看应用程序的响应!</p>
+<p>这并不是很多代码，但我们已经打开了很多的大门，这正是“依赖注入”的含义。这个想法可能看起来很可怕，而且复杂得多:围绕这个想法构建了非常大的框架。 依赖注入可以归结为控制副作用:识别一个无法控制的依赖，并将其包装在一个可以控制的上下文中。</p>
+<p>我们现在还可以获取<strong>mock</strong>值，对其进行更改，然后看看它如何更改应用程序。例如，将模拟值翻转为存档的repo将其从表视图中删除。我们可以立即看到这一点，只需要很少的工作。我们不需要去<strong>GitHub org</strong>,创建一个新的回购，然后存档，这样我们就可以看到它是如何工作的。</p>
+<p>Swift有一些让这种依赖注入变得更好的东西:默认参数。 让我们看看我们注入依赖的地方:视图控制器初始化器。我们可以使用默认参数来分配活动GitHub客户端。</p>
+<pre><code class="language-swift">init(gitHub: GitHubProtocol = GitHub()) {
+  // …
+}
+</code></pre>
+<p>一切仍然正常，但我们不再需要在应用中手动注入依赖。我们可以在没有gitHub参数的情况下实例化视图控制器。</p>
+<pre><code class="language-swift">let reposViewController = ReposViewController()
+</code></pre>
+<p>这很好，因为日常代码甚至不需要担心依赖注入，它只是默认为活动代码。</p>
+<h2 id="4-a-namecontrollingtimeacontrolling-time">4. <a name='Controllingtime'></a>Controlling time</h2>
+<p>让我们控制另一个效应。这很微妙，我们之前也提到过: 它是返回当前日期的<strong>Date</strong>初始化式。我们使用它来计算回购最后被推到的相对日期。这个初始化式在每次调用时都返回一个不同的值。我们想要控制它，使测试更容易，并使我们的界面更可预测。</p>
+<p>让我们将其作为依赖项注入。计算日期是一个依赖项，我们可以通过直接向视图控制器提供返回当前日期的函数来注入它。我们甚至可以把<strong>Date.Init</strong>作为默认值。</p>
+<pre><code class="language-swift">class ReposViewController: UITableViewController {
+  let date: () -&gt; Date
+  let gitHub: GitHubProtocol
+
+  init(date: @escaping () -&gt; Date = Date.init, gitHub: GitHubProtocol = GitHub()) {
+    self.date = date
+    self.gitHub = gitHub
+    super.init(nibName: nil, bundle: nil)
+  }
+
+  // …
+}
+</code></pre>
+<p>它运行，但我们没有使用它，我们需要将<strong>Date()<strong>换成</strong>self.date()</strong>。</p>
+<pre><code class="language-swift">label.text = dateComponentsFormatter.string(from: pushedAt, to: self.date())
+</code></pre>
+<p>它的作用是一样的。</p>
+<p>让我们试试。让我们实例化我们的<strong>ReposViewController</strong>，并传递给它一个<strong>GitHub mock</strong>，我们的<strong>GitHub repo</strong>在最后一分钟被推到那里。</p>
+<pre><code class="language-swift">struct GitHubMock: GitHubProtocol {
+  func fetchRepos(onComplete completionHandler: @escaping (Result&lt;[GitHub.Repo], Error&gt;) -&gt; Void) {
+  completionHandler(
+    .success(
+      GitHub.Repo(
+        archived: false,
+        description: &quot;Blob's blog&quot;,
+        htmlUrl: URL(&quot;https://www.pointfree.co&quot;,
+        name: &quot;Bloblog&quot;,
+        pushedAt: Date(timeIntervalSinceReferenceData: 547152021)
+      )
+    )
+  )
+}
+</code></pre>
+<p>每次我们加载这个屏幕，随着时间的推移，我们的标签有不同的文本。</p>
+<p>当我们实例化一致日期的<strong>ReposViewController</strong>时，让我们也传递一个提供日期的函数。</p>
+<pre><code class="language-swift">let reposViewController = ReposViewController(
+  date: { Date(timeIntervalSince(547152051) },
+  gitHub: GitHubMock()
+)
+</code></pre>
+<p>我们在模拟日期的30秒之后提供了一个日期，每次加载这个屏幕时，我们都看到相同的“30s”结果。</p>
+<p>我们现在有一种完全、可预测地呈现这个屏幕的方法! 我们不依赖于GitHub或当前日期。我们只是将这些作为依赖项提供，并且给定相同的依赖项，我们可以期望每次都得到相同的结果。这意味着可预测的iTunes连接屏幕截图，屏幕截图测试，以及更多!</p>
+<p>通过控制这些输入，我们可以测试边缘情况，否则会很困难。 我们可以快进今天的日期，看看回购一段时间没有被推迟是什么样子。</p>
+<pre><code class="language-swift">let reposViewController = ReposViewController(
+  date: { Date(timeIntervalSince(557152051) },
+  gitHub: GitHubMock()
+)
+</code></pre>
+<p>我们从这个简单的系统中获得了很多能量，但它有一些明显的缺点:它不是超级灵活。</p>
+<p>让我们看看我们的<strong>GitHub mock</strong>:我们硬编码了<strong>fetchRepos</strong>的实现来返回快乐路径。 如果我们想测试我们的失败，我们需要交换这个逻辑。</p>
+<pre><code class="language-swift">struct GitHubMock: GitHubProtocol {
+  func fetchRepos(onComplete completionHandler: @escaping (Result&lt;[GitHub.Repo], Error&gt;) -&gt; Void) {
+  completionHandler(
+    .failure(
+      NSError(
+        domain: &quot;co.pointfree&quot;,
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: &quot;Ooops!&quot;]
+      )
+    )
+//    .success(
+//      GitHub.Repo(
+//        archived: false,
+//        description: &quot;Blob's blog&quot;,
+//        htmlUrl: URL(&quot;https://www.pointfree.co&quot;,
+//        name: &quot;Bloblog&quot;,
+//        pushedAt: Date(timeIntervalSinceReferenceData: 547000000)
+//      )
+    )
+  )
+}
+</code></pre>
+<p>好了，这就是我们的失败案例! 很高兴看到我们的逻辑是正确的，但这改变了我们的<strong>GitHubMock</strong>:每个测试或屏幕可能使用mock将失败。</p>
+<p>我们需要一种自定义<strong>mock</strong>的方法，以便不同的代码可以探索依赖关系的不同状态。</p>
+<p>我们可以做的一件事是让我们的<strong>GitHubMock</strong>保留一个属性，该属性定义了它从<strong>fetchRepos</strong>返回什么，这样它就不必硬编码。</p>
+<pre><code class="language-swift">struct GitHubMock: GitHubProtocol {
+  let result: Result&lt;[GitHub.Repo], Error&gt;
+
+  func fetchRepos(onComplete completionHandler: @escaping (Result&lt;[GitHub.Repo], Error&gt;) -&gt; Void) {
+    completionHandler(self.result)
+  }
+}
+</code></pre>
+<p>这个改变意味着在任何依赖于<strong>GitHub mock</strong>的地方，我们都需要提供这个数据，所以我们可能想再次提供一个带有happy路径的默认初始化式。</p>
+<pre><code class="language-swift">struct GitHubMock: GitHubProtocol {
+  let result: Result&lt;[GitHub.Repo], Error&gt;
+
+  init(result: Result&lt;[GitHub.Repo], Error&gt; = .success(
+    GitHub.Repo(
+      archived: false,
+      description: &quot;Blob's blog&quot;,
+      htmlUrl: URL(&quot;https://www.pointfree.co&quot;,
+      name: &quot;Bloblog&quot;,
+      pushedAt: Date(timeIntervalSinceReferenceData: 547000000)
+    )
+  ) {
+    self.result = result
+  }
+
+  func fetchRepos(onComplete completionHandler: @escaping (Result&lt;[GitHub.Repo], Error&gt;) -&gt; Void) {
+    completionHandler(self.result)
+  }
+}
+</code></pre>
+<p>一切都在运行，我们可以在实例化<strong>mock</strong>时插入一个失败。</p>
+<pre><code class="language-swift">let reposViewController = ReposViewController(
+  date: { Date(timeIntervalSince(557152051) },
+  gitHub: GitHubMock(
+    result: .failure(
+      .failure(
+        NSError(
+          domain: &quot;co.pointfree&quot;,
+          code: -1,
+          userInfo: [NSLocalizedDescriptionKey: &quot;Ooops!&quot;]
+        )
+      )
+    )
+  )
+)
+</code></pre>
+<p>现在我们可以控制成功和失败案例的模拟，但感觉不太对。我们必须修改模拟类型，添加属性，添加初始化式和默认值。到目前为止，这是针对只有一个端点的客户端。如果我们想要添加另一个端点到我们的<strong>GitHub</strong>客户端，我们必须:</p>
+<ul>
+<li>向<strong>GitHubProtocol</strong>添加一个方法，以便我们的活动和模拟类型可以利用它</li>
+<li>添加一个方法并在<strong>GitHub</strong>类型中实现它</li>
+<li>添加一个属性以在模拟中包含结果</li>
+<li>更新模拟的初始化器以自定义此属性</li>
+<li>为这个初始化式提供一个默认的“快乐路径”值</li>
+<li>向mock添加一个方法，将此属性传递给回调函数</li>
+</ul>
+<p>使用协议来解决这个问题会产生大量额外的样板文件。让我们试着在没有协议的情况下解决这个问题。</p>
+<h2 id="5-a-namecurrentacurrent">5. <a name='Current'></a>Current</h2>
+<p>让我们从视图控制器中抓取依赖并将它们放入一个新类型中。</p>
+<pre><code class="language-swift">struct Environment {
+  let date: () -&gt; Date
+  let gitHub: GitHubProtocol
+}
+</code></pre>
+<p>我们称这个上下文为“<strong>environment</strong>”，我们可以把它看作是应用运行时围绕它的环境。</p>
+<p>让我们为每个属性提供一些默认的活动版本。</p>
+<pre><code class="language-swift">struct Environment {
+  let date: () -&gt; Date = Date.init
+  let gitHub: GitHubProtocol = GitHub()
+}
+</code></pre>
+<p>我们会让事情变得更易变通过将<strong>let</strong>降级为<strong>var</strong>这样我们就能轻松地交换这些依赖项。</p>
+<pre><code class="language-swift">struct Environment {
+  var date: () -&gt; Date = Date.init
+  var gitHub: GitHubProtocol = GitHub()
+}
+</code></pre>
+<p>现在我们有了这个<strong>Environment</strong>类型，我们如何使用它呢?  这可能感觉很奇怪，但我们将实例化一个顶级的、可变的实例，并将其命名为<strong>Current</strong>，大写。</p>
+<pre><code class="language-swift">var Current = Environment()
+</code></pre>
+<p>用这一小段代码，我们可以删除我们的<strong>ReposViewController</strong>初始化器并交换掉<strong>self.gitHub</strong>和<strong>self.date</strong>为<strong>Current.gitHub 和 Current.date</strong>。</p>
+<p>正如我们在<strong>Current</strong>环境中所描述的，我们将再次使用<strong>live API</strong>。代码变得更简单，配置更少，仅依赖于<strong>Current</strong>。</p>
+<p>与此同时，观众可能会感到不安，或者听到了警钟。一般的信条是单例是不好的，我们刚刚创建了一个超级单例:单例的单例。我们甚至给了这个变量一个奇怪的大写字母。我们为什么要这样做?</p>
+<p><strong>Environment</strong>将我们所有的依赖组合在一起，这是将它们集中在一个地方的好方法。我们还创建了一个<strong>Current</strong>单例，这感觉是错误的，但我们有必要探讨一下为什么单例会遭到诋毁。</p>
+<p>单例通常是不可测试的，因为我们对它们是什么以及何时是没有影响。 这阻止了它们的可测试性，我们被迫使用更复杂的依赖注入方法，比如在视图控制器初始化时传递它们的协议版本。</p>
+<p>这是一个解决单例问题的单例:它是一个我们可以控制和拥有的单例。因为它是一个可变属性的列表，我们可以自由地用它们中的任何一个替换其他的东西。</p>
+<h2 id="6-a-namecontrollingtheworldacontrolling-the-world">6. <a name='Controllingtheworld'></a>Controlling the world</h2>
+<p>我们之前将临时模拟传递给视图控制器以测试某些路径。相反，让我们为整个<strong>Environment</strong>创建一个模拟，使其在愉快的路径上运行。</p>
+<pre><code class="language-swift">extension Environment {
+  static let mock = Environment(
+    date: { Date(timeIntervalSinceReferenceDate: 557152051) },
+    gitHub: GitHubMock()
+  )
+}
+</code></pre>
+<p>有了这个，每当我们想要把真实世界替换成模拟世界时，我们只需要一行赋值。</p>
+<pre><code class="language-swift">Current = .mock
+</code></pre>
+<p>这就是让视图控制器渲染模拟世界所需要的一切!  它不知道mock，也不需要显式地将依赖传递给它。它依赖于<strong>Current</strong>和相应的行为。大写的<strong>Current</strong>是一个信号，表明“这是一个副作用”和“这是一个我们可以控制的副作用”。</p>
+<p>我们只用了几行代码就完成了这一切! 每次我们确定想要控制的新依赖项时，我们只需向<strong>Environment</strong>中添加一行，向<strong>mock</strong>中添加一行。</p>
+<h2 id="7-a-nameonelessprotocolaone-less-protocol">7. <a name='Onelessprotocol'></a>One less protocol</h2>
+<p>我们不再需要在控制器和模拟代码中了解<strong>GitHubProtocol</strong>，所以现在让我们完全删除<strong>GitHubProtocol</strong>!</p>
+<p>为了让我们的<strong>GitHub</strong>客户端结构体知道如何执行它的副作用，它必须以某种方式存储这个逻辑。我们可以将它的方法交换为持有闭包的属性。仅通过删除一个不必要的<strong>self</strong>实例，它目前使用的方法就可以被提取为私有的顶级函数。</p>
+<pre><code class="language-swift">private func fetchRepos(onComplete completionHandler: (@escaping (Result&lt;[GitHub.Repo], Error&gt;) -&gt; Void)) {
+  dataTask(&quot;orgs/pointfreeco/repos&quot;, completionHandler: completionHandler)
+}
+
+private func dataTask&lt;T: Decodable&gt;(_ path: String, completionHandler: (@escaping (Result&lt;T, Error&gt;) -&gt; Void)) {
+  // …
+}
+</code></pre>
+<p>现在，我们可以将这个私有f<strong>etchRepos</strong>函数作为默认属性赋给<strong>GitHub</strong>结构体。</p>
+<pre><code class="language-swift">struct GitHub { //: GitHubProtocol {
+  struct Repo: Decodable {
+    var archived: Bool
+    var description: String?
+    var htmlUrl: URL
+    var name: String
+    var pushedAt: Date?
+  }
+
+  var fetchRepos = fetchRepos(onComplete:)
+}
+</code></pre>
+<p>我们在这里所做的是删除了协议一致性，并非常具体地给出了协议向我们公开的所有函数的存储属性。</p>
+<p>执行副作用的私有函数现在是实时的、默认的<strong>GitHub</strong>客户端向我们公开的实现细节。</p>
+<p>我们已经摆脱了<strong>GitHubProtocol</strong>，这意味着我们需要摆脱任何引用。首先，我们的<strong>Environment</strong>被简化为引用一个普通的ole结构，并默认为它分配一个活动<strong>GitHub</strong>客户端。</p>
+<pre><code class="language-swift">struct Environment {
+  var date: () -&gt; Date = Date.init
+  var gitHub = GitHub()
+}
+</code></pre>
+<p>我们还有一个符合github协议的<strong>GitHubMock</strong>类型。相反，让我们执行与使用<strong>Environment</strong>相同的操作，并定义一个静态模拟。</p>
+<pre><code class="language-swift">extension GitHub {
+  let static mock = GitHub(fetchRepos: { callback in
+    callback(.success([
+      GitHub.Repo(
+        archived: false,
+        description: &quot;Blob's blog&quot;,
+        htmlUrl: URL(&quot;https://www.pointfree.co&quot;,
+        name: &quot;Bloblog&quot;,
+        pushedAt: Date(timeIntervalSinceReferenceData: 547152021)
+      )
+    ])
+  })
+}
+</code></pre>
+<p><strong>mock</strong>结构的其余部分可以删除。</p>
+<p>现在模拟<strong>Environment</strong>只需要使用这个模拟客户端!</p>
+<pre><code class="language-swift">extension Environment {
+  static let mock = Environment(
+    date: { Date(timeIntervalSinceReferenceDate: 557152051) },
+    gitHub: .mock
+  )
+}
+</code></pre>
+<p>我们用点缩写来指代静态<strong>GitHub.mock</strong>值。</p>
+<p>我们将这个模拟环境替换为一行。就是这样! 如果我们把评论去掉，我们就能得到现场版本。如果我们把它注释回去，我们就得到了模拟版本。</p>
+<p>因为<strong>Current</strong>是可变的，所以我们可以通过直接对<strong>Current</strong>进行修改来模拟任何真实的用例。 所以，如果我们想看看当<strong>GitHub</strong>向我们发送错误时，应用程序是什么样子的，让我们直接用一些错误替换<strong>Current.gitHub.fetchRepos</strong>:</p>
+<pre><code class="language-swift">Current.gitHub.fetchRepos = { callback in
+  callback(
+    .failure(
+      NSError(
+        domain: &quot;co.pointfree&quot;,
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: &quot;Ooops!&quot;]
+      )
+    )
+  )
+}
+</code></pre>
+<p>现在<strong>GitHub</strong>又一次失败了，但是这次我们只是改变了<strong>Current</strong>来直接返回这个数据。我们不需要实例化一个新的<strong>GitHub</strong>模拟客户端，也不需要以任何方式依赖那个样板文件! 我们只是在<strong>GitHub</strong>环境中改变了一个属性。</p>
+<p>现在，不需要太多的仪式来执行我们所有的代码路径，甚至是罕见的代码路径!  我们只是用一种非常简洁的方式交换依赖项。我们说:这就是我们想要控制所有副作用的方法。</p>
+<p>关于函数式编程的系列文章颂扬全局突变似乎有些奇怪，但我们应该指出，到目前为止我们定义的<strong>Environment</strong>不应该在生产中发生突变。生产环境默认使用live函数，该函数返回当前日期并访问真正的<strong>GitHub</strong>端点，并且在应用程序运行期间保持静态。然而，通过将所有依赖项放在一个地方，我们可以更容易地编写测试，在操场上运行我们的应用程序，并更普遍地将我们的应用程序加载到一个受控制的环境中，只需要很少的工作。</p>
+<h2 id="8-a-nameonemoredependencyaone-more-dependency">8. <a name='Onemoredependency'></a>One more dependency</h2>
+<p>了解这个系统有多灵活，让我们向<strong>Environment</strong>添加另一个依赖项。</p>
+<p>我们还没有提到的主要依赖是这个分析服务。当我们点击回购时，它会发出一个跟踪事件。让我们把它引入环境。</p>
+<p>我们总是将新的依赖项作为可变属性引入<strong>Environment</strong>。我们可以将其默认为主客户端。</p>
+<pre><code class="language-swift">struct Environment {
+  var analytics = Analytics()
+  var date: () -&gt; Date = Date.init
+  var gitHub = GitHub()
+}
+</code></pre>
+<p>我们的<strong>Environment</strong>模拟现在被破坏了，因此让我们在进行故障排除时再次分配我们的活动实例。</p>
+<pre><code class="language-swift">extension Environment {
+  static let mock = Environment(
+    analytics: Analytics(),
+    date: { Date(timeIntervalSinceReferenceDate: 557152051) },
+    gitHub: .mock
+  )
+}
+</code></pre>
+<p>我们现在需要将<strong>Analytics</strong>转换为可模仿的。我们可以遵循与<strong>GitHub</strong>客户端类似的路径。<strong>Analytics</strong>有一个单一的<strong>track</strong>方法，它执行一个副作用。我们可以将其提取到<strong>Analytics</strong>默认配置的私有函数中。</p>
+<pre><code class="language-swift">struct Analytics {
+  // …
+  var track = track(_:)
+}
+
+private func track(_ event: Analytics.Event) {
+  print(&quot;Tracked&quot;, event)
+}
+</code></pre>
+<p>现在让我们创建一个模拟版本。</p>
+<p>就像我们扩展了<strong>GitHub</strong>结构一样，我们现在可以用静态<strong>mock</strong>来扩展<strong>Analytics</strong>。</p>
+<pre><code class="language-swift">extension Analytics {
+  static let mock = Analytics(track: { event in
+    print(&quot;Mock track&quot;, event&quot;
+  })
+}
+</code></pre>
+<p>这样，我们就可以相应地更新模拟环境。</p>
+<pre><code class="language-swift">extension Environment {
+  static let mock = Environment(
+    analytics: .mock,
+    date: { Date(timeIntervalSinceReferenceDate: 557152051) },
+    gitHub: .mock
+  )
+}
+</code></pre>
+<p>而我们的视图控制器(以及任何依赖于我们分析客户端的东西)必须依赖于<strong>Current.analytics</strong>。</p>
+<p>我们现在采用了一个应用程序，它访问了<strong>GitHub</strong>，依赖于当前日期，并访问了一个分析服务，完全控制了这些依赖。 这意味着我们可以在没有网络连接的情况下恢复在这个应用程序上的工作能力，但我们也可以确保我们不会把实时分析与测试混为一谈。</p>
+<p>这是一个小示例，但更改是外科手术，我们可以逐个提取每个依赖项。</p>
+<h2 id="9-a-namewhatsthepointawhats-the-point">9. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>在节目的最后，我们会问:“这有什么意义?”，因为我们想要把抽象的概念变成现实，但这就是这一集的主题。也许我们讨论过的最抽象的东西是术语“依赖注入”，这可能是一个可怕的术语。</p>
+<p>这一集就是关于提供一个现成的解决方案!</p>
+<p>解决显而易见的问题是很重要的:我们引入了一个全局单例(所有单例中的单例?)我们创造了什么?</p>
+<p>这是我们依赖注入“框架”的全部内容:</p>
+<pre><code class="language-swift">struct Environment {
+  var analytics = Analytics()
+  var date: () -&gt; Date = Date.init
+  var gitHub = GitHub()
+}
+
+var Current = Environment()
+</code></pre>
+<p>与手动注入依赖项相比，在手动注入依赖项中，对象的初始化器需要知道每个依赖项，但也要确保根据子依赖项的需要将每个依赖项传递得更深。</p>
+<p>很多仪式和过程都围绕着一些本应简单的东西。证明当前依赖注入“框架”合理性的一个好方法是记住副作用可以是隐藏的输入，通过将它们放入<strong>Current</strong>，它们就不再隐藏了。</p>
+<p>我们言行一致。我们在Kickstarter上使用了这个系统我们在运行网站的代码上也使用了这个系统。这个系统对iOS应用程序和网络应用程序一样有效!</p>
+<p>但是，关注“点”仍然很重要，我们可以考虑关注副作用作为点! 在我们用<strong>Current</strong>标记代码库的任何地方，我们都可以知道:这是一个副作用。当我们通常使用副作用随处可见的语言工作时，这提供了一种突出事情发生的地方的方法。当我们在应用程序中添加一些副作用时，当我们偶然发现与之相关的问题时，我们可以将其扔到<strong>Environment</strong>中，添加一个mock，然后就可以开始了。</p>
+<p>还有很多东西要讲。请继续关注!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SI7Eu5Vqu/" class="tag">
+                    dependency injection
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-15-setters-ergonomics-and-performance/">
+                  <h3 class="post-title">
+                    PointFree Episode 15: Setters: Ergonomics &amp; Performance
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

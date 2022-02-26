@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Accessing a Swift property wrapper’s enclosing instance | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="正如其名称所暗示的那样，Swift的属性包装特性使我们能够在自定义类型中包装给定的属性值，这反过来又使我们能够在该值被修改时应用转换并运行其他类型的逻辑。
+默认情况下，属性包装器与它所使用的封装类型是完全断开连接的，这在某些情况下是非常有限..." />
+    <meta name="keywords" content="properties" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Accessing a Swift property wrapper’s enclosing instance</h2>
+            <div class="post-date">2021-01-19</div>
+            
+            <div class="post-content" v-pre>
+              <p>正如其名称所暗示的那样，Swift的属性包装特性使我们能够在自定义类型中包装给定的属性值，这反过来又使我们能够在该值被修改时应用转换并运行其他类型的逻辑。</p>
+<p>默认情况下，属性包装器与它所使用的封装类型是完全断开连接的，这在某些情况下是非常有限的。例如，我们不能执行方法调用或以其他方式与包装器的封装实例交互，因为标准API没有为我们提供这样的引用。</p>
+<p>然而，事实证明，还有一种替代的、有些隐藏的API，它确实允许我们访问每个封闭的实例，这使我们能够采用一些真正有趣的模式。让我们一起来看看!</p>
+<p>尽管本文中涉及的所有语言特性都是Swift的官方部分，但我们将使用一个带有下划线前缀的API，这应该总是小心的，因为这样的API在任何时候都可能发生变化。</p>
+<h2 id="getting-started">Getting started</h2>
+<p>默认情况下，Swift属性包装器是通过用@propertyWrapper属性注释给定类型(通常是一个结构体)来实现的，然后在该类型中声明一个wrappedValue属性，该属性将作为被包装的值的底层存储。例如:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct MyWrapper&lt;Value&gt; {
+    var wrappedValue: Value
+}
+</code></pre>
+<p>然而，如果我们看一下属性包装器特性的Swift Evolution提议，我们可以看到它还提到了另一种处理包装器值的方法——通过一个静态下标，如下所示:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct EnclosingTypeReferencingWrapper&lt;Value&gt; {
+    static subscript&lt;T&gt;(
+        _enclosingInstance instance: T,
+        wrapped wrappedKeyPath: ReferenceWritableKeyPath&lt;T, Value&gt;,
+        storage storageKeyPath: ReferenceWritableKeyPath&lt;T, Self&gt;
+    ) -&gt; Value {
+        ...
+    }
+    ...
+}
+</code></pre>
+<p>除了当前封装的实例之外，上面的API还允许我们使用Swift的关键路径特性来访问我们的包装器本身，以及被包装的底层值。 唯一的要求是，封装类型必须是一个类，因为上面的下标使用了ReferenceWritableKeyPath，它依赖于引用语义。</p>
+<p>在实现上述API时，我们可能还希望使用值语义防止属性发生突变(因为我们希望所有突变都经过下标)，这可以通过将标准wrappedValue属性标记为不可用来实现-像这样:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct EnclosingTypeReferencingWrapper&lt;Value&gt; {
+    static subscript&lt;T&gt;(
+        _enclosingInstance instance: T,
+        wrapped wrappedKeyPath: ReferenceWritableKeyPath&lt;T, Value&gt;,
+        storage storageKeyPath: ReferenceWritableKeyPath&lt;T, Self&gt;
+    ) -&gt; Value {
+        ...
+    }
+    @available(*, unavailable,
+        message: &quot;This property wrapper can only be applied to classes&quot;
+    )
+    var wrappedValue: Value {
+        get { fatalError() }
+        set { fatalError() }
+    }
+}
+</code></pre>
+<p>注意，我们必须同时给wrappedValue一个getter和一个setter，否则编译器将把我们的属性包装器视为不可变的。</p>
+<p>以上设置就绪后，现在就不可能在结构中使用我们的新属性包装器，如果我们尝试这样做，编译器将自动显示我们使用@available属性定义的错误消息。</p>
+<h2 id="reimplementing-the-published-property-wrapper">Reimplementing the Published property wrapper</h2>
+<p>让我们来看看上述模式可能非常有用的一种情况，让我们看看能否重新实现Combine的已发布属性包装器，它经常与ObservableObject协议结合使用，将类连接到SwiftUI视图。</p>
+<p>虽然Combine是苹果内部开发的一个封闭的框架(所以我还没有看到它的源代码)，根据上面的下标，我们可以对它发布的包装器是如何实现的做出一些有根据的猜测。因为每个ObservableObject都需要有一个objectWillChange publisher(它是自动合成的)，发布类型可能会调用发布者，以便通知每个观察者任何更改-可能看起来像这样:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct Published&lt;Value&gt; {
+    static subscript&lt;T: ObservableObject&gt;(
+        _enclosingInstance instance: T,
+        wrapped wrappedKeyPath: ReferenceWritableKeyPath&lt;T, Value&gt;,
+        storage storageKeyPath: ReferenceWritableKeyPath&lt;T, Self&gt;
+    ) -&gt; Value {
+        get {
+            instance[keyPath: storageKeyPath].storage
+        }
+        set {
+            let publisher = instance.objectWillChange
+            // This assumption is definitely not safe to make in
+            // production code, but it's fine for this demo purpose:
+            (publisher as! ObservableObjectPublisher).send()
+            
+            instance[keyPath: storageKeyPath].storage = newValue
+                    }
+                }
+
+    @available(*, unavailable,
+        message: &quot;@Published can only be applied to classes&quot;
+    )
+    var wrappedValue: Value {
+        get { fatalError() }
+        set { fatalError() }
+    }
+
+    private var storage: Value
+
+    init(wrappedValue: Value) {
+        storage = wrappedValue
+    }
+}
+</code></pre>
+<p>请注意，我们是如何使用单独的存储属性来存储发布类型的基础值，而不是使用wrappedValue，因为我们希望该默认属性保持不可用。</p>
+<p>真正有趣的是，如果我们把上面的代码放到SwiftUI项目中，一切都很有可能继续工作， 除非我们正在使用发布实例的投影值(我们还没有添加支持)将其转换为发布者，只要我们所有的@Published属性都定义在符合observableobject的类型中。</p>
+<p>因此，尽管上面的代码很难完全精确地1:1重新实现其内置的对应版本，但它明确地展示了这种类型的功能是多么强大。 但是现在，让我们用这个功能来构建一些有用的东西。</p>
+<h2 id="proxy-properties">Proxy properties</h2>
+<p>当使用像UIKit和AppKit这样的框架时，很常见的情况是想要在它们外围的父视图中隐藏某些子视图，并且只允许那些视图通过特定的api发生变化。例如，下面的HeaderView有一个标题和一个图像属性，但保持底层视图用于渲染这些属性的私有，然后手动将这些片段连接在一起:</p>
+<pre><code class="language-swift">class HeaderView: UIView {
+    var title: String? {
+        get { titleLabel.text }
+        set { titleLabel.text = newValue }
+    }
+
+    var image: UIImage? {
+        get { imageView.image }
+        set { imageView.image = newValue }
+    }
+
+    private let titleLabel = UILabel()
+    private let imageView = UIImageView()
+    
+    ...
+}
+</code></pre>
+<p>上述模式的好处是，它为每个视图提供了一个更小的API面，从而减少了视图被误用的可能性(例如，通过配置父视图没有被设计来处理的子视图) 。然而，它也需要大量的样板文件，因为我们目前必须手动地将每个属性的getter和setter转发到用于呈现的底层视图。</p>
+<p>这是另一种情况，在这种情况下，封装类型引用属性包装器可能非常有用。由于用于访问包装器的封装实例的语言机制是基于键路径的， 我们可以构建一个代理包装器，它可以自动将其包装的值与其封装类型的关键路径之一同步——像这样:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct Proxy&lt;EnclosingType, Value&gt; {
+    typealias ValueKeyPath = ReferenceWritableKeyPath&lt;EnclosingType, Value&gt;
+    typealias SelfKeyPath = ReferenceWritableKeyPath&lt;EnclosingType, Self&gt;
+
+    static subscript(
+        _enclosingInstance instance: EnclosingType,
+        wrapped wrappedKeyPath: ValueKeyPath,
+        storage storageKeyPath: SelfKeyPath
+    ) -&gt; Value {
+        get {
+            let keyPath = instance[keyPath: storageKeyPath].keyPath
+            return instance[keyPath: keyPath]
+        }
+        set {
+            let keyPath = instance[keyPath: storageKeyPath].keyPath
+            instance[keyPath: keyPath] = newValue
+        }
+    }
+
+    @available(*, unavailable,
+        message: &quot;@Proxy can only be applied to classes&quot;
+    )
+    var wrappedValue: Value {
+        get { fatalError() }
+        set { fatalError() }
+    }
+
+    private let keyPath: ValueKeyPath
+
+    init(_ keyPath: ValueKeyPath) {
+        self.keyPath = keyPath
+    }
+}
+</code></pre>
+<p>有了这个新的属性包装器，我们现在就可以从HeaderView中删除手动实现的getter和setter，并简单地用@Proxy注释我们想要同步到底层视图的属性:</p>
+<pre><code class="language-swift">class HeaderView: UIView {
+    @Proxy(\HeaderView.titleLabel.text) var title: String?
+    @Proxy(\HeaderView.imageView.image) var image: UIImage?
+
+    private let titleLabel = UILabel()
+    private let imageView = UIImageView()
+    
+    ...
+}
+</code></pre>
+<p>这已经很好了，但有点遗憾，我们不得不重复引用HeaderView类型，当构建我们的关键路径，如果我们能让编译器根据定义属性的封装类型推断出该类型，那就更好了。</p>
+<p>为了实现这一点，我们将不得不使用一点“类型系统黑客”。首先，让我们将代理属性包装器重命名为AnyProxy:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct AnyProxy&lt;EnclosingType, Value&gt; {
+    ...
+}
+</code></pre>
+<p>然后，让我们定义一个协议，该协议将使用类型别名来专门化使用Self的AnyProxy。然后，我们将使用扩展将该协议应用到所有NSObject类型(包括所有UIKit和AppKit视图):</p>
+<pre><code class="language-swift">protocol ProxyContainer {
+    typealias Proxy&lt;T&gt; = AnyProxy&lt;Self, T&gt;
+}
+
+extension NSObject: ProxyContainer {}
+</code></pre>
+<p>有了上述一组更改，我们现在就可以在引用代理键路径时省略封装类型，因为Proxy现在指的是我们的AnyProxy属性包装器的新专门化版本:</p>
+<pre><code class="language-swift">class HeaderView: UIView {
+    @Proxy(\.titleLabel.text) var title: String?
+    @Proxy(\.imageView.image) var image: UIImage?
+
+    private let titleLabel = UILabel()
+    private let imageView = UIImageView()
+    
+    ...
+}
+</code></pre>
+<p>我们现在有一种非常简洁、优雅的方式来定义代理属性，这种方式不需要任何手动同步，这不仅从语法的角度来看很简洁，但也消除了我们在编写那些手动getter和setter时犯错误的风险。真的很不错!</p>
+<p>当然，最终解决方案的一个折衷是，无论何时我们希望引用代理，我们现在必须使封装类型符合我们的ProxyContainer协议。 然而，由于该协议实际上没有任何需求，而且我们总是可以退回到直接使用任何代理，所以这不是一个大问题。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>尽管它可能还不是一个我们可以在产品代码中依赖的完全成熟的语言特性(除非我们愿意冒使用带下划线前缀的语言特性的风险)，事实上，Swift的属性包装器确实支持引用其封装实例，这一点非常强大。</p>
+<p>希望这个特性最终会被提升为一个我们都可以放心使用的一流功能，就像Swift 5.4中@_functionBuilder属性(用于定义函数/结果生成器)将演变为@resultBuilder属性一样。</p>
+<p><a href="https://www.swiftbysundell.com/articles/accessing-a-swift-property-wrappers-enclosing-instance/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/2-HyEvrbK/" class="tag">
+                    properties
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/avoiding-swiftuis-anyview/">
+                  <h3 class="post-title">
+                    Avoiding SwiftUI’s AnyView
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

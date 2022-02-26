@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>让SwiftUI的视图refreshable | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在WWDC21上，苹果引入了一个新的SwiftUI API，使我们能够将刷新动作附加到任何视图上，这反过来又为我们提供了非常流行的下拉刷新机制的本地支持。让我们看看这个新的API是如何工作的，以及它如何使我们能够构建完全自定义的刷新逻辑。
+..." />
+    <meta name="keywords" content="refreshable,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">让SwiftUI的视图refreshable</h2>
+            <div class="post-date">2021-08-08</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gt9mtlakixj31900u00xz.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>在WWDC21上，苹果引入了一个新的SwiftUI API，使我们能够将刷新动作附加到任何视图上，这反过来又为我们提供了非常流行的下拉刷新机制的本地支持。让我们看看这个新的API是如何工作的，以及它如何使我们能够构建完全自定义的刷新逻辑。</p>
+<blockquote>
+<p>请注意，这里介绍的是作为iOS15和苹果2021年操作系统的一部分即将引入的api，这些api目前都处于测试阶段。</p>
+</blockquote>
+<h2 id="asyncawait能力加持">async/await能力加持</h2>
+<p>为了能够判断刷新操作何时完成，SwiftUI使用了async/await模式，这将在Swift 5.5中引入(预计将在今年晚些时候与苹果的新操作系统一起发布)。因此，在我们开始采用新的刷新API之前，我们需要一个异步标记的函数，每当视图的刷新动作被触发时，我们都可以调用这个函数。</p>
+<p>例如，假设我们正在开发一个包含某种形式的书签特性的应用程序，并且我们已经构建了一个BookmarkListViewModel，它负责为我们的书签列表UI提供数据。为了使数据能够被刷新，我们添加了一个异步重新加载方法，该方法反过来调用DatabaseController来获取一个Bookmark模型数组。</p>
+<pre><code class="language-swift">class BookmarkListViewModel: ObservableObject {
+    @Published private(set) var bookmarks: [Bookmark]
+    private let databaseController: DatabaseController
+    ...
+
+    func reload() async {
+        bookmarks = await databaseController.loadAllModels(
+            ofType: Bookmark.self
+        )
+    }
+}
+</code></pre>
+<p>现在我们有了一个可以调用来刷新视图数据的async函数，让我们在BookmarkList视图中应用新的可刷新修饰符——像这样:</p>
+<pre><code class="language-swift">struct BookmarkList: View {
+    @ObservedObject var viewModel: BookmarkListViewModel
+
+    var body: some View {
+        List(viewModel.bookmarks) { bookmark in
+            ...
+        }
+        .refreshable {
+            await viewModel.reload()
+        }
+    }
+}
+</code></pre>
+<p>通过这样做，我们的List-powered视图现在将支持下拉刷新。当我们执行刷新操作时，SwiftUI会自动隐藏并显示加载spinner，甚至会确保在同一时间没有重复的刷新操作。很酷的!</p>
+<p>作为额外的好处——考虑到Swift支持第一类函数——我们甚至可以将视图模型的reload方法直接传递给可刷新的修饰符，这给了我们一个稍微紧凑的实现:</p>
+<pre><code class="language-swift">struct BookmarkList: View {
+    @ObservedObject var viewModel: BookmarkListViewModel
+
+    var body: some View {
+        List(viewModel.bookmarks) { bookmark in
+            ...
+        }
+        .refreshable(action: viewModel.reload)
+    }
+}
+</code></pre>
+<p>这就是基本的下拉刷新支持的全部内容。但这仅仅是个开始，让我们继续探索吧!</p>
+<h2 id="错误处理">错误处理</h2>
+<p>当涉及到加载动作时，很常见的是这些动作最终会抛出一个错误，我们需要以某种方式来处理这个错误。例如，如果我们的视图模型调用的底层<em>loadAllModels</em> API是一个抛出函数，那么我们必须使用try关键字来调用它，以处理任何可能抛出的错误。一种方法是简单地将任何此类错误传播到我们的视图，通过使我们的顶级<em>reload</em>方法也能够抛出:</p>
+<pre><code class="language-swift">class BookmarkListViewModel: ObservableObject {
+    ...
+
+    func reload() async throws {
+        bookmarks = try await databaseController.loadAllModels(
+            ofType: Bookmark.self
+        )
+    }
+}
+</code></pre>
+<p>然而，在完成上述更改后，我们之前的BookmarkList视图代码将不再编译，因为可刷新的修饰符只接受非抛出的异步闭包。 为了解决这个问题，我们可以，例如，在<em>do/catch</em>语句中包装对视图模型的reload方法的调用——这将让我们捕获任何抛出的错误，以便使用类似于<strong>ErrorView</strong>覆盖的东西来显示它们:</p>
+<pre><code class="language-swift">struct BookmarkList: View {
+    @ObservedObject var viewModel: BookmarkListViewModel
+    @State private var error: Error?
+
+    var body: some View {
+        List(viewModel.bookmarks) { bookmark in
+            ...
+        }
+        .overlay(alignment: .top) {
+            if error != nil {
+                ErrorView(error: $error)
+            }
+        }
+        .refreshable {
+            do {
+                try await viewModel.reload()
+                error = nil
+            } catch {
+                self.error = error
+            }
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>ErrorView之所以接受一个到错误的绑定，而不仅仅是一个简单的error值，是因为我们希望通过将error属性设置为nil，该视图能够dimiss itself。</p>
+</blockquote>
+<p>虽然上面的实现确实有效，但是在视图模型中封装我们所有的视图状态(包括任何抛出的错误)可能会更好，这将允许我们的视图专注于呈现视图模型提供给它的数据。 为了实现这一点，让我们先将上面的do/catch语句移动到我们的视图模型中——像这样:</p>
+<pre><code class="language-swift">class BookmarkListViewModel: ObservableObject {
+    @Published private(set) var bookmarks: [Bookmark]
+    @Published var error: Error?
+    ...
+
+    func reload() async {
+        do {
+            bookmarks = try await databaseController.loadAllModels(
+                ofType: Bookmark.self
+            )
+            error = nil
+        } catch {
+            self.error = error
+        }
+    }
+}
+</code></pre>
+<p>有了上面的更改，我们现在可以使我们的视图更简单，因为事实上，我们的重载方法可以抛出错误，现在某种程度上成为了我们的视图模型的实现细节。 我们的视图现在需要知道的是，有一个error属性，它可以用来显示遇到的任何错误(出于任何原因):</p>
+<pre><code class="language-swift">struct BookmarkList: View {
+    @ObservedObject var viewModel: BookmarkListViewModel
+
+    var body: some View {
+        List(viewModel.bookmarks) { bookmark in
+            ...
+        }
+        .overlay(alignment: .top) {
+            if viewModel.error != nil {
+                ErrorView(error: $viewModel.error)
+            }
+        }
+        .refreshable {
+            await viewModel.reload()
+        }
+    }
+}
+</code></pre>
+<p>很好。但也许这个新的可刷新修饰符最有趣的地方在于，它不仅仅局限于SwiftUI附带的内置下拉刷新功能。事实上，我们也可以用它来支持我们自己的、完全定制的刷新逻辑。</p>
+<h2 id="自定义刷新逻辑">自定义刷新逻辑</h2>
+<p>为了能够更容易地构建自定义刷新特性，让我们从创建一个执行刷新操作的专用类开始。当传入一个系统提供的<em>RefreshAction</em>值时，它会在动作正在执行时将isPerforming属性设置为true，这反过来将使我们能够在任何想要构建的自定义刷新UI中观察该状态:</p>
+<pre><code class="language-swift">class RefreshActionPerformer: ObservableObject {
+    @Published private(set) var isPerforming = false
+
+    func perform(_ action: RefreshAction) async {
+        guard !isPerforming else { return }
+        isPerforming = true
+        await action()
+        isPerforming = false
+    }
+}
+</code></pre>
+<p>接下来，让我们构建一个<em>RetryButton</em>，它允许用户在给定刷新操作失败时重试该操作。为此，我们将使用新的<strong>refresh</strong>环境值，它使我们能够访问使用<strong>refreshable</strong>修饰符注入到视图层次结构中的任何<em>RefreshAction</em>。 然后，我们将把任何这样的动作传递给我们新创建的RefreshActionPerformer的实例——像这样:</p>
+<pre><code class="language-swift">struct RetryButton: View {
+    var title: LocalizedStringKey = &quot;Retry&quot;
+    
+    @Environment(\.refresh) private var action
+    @StateObject private var actionPerformer = RefreshActionPerformer()
+
+    var body: some View {
+        if let action = action {
+            Button(
+                role: nil,
+                action: {
+                    await actionPerformer.perform(action)
+                },
+                label: {
+                    ZStack {
+                        if actionPerformer.isPerforming {
+                            Text(title).hidden()
+                            ProgressView()
+                        } else {
+                            Text(title)
+                        }
+                    }
+                }
+            )
+            .disabled(actionPerformer.isPerforming)
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>请注意，当 <em>loading spinner</em> 显示时，我们是如何渲染标签的隐藏版本的。这是为了防止按钮的大小在它空闲和加载状态之间转换时发生变化。</p>
+</blockquote>
+<p>SwiftUI将我们的刷新操作插入到环境中，这是非常强大的，因为这让我们可以定义一个单一的操作，然后该特定视图层次结构中的任何视图都可以使用该操作。因此，无需对<em>BookmarkList</em>视图进行任何更改，如果我们现在简单地将新的<em>RetryButton</em>插入到ErrorView中，那么它将能够执行与List使用的完全相同的刷新操作——仅仅因为该操作存在于视图层次结构的环境中:</p>
+<pre><code class="language-swift">struct ErrorView: View {
+    @Binding var error: Error?
+
+    var body: some View {
+        if let error = error {
+            VStack {
+                Text(error.localizedDescription)
+                    .bold()
+                HStack {
+                    Button(&quot;Dismiss&quot;) {
+                        self.error = nil
+                    }
+                    RetryButton()
+                }
+            }
+            .padding()
+            .background(Color.red)
+            .foregroundColor(.white)
+            .cornerRadius(10)
+        }
+    }
+}
+</code></pre>
+<p>多酷啊! 我喜欢苹果在SwiftUI环境中放置这样的数据，并使其公开访问，因为这为构建自定义ui和逻辑提供了许多强大的方法，就像我认为上面的例子所显示的那样。</p>
+<h2 id="总结">总结</h2>
+<p>这就是新的<em>refreshable</em>修饰符，以及如何使用它来实现系统提供的UI模式(如下拉刷新)，以及如何使用它来构建完全自定义的重载逻辑。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/awIRzC-IV/" class="tag">
+                    refreshable
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/jie-he-property-he-keypath-zai-tan-yi-lai-zhu-ru-fang-an/">
+                  <h3 class="post-title">
+                    结合@property和KeyPath再谈依赖注入方案
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

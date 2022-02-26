@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>SwiftUI extensions using generic type constraints | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="作为其他视图容器的大多数SwiftUI视图都根据它们所包含的内容类型实现为泛型。例如，SwiftUI的内置按钮有一个通用label类型，它决定了每个实例将使用哪种类型的视图进行渲染:
+struct Button&lt;Label&gt;: ..." />
+    <meta name="keywords" content="generics,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">SwiftUI extensions using generic type constraints</h2>
+            <div class="post-date">2020-07-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>作为其他视图容器的大多数SwiftUI视图都根据它们所包含的内容类型实现为泛型。例如，SwiftUI的内置按钮有一个通用label类型，它决定了每个实例将使用哪种类型的视图进行渲染:</p>
+<pre><code class="language-swift">struct Button&lt;Label&gt;: View where Label: View {
+    ...
+}
+</code></pre>
+<p>由于SwiftUI视图归根结底只是常规的结构体，我们可以在处理它们时使用与在其他上下文中相同的泛型编程技术。例如，我们可以使用通用的约束来实现专门的便利api——就像下面这个例子，通过使用给定的系统映像作为图标，可以很容易地创建一个按钮</p>
+<pre><code class="language-swift">extension Button where Label == Image {
+    init(iconName: String, action: @escaping () -&gt; Void) {
+        self.init(action: action) {
+            Image(systemName: iconName)
+        }
+    }
+}
+</code></pre>
+<p>泛型类型约束很酷的一点是，编译器会根据每个调用站点自动推断要使用哪种专门化 - 这意味着我们可以调用我们的new Button convenience initializer，而不需要手动输入Button<Image></p>
+<pre><code class="language-swift">struct PlayerView: View {
+    ...
+
+    var body: some View {
+        ...
+        Button(iconName: &quot;play.fill&quot;) {
+            startPlayback()
+        }
+    }
+}
+</code></pre>
+<p>Swift大量使用了Swift的类型系统及其泛型功能，这意味着通常有很多机会创建非常轻量级的api，而不必每次都定义新的视图类型。</p>
+<p><a href="https://www.swiftbysundell.com/tips/swiftui-extensions-using-generics/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/opaque-return-types-in-swift/">
+                  <h3 class="post-title">
+                    Opaque return types in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

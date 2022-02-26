@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The 6 Swift Extensions I Use in Every iOS Project | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+The 6 Swift Extensions I Use in Every iOS Project
+
+
+1.1. 1. Dropping Shadow Under UIView
+1.2. 2. Presenting a ViewCo..." />
+    <meta name="keywords" content="extensions" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The 6 Swift Extensions I Use in Every iOS Project</h2>
+            <div class="post-date">2021-05-16</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#The6SwiftExtensionsIUseinEveryiOSProject">The 6 Swift Extensions I Use in Every iOS Project</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#DroppingShadowUnderUIView">1. Dropping Shadow Under UIView</a></li>
+<li>1.2. <a href="#PresentingaViewControllerFromEverywhere">2. Presenting a ViewController From Everywhere</a></li>
+<li>1.3. <a href="#MakingLocalizationEasier">3. Making Localization Easier</a></li>
+<li>1.4. <a href="#WritingAsyncCodeBlockWithDelayin3LinesofCode">4. Writing Async Code Block With Delay in 3 Lines of Code</a></li>
+<li>1.5. <a href="#ShakingaView">5. Shaking a View</a></li>
+<li>1.6. <a href="#RoundingDoubletoaSpecificNumberofPlacesasString">6. Rounding Double to a Specific Number of Places as String</a></li>
+<li>1.7. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namethe6swiftextensionsiuseineveryiosprojectathe-6-swift-extensions-i-use-in-every-ios-project">1. <a name='The6SwiftExtensionsIUseinEveryiOSProject'></a>The 6 Swift Extensions I Use in Every iOS Project</h2>
+<p>每当我开始一个新的iOS Swift项目，我做的第一件事是导入我的实用程序和扩展文件。它们帮助我提高编程效率。让我们来看看我最喜欢和最基本的六个扩展。</p>
+<hr>
+<h3 id="11-a-namedroppingshadowunderuiviewa1-dropping-shadow-under-uiview">1.1. <a name='DroppingShadowUnderUIView'></a>1. Dropping Shadow Under UIView</h3>
+<p>当实现现代设计时，在UIView下放置阴影是经常需要的。我不用为每个视图编写多行代码，而是使用了一个扩展:</p>
+<pre><code class="language-swift">extension UIView {
+    func dropShadow() {
+        self.layer.shadowColor = UIColor.gray.cgColor 
+        self.layer.shadowOpacity = 0.3
+        self.layer.shadowOffset = CGSize(width: 2, height: 4)
+        self.layer.shadowRadius = 5
+    }
+}
+</code></pre>
+<p>当然，每个项目都可能需要对阴影风格做一些微小的改变，但可以在中心位置进行改变。</p>
+<h3 id="12-a-namepresentingaviewcontrollerfromeverywherea2-presenting-a-viewcontroller-from-everywhere">1.2. <a name='PresentingaViewControllerFromEverywhere'></a>2. Presenting a ViewController From Everywhere</h3>
+<p>在处理应用程序时，经常需要动态地更改ViewController流。你可以使用UIViewController的扩展，而不是编写函数并选择模态显示样式。如果你不想每次都打开Settings作为模态，你可以声明一次并使用viewController.openSettings()函数!只需一行代码，您就完成了!</p>
+<pre><code class="language-swift">extension UIViewController {
+    func openMain() {
+        if let viewController = UIStoryboard(name: &quot;Main&quot;, bundle: nil).instantiateViewController(identifier: &quot;MainViewController&quot;) as? MainViewController {
+          viewController.modalPresentationStyle = .fullScreen
+          self.present(viewController, animated: true, completion: nil)
+     }
+}
+//Use like this:
+someViewController.openMain()
+</code></pre>
+<hr>
+<h3 id="13-a-namemakinglocalizationeasiera3-making-localization-easier">1.3. <a name='MakingLocalizationEasier'></a>3. Making Localization Easier</h3>
+<p>Swift的Localization可能非常难看——尤其是当你试图将多个单词连接成一个句子时</p>
+<pre><code class="language-swift">let string = NSLocalizedString(&quot;Hello&quot;, comment: &quot;&quot;) + &quot; &quot; + NSLocalizedString(&quot;World&quot;, comment: &quot;&quot;)
+</code></pre>
+<p>这就是为什么我使用我的扩展字符串来简化这个过程:</p>
+<pre><code class="language-swift">let string = &quot;Hello&quot;.localized + &quot; &quot; + &quot;World&quot;.localized
+</code></pre>
+<p>扩展是超级简单的，看起来像这样:</p>
+<pre><code class="language-swift">extension String {
+    var localized: String {
+        return NSLocalizedString(self, comment: &quot;&quot;)
+    }
+}
+</code></pre>
+<hr>
+<h3 id="14-a-namewritingasynccodeblockwithdelayin3linesofcodea4-writing-async-code-block-with-delay-in-3-lines-of-code">1.4. <a name='WritingAsyncCodeBlockWithDelayin3LinesofCode'></a>4. Writing Async Code Block With Delay in 3 Lines of Code</h3>
+<p>编写异步函数和队列可能会很难看。让我分享一个扩展，在不到三行代码以简化运行一个异步后台任务与延迟完成处理程序:</p>
+<pre><code class="language-swift">extension DispatchQueue {
+    static func background(delay: Double = 0.0, background: (()-&gt;Void)? = nil, completion: (() -&gt; Void)? = nil) {
+        DispatchQueue.main.async {
+            background?()
+            if let completion = completion {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: {
+                    completion()
+                })
+            }
+        }
+    }
+}
+</code></pre>
+<p>这使得编写带有延迟的两部分异步代码块就像这样简单:</p>
+<pre><code class="language-swift">DispatchQueue.background(delay: 1.0, background: {
+    print(&quot;First&quot;)
+}, completion: {
+    print(&quot;Run async after 1 second&quot;)
+})
+</code></pre>
+<hr>
+<h3 id="15-a-nameshakingaviewa5-shaking-a-view">1.5. <a name='ShakingaView'></a>5. Shaking a View</h3>
+<p>在使用用户输入验证时，您经常希望通过晃动视图来给出不正确的用户输入反馈。让我们为这种抖动行为创建一个扩展，这样我们就不必再编写另一个了晃动代码块:</p>
+<pre><code class="language-swift">func shake() {
+    let shake = CABasicAnimation(keyPath: &quot;position&quot;)
+    shake.duration = 0.05
+    shake.repeatCount = 2
+    shake.autoreverses = true
+    let fromPoint = CGPoint(x: center.x - 5, y: center.y)
+    let fromValue = NSValue(cgPoint: fromPoint)
+    let toPoint = CGPoint(x: center.x + 5, y: center.y)
+    let toValue = NSValue(cgPoint: toPoint)
+    shake.fromValue = fromValue
+    shake.toValue = toValue
+    layer.add(shake, forKey: &quot;position&quot;)
+}
+//Use like this: 
+someView.shake()
+</code></pre>
+<p>就这么简单!</p>
+<h3 id="16-a-nameroundingdoubletoaspecificnumberofplacesasstringa6-rounding-double-to-a-specific-number-of-places-as-string">1.6. <a name='RoundingDoubletoaSpecificNumberofPlacesasString'></a>6. Rounding Double to a Specific Number of Places as String</h3>
+<p>另一个经常需要的扩展是将Double或Float四舍五入到特定数量的位置。通常，我必须计算并表示一个值，所以我需要它作为一个格式化的字符串(例如，1.42432四舍五入到两位就是1.42)。但是，当返回一个四舍五入的双位数时，1.40432将返回1.4而不是1.40。让我们看看扩展来获得一个漂亮的格式化字符串:</p>
+<pre><code class="language-swift">extension Double {
+    func rounded(toPlaces places:Int) -&gt; String {
+        let divisor = pow(10.0, Double(places))
+        var returnValue = &quot;\((self * divisor).rounded() / divisor)&quot;
+        if(returnValue.split(separator: &quot;.&quot;)[1].count == 1 &amp;&amp; places &gt; 1) {
+            returnValue += &quot;0&quot;
+        }
+        return returnValue
+    }
+}
+//Use like this: 
+1.403843.rounded(toPlaces: 2) &gt;&gt; &quot;1.40&quot;
+</code></pre>
+<h3 id="17-a-nameconclusionaconclusion">1.7. <a name='Conclusion'></a>Conclusion</h3>
+<p>我希望你能在未来的努力中运用扩展的力量。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/caKSUYFIR/" class="tag">
+                    extensions
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/wei-ying-yong-cheng-xu-she-ji-chuang-jian-yi-ge-jian-zhuang-de-duo-huan-jing-gou-jian-she-zhi/">
+                  <h3 class="post-title">
+                    为应用程序设计创建一个健壮的多环境构建设置
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

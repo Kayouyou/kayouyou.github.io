@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 80:The Combine Framework and Effects: Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+The Effect type: a quick recap
+
+
+
+
+The Combine-Effect Correspondence
+
+
+
+
+Publishers
+
+
+
+
+Subscribers..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 80:The Combine Framework and Effects: Part 1</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#TheEffecttype:aquickrecap">The Effect type: a quick recap</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#TheCombine-EffectCorrespondence">The Combine-Effect Correspondence</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Publishers">Publishers</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Subscribers">Subscribers</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Eagernessvs.laziness">Eagerness vs. laziness</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Subjects">Subjects</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#Nexttime:refactoringthearchitecture">Next time: refactoring the architecture</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 80:The Combine Framework and Effects: Part 1 -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>在过去几周中，我们终于了解了如何考虑我们正在开发的体系结构中的副作用(第1部分、第2部分、第3部分、第4部分)。<br>
+这可能是我们最需要的一集，我们发现，如果你想在<strong>reducers</strong>方面建模你的应用程序的架构，那么一个副作用就是返回一个值，这个值封装了一个工作单元，然后由<strong>store</strong>执行。这使得我们的<strong>reducers</strong>很好且易于理解，并将混乱的<strong>effects</strong>执行委托给<strong>store</strong>，在那里它在运行时解释它们。</p>
+<p>从<strong>reducer</strong>返回的值叫做<strong>Effect</strong>，它实际上是对我们在Point-Free上遇到过很多次的一种类型的重命名，以前叫做<strong>Parallel</strong>。它只是一个简单的结构，它包装了一个函数，该函数接受一个函数作为其第一个参数，有时称为“<strong>callback</strong>”，然后返回<strong>void</strong>。这允许我们将一个异步工作单元表示为一个值，例如，一个网络请求可以表示为一个<strong>Effect</strong>值，当U<strong>RLSession</strong>数据任务完成时调用回调。我们还看到，这种<strong>Effect</strong>类型支持<strong>map</strong>操作，这为我们提供了一种转换效果的轻量级方法，我们还看到，这允许我们在应用程序中极大地清理有效的代码。</p>
+<p>然而，我们在这一系列剧集的结尾有一点奇怪。 在iOS社区中，甚至在苹果生态系统中，有一些东西看起来很像<strong>Effect</strong>类型。这种类型有很多名字，但其根思想有时被称为“<strong>reactive streams</strong>”，并且在许多开源库中都有这种思想的实现，比如<strong>ReactiveSwift</strong>和<strong>RxSwift</strong>，最近苹果通过他们的<strong>Combine</strong>框架加入了竞争。</p>
+<p>所以在本集中，我们想要利用这些社区的所有伟大工作来展示我们如何不必为我们的架构维护我们自己的反应效果库。 我们真的可以用这些库来替换<strong>Effect</strong>类型，事情应该会进展得很顺利。 但是，为了本集的目的，我们需要选择一个，为了简单起见，我们将选择<strong>Combine</strong>，因为我们不需要引入依赖项。我想强调的是，在本集中发生的所有事情对于<strong>ReactiveSwift和RxSwift</strong>都同样有效，我们强烈建议您将自己选择的响应式库移植到架构中，以证明这一点。</p>
+<h2 id="2-a-nametheeffecttypeaquickrecapathe-effect-type-a-quick-recap">2. <a name='TheEffecttype:aquickrecap'></a>The Effect type: a quick recap</h2>
+<p>让我们先来研究一下<strong>Combine API</strong>，以便了解它与之前设计的<strong>Effect</strong>类型的比较。</p>
+<p>我们已经在Point-Free上多次讨论了<strong>Effect</strong>类型的形状，首先是为了理解<strong>map</strong>函数，然后是试图理解逆变性，然后是试图理解<strong>zip和flatMap</strong>的属性，然后是当我们需要重构快照测试库以使用异步值时。最近，我们给这种形状起了个名字“<strong>Effect</strong>”，下面就是它的所有荣耀:</p>
+<pre><code class="language-swift">public struct Effect&lt;A&gt; {
+  public let run: (@escaping (A) -&gt; Void) -&gt; Void
+
+  public func map&lt;B&gt;(_ f: @escaping (A) -&gt; B) -&gt; Effect&lt;B&gt; {
+    return Effect&lt;B&gt; { callback in self.run { a in callback(f(a)) } }
+  }
+}
+</code></pre>
+<p>这是一种非常简单的类型。它表达了一个类型有能力随时向您交付值的想法。这对于异步来说是完美的。例如:</p>
+<pre><code class="language-swift">import Dispatch
+
+let anIntInTwoSeconds = Effect&lt;Int&gt; { callback in
+  DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+    callback(42)
+  }
+}
+</code></pre>
+<p>该值表示一个整数，可以在以后需要传递该值时进行传递。代码块是没有立即完成的。它只在我们决定运行这个值时起作用:</p>
+<pre><code class="language-swift">anIntInTwoSeconds.run { int in print(int) }
+// 42
+</code></pre>
+<p>这个会在2秒后打印出来。</p>
+<p>这种不立即工作的特性被称为“<strong>laziness</strong>”。只有在被要求时才会完成运作。 与此相反的是“<strong>eager</strong>”，我们可以对<strong>Effect</strong>类型做一些小的改变，以便它在创建时就开始工作。这将是我们很快要理解的一个重要区别。</p>
+<p><strong>Effect</strong>还支持<strong>map</strong>操作，它为我们提供了一种非常简单的方法来转换保存在里面的值:</p>
+<pre><code class="language-swift">let squared = anIntInTwoSeconds.map { $0 * $0 }
+// Effect&lt;Int&gt;
+</code></pre>
+<p>这是<strong>Effect</strong>类型的基础，但我们还可以说更多。例如，这种类型肯定支持<strong>zip</strong>操作，可以并行运行多个<strong>effects</strong>，然后将它们的值收集到一个值中，它还支持<strong>flatMap</strong>操作，它允许您将异步值排序在一起。我们还可以考虑更复杂的“<strong>higher-order effects</strong>””，即将<strong>effects</strong>作为输入，将返回<strong>effects</strong>作为输出的函数。你可以用这些东西实现很多东西，比如 <strong>cancellation and debouncing</strong>。</p>
+<p>但是，从本质上来说，<strong>Effect</strong>类型是非常简单的。所以，如果你对这种材料感到舒服，那么不需要太多的工作来获得对<strong>Combine</strong>的基本理解。<strong>Combine</strong>就像一个增压的，强化的<strong>Effect</strong>。它表达了<strong>Effect</strong>类型所能表达的一切，但也有很多别的东西。</p>
+<h2 id="3-a-namethecombine-effectcorrespondenceathe-combine-effect-correspondence">3. <a name='TheCombine-EffectCorrespondence'></a>The Combine-Effect Correspondence</h2>
+<p>从根本上说，<strong>Combine</strong>框架有两个概念:<strong>publishers and subscribers</strong>。<strong>publishers</strong>是能够向任何感兴趣的人传递价值的类型。这正是<strong>Effect</strong>的特点，但<strong>Combine</strong>的<strong>publishers</strong>提供了更多的附加功能。<strong>subscribers</strong>是可以接收值的类型。在我们的<strong>Effect</strong>类型中，这个概念没有名字，但最接近的概念是当我们调用一个<strong>Effect</strong>的<strong>run</strong>方法来让这个<strong>Effect</strong>工作时。<strong>Combine</strong>为概念<strong>subscriber</strong>提供了一种类型，因为它们支持更多的功能，包括<strong>cancellation and demand</strong>。<strong>cancellation</strong>允许您停止<strong>subscriber</strong>获取任何未来的值，而<strong>demand</strong>允许<strong>subscribers</strong>与<strong>publishers</strong>沟通他们想要接收多少值。</p>
+<p>这就是<strong>Combine</strong>和<strong>Effect</strong>类型的基本对应关系。 当我们说到“<strong>publisher</strong>”时，只考虑我们的<strong>Effect</strong>类型，当我们说到“<strong>subscriber</strong>”时，只考虑我们在<strong>effect</strong>上的<strong>run</strong>。</p>
+<h2 id="4-a-namepublishersapublishers">4. <a name='Publishers'></a>Publishers</h2>
+<p>但现在让我们动手做得更深入一点，展示如何实际创建<strong>publishers and subscribers</strong>，并看看API如何与我们的<strong>Effect</strong>类型相关。</p>
+<p>让我们简单地开始。在<strong>effec</strong>t世界中，我们很容易创造出一个值，并在一小段延迟后交付:</p>
+<pre><code class="language-swift">let anIntInTwoSeconds = Effect&lt;Int&gt; { callback in
+  DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+    callback(42)
+  }
+}
+</code></pre>
+<p>我们如何通过<strong>Combine</strong>来实现这一点? 有一些高级的运算符可以很快地帮我们完成这个，但是让我们从基本原理开始。我们该如何构建<strong>publisher</strong>?</p>
+<pre><code class="language-swift">import Combine
+
+Publisher.init
+</code></pre>
+<blockquote>
+<p>🛑 Protocol ‘Publisher’ can only be used as a generic constraint because it has Self or associated type requirements</p>
+</blockquote>
+<p>好了，这就引出了我们的第一课，当谈到<strong>Combine</strong>:大多数概念都表示为协议而不是具体的类型。<strong>Publisher</strong>类型实际上是一个协议，它甚至有关联的类型，因此我们不会经常直接处理<strong>Publisher</strong>类型。</p>
+<p>由于具有关联类型的协议的这种缺陷，<strong>Combine</strong>为我们提供了一个<strong>Publisher</strong>协议的具体实现，称为<strong>AnyPublisher</strong>。为协议提供“<strong>any</strong>”包装器(也称为“类型擦除”包装器)是非常流行的，这样您就可以轻松地实例化协议的实例，而不必自己进行自定义一致性。那么，让我们看看如何创建<strong>AnyPublisher</strong>:</p>
+<pre><code class="language-swift">AnyPublisher.init(&lt;#publisher: Publisher#&gt;)
+</code></pre>
+<p>它只有一个初始化器，它只接受一个<strong>publisher</strong>。所以这个现在帮不了我们。我们正在寻找创建发布者的方法，而不需要遵循发布者协议的全新类型。</p>
+<p>有时，当提供了这些“<strong>any</strong>”包装器时，有一种方法可以用底层协议的所有功能实例化它们。</p>
+<p>例如，<strong>Iterator</strong>协议的<strong>AnyIterator</strong>包装器提供了一种简单的方法来创建迭代器，通过提供一个闭包来表示计算迭代中的下一个值:</p>
+<pre><code class="language-swift">var count = 0
+let iterator = AnyIterator&lt;Int&gt;.init {
+  count += 1
+  return count
+}
+// AnyIterator&lt;Int&gt;
+</code></pre>
+<p>这表示一个迭代器从1到无穷进行计数，但我们可以取前10个值:</p>
+<pre><code class="language-swift">Array(iterator.prefix(10))
+// [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+</code></pre>
+<p>不幸的是，<strong>AnyPublisher</strong>并没有提供给我们这样好的内容。</p>
+<p>那么，我们还有什么可以利用的? <strong>Combine</strong>为我们提供了另一个名为<strong>Future</strong>的<strong>Publisher</strong>的具体实现，它带有一个基于回调的初始化器，就像<strong>Effect</strong>类型一样:</p>
+<pre><code class="language-swift">Future.init(&lt;#attemptToFulfill: (@escaping (Result&lt;_, _&gt;) -&gt; Void) -&gt; Void#&gt;)
+</code></pre>
+<p>这个初始化器给你一个回调，你可以用一个<strong>result</strong>值来调用它。这里使用结果是因为<strong>future</strong>可以通过一个值成功，也可以失败。这意味着我们需要在使用这个初始化式之前指定这些类型。现在，让我们用<strong>Never</strong>作为失败通用型来代表永不失败的<strong>publisher</strong>:</p>
+<pre><code class="language-swift">Future&lt;Int, Never&gt;.init { callback in
+  &lt;#code#&gt;
+}
+</code></pre>
+<p>现在一旦我们有了一些数据我们可以调用这个回调。例如:</p>
+<pre><code class="language-swift">Future&lt;Int, Never&gt; { callback in
+  callback(.success(42))
+}
+</code></pre>
+<p>我们也可以在我们的<strong>future</strong>值上增加一个延迟，以便以后交付:</p>
+<pre><code class="language-swift">let aFutureInt = Future&lt;Int, Never&gt; { callback in
+  DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+    callback(.success(42))
+  }
+}
+</code></pre>
+<p>所以现在创造这种<strong>future</strong>值的方式就像我们创造<strong>Effect</strong>类型的值一样。我们只需要打开一个闭包，然后得到一个回调函数，然后我们可以在任何时候用我们的数据调用那个回调函数。</p>
+<h2 id="5-a-namesubscribersasubscribers">5. <a name='Subscribers'></a>Subscribers</h2>
+<p>为了获得<strong>future</strong>的值，我们必须订阅。这类似于我们<strong>run</strong>我们的<strong>effect</strong>值，但我们可以<strong>subscribe</strong>。 我们在订阅的时候有很多选择。</p>
+<p>我们真正感兴趣的是一个<strong>subscriber</strong>:</p>
+<pre><code class="language-swift">.subscribe(&lt;#subscriber: Subscriber#&gt;)
+</code></pre>
+<p>其他的则是关于发布者订阅的<strong>dispatch queue or run loop</strong> 。</p>
+<p>回想一下，在其核心，<strong>Combine</strong>主要关注的是发布者和订阅者。<strong>publisher</strong>，就像我们这里的<strong>Future</strong>值一样，是一种可以向任何感兴趣的人传递值的类型，而<strong>subscriber</strong>是一种可以接收值的类型。 因此，在这里提供一个<strong>Subscriber</strong>以某种方式允许我们从未来接收值，然后使用该值做一些事情，比如打印它。那么，我们如何创建订阅者呢?</p>
+<pre><code class="language-swift">Subscriber.init
+</code></pre>
+<blockquote>
+<p>🛑 Protocol ‘Subscriber’ can only be used as a generic constraint because it has Self or associated type requirements</p>
+</blockquote>
+<p>Welp，再一次将这个概念抽象到协议背后。它有相关的类型。所以我们不能直接处理订阅者的问题。但是，幸运的是，<strong>Combine</strong>提供了<strong>AnySubscriber</strong>包装器类型，与<strong>AnyPublisher</strong>不同，它对我们的情况实际上很有用。它有4个初始化器。</p>
+<p>这里列出的第一个对我们来说特别有趣:</p>
+<pre><code class="language-swift">AnySubscriber.init(
+  receiveSubscription: &lt;#((Subscription) -&gt; Void)?#&gt;,
+  receiveValue: &lt;#((_) -&gt; Subscribers.Demand)?#&gt;,
+  receiveCompletion: &lt;#((Subscribers.Completion&lt;_&gt;) -&gt; Void)?#&gt;
+)
+</code></pre>
+<p>这让我们可以进入3个定义事件的订阅:</p>
+<ul>
+<li>
+<p>当<strong>subscriber</strong>附加订阅到<strong>publisher</strong>时，它表示为，我们得到了一个<strong>Subscription</strong>对象。它就像被连接的用户的凭证。我们可以使用<strong>subscription</strong> 对象来表示我们希望从发布者获得多少值。</p>
+</li>
+<li>
+<p>当<strong>publisher</strong>提供值时，我们就可以利用这些值做一些事情，比如打印出来。它需要返回一个<strong>Demand</strong>值，这允许我们告诉<strong>publisher</strong>我们还想从他们那里得到多少值。这是一个强大的功能，特别是对于那些可以发送大量数据的<strong>publisher</strong>来说，但是我们现在并不需要这个功能。</p>
+</li>
+<li>
+<p>最后，当<strong>publisher</strong>完成时，它会传递一个完成值，这表明它要么成功完成，要么失败完成。</p>
+</li>
+</ul>
+<p>所以，让我们填充这些闭包，以便我们可以创建我们的订阅:</p>
+<pre><code class="language-swift">aFutureInt.subscribe(
+  AnySubscriber&lt;Int, Never&gt;(
+    receiveSubscription: { subscription in
+      print(&quot;subscription&quot;)
+      subscription.request(.unlimited)
+  },
+    receiveValue: { value in
+      print(&quot;value&quot;, value)
+      return .unlimited
+  },
+    receiveCompletion: { completion in
+      print(&quot;completion&quot;, completion)
+  })
+)
+</code></pre>
+<p>And we can now run it.</p>
+<pre><code class="language-swift">// subscription
+// value 42
+// completion finished
+</code></pre>
+<p>但同时，它看起来，肯定比仅仅在<strong>effect</strong>上<strong>run</strong>要多得多。但这也带来了更大的冲击。首先，它内置了<strong>demand</strong>的概念，这个概念很强大，但目前也不需要。它还具有取消功能，这可以通过订阅的<strong>cancel</strong>方法来完成:</p>
+<pre><code class="language-swift">subscription.cancel()
+</code></pre>
+<p>它可能很强大，但我们现在并不需要它。</p>
+<p>幸运的是，有一种更方便的方式来订阅<strong>publisher</strong>，当你不需要要求<strong>subscribers</strong>的全部力量。在<strong>publishers</strong>上有两个方法，称为<strong>sink</strong>。</p>
+<p>它们允许您只通过调用<strong>receiveValue和receivcomplete</strong>事件来订阅发布者。你不能访问实际的订阅，你不能控制需求。它假设需求是无限的。</p>
+<p>这个方法非常容易使用，它基本上看起来就像<strong>run for effects</strong>:</p>
+<pre><code class="language-swift">aFutureInt.sink { int in
+  print(int)
+}
+</code></pre>
+<p>然而，当我们这样做时，什么也打印不出来。这是因为<strong>sink</strong>实际上返回了一些东西，而<strong>subscribe</strong>则没有，并且返回值允许我们取消向我们的接收器交付的<strong>future</strong>值。因为我们没有保留那个值，它会立即被释放，然后取消订阅。</p>
+<p>返回值的类型被称为<strong>AnyCancellable</strong>，这是另一个“<strong>any</strong>”包装器，但这次是针对<strong>Cancellable</strong>协议，如果我们保留它，我们最终会在2秒后得到我们的值:</p>
+<pre><code class="language-swift">let cancellable = aFutureInt.sink { int
+  in print(int)
+}
+</code></pre>
+<p>我们甚至可以取消这个<strong>cancellable</strong>值，以防止该值被发送到我们的接收器(<strong>sink</strong>):</p>
+<pre><code class="language-swift">cancellable.cancel()
+</code></pre>
+<p>现在这看起来更像我们运行<strong>effects</strong>时所做的。我们只需调用一个方法，就可以利用<strong>publisher</strong>提供的任何值。值得注意的是，游乐场有一些隐式行为，让这种<strong>cancellable</strong>值长期存在，这是我们的值得以传递的原因。在实际应用中，你需要自己保存这个值，比如存储在视图控制器的实例变量中。</p>
+<h2 id="6-a-nameeagernessvslazinessaeagerness-vs-laziness">6. <a name='Eagernessvs.laziness'></a>Eagerness vs. laziness</h2>
+<p>我们开始看到<strong>Effect</strong>类型和<strong>Combine</strong>框架之间的对应关系，这可能会让我们相信，我们可以将我们的老朋友<strong>Effect</strong>从我们架构中的职责中解脱出来，而开始更多地依赖于<strong>Combine</strong>框架。也许我们只是用<strong>Future</strong>替换<strong>Effect</strong>的所有实例，用<strong>sink</strong>替换<strong>run</strong>的所有实例。</p>
+<p>不幸的是，现在情况并非如此。我们的代码现在有一个微妙的问题，所以让我们来解决它。</p>
+<p>为了查看第一个问题，让我们在<strong>future</strong>中添加一个<strong>print</strong>语句:</p>
+<pre><code class="language-swift">let aFutureInt = Future&lt;Int, Never&gt; { callback in
+  DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+    print(&quot;Hello from inside the future!&quot;)
+    callback(.success(42))
+  }
+}
+</code></pre>
+<p>如果我们运行这段代码，我们将得到一个<strong>print</strong>语句，即使<strong>future</strong>被取消了。</p>
+<p>我们甚至可以注释掉整个<strong>sink</strong>。</p>
+<pre><code class="language-swift">//let cancellable = aFutureInt.sink { int in
+//  print(int)
+//}
+//cancellable.cancel()
+</code></pre>
+<p>我们仍然得到<strong>print</strong>语句，即使没有人再引用<strong>future</strong>。</p>
+<p>这是因为<strong>Future</strong>类型是<strong>eager</strong>，这意味着它在创建时就开始工作，而不是在订阅时。</p>
+<p>这是一个相当大的陷阱，当然不是我们的<strong>reducer</strong>想要的。我们的简化程序的美妙之处在于，它们是纯粹的函数，用于在给定某些用户操作的情况下改变应用程序的当前状态，然后它们返回一个<strong>effects</strong>数组，这些<strong>effects</strong>稍后将由<strong>store</strong>运行。如果我们使用这些<strong>Future</strong>类型，那么我们将在<strong>reducer</strong>被调用的那一刻开始执行它。这将是特别令人惊讶的测试，如果我们只想测试<strong>reducer</strong>如何改变一些状态，但在幕后，<strong>effects</strong>却在暗中触发!</p>
+<p>幸运的是，在<strong>Combine</strong>中有一种非常简单的方法可以将一个<strong>eager</strong>的<strong>publisher</strong>变成一个<strong>lazy</strong>的<strong>publisher</strong>。我们可以简单地把它包装在一个<strong>Deferred publisher</strong>中，它有一个初始化式，接受一个返回<strong>publisher</strong>的闭包:</p>
+<pre><code class="language-swift">let aFutureInt = Deferred {
+  Future&lt;Int, Never&gt; { callback in
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      print(&quot;Hello from inside the future!&quot;)
+      callback(.success(42))
+    }
+  }
+}
+</code></pre>
+<p>这使得<strong>future</strong>不会立即运行，但如果我们创建一个接收器，它将启动:</p>
+<pre><code class="language-swift">let cancellable = aFutureInt.sink { int in
+  print(int)
+}
+</code></pre>
+<p>好了，这就解决了急切问题，而且在处理<strong>Combine</strong>时也给我们上了重要的一课:有时候，<strong>Combine</strong>中的东西是<strong>eager</strong>，但我们从不希望我们的架构中有<strong>eager(热切的)<strong>的东西。幸运的是，有一种很好的方法可以把</strong>eager</strong>的发布者变成<strong>lazy</strong>的发布者，但如果<strong>Combine</strong>的架构清楚地指出<strong>eager</strong>的<strong>publishers</strong> ，那就更好了。</p>
+<h2 id="7-a-namesubjectsasubjects">7. <a name='Subjects'></a>Subjects</h2>
+<p>我们使用<strong>Future</strong>的下一个问题是，它实际上只表示一个稍后可以交付的值。它不能提供多种价值:</p>
+<pre><code class="language-swift">let aFutureInt = Deferred {
+  Future&lt;Int, Never&gt; { callback in
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      print(&quot;Hello from inside the future!&quot;)
+      callback(.success(42))
+      callback(.success(1729))
+    }
+  }
+}
+</code></pre>
+<p>当它运行时，我们只有42个被送到<strong>sink</strong>。一旦<strong>Future</strong>接收到一个值，它将立即完成，不再发出其他值。</p>
+<p>这就是<strong>Future</strong>的设计。我们肯定能产生需要传递多种值的<strong>effects</strong>。 例如，如果我们有一个表示套接字连接的<strong>effects</strong>。我们希望将来自该套接字连接的所有值传递给我们的<strong>reducer</strong>。我们还可以有一个表示<strong>reachability</strong>的<strong>effect</strong>，每当应用的<strong>reachability</strong>状态发生变化时，我们可以发出一个值，这样<strong>reducer</strong>就可以对这些事件做出反应。</p>
+<p>我们的<strong>effect</strong>类型没有这个限制:</p>
+<pre><code class="language-swift">let twoIntsInTwoSeconds = Effect&lt;Int&gt; { callback in
+  DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+    callback(42)
+    callback(1729)
+  }
+}
+
+twoIntsInTwoSeconds.run { print($0) }
+// 42
+// 1729
+</code></pre>
+<p>所以，尽管<strong>Future</strong>的初始化器看起来很像我们的<strong>Effect</strong>类型，但它并不完全相同。似乎在<strong>Combine</strong>框架中没有<strong>publisher</strong>允许你用一个接受回调的闭包来初始化它，这样你就可以在任何时候给它提供你想要的任意多的值。</p>
+<p>幸运的是，当我们需要向<strong>publisher</strong>发送多个值时，<strong>Combine</strong>还有另一个概念，<strong>publisher</strong>可以反过来通知<strong>subscribers</strong>。它被称为“<strong>subject</strong>”，这不是我们在简单的<strong>Effect</strong>类型中需要处理的概念，但它对于连接非<strong>Combine</strong>世界和<strong>Combine</strong>世界非常有用。</p>
+<p>主题由<strong>Subject</strong>类型表示，如果尝试初始化该类型:</p>
+<pre><code class="language-swift">Subject.init
+</code></pre>
+<p><strong>Subject</strong>，好比发布者和订阅者，也是协议，所以它本身不是很有用。</p>
+<p>幸运的是，<strong>Combine</strong>提供了<strong>Subject</strong>协议的两个具体实现，称为<strong>passthrough和current value subjects</strong>:</p>
+<pre><code class="language-swift">let passthrough = PassthroughSubject&lt;Int, Never&gt;()
+let currentValue = CurrentValueSubject&lt;Int, Never&gt;(value: 1)
+</code></pre>
+<p>它们之间的主要区别是，通过<strong>currentvaluessubject</strong>，您可以访问最近发出的值(这就是为什么在创建它时必须提供显式的值)，而<strong>passthrough subjects</strong>中的值只能通过<strong>subscribing</strong>来访问。</p>
+<p>我们可以像<strong>publisher</strong>一样订阅一个主题，可以使用<strong>subscriber</strong>方法，也可以使用<strong>sink</strong>方法，为了获得后面的值，我们需要保留一个可取消的值，这样我们的订阅才会继续:</p>
+<pre><code class="language-swift">let c1 = passthrough.sink { x in print(&quot;passthrough&quot;, x) }
+let c2 = currentValue.sink { x in print(&quot;currentValue&quot;, x) }
+</code></pre>
+<p>当我们运行它时，我们立即得到一个当前值，但是<strong>passthrough subject</strong>仍然是空的。</p>
+<pre><code class="language-swift">// currentValue 2
+</code></pre>
+<p>然后我们可以直接将值发送给<strong>subject</strong>，对*publisher**来说这通常是不可能的:</p>
+<pre><code class="language-swift">passthrough.send(42)
+currentValue.send(1729)
+// passthrough 42
+// currentValue 1729
+</code></pre>
+<p>与<strong>Future</strong>类型不同，我们可以自由发送我们想要的任何值。</p>
+<pre><code class="language-swift">passthrough.send(42)
+currentValue.send(1729)
+passthrough.send(42)
+currentValue.send(1729)
+// passthrough 42
+// currentValue 1729
+// passthrough 42
+// currentValue 1729
+</code></pre>
+<p>这当然不像<strong>Effect</strong>类型那么容易，但尽管如此，<strong>Combine</strong>确实让我们能够创建一个<strong>publisher</strong>，我们可以发送许多值，以便它将这些值发布给它的订阅者。</p>
+<h2 id="8-a-namenexttimerefactoringthearchitectureanext-time-refactoring-the-architecture">8. <a name='Nexttime:refactoringthearchitecture'></a>Next time: refactoring the architecture</h2>
+<p>这就是<strong>Combine</strong>框架的基础。还有很多话要说，但我们学到的足够重武器了。我们也了解了<strong>Combine和Effect</strong>之间的对应关系。</p>
+<p>总而言之:在<strong>Combine</strong>的世界里，我们有<strong>publishers</strong>;在<strong>Effect</strong>的世界里，我们有<strong>Effect</strong>;在<strong>Combine</strong>的世界里，我们有<strong>subscribers</strong>;在<strong>Effect</strong>的世界里，我们有<strong>run</strong>。幸运的是，<strong>Combine</strong>附带了一些附加功能，比如<strong>sink</strong>，就像在<strong>Effect</strong>上的<strong>run</strong>一样。并进一步<strong>Combine comes with Future</strong>,创造了一个<strong>Effects</strong>的相似物,但需要说明的是，它们非常迫切，需要包装在<strong>Deferred publisher</strong>中，而且它们只能接收单个值，这意味着我们必须使用另一个<strong>Combine</strong>概念，即<strong>subjects</strong>，来简单地设置更长寿的事件流。</p>
+<p>这是基本的对应关系，所以问题是，我们是否可以重构我们已经构建的可组合架构，以利用<strong>Combine</strong>的功能，而不是自己从头构建它?</p>
+<p>让我们重构掉<strong>Effect</strong>类型，这样我们就可以利用<strong>Combine</strong>来避免重新发明轮子……!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-79effectful-state-management-the-point/">
+                  <h3 class="post-title">
+                    PointFree Episode 79:Effectful State Management: The Point
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Ignoring invalid JSON elements when using Codable | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="默认情况下，使用Swift内置的可编码API对数组进行编码或解码是一种全有或全无的交易。要么成功地处理所有元素，要么抛出错误，这无疑是一种良好的默认做法，因为它确保了高度的数据一致性。
+然而，有时我们可能想要调整这种行为，以便忽略无效元素，..." />
+    <meta name="keywords" content="codable" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Ignoring invalid JSON elements when using Codable</h2>
+            <div class="post-date">2021-02-22</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>默认情况下，使用Swift内置的可编码API对数组进行编码或解码是一种全有或全无的交易。要么成功地处理所有元素，要么抛出错误，这无疑是一种良好的默认做法，因为它确保了高度的数据一致性。</p>
+<p>然而，有时我们可能想要调整这种行为，以便忽略无效元素，而不是导致整个编码过程失败。例如，假设我们正在使用一个基于json的web API，它返回我们目前在Swift中建模的项目集合，如下所示:</p>
+<pre><code class="language-swift">struct Item: Codable {
+    var name: String
+    var value: Int
+}
+
+extension Item {
+    struct Collection: Codable {
+        var items: [Item]
+    }
+}
+</code></pre>
+<p>现在，假设我们正在使用的web API偶尔会返回如下响应，其中包括一个空值，我们的Swift代码期望的是Int：</p>
+<pre><code class="language-swift">{
+    &quot;items&quot;: [
+        {
+            &quot;name&quot;: &quot;One&quot;,
+            &quot;value&quot;: 1
+        },
+        {
+            &quot;name&quot;: &quot;Two&quot;,
+            &quot;value&quot;: 2
+        },
+        {
+            &quot;name&quot;: &quot;Three&quot;,
+            &quot;value&quot;: null
+        }
+    ]
+}
+</code></pre>
+<p>如果我们试图将上述响应解码为我们Item.Collection的模型实例，那么整个解码过程将失败，即使我们的大多数items确实包含完全有效的数据。</p>
+<p>上面的例子可能看起来有点做作，但在野外遇到格式不规范或不一致的JSON格式是非常常见的，而且我们可能不能总是调整这些格式来完全适应Swift的静态特性。</p>
+<p>当然，一个可能的解决方案是简单地将我们的value属性设为可选(Int?)，但这样做可能会在我们的代码库中引入各种各样的复杂性，因为每次我们希望将这些值作为具体的、非可选的Int值使用时，我们都必须unwrap这些值。</p>
+<p>解决这个问题的另一种方法是为我们预期可能为null、missing或invalid的属性定义默认值 -当我们仍然想保留任何包含无效数据的元素时，这将是一个很好的解决方案，但假设这不是这些情况之一。</p>
+<p>因此，让我们来看看如何在解码任何可解码数组时忽略所有无效元素，而不必对Swift类型中的数据结构进行任何重大修改。</p>
+<h2 id="building-a-lossy-codable-list-type">Building a lossy codable list type</h2>
+<p>我们真正想做的是改变我们的解码过程，从非常严格变成“有损”。 首先，让我们引入一个通用的LossyCodableList类型，它将作为元素值数组的一个薄包装器:</p>
+<pre><code class="language-swift">struct LossyCodableList&lt;Element&gt; {
+    var elements: [Element]
+}
+</code></pre>
+<p>请注意，我们并没有立即使我们的新类型符合可编码，这是因为我们希望它有条件地支持可解码、可编码，或者两者都支持，这取决于与它一起使用的元素类型。毕竟，不是所有类型都可以用两种方式编码，通过分别声明我们的可编码一致性，我们将使新的LossyCodableList类型尽可能灵活。</p>
+<p>让我们从可解码的开始，通过使用中间的ElementWrapper类型以可选的方式解码每个元素，我们将遵循可解码的原则。然后，我们将使用compactMap丢弃所有的nil元素，这将给我们最终的数组——像这样:</p>
+<pre><code class="language-swift">extension LossyCodableList: Decodable where Element: Decodable {
+    private struct ElementWrapper: Decodable {
+        var element: Element?
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            element = try? container.decode(Element.self)
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let wrappers = try container.decode([ElementWrapper].self)
+        elements = wrappers.compactMap(\.element)
+    }
+}
+</code></pre>
+<p>要了解更多关于上述符合协议的方法，请查看“Swift中的条件一致性”。</p>
+<p>接下来，可编码，这可能不是每个项目都需要的东西，但它仍然可以派上用场，以防我们也想给我们的编码过程相同的有损行为:</p>
+<pre><code class="language-swift">extension LossyCodableList: Encodable where Element: Encodable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        for element in elements {
+            try? container.encode(element)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以通过使用新的LossyCodableList让我们的嵌套集合类型自动丢弃所有无效的项值，就像这样:</p>
+<pre><code class="language-swift">extension Item {
+    struct Collection: Codable {
+        var items: LossyCodableList&lt;Item&gt;
+    }
+}
+</code></pre>
+<h2 id="making-our-list-type-transparent">Making our list type transparent</h2>
+<p>然而，上述方法的一个主要缺点是，我们现在总是需要使用items.elements来访问实际的item值，这并不理想。如果我们能够将LossyCodableList的使用转变为一个完全透明的实现细节，这样我们就可以继续以简单的值数组的形式访问items属性，那么情况就会好多了。</p>
+<p>实现这一目标的一种方法是将项目集合的LossyCodableList存储为私有属性，然后在编码或解码时使用CodingKeys类型指向该属性。 然后，我们可以将item作为一个计算属性来实现，例如:</p>
+<pre><code class="language-swift">extension Item {
+    struct Collection: Codable {
+        enum CodingKeys: String, CodingKey {
+            case _items = &quot;items&quot;
+        }
+
+        var items: [Item] {
+            get { _items.elements }
+            set { _items.elements = newValue } 
+        }
+        
+        private var _items: LossyCodableList&lt;Item&gt;
+    }
+}
+</code></pre>
+<p>另一个选项是为我们的Collection类型提供一个完全自定义的Decodable实现，这将涉及在将结果元素赋值给items属性之前使用LossyCodableList对每个JSON数组进行解码:</p>
+<pre><code class="language-swift">extension Item {
+    struct Collection: Codable {
+        enum CodingKeys: String, CodingKey {
+            case items
+        }
+
+        var items: [Item]
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let collection = try container.decode(
+                LossyCodableList&lt;Item&gt;.self,
+                forKey: .items
+            )
+            
+            items = collection.elements
+        }
+    }
+}
+</code></pre>
+<p>以上两种方法都是非常好的解决方案，但是让我们看看我们是否可以通过使用Swift的属性包装器特性使事情变得更好。</p>
+<h2 id="both-a-type-and-a-property-wrapper">Both a type and a property wrapper</h2>
+<p>属性包装器在Swift中实现的一件真正整洁的事情是，它们都是标准的Swift类型，这意味着我们可以对lossycodabllist进行改进，使其也能够充当属性包装器。</p>
+<p>我们要做的就是用@propertyWrapper属性标记它，并实现所需的wrappedValue属性(这同样可以作为一个计算属性来完成):</p>
+<pre><code class="language-swift">@propertyWrapper
+struct LossyCodableList&lt;Element&gt; {
+    var elements: [Element]
+
+    var wrappedValue: [Element] {
+        get { elements }
+        set { elements = newValue }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就可以用@LossyCodableList属性标记任何基于数组的属性，并且它将被有损编码和解码——相当透明:</p>
+<pre><code class="language-swift">extension Item {
+    struct Collection: Codable {
+        @LossyCodableList var items: [Item]
+    }
+}
+</code></pre>
+<p>当然，我们仍然可以继续使用LossyCodableList作为独立类型，就像我们之前所做的那样。 通过将其转换为属性包装器，我们所做的一切也使它能够以这种方式使用，这再次为我们提供了很多额外的灵活性，而没有任何实际成本。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>乍一看，Codable似乎是一个极其严格和有限的API，要么成功要么失败，没有任何细微差别或定制的空间。然而，一旦我们超越了表面层面，coable实际上是非常强大的，并且可以通过许多不同的方式进行定制。</p>
+<p>悄悄地忽略无效的元素绝对不是总是正确的方法——我们经常希望编码过程在遇到任何无效数据时失败-但如果不是这样，那么本文中使用的任何一种技术都可以提供一种很好的方式，使我们的编码代码更加灵活和有损，而不会引入大量额外的复杂性。</p>
+<p><a href="https://www.swiftbysundell.com/articles/ignoring-invalid-json-elements-codable/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Q_Pnv_k3a/" class="tag">
+                    codable
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/managing-self-and-cancellable-references-when-using-combine/">
+                  <h3 class="post-title">
+                    Managing self and cancellable references when using Combine
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Extracting view controller actions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在为苹果平台创建的大多数应用程序中，视图控制器往往扮演着非常核心的角色。它们管理我们ui的关键方面，为系统功能(如设备方向和状态栏外观)提供桥梁，并经常响应用户交互(如按钮点击和文本输入)。
+因为他们通常有这样一个关键的角色，因此，许多视图..." />
+    <meta name="keywords" content="view controllers,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Extracting view controller actions in Swift</h2>
+            <div class="post-date">2019-05-19</div>
+            
+            <div class="post-content" v-pre>
+              <p>在为苹果平台创建的大多数应用程序中，视图控制器往往扮演着非常核心的角色。它们管理我们ui的关键方面，为系统功能(如设备方向和状态栏外观)提供桥梁，并经常响应用户交互(如按钮点击和文本输入)。</p>
+<p>因为他们通常有这样一个关键的角色，因此，许多视图控制器最终遭受常见的大规模视图控制器问题并不奇怪—当他们最终承担了太多的责任，导致了很多错综复杂的逻辑，经常混合了视图和布局代码。</p>
+<p>虽然我们已经探索了多种缓解和分解大型视图控制器的方法——例如使用组合、将导航代码移动到专用类型、重用数据源和使用逻辑控制器 - 本周，让我们来看看一种技术，它可以让我们提取视图控制器的核心动作，而不需要引入任何额外的抽象或架构概念。</p>
+<h2 id="awkward-awareness">Awkward awareness</h2>
+<p>许多类型的架构和结构问题的一个非常常见的根本原因是，有些类型只是简单地意识到太多的域和细节。当一个特定类型的“意识范围”增长时，它的职责通常也会增长，并直接影响到它所包含的代码量。</p>
+<p>假设我们正在为一个消息应用程序构建一个composer视图，为了能够从用户的联系人中添加收件人并使消息能够被发送，我们现在让我们的视图控制器直接访问我们的数据库和网络代码:</p>
+<pre><code class="language-swift">class MessageComposerViewController: UIViewController {
+    private var message: Message
+    private let userDatabase: UserDatabase
+    private let networking: Networking
+
+    init(recipients: [Recipient],
+         userDatabase: UserDatabase,
+         networking: Networking) {
+        self.message = Message(recipients: recipients)
+        self.userDatabase = userDatabase
+        self.networking = networking
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>上面的可能看起来不是什么大事——我们在使用依赖注入，它不像我们的视图控制器有大量的依赖。然而，虽然我们的视图控制器还没有变成一个巨大的，它有相当多的动作，它需要处理-例如添加收件人，取消和发送消息-所有这些都是它目前自己执行:</p>
+<pre><code class="language-swift">private extension MessageComposerViewController {
+    func handleAddRecipientButtonTap() {
+        let picker = RecipientPicker(database: userDatabase)
+
+        picker.present(in: self) { [weak self] recipient in
+            self?.message.recipients.append(recipient)
+            self?.renderRecipientsView()
+        }
+    }
+
+    func handleCancelButtonTap() {
+        if message.text.isEmpty {
+            dismiss(animated: true)
+        } else {
+            dismissAfterAskingForConfirmation()
+        }
+    }
+
+    func handleSendButtonTap() {
+        let sender = MessageSender(networking: networking)
+
+        sender.send(message) { [weak self] error in
+            if let error = error {
+                self?.display(error)
+            } else {
+                self?.dismiss(animated: true)
+            }
+        }
+    }
+}
+</code></pre>
+<p>让视图控制器执行它们自己的动作真的很方便，而且对于更简单的视图控制器，它很可能不会导致任何问题 - 但正如我们看到的，从上面的MessageComposerViewController节选，它经常要求我们的视图控制器意识到他们理想情况下不应该太关心的事情 - 例如网络，创建逻辑对象，以及假设它们的父对象是如何呈现的。因为大多数视图控制器已经忙于创建和管理视图，设置布局约束，以及检测用户交互——让我们看看我们是否可以提取上述动作，并使我们的视图控制器在这个过程中更简单(和更不敏感)。</p>
+<h2 id="actions">Actions</h2>
+<p>动作通常有两种不同的变体——同步和异步。有些操作只要求我们快速处理或转换给定的值，并直接返回它，而另一些操作则需要更多的时间来执行。</p>
+<p>为了对这两种动作都建模，让我们创建一个通用动作枚举——它实际上没有任何用例——但包含两个类型别名，一个用于同步动作，一个用于异步动作:</p>
+<pre><code class="language-swift">enum Action&lt;I, O&gt; {
+    typealias Sync = (UIViewController, I) -&gt; O
+    typealias Async = (UIViewController, I, @escaping (O) -&gt; Void) -&gt; Void
+}
+</code></pre>
+<p>我们在上面的动作包装器中使用enum的原因是为了防止它被实例化为类型，而只是作为一个“抽象命名空间”。</p>
+<p>使用上面的类型别名，我们现在可以定义一个元组，它包含MessageComposerViewController可以执行的所有动作——像这样:</p>
+<pre><code class="language-swift">extension MessageComposerViewController {
+    typealias Actions = (
+        addRecipient: Action&lt;Message, Message&gt;.Async,
+        finish: Action&lt;Message, Error?&gt;.Async,
+        cancel: Action&lt;Message, Void&gt;.Sync
+    )
+}
+</code></pre>
+<p>有了上面的这些，我们现在可以开始大量简化我们的视图控制器了——从移除它对我们的核心网络和数据库类型的感知开始，取而代之的是让它只感知传递给它的动作:</p>
+<pre><code class="language-swift">class MessageComposerViewController: UIViewController {
+    private var message: Message
+    private let actions: Actions
+
+    init(recipients: [Recipient], actions: Actions) {
+        self.message = Message(recipients: recipients)
+        self.actions = actions
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>接下来，为了真正使用我们的新动作集合，让我们更新之前到现在所有动作执行代码，只需调用作为视图控制器初始化器一部分传递的预定义动作之一——像这样:</p>
+<pre><code class="language-swift">private extension MessageComposerViewController {
+    func handleAddRecipientButtonTap() {
+        actions.addRecipient(self, message) { [weak self] newMessage in
+            self?.message = newMessage
+            self?.renderRecipientsView()
+        }
+    }
+
+    func handleCancelButtonTap() {
+        actions.cancel(self, message)
+    }
+
+    func handleSendButtonTap() {
+        let loadingVC = add(LoadingViewController())
+
+        actions.finish(self, message) { [weak self] error in
+            loadingVC.remove()
+            error.map { self?.display($0) }
+        }
+    }
+}
+</code></pre>
+<p>值得注意的是，作为重构的一部分，我们还改进了将接收者添加到消息中的方式。而不是让视图控制器自己执行它的模型的变异，我们只是简单地返回一个新的消息值作为它的addRecipient动作的结果。</p>
+<p>以上方法的美妙之处在于，我们的视图控制器现在可以专注于视图控制器做得最好的事情——控制视图——并让创建它的上下文处理细节，如网络和显示RecipientPicker。下面是我们如何在另一个视图控制器上呈现一个消息编写器，例如在一个协调器或导航器中:</p>
+<pre><code class="language-swift">func presentMessageComposerViewController(
+    for recipients: [Recipient],
+    in presentingViewController: UIViewController
+) {
+    let composer = MessageComposerViewController(
+        recipients: recipients,
+        actions: (
+            addRecipient: { [userDatabase] vc, message, handler in
+                let picker = RecipientPicker(database: userDatabase)
+
+                picker.present(in: vc) { recipient in
+                    var message = message
+                    message.recipients.append(recipient)
+                    handler(message)
+                }
+            },
+            cancel: { vc, message in
+                if message.text.isEmpty {
+                    vc.dismiss(animated: true)
+                } else {
+                    vc.dismissAfterAskingForConfirmation()
+                }
+            },
+            finish: { [networking] vc, message, handler in
+                let sender = MessageSender(networking: networking)
+
+                sender.send(message) { error in
+                    handler(error)
+
+                    if error == nil {
+                        vc.dismiss(animated: true)
+                    }
+                }
+            }
+        )
+    )
+
+    presentingViewController.present(composer, animated: true)
+}
+</code></pre>
+<p>很甜! 由于我们的视图控制器的所有动作现在都是简单的函数，我们的代码变得更灵活，也更容易测试——因为我们可以很容易地模拟行为，并验证在各种情况下调用了正确的动作。</p>
+<h2 id="an-actionable-overview">An actionable overview</h2>
+<p>从私有方法中提取动作并放入专用集合的另一个好处是，更容易获得给定视图控制器执行的动作的概览 - 例如这个ProductViewController，它有一个非常清晰的列表，包含了四个同步和异步的动作:</p>
+<pre><code class="language-swift">extension ProductViewController {
+    typealias Actions = (
+        load: Action&lt;Product.ID, Result&lt;Product, Error&gt;&gt;.Async,
+        purchase: Action&lt;Product.ID, Error?&gt;.Async,
+        favorite: Action&lt;Product.ID, Void&gt;.Sync,
+        share: Action&lt;Product, Void&gt;.Sync
+    )
+}
+</code></pre>
+<p>添加对新动作的支持通常也变得非常简单，因为不必注入新的依赖并为每个视图控制器编写特定的实现，我们可以更容易地利用共享逻辑，只需向action元组添加一个新成员——然后在相应的用户交互发生时调用它。</p>
+<p>最后，操作可以实现类型的定制和更容易的重构，而不需要通常的“仪式”来解锁这些特性——例如在使用协议时，或者在切换到新的、更严格的架构设计模式时。</p>
+<p>例如，假设我们想回到之前的MessageComposerViewController，并添加对保存未完成消息草稿的支持。 我们现在可以实现整个特性，甚至不需要触碰我们实际的视图控制器代码——我们所要做的就是更新它的取消动作:</p>
+<pre><code class="language-swift">let composer = MessageComposerViewController(
+    recipients: recipients,
+    actions: (
+        ...
+        cancel: { [draftManager] vc, message in
+            if message.text.isEmpty {
+                vc.dismiss(animated: true)
+            } else {
+                vc.presentConfirmation(forReason: .saveDraft) { 
+                    outcome in
+                    switch outcome {
+                    case .accepted:
+                        draftManager.saveDraft(message)
+                        vc.dismiss(animated: true)
+                    case .rejected:
+                        vc.dismiss(animated: true)
+                    case .cancelled:
+                        break
+                    }
+                }
+            }
+        },
+        ...
+    )
+)
+</code></pre>
+<p>虽然上述功能给了我们很大的灵活性，但我们也需要注意不要在自由闭包中放置太多复杂的逻辑，因为这会使代码库很难导航和调试。值得庆幸的是，一旦我们的逻辑与UI和视图控制器解耦，将其移到专用类型——如MessageSender和DraftManager——通常是相当容易的。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>当涉及到处理复杂的视图控制器时，没有什么“银弹”——特别是那些已经超出其原有的意识和责任范围的。像往常一样，拥有大量不同的技术——并在最合适的地方部署它们——通常是以有效和务实的方式创建真正健壮的系统的关键。</p>
+<p>而更复杂的技术(如使用逻辑控制器或视图模型，或使用协议分离关注点)对于我们想要在整个代码库中进行更结构化、更根本的更改是很好的-抽取动作可以让我们的视图控制器变得更简单，不需要任何大的改变或新的抽象。</p>
+<p><a href="https://www.swiftbysundell.com/articles/extracting-view-controller-actions-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/PG4tMePHd/" class="tag">
+                    view controllers
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/wrapping-sequences-in-swift/">
+                  <h3 class="post-title">
+                    Wrapping sequences in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

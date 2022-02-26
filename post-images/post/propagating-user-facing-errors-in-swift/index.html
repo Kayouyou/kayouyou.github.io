@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Propagating user-facing errors in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="几乎所有的程序都有一个共同点，那就是它们会在某个时候遇到某种形式的错误。而有些错误可能是错误代码、错误假设或系统不兼容导致的bug和failure的结果 - 还有多种错误，它们是程序执行过程中完全正常、有效的部分。
+关于此类错误的一个挑战是..." />
+    <meta name="keywords" content="errors,uikit,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Propagating user-facing errors in Swift</h2>
+            <div class="post-date">2020-05-10</div>
+            
+            <div class="post-content" v-pre>
+              <p>几乎所有的程序都有一个共同点，那就是它们会在某个时候遇到某种形式的错误。而有些错误可能是错误代码、错误假设或系统不兼容导致的bug和failure的结果 - 还有多种错误，它们是程序执行过程中完全正常、有效的部分。</p>
+<p>关于此类错误的一个挑战是如何传播并向用户呈现它们，这可能非常棘手，即使我们忽略了制作信息丰富且可操作的错误消息等任务。不管遇到的是哪种错误，应用程序都会显示一个通用的“发生了错误”信息，这是非常常见的，或者向用户抛出大量技术性很强的调试文本——这两种方式都不是很好的用户体验。</p>
+<p>这一周,让我们看看一些技巧可以使它更简单的运行时错误传播到我们的用户，以及如何使用这些技术来帮助我们呈现更丰富的错误消息，而不必在每个UI实现中增加大量的复杂性。</p>
+<h2 id="an-evolution-from-simple-to-complex">An evolution from simple to complex</h2>
+<p>当你开始创建一个新的应用功能时，尽可能从简单开始是个不错的主意 - 这通常有助于我们避免过早的优化，因为它使我们能够在代码迭代时发现最合适的结构和抽象。</p>
+<p>当涉及到错误传播时，这样一个简单的实现可能类似于下面的示例。 - 在这个例子中我们试图在某种形式的消息APP中加载对话列表，然后将遇到的任何错误传递到私有句柄方法:</p>
+<pre><code class="language-swift">class ConversationListViewController: UIViewController {
+    private let loader: ConversationLoader
+    
+    ...
+
+    private func loadConversations() {
+        // Load our list of converstions, and then either render
+        // our results, or handle any error that was encountered:
+        loader.loadConversations { [weak self] result in
+            switch result {
+            case .success(let conversations):
+                self?.render(conversations)
+            case .failure(let error):
+                self?.handle(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>例如，我们的handle方法可能会创建一个伴随着一个“重试”按钮的UIAlertController，以便将传递的错误的localizedDescription呈现给用户，——像这样</p>
+<pre><code class="language-swift">private extension ConversationListViewController {
+    func handle(_ error: Error) {
+        let alert = UIAlertController(
+            title: &quot;An error occured&quot;,
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(
+            title: &quot;Dismiss&quot;,
+            style: .default
+        ))
+
+        alert.addAction(UIAlertAction(
+            title: &quot;Retry&quot;,
+            style: .default,
+            handler: { [weak self] _ in
+                self?.loadConversations()
+            }
+        ))
+
+        present(alert, animated: true)
+    }
+}
+</code></pre>
+<p>虽然上面的方法(或类似的东西，如使用自定义错误子视图控制器，而不是警报视图)是难以置信的普遍，它确实有一些显著的缺点。</p>
+<p>首先，由于我们是直接呈现在加载模型列表时遇到的任何错误，所以很有可能我们最终会向用户显示代码级实现细节 —— 这不是很好——其次，我们总是显示一个“Retry”按钮，而不管重新尝试操作是否会实际产生不同的结果。</p>
+<p>为了解决这两个问题，我们可以尝试让我们的错误更细粒度和定义更明确一些，例如，通过引入一个专用的NetworkingError枚举，我们可以确保对每种情况都有适当的本地化消息</p>
+<pre><code class="language-swift">enum NetworkingError: LocalizedError {
+    case deviceIsOffline
+    case unauthorized
+    case resourceNotFound
+    case serverError(Error)
+    case missingData
+    case decodingFailed(Error)
+}
+</code></pre>
+<p>如果我们回过头来改进我们的ConversationLoader，让它支持我们新的错误枚举，我们最终会得到一个更加统一的错误API，我们的各种UI组件将能够使用它以更精确的方式处理错误</p>
+<pre><code class="language-swift">class ConversationLoader {
+    typealias Handler = (Result&lt;[Conversation], NetworkingError&gt;) -&gt; Void
+    
+    ...
+
+    func loadConverstions(then handler: @escaping Handler) {
+        ...
+    }
+}
+</code></pre>
+<p>然而，以“精确的方式”执行错误处理说起来容易做起来难，而且常常会导致大量复杂的代码，需要专门为每个特性或用例编写  -因为我们代码库的每一部分都可能使用一组稍微不同的错误。</p>
+<p>作为一个例子，一旦我们开始根据遇到的错误类型自定义呈现错误的方式，下面是我们之前的handle方法现在变得多么复杂:</p>
+<pre><code class="language-swift">private extension ConversationListViewController {
+    func handle(_ error: NetworkingError) {
+        let alert = UIAlertController(
+            title: &quot;An error occured&quot;,
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(
+            title: &quot;Dismiss&quot;,
+            style: .default
+        ))
+
+        // Here we take different actions depending on the error
+        // that was encontered. We've decided that only some
+        // errors warrant a &quot;Retry&quot; button, while an &quot;unauthorized&quot;
+        // error should redirect the user to the login screen,
+        // since their login session has most likely expired:
+        switch error {
+        case .deviceIsOffline, .serverError:
+            alert.addAction(UIAlertAction(
+                title: &quot;Retry&quot;,
+                style: .default,
+                handler: { [weak self] _ in
+                    self?.loadConversations()
+                }
+            ))
+        case .resourceNotFound, .missingData, .decodingFailed
+            break
+        case .unauthorized:
+            return navigator.logOut()
+        }
+
+        present(alert, animated: true)
+    }
+}
+</code></pre>
+<p>而上面的方法很可能会带来更好的用户体验——因为我们现在根据用户可以合理处理的方式来调整每个错误的表示方式—— 在每个功能中保持这种复杂性并不有趣，所以让我们看看是否能找到更好的解决方案。</p>
+<h2 id="using-the-power-of-the-responder-chain">Using the power of the responder chain</h2>
+<p>如果我们现在还停留在UIKit的范围内，改善ui相关错误在应用程序内传播的一种方法是利用responder chain。</p>
+<p>responder chain是UIKit和AppKit共有的一个系统(尽管它的实现在两个框架之间有所不同),以及如何处理各种系统事件——从触摸、键盘事件到输入焦点——。任何UIResponder子类(如UIView和UIViewController)都可以参与responder链, 系统会自动添加我们所有的视图和视图控制器到响应链，只要它们被添加到我们的视图层次结构。</p>
+<p>在iOS上，responder chain从应用程序的AppDelegate开始，一路穿过我们的视图层次结构，直到到达最顶层的视图 —— 这意味着，在许多方面，它是用于传播等任务的理想工具。</p>
+<p>让我们看一下如何将错误处理和传播代码移动到responder chain中——首先用一个方法扩展UIResponder，默认情况下，使用内置的next属性向上移动发送给它的任何错误:</p>
+<pre><code class="language-swift">extension UIResponder {
+    // We're dispatching our new method through the Objective-C
+    // runtime, to enable us to override it within subclasses:
+    @objc func handle(_ error: Error,
+                      from viewController: UIViewController,
+                      retryHandler: @escaping () -&gt; Void) {
+        // This assertion will help us identify errors that were
+        // either emitted by a view controller *before* it was
+        // added to the responder chain, or never handled at all:
+        guard let nextResponder = next else {
+            return assertionFailure(&quot;&quot;&quot;
+            Unhandled error \(error) from \(viewController)
+            &quot;&quot;&quot;)
+        }
+
+        nextResponder.handle(error,
+            from: viewController,
+            retryHandler: retryHandler
+        )
+    }
+}
+</code></pre>
+<p>上面的设计非常类似于AppKit的presentError API，它也以类似的方式使用了responder chain。</p>
+<p>由于大多数基于ui的错误传播可能源自视图控制器，让我们也扩展UIViewController与以下方便的API，以避免每次我们想要处理一个错误不得不手动传递self:</p>
+<pre><code class="language-swift">extension UIViewController {
+    func handle(_ error: Error,
+                retryHandler: @escaping () -&gt; Void) {
+        handle(error, from: self, retryHandler: retryHandler)
+    }
+}
+</code></pre>
+<p>使用我们的新API现在几乎和调用我们之前在ConversationListViewController中使用的私有handle方法一样简单:</p>
+<pre><code class="language-swift">class ConversationListViewController: UIViewController {
+    ...
+
+    func loadConversations() {
+        loader.loadConversations { [weak self] result in
+            switch result {
+            case .success(let conversations):
+                self?.render(conversations)
+            case .failure(let error):
+                self?.handle(error, retryHandler: {
+                    self?.loadConversations()
+                })
+            }
+        }
+    }
+}
+</code></pre>
+<p>有了新的错误传播系统，我们现在可以在responder chain的任何地方实现错误处理代码——这既给了我们极大的灵活性，也让我们不再需要每个视图控制器手动实现自己的错误处理代码。</p>
+<h2 id="generic-error-categories">Generic error categories</h2>
+<p>然而，在我们能够充分利用新的错误处理系统之前，我们需要一种稍微通用一些的方法来识别代码可能产生的各种错误。— 否则，我们可能最终会得到大量的实现，需要在不同的错误类型之间执行大量的类型转换</p>
+<p>实现这一目的的一种方法是引入一组错误分类，我们可以将我们的应用程序的错误分为这些错误——例如通过使用enum和专门的CategorizedError协议</p>
+<pre><code class="language-swift">enum ErrorCategory {
+    case nonRetryable
+    case retryable
+    case requiresLogout
+}
+
+protocol CategorizedError: Error {
+    var category: ErrorCategory { get }
+}
+</code></pre>
+<p>现在，我们要做的就是将错误分类为符合上述协议的错误，就像这样:</p>
+<pre><code class="language-swift">extension NetworkingError: CategorizedError {
+    var category: ErrorCategory {
+        switch self {
+        case .deviceIsOffline, .serverError:
+            return .retryable
+        case .resourceNotFound, .missingData, .decodingFailed:
+            return .nonRetryable
+        case .unauthorized:
+            return .requiresLogout
+        }
+    }
+}
+</code></pre>
+<p>最后，让我们用一个方便的API来扩展Error，它可以让我们从任何错误中检索一个ErrorCategory——对于还不支持分类的错误，可以退回到默认的类别:</p>
+<pre><code class="language-swift">extension Error {
+    func resolveCategory() -&gt; ErrorCategory {
+        guard let categorized = self as? CategorizedError else {
+            // We could optionally choose to trigger an assertion
+            // here, if we consider it important that all of our
+            // errors have categories assigned to them.
+            return .nonRetryable
+        }
+
+        return categorized.category
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就能够以一种完全可重用的方式编写错误处理代码，而不会失去任何精度。在这种情况下，我们将通过扩展我们的AppDelegate(它位于responder链的顶部)来实现它，实现如下:</p>
+<pre><code class="language-swift">extension AppDelegate {
+    override func handle(_ error: Error,
+                         from viewController: UIViewController,
+                         retryHandler: @escaping () -&gt; Void) {
+        let alert = UIAlertController(
+            title: &quot;An error occured&quot;,
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(
+            title: &quot;Dismiss&quot;,
+            style: .default
+        ))
+
+        switch error.resolveCategory() {
+        case .retryable:
+            alert.addAction(UIAlertAction(
+                title: &quot;Retry&quot;,
+                style: .default,
+                handler: { _ in retryHandler() }
+            ))
+        case .nonRetryable:
+            break
+        case .requiresLogout:
+            return performLogout()
+        }
+
+        viewController.present(alert, animated: true)
+    }
+}
+</code></pre>
+<p>除了我们现在有一个单一的错误处理实现，它可以用来呈现任何视图控制器遇到的错误，responder chain的强大之处在于，我们还可以轻松地在该链中的任何位置插入更特定的处理代码。</p>
+<p>例如，如果在我们的登录屏幕上遇到需要注销的错误(比如授权错误)，我们可能希望显示一个错误消息，而不是试图将用户注销。 为了让它发生，我们只需要在那个视图控制器中实现handle，添加我们的自定义错误处理，然后将我们不希望在该级别处理的错误传递给我们的超类——像这样:</p>
+<pre><code class="language-swift">extension LoginViewController {
+    override func handle(_ error: Error,
+                         from viewController: UIViewController,
+                         retryHandler: @escaping () -&gt; Void) {
+        guard error.resolveCategory() == .requiresLogout else {
+            return super.handle(error,
+                from: viewController,
+                retryHandler: retryHandler
+            )
+        }
+
+        errorLabel.text = &quot;&quot;&quot;
+        Login failed. Check your username and password.
+        &quot;&quot;&quot;
+    }
+}
+</code></pre>
+<p><em>note: 上面的覆盖也会捕获登录视图控制器的子控制器产生的所有错误。</em></p>
+<p>在处理错误时，还有许多其他因素需要考虑(例如避免将多个警报叠加在一起,或自动重试某些操作，而不是显示错误).使用响应链来传播面向用户的错误是非常强大的——因为它让我们可以编写细粒度的错误处理代码，而不必将代码分散到所有不同的UI实现中。</p>
+<h2 id="from-uikit-to-swiftui">From UIKit to SwiftUI</h2>
+<p>接下来，让我们看看如何实现类似于我们刚刚探索的基于uikit的设置，但在SwiftUI中实现。 虽然SwiftUI没有一个实际的响应链，但它提供了其他机制，让我们通过视图层次结构上下传播信息。</p>
+<p>首先，让我们创建一个ErrorHandler协议，我们将使用它来定义各种错误处理程序。当被要求处理错误时，我们还将让每个处理程序访问遇到错误的视图，以及用于管理应用程序登录状态的LoginStateController. 就像在我们基于uikit的实现中一样，我们将使用retryHandler闭包来允许重试失败的操作:</p>
+<pre><code class="language-swift">protocol ErrorHandler {
+    func handle&lt;T: View&gt;(
+        _ error: Error?,
+        in view: T,
+        loginStateController: LoginStateController,
+        retryHandler: @escaping () -&gt; Void
+    ) -&gt; AnyView
+}
+</code></pre>
+<p><em>note：请注意，上面的error参数是一个可选参数，它将使我们能够以声明性的、SwiftUI友好的方式传入视图错误。</em></p>
+<p>接下来，让我们编写上述协议的默认实现，它(就像使用UIKit时一样)将为遇到的每个错误提供一个警告视图。它将通过将其传递的参数转换为内部Presentation模型来实现这一点，然后将其包装在一个绑定值中，并用于表示一个警告——像这样:</p>
+<pre><code class="language-swift">struct AlertErrorHandler: ErrorHandler {
+    // We give our handler an ID, so that SwiftUI will be able
+    // to keep track of the alerts that it creates as it updates
+    // our various views:
+    private let id = UUID()
+
+    func handle&lt;T: View&gt;(
+        _ error: Error?,
+        in view: T,
+        loginStateController: LoginStateController,
+        retryHandler: @escaping () -&gt; Void
+    ) -&gt; AnyView {
+        guard error?.resolveCategory() != .requiresLogout else {
+            loginStateController.state = .loggedOut
+            return AnyView(view)
+        }
+
+        var presentation = error.map { Presentation(
+            id: id,
+            error: $0,
+            retryHandler: retryHandler
+        )}
+
+        // We need to convert our model to a Binding value in
+        // order to be able to present an alert using it:
+        let binding = Binding(
+            get: { presentation },
+            set: { presentation = $0 }
+        )
+
+        return AnyView(view.alert(item: binding, content: makeAlert))
+    }
+}
+</code></pre>
+<p>我们需要Presentation模型的原因是SwiftUI要求一个值是Identifiable，以便能够显示该值的警报。通过使用处理程序自己的UUID作为标识符(就像上面所做的那样)，我们将能够为我们创建的每个警报提供一个稳定的标识，即使它在更新和重新呈现我们的视图。</p>
+<p>现在让我们实现这个Presentation模型，以及我们在上面调用的私有makeAlert方法和完成默认ErrorHandler的实现。</p>
+<pre><code class="language-swift">private extension AlertErrorHandler {
+    struct Presentation: Identifiable {
+        let id: UUID
+        let error: Error
+        let retryHandler: () -&gt; Void
+    }
+    
+    func makeAlert(for presentation: Presentation) -&gt; Alert {
+        let error = presentation.error
+
+        switch error.resolveCategory() {
+        case .retryable:
+            return Alert(
+                title: Text(&quot;An error occured&quot;),
+                message: Text(error.localizedDescription),
+                primaryButton: .default(Text(&quot;Dismiss&quot;)),
+                secondaryButton: .default(Text(&quot;Retry&quot;),
+                    action: presentation.retryHandler
+                )
+            )
+        case .nonRetryable:
+            return Alert(
+                title: Text(&quot;An error occured&quot;),
+                message: Text(error.localizedDescription),
+                dismissButton: .default(Text(&quot;Dismiss&quot;))
+            )
+        case .requiresLogout:
+            // We don't expect this code path to be hit, since
+            // we're guarding for this case above, so we'll
+            // trigger an assertion failure here.
+            assertionFailure(&quot;Should have logged out&quot;)
+            return Alert(title: Text(&quot;Logging out...&quot;))
+        }
+    }
+}
+</code></pre>
+<p>我们需要的下一件事是通过我们的视图层次向下传递当前错误处理程序的方法，有趣的是，这与我们使用UIKit responder chain实现东西的方式相反。虽然SwiftUI提供了向上传播的api(比如我们在《SwiftUI布局系统指南》第二部分中用来实现视图间同步的preferences系统)，向下传递对象和信息通常更适合于SwiftUI高度声明性的特性。</p>
+<p>为了实现这一点，让我们使用SwiftUI的环境系统，它允许我们向视图层次结构的整体环境添加关键对象和值——任何视图或修改器都可以获得这些对象和值。</p>
+<p>在这种情况下，这样做需要两个步骤。首先，我们将定义一个EnvironmentKey来存储当前的错误处理程序，然后我们将使用一个计算属性来扩展EnvironmentValues类型以访问它——像这样:</p>
+<pre><code class="language-swift">struct ErrorHandlerEnvironmentKey: EnvironmentKey {
+    static var defaultValue: ErrorHandler = AlertErrorHandler()
+}
+
+extension EnvironmentValues {
+    var errorHandler: ErrorHandler {
+        get { self[ErrorHandlerEnvironmentKey.self] }
+        set { self[ErrorHandlerEnvironmentKey.self] = newValue }
+    }
+}
+</code></pre>
+<p>因为我们已经将AlertErrorHandler实例作为默认环境值，所以在构建视图时不需要显式地注入错误处理程序  — 除非我们想要覆盖层次结构子集的默认处理程序(就像我们在使用UIKit时为登录屏幕所做的那样)。 为了让这样的覆盖更容易添加，让我们为它创建一个方便的API:</p>
+<pre><code class="language-swift">extension View {
+    func handlingErrors(
+        using handler: ErrorHandler
+    ) -&gt; some View {
+        environment(\.errorHandler, handler)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就有了处理错误所需的一切，所以现在让我们实现生成错误的另一方面。</p>
+<p>为了让任何视图都能轻易地发出它遇到的面向用户的错误，让我们使用SwiftUI的view modifier系统来封装所有逻辑，将错误和重试处理程序连接到我们上面构建的错误处理系统:</p>
+<pre><code class="language-swift">struct ErrorEmittingViewModifier: ViewModifier {
+    @EnvironmentObject var loginStateController: LoginStateController
+    @Environment(\.errorHandler) var handler
+
+    var error: Error?
+    var retryHandler: () -&gt; Void
+
+    func body(content: Content) -&gt; some View {
+        handler.handle(error,
+            in: content,
+            loginStateController: loginStateController,
+            retryHandler: retryHandler
+        )
+    }
+}
+</code></pre>
+<p><em>note： 请注意，我们如何使用两个不同的属性包装器来访问上述环境对象。@Environment包装器使我们能够直接从环境本身读取值，而@EnvironmentObject one使我们能够获得从父视图传递的对象。</em></p>
+<p>虽然我们可以简单地直接在视图中使用我们的新视图修饰符，但是让我们也为它创建一个方便的API，例如:</p>
+<pre><code class="language-swift">extension View {
+    func emittingError(
+        _ error: Error?,
+        retryHandler: @escaping () -&gt; Void
+    ) -&gt; some View {
+        modifier(ErrorEmittingViewModifier(
+            error: error,
+            retryHandler: retryHandler
+        ))
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们基于swiftui的错误传播系统现在就完成了——让我们来试一试吧! 尽管系统本身构建起来相当复杂，但生成的调用站点仍然可以非常简单 — 因为视图传播错误所需要做的一切就是调用我们刚刚定义的emittingError API，而新的错误传播系统将处理其余的工作</p>
+<p>下面是我们之前的ConversationListViewController(现在也有一个附带的视图模型)的swiftui版本重写后的样子:</p>
+<pre><code class="language-swift">class ConversationListViewModel: ObservableObject {
+    @Published private(set) var error: Error?
+    @Published private(set) var conversations: [Conversation]
+    ...
+}
+
+struct ConversationListView: View {
+    @ObservedObject var viewModel: ConversationListViewModel
+
+    var body: some View {
+        List(viewModel.conversations, rowContent: makeRow)
+            .emittingError(viewModel.error, retryHandler: {
+                self.viewModel.load()
+            })
+            .onAppear(perform: viewModel.load)
+            ...
+    }
+
+    private func makeRow(for conversation: Conversation) -&gt; some View {
+        ...
+    }
+}
+</code></pre>
+<p>最后一个问题是，当我们设置视图层次结构时，我们需要确保将我们的LoginStateController注入到我们的环境中(以使它能够在以后被我们的errormissiontingviewmodifier检索)，可以这样做</p>
+<pre><code class="language-swift">RootView(...).environmentObject(loginStateController)
+</code></pre>
+<p>在以后的文章中，我们将更仔细地研究SwiftUI的各种环境api，以及如何将它们用于依赖注入。</p>
+<p>在很多方面，我们的错误传播系统的两种实现确实显示了UIKit和SwiftUI是多么不同——因为SwiftUI要求我们添加几个新类型，同时也使我们能够构建一个完全声明性的API，这个API与SwiftUI自带的内置API内联。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在处理面向用户的错误时，比如在UI代码中遇到的错误，通常最好采用某种形式的系统或架构，让我们可以将这些类型的错误传播到中央处理机制中。</p>
+<p>使用UIKit或AppKit时，可以使用responder chain，而基于swift的应用可能选择使用环境或首选项系统。或者使用某种单向方法来发送错误和其他事件。</p>
+<p><a href="https://www.swiftbysundell.com/articles/propagating-user-facing-errors-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/wQerok9iv/" class="tag">
+                    errors
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l8xvWHOizF/" class="tag">
+                    uikit
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-different-categories-of-swift-protocols/">
+                  <h3 class="post-title">
+                    The different categories of Swift protocols
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

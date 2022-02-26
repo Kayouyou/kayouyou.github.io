@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Observing Combine publishers in SwiftUI views | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="SwiftUI提供了多种方法将给定视图连接到它所依赖的底层状态，例如使用@State和@ObservedObject这样的属性包装器。虽然在绝大多数情况下，使用这些属性包装器当然是首选的方法，但另一个值得记住的选择是，我们也可以直接在我们的..." />
+    <meta name="keywords" content="combine,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Observing Combine publishers in SwiftUI views</h2>
+            <div class="post-date">2020-12-04</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>SwiftUI提供了多种方法将给定视图连接到它所依赖的底层状态，例如使用@State和@ObservedObject这样的属性包装器。虽然在绝大多数情况下，使用这些属性包装器当然是首选的方法，但另一个值得记住的选择是，我们也可以直接在我们的SwiftUI视图中观察组合发布者</p>
+<p>作为一个例子，让我们说我们在一个视图上工作，只要应用程序留在前台，就会播放一个重复的动画，我们想暂停那个动画，当那不再是情况。</p>
+<p>为了做到这一点，我们可以使用NotificationCenter，它(因为iOS 13 + macOS Catalina)附带了一个组合驱动的API，让我们可以轻松地为我们想要观察的任何通知创建发布者。然后，我们可以使用onReceive修饰符将发布者连接到我们的swifttui视图的主体上，就像这样:</p>
+<pre><code class="language-swift">struct AnimationView: View {
+    @State private var isAnimating = true
+
+    var body: some View {
+        VStack {
+            ...
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIApplication.didEnterBackgroundNotification
+        )) { _ in
+            // The app moved to the background
+            isAnimating = false
+        }
+    }
+}
+</code></pre>
+<p>请注意，我们不需要让视图存储为AnyCancellable，也不需要以任何方式管理到发布者的连接——swift为我们处理所有这些!</p>
+<p>然而,观察NotificationCenter-provided出版商所需的代码相当冗长,如果上面是一个模式,我们希望跟随在多个地方在我们的代码库,然后我们还可以实现一些方便的api,会让我们更容易这样做:</p>
+<pre><code class="language-swift">extension View {
+    func onNotification(
+        _ notificationName: Notification.Name,
+        perform action: @escaping () -&gt; Void
+    ) -&gt; some View {
+        onReceive(NotificationCenter.default.publisher(
+            for: notificationName
+        )) { _ in
+            action()
+        }
+    }
+
+    func onAppEnteredBackground(
+        perform action: @escaping () -&gt; Void
+    ) -&gt; some View {
+        onNotification(
+            UIApplication.didEnterBackgroundNotification,
+            perform: action
+        )
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以通过这样做来观察当我们的应用移动到背景时:</p>
+<pre><code class="language-swift">struct AnimationView: View {
+    @State private var isAnimating = true
+
+    var body: some View {
+        VStack {
+            ...
+        }
+        .onAppEnteredBackground {
+            isAnimating = false
+        }
+    }
+}
+</code></pre>
+<p>最后，使用onReceive修饰符也是观察我们自己的自定义发布者的好方法——在设置对可变状态块的引用时，它可以作为像ObservedObject这样的更轻量级的替代。</p>
+<p>例如，ItemList使用发布者来观察项目值的外部数组，然后将其存储在本地@State属性中，以连接到它的主体:</p>
+<pre><code class="language-swift">struct ItemList: View {
+    var publisher: AnyPublisher&lt;[Item], Never&gt;
+    @State private var items = [Item]()
+
+    var body: some View {
+        List(items) { item in
+            ItemRow(item: item)
+        }
+        .onReceive(publisher) {
+            items = $0
+        }
+    }
+}
+</code></pre>
+<p>当然，这并不意味着我们应该用上面的模式来替换ObservedObject的所有用法，但是当我们只想观察单个事件而不是一个复杂的对象时，这是一种很好的技术。</p>
+<p><a href="https://www.swiftbysundell.com/tips/observing-combine-publishers-in-swiftui-views/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/sorting-swift-collections/">
+                  <h3 class="post-title">
+                    Sorting Swift collections
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

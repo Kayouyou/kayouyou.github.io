@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Caching in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="让一个应用程序感觉快速和响应不仅仅是调整它的UI渲染方式，或者提高它的操作和算法的纯粹执行速度——它通常只是有效地管理它的数据和避免不必要的工作。
+这种不必要的工作的一个常见来源是我们多次重新加载完全相同的数据。它可以是多个特性加载相同模型..." />
+    <meta name="keywords" content="caching,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Caching in Swift</h2>
+            <div class="post-date">2019-08-25</div>
+            
+            <div class="post-content" v-pre>
+              <p>让一个应用程序感觉快速和响应不仅仅是调整它的UI渲染方式，或者提高它的操作和算法的纯粹执行速度——它通常只是有效地管理它的数据和避免不必要的工作。</p>
+<p>这种不必要的工作的一个常见来源是我们多次重新加载完全相同的数据。它可以是多个特性加载相同模型的重复副本，或者视图的数据在每次重新出现在屏幕上时被重新加载。</p>
+<p>本周——让我们来看看在这种情况下，缓存是如何成为一个不可思议的强大工具的，如何在Swift中构建一个高效而优雅的缓存API， 以及如何策略性地缓存各种值和对象可以对应用程序的整体性能产生重大影响。</p>
+<h2 id="part-of-the-system">Part of the system</h2>
+<p>缓存是一种乍看起来比实际要简单得多的任务。我们不仅需要有效地存储和加载值，还需要决定何时收回条目，以保持较低的内存占用、使陈旧数据失效等等。</p>
+<p>值得庆幸的是，苹果已经通过内置的NSCache类为我们解决了很多问题。 然而，使用它需要注意一些事项，因为它在苹果自己的平台上仍然是一个Objective-C类 - 这意味着它只能存储类实例，并且只兼容基于nsobject的键值:</p>
+<pre><code class="language-swift">// To be able to use strings as caching keys, we have to use
+// NSString here, since NSCache is only compatible with keys
+// that are subclasses of NSObject:
+let cache = NSCache&lt;NSString, MyClass&gt;()
+</code></pre>
+<p>然而，通过为NSCache编写一个精简的包装器，我们可以创建一个更灵活的Swift缓存API-这使我们能够存储结构体和其他值类型，并允许我们使用任何哈希键类型 - 不需要我们重写NSCache的所有底层逻辑。我们来做一下。</p>
+<h2 id="it-all-starts-with-a-declaration">It all starts with a declaration</h2>
+<p>我们要做的第一件事是声明新的缓存类型。我们将其称为缓存，并使其成为任何可哈希键类型和任何值类型的泛型。然后我们给它一个NSCache属性，它将存储一个WrappedKey类型的条目实例:</p>
+<pre><code class="language-swift">final class Cache&lt;Key: Hashable, Value&gt; {
+    private let wrapped = NSCache&lt;WrappedKey, Entry&gt;()
+}
+</code></pre>
+<p>我们的WrappedKey类型会像它的名字所暗示的那样，包装面向公众的键值，以使它们与NSCache兼容。为了实现这一点，让我们继承NSObject，并实现hash和isEqual——因为这是Objective-C用来确定两个实例是否相等的:</p>
+<pre><code class="language-swift">private extension Cache {
+    final class WrappedKey: NSObject {
+        let key: Key
+
+        init(_ key: Key) { self.key = key }
+
+        override var hash: Int { return key.hashValue }
+
+        override func isEqual(_ object: Any?) -&gt; Bool {
+            guard let value = object as? WrappedKey else {
+                return false
+            }
+
+            return value.key == key
+        }
+    }
+}
+</code></pre>
+<p>当涉及到我们的条目类型时，唯一的要求是它需要是一个类(它不需要子类化NSObject)，这意味着我们可以简单地让它存储一个值实例:</p>
+<pre><code class="language-swift">private extension Cache {
+    final class Entry {
+        let value: Value
+
+        init(value: Value) {
+            self.value = value
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就可以为缓存提供一组初始api了。让我们从三个方法开始——一个用于为给定的键插入值，一个用于检索值，一个用于删除现有值:</p>
+<pre><code class="language-swift">final class Cache&lt;Key: Hashable, Value&gt; {
+    private let wrapped = NSCache&lt;WrappedKey, Entry&gt;()
+
+    func insert(_ value: Value, forKey key: Key) {
+        let entry = Entry(value: value)
+        wrapped.setObject(entry, forKey: WrappedKey(key))
+    }
+
+    func value(forKey key: Key) -&gt; Value? {
+        let entry = wrapped.object(forKey: WrappedKey(key))
+        return entry?.value
+    }
+
+    func removeValue(forKey key: Key) {
+        wrapped.removeObject(forKey: WrappedKey(key))
+    }
+}
+</code></pre>
+<p>由于缓存本质上只是一个专门的键值存储，所以它是下标的理想用例 -  因此，让我们也可以通过这种方式检索和插入值:</p>
+<pre><code class="language-swift">extension Cache {
+    subscript(key: Key) -&gt; Value? {
+        get { return value(forKey: key) }
+        set {
+            guard let value = newValue else {
+                // If nil was assigned using our subscript,
+                // then we remove any value for that key:
+                removeValue(forKey: key)
+                return
+            }
+
+            insert(value, forKey: key)
+        }
+    }
+}
+</code></pre>
+<p>在实现了最初的一组特性之后——让我们来看看我们的新缓存吧!  假设我们正在开发一个阅读文章的应用程序，并且我们正在使用一个ArticleLoader来加载文章模型。通过使用新的缓存来存储我们加载的文章，以及在加载新文章之前检查任何以前缓存的文章 - 我们可以确保每一篇文章只加载一次，像这样:</p>
+<pre><code class="language-swift">class ArticleLoader {
+    typealias Handler = (Result&lt;Article, Error&gt;) -&gt; Void
+
+    private let cache = Cache&lt;Article.ID, Article&gt;()
+
+    func loadArticle(withID id: Article.ID,
+                     then handler: @escaping Handler) {
+        if let cached = cache[id] {
+            return handler(.success(cached))
+        }
+
+        performLoading { [weak self] result in
+            let article = try? result.get()
+            article.map { self?.cache[id] = $0 }
+            handler(result)
+        }
+    }
+}
+</code></pre>
+<p>另一种优化上述加载代码的方法是，如果我们要加载的文章已经加载了，避免重复请求。</p>
+<p>上面的内容似乎不会对我们的应用的性能产生很大的影响，但它确实可以让我们的应用看起来更快，当用户将导航回一篇已经加载的文章 -它马上就会出现在那里。如果我们将上述内容与用户可能打开的预取文章结合起来(例如用户最喜欢的类别中的最新文章)，那么我们的应用就会更容易使用。</p>
+<h2 id="avoiding-stale-data">Avoiding stale data</h2>
+<p>与Swift标准库中的集合(比如字典)相比，NSCache更适合缓存值，因为当系统内存不足时，它会自动清除对象-这反过来使我们的应用程序本身在内存中保留更长的时间。</p>
+<p>但是，我们可能需要添加一些自己的缓存失效条件，否则我们可能会保留陈旧的数据。虽然能够重用已经加载的数据当然是件好事，但向用户显示过时的数据绝对不是。</p>
+<p>缓解这个问题的一种方法是在一定时间间隔后删除缓存项，从而限制缓存项的生存期。要做到这一点，我们首先要在Entry类中添加一个expirationDate属性，以便能够跟踪每个条目的剩余生命周期:</p>
+<pre><code class="language-swift">final class Entry {
+    let value: Value
+    let expirationDate: Date
+
+    init(value: Value, expirationDate: Date) {
+        self.value = value
+        self.expirationDate = expirationDate
+    }
+}
+</code></pre>
+<p>接下来，我们需要一种方法让缓存获得当前日期，以便确定给定条目是否仍然有效。虽然我们可以在任何需要的时候内联调用Date()，但这会使单元测试变得非常困难——因此，让我们将一个生成日期的函数作为初始化器的一部分注入进来。我们还将添加一个entryLifetime属性，默认值为12小时:</p>
+<pre><code class="language-swift">final class Cache&lt;Key: Hashable, Value&gt; {
+    private let wrapped = NSCache&lt;WrappedKey, Entry&gt;()
+    private let dateProvider: () -&gt; Date
+    private let entryLifetime: TimeInterval
+
+    init(dateProvider: @escaping () -&gt; Date = Date.init,
+         entryLifetime: TimeInterval = 12 * 60 * 60) {
+        self.dateProvider = dateProvider
+        self.entryLifetime = entryLifetime
+    }
+    ...
+}
+</code></pre>
+<p>以上内容就绪后，让我们更新插入和检索值的方法，以考虑当前日期和指定的entryLifetime:</p>
+<pre><code class="language-swift">func insert(_ value: Value, forKey key: Key) {
+    let date = dateProvider().addingTimeInterval(entryLifetime)
+    let entry = Entry(value: value, expirationDate: date)
+    wrapped.setObject(entry, forKey: WrappedKey(key))
+}
+
+func value(forKey key: Key) -&gt; Value? {
+    guard let entry = wrapped.object(forKey: WrappedKey(key)) else {
+        return nil
+    }
+
+    guard dateProvider() &lt; entry.expirationDate else {
+        // Discard values that have expired
+        removeValue(forKey: key)
+        return nil
+    }
+
+    return entry.value
+}
+</code></pre>
+<p>而准确地使过时的条目失效无疑是实现任何类型的缓存的最困难的部分-通过结合上述的过期日期和模型特定的逻辑来删除基于特定事件的值(例如，如果用户删除一篇文章)，我们通常可以避免重复的工作和无效的数据。</p>
+<h2 id="persistent-caching">Persistent caching</h2>
+<p>到目前为止，我们只在内存中缓存值，这意味着一旦我们的应用程序终止，数据就会消失。 虽然这可能是我们真正想要的，但有时启用缓存值持久化到磁盘上是非常有价值的，这可能还会解锁使用应用程序的新方式-例如在离线启动应用程序时仍然可以访问通过网络下载的数据。</p>
+<p>因为我们可能只想有选择地将特定的缓存持久化到磁盘上——让我们把它变成一个完全可选的特性。为了开始，我们将更新Entry，同时存储与它相关的键，这样我们既可以直接持久化每个条目，也可以删除未使用的键:</p>
+<pre><code class="language-swift">final class Entry {
+    let key: Key
+    let value: Value
+    let expirationDate: Date
+
+    init(key: Key, value: Value, expirationDate: Date) {
+        self.key = key
+        self.value = value
+        self.expirationDate = expirationDate
+    }
+}
+</code></pre>
+<p>接下来，我们将需要一种方法来跟踪缓存中包含的条目的键，因为NSCache不会公开这些信息。为此，我们将添加一个专用的KeyTracker类型，它将成为底层NSCache的委托，以便在条目被删除时得到通知:</p>
+<pre><code class="language-swift">private extension Cache {
+    final class KeyTracker: NSObject, NSCacheDelegate {
+        var keys = Set&lt;Key&gt;()
+
+        func cache(_ cache: NSCache&lt;AnyObject, AnyObject&gt;,
+                   willEvictObject object: Any) {
+            guard let entry = object as? Entry else {
+                return
+            }
+
+            keys.remove(entry.key)
+        }
+    }
+}
+</code></pre>
+<p>我们将在初始化缓存时设置KeyTracker -我们也将设置最大条目数，这将帮助我们避免将过多的数据写入磁盘-像这样:</p>
+<pre><code class="language-swift">final class Cache&lt;Key: Hashable, Value&gt; {
+    private let wrapped = NSCache&lt;WrappedKey, Entry&gt;()
+    private let dateProvider: () -&gt; Date
+    private let entryLifetime: TimeInterval
+    private let keyTracker = KeyTracker()
+
+    init(dateProvider: @escaping () -&gt; Date = Date.init,
+         entryLifetime: TimeInterval = 12 * 60 * 60,
+         maximumEntryCount: Int = 50) {
+        self.dateProvider = dateProvider
+        self.entryLifetime = entryLifetime
+        wrapped.countLimit = maximumEntryCount
+        wrapped.delegate = keyTracker
+    }
+    ...
+}
+</code></pre>
+<p>因为我们的KeyTracker已经在任何时候从我们的缓存中删除一个条目时得到通知，所以我们需要做的就是在添加一个键时通知它，这是我们insert方法的一部分:</p>
+<pre><code class="language-swift">func insert(_ value: Value, forKey key: Key) {
+    ...
+    keyTracker.keys.insert(key)
+}
+</code></pre>
+<p>为了能够真正地持久化缓存的内容，我们首先需要对其进行序列化。就像我们如何利用NSCache在系统之上构建自己的缓存API一样，让我们使用Codable来支持使用任何兼容的格式(比如JSON)对缓存进行编码和解码。</p>
+<p>我们将从使条目类型符合可编码开始—但是我们不想要求所有的缓存条目都是可编码的-所以让我们使用一个条件一致性，只对具有可编码键和值的条目采用可编码，像这样:</p>
+<pre><code class="language-swift">extension Cache.Entry: Codable where Key: Codable, Value: Codable {}
+</code></pre>
+<p>在编码和解码过程中，我们将检索和插入条目，因此为了避免重复前面插入和值方法的代码-让我们也把所有处理入口实例的逻辑移到两个新的私有工具方法:</p>
+<pre><code class="language-swift">private extension Cache {
+    func entry(forKey key: Key) -&gt; Entry? {
+        guard let entry = wrapped.object(forKey: WrappedKey(key)) else {
+            return nil
+        }
+
+        guard dateProvider() &lt; entry.expirationDate else {
+            removeValue(forKey: key)
+            return nil
+        }
+
+        return entry
+    }
+
+    func insert(_ entry: Entry) {
+        wrapped.setObject(entry, forKey: WrappedKey(entry.key))
+        keyTracker.keys.insert(entry.key)
+    }
+}
+</code></pre>
+<p>最后一个难题是在我们之前使用的相同条件下使缓存本身可编码-通过使用上述两种实用方法，我们现在可以很容易地编码和解码所有的条目:</p>
+<pre><code class="language-swift">extension Cache: Codable where Key: Codable, Value: Codable {
+    convenience init(from decoder: Decoder) throws {
+        self.init()
+
+        let container = try decoder.singleValueContainer()
+        let entries = try container.decode([Entry].self)
+        entries.forEach(insert)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(keyTracker.keys.compactMap(entry))
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以将任何包含可编码键和值的缓存保存到磁盘-简单地将它编码成数据，然后将数据写入我们应用程序专用缓存目录中的文件，像这样:</p>
+<pre><code class="language-swift">extension Cache where Key: Codable, Value: Codable {
+    func saveToDisk(
+        withName name: String,
+        using fileManager: FileManager = .default
+    ) throws {
+        let folderURLs = fileManager.urls(
+            for: .cachesDirectory,
+            in: .userDomainMask
+        )
+
+        let fileURL = folderURLs[0].appendingPathComponent(name + &quot;.cache&quot;)
+        let data = try JSONEncoder().encode(self)
+        try data.write(to: fileURL)
+    }
+}
+</code></pre>
+<p>与此类似，我们已经构建了一个完全兼容swift的高度动态缓存——支持基于时间的无效化、磁盘上持久性，并对其包含的条目数量进行限制-所有这些都是通过利用像NSCache和Codable这样的系统api来避免重新发明轮子。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>策略性地部署缓存，以避免多次重载相同的数据，可以对应用程序的性能产生巨大的积极影响。毕竟，即使我们优化了在应用程序中加载数据的方式，完全不加载数据总是会更快——缓存就是实现这一点的好方法。</p>
+<p>然而，在向数据加载管道添加缓存时，需要记住许多事情- 当应用程序的环境改变时(例如当用户改变他们首选的区域设置时)，并确保删除的项被正确地清除。</p>
+<p>部署缓存时需要考虑的另一件事是缓存哪些数据，以及在哪里进行缓存。虽然我们在本文中介绍了基于ncache的方法，但还可以研究其他多种路由，比如使用另一个系统API——URLCache——在网络层中执行缓存。</p>
+<p><a href="https://www.swiftbysundell.com/articles/caching-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Ev2zwLJi0/" class="tag">
+                    caching
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-power-of-subscripts-in-swift/">
+                  <h3 class="post-title">
+                    The power of subscripts in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

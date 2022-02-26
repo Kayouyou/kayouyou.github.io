@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Improving Swift compile times | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管Swift有很多优点，但在更大的规模上使用Swift时，有一点有时会很麻烦，那就是它目前需要多长时间来编译。虽然Swift的编译时间预计会比Objective-C要长，因为Swift编译器在保证运行时安全性方面做得更多 - 我想看看我们..." />
+    <meta name="keywords" content="maintenance" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Improving Swift compile times</h2>
+            <div class="post-date">2017-03-10</div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管Swift有很多优点，但在更大的规模上使用Swift时，有一点有时会很麻烦，那就是它目前需要多长时间来编译。虽然Swift的编译时间预计会比Objective-C要长，因为Swift编译器在保证运行时安全性方面做得更多 - 我想看看我们是否可以以某种方式帮助编译器，使它能够更快地工作。</p>
+<p>所以上周我投入了我们在Hyper的一个较大的Swift项目。 它大约有350个源文件和30000行代码。最后，我成功地将这个项目的平均构建时间减少了20%以上——所以我想用这周的博客详述我是如何做到的。</p>
+<p>现在，在我们开始之前，我只想说，我不打算以任何方式批评Swift或团队的工作-我知道开发Swift编译器的开发者，无论是在苹果还是在开源社区，都在不断地对编译器的速度、功能和稳定性做出重大改进。希望随着时间的推移，这篇博文会变得多余，但在那之前，我只想提供一些实用的技巧和技巧，我发现它们可以使编译时间更快。</p>
+<h2 id="step-1-gather-data">Step 1: Gather data</h2>
+<p>在开始任何优化工作之前，最好建立一个基线，以便您可以根据这个基线来衡量改进。对我来说，这是通过两个简单的脚本完成的，这两个脚本是我在Xcode中为应用目标添加的运行脚本阶段。</p>
+<p>在编译源代码之前，我添加了以下脚本:</p>
+<pre><code class="language-swift">echo &quot;$(date +%s)&quot; &gt; &quot;buildtimes.log&quot;
+</code></pre>
+<p>在最后，我添加了这个脚本:</p>
+<pre><code class="language-swift">startime=$(&lt;buildtimes.log)
+endtime=$(date +%s)
+deltatime=$((endtime-startime))
+newline=$'\n'
+echo &quot;[Start] $startime$newline[End] $endtime$newline[Delta] $deltatime&quot; &gt; &quot;buildtimes.log&quot;
+</code></pre>
+<p>现在，这只衡量了编译应用程序自己的源文件所花费的时间(为了衡量整个应用程序的编译时间，你可以使用Xcode行为挂钩到构建开始和构建成功事件)。由于编译时间取决于代码在什么机器上编译，所以我也忽略了buildtimes.log。</p>
+<p>接下来，我想强调哪些特定的代码块需要花费很长时间来编译，以便确定我可以修复的瓶颈。要做到这一点，你可以简单地设置一个阈值，通过在Xcode的其他Swift标志构建设置下传递以下参数给Swift编译器:</p>
+<pre><code class="language-swift">-Xfrontend -warn-long-function-bodies=500
+</code></pre>
+<p>使用上述参数，如果项目中的任何函数需要超过500毫秒的时间来编译，就会得到一个警告。 这是我开始时的阈值(随着我修正了越来越多的瓶颈，这个阈值不断降低)。</p>
+<h2 id="step-2-fix-all-the-warnings">Step 2: Fix all the warnings</h2>
+<p>当启用长函数编译时的警告时，您可能会开始在项目中看到一些警告。一开始，函数需要很长时间的编译看起来似乎是随机的，但很快就会出现具体的模式。下面是我注意到的两个使用Swift 3.0编译器需要很长时间才能编译的常见模式:</p>
+<p>自定义操作符(特别是带有泛型参数的重载操作符)</p>
+<p>对许多iOS和macOS开发者来说，Swift问世时的一个新概念是操作符重载-我们会很兴奋地尝试它们。现在，我不打算在这里讨论自定义操作符和重载是好是坏，但它们可能对编译时间有相当大的影响，特别是在使用更复杂的表达式时。</p>
+<p>考虑下面的运算符，它将两个IntegerConvertible数字相加，形成一个定制的数字类型:</p>
+<pre><code class="language-swift">func +&lt;A: IntegerConvertible, B: IntegerConvertible&gt;(lhs: A, rhs: B) -&gt; CustomNumber {
+    return CustomNumber(int: lhs.int + rhs.int)
+}
+</code></pre>
+<p>然后我们用它来加几个数字:</p>
+<pre><code class="language-swift">func addNumbers() -&gt; CustomNumber {
+    return CustomNumber(int: 1) +
+           CustomNumber(int: 2) +
+           CustomNumber(int: 3) +
+           CustomNumber(int: 4) +
+           CustomNumber(int: 5)
+}
+</code></pre>
+<p>看起来很简单，但是上面的addNumbers()函数需要相当长的时间来编译(在我2013年末的MBP上超过300毫秒)。与实现相同逻辑但使用协议扩展的情况相比:</p>
+<pre><code class="language-swift">extension IntegerConvertible {
+    func add&lt;T: IntegerConvertible&gt;(_ number: T) -&gt; CustomNumber {
+        return CustomNumber(int: int + number.int)
+    }
+}
+func addNumbers() -&gt; CustomNumber {
+    return CustomNumber(int: 1).add(CustomNumber(int: 2))
+        .add(CustomNumber(int: 3))
+        .add(CustomNumber(int: 4))
+        .add(CustomNumber(int: 5))
+}
+</code></pre>
+<p>通过这个更改，addNumbers()函数现在只需要不到1毫秒的时间来编译。要快大约300倍!</p>
+<p>因此，如果你正在大量使用自定义/重载操作符，特别是那些带有通用参数的操作符(或者如果你正在使用这样做的第三方库——比如许多自动布局库), 考虑使用普通函数、协议扩展或其他技术重写相同的逻辑。</p>
+<h2 id="collection-literals">Collection literals</h2>
+<p>发现的另一个经常成为编译时瓶颈的模式是使用集合字面量，特别是当编译器需要做大量工作来推断这些字面量的类型时。假设你有一个方法，可以把一个模型转换成一个类似json的字典，就像这样:</p>
+<pre><code class="language-swift">extension User {
+    func toJSON() -&gt; [String : Any] 
+        return [
+            &quot;firstName&quot;: firstName,
+            &quot;lastName&quot;: lastName,
+            &quot;age&quot;: age,
+            &quot;friends&quot;: friends.map   ,
+            &quot;coworkers&quot;: coworkers.map   ,
+            &quot;favorites&quot;: favorites.map   ,
+            &quot;messages&quot;: messages.map   ,
+            &quot;notes&quot;: notes.map   ,
+            &quot;tasks&quot;: tasks.map   ,
+            &quot;imageURLs&quot;: imageURLs.map   ,
+            &quot;groups&quot;: groups.map   
+        ]
+    }
+}
+</code></pre>
+<p>上面的toJSON()函数用了我的计算机大约500毫秒的时间来编译。现在，让我们尝试逐行构造相同的字典，而不是使用文字:</p>
+<pre><code class="language-swift">extension User {
+    func toJSON() -&gt; [String : Any] {
+        var json = [String : Any]()
+        json[&quot;firstName&quot;] = firstName
+        json[&quot;lastName&quot;] = lastName
+        json[&quot;age&quot;] = age
+        json[&quot;friends&quot;] = friends.map   
+        json[&quot;coworkers&quot;] = coworkers.map   
+        json[&quot;favorites&quot;] = favorites.map   
+        json[&quot;messages&quot;] = messages.map   
+        json[&quot;notes&quot;] = notes.map   
+        json[&quot;tasks&quot;] = tasks.map   
+        json[&quot;imageURLs&quot;] = imageURLs.map   
+        json[&quot;groups&quot;] = groups.map   
+        return json
+    }
+}
+</code></pre>
+<p>它现在编译大约5毫秒-快100倍!</p>
+<h2 id="step-3-conclusions">Step 3: Conclusions</h2>
+<p>上面的两个例子都清楚地表明，Swift编译器的一些不错的特性，比如类型推断和重载，都是以时间为代价的。如果我们仔细想想，这是很符合逻辑的。因为编译器必须做更多的工作来执行推断，所以它将花费更长的时间。 但是正如我们在上面看到的，如果我们稍微调整一下我们的代码来帮助编译器更容易地解析我们的表达式——我们可以极大地加快我们的编译时间。</p>
+<p>现在，我并不是说您应该总是让编译时间来指导您如何编写代码。有时，如果编译器能使代码更清晰、更容易理解，那么让它做更多的工作可能是值得的。但在大型项目中，将每个函数的编译时间提高到300-500毫秒(或更高)的编码技术很快就会成为一个问题。我的建议是继续监视您的编译时间，使用上面提到的编译器标志为警告设置合理的阈值，并在出现问题时解决问题。</p>
+<p><a href="https://www.swiftbysundell.com/articles/improving-swift-compile-times/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5VmnTv3Lu/" class="tag">
+                    maintenance
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-sequences-the-art-of-being-lazy/">
+                  <h3 class="post-title">
+                    Swift sequences: The art of being lazy
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

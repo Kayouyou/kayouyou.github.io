@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Chapter 3: Subjects | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Chapter 3: Subjects
+
+
+1.1. Getting started
+1.2. What are subjects?
+1.3. Working with publish subjects
+1.4. Working w..." />
+    <meta name="keywords" content="subjects,rxswift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Chapter 3: Subjects</h2>
+            <div class="post-date">2021-05-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Chapter3:Subjects">Chapter 3: Subjects</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Gettingstarted">Getting started</a></li>
+<li>1.2. <a href="#Whataresubjects">What are subjects?</a></li>
+<li>1.3. <a href="#Workingwithpublishsubjects">Working with publish subjects</a></li>
+<li>1.4. <a href="#Workingwithbehaviorsubjects">Working with behavior subjects</a></li>
+<li>1.5. <a href="#Workingwithreplaysubjects">Working with replay subjects</a></li>
+<li>1.6. <a href="#Workingwithrelays">Working with relays</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namechapter3subjectsachapter-3-subjects">1. <a name='Chapter3:Subjects'></a>Chapter 3: Subjects</h2>
+<p>现在，你知道了什么是可观察对象，如何创建它，如何订阅它，以及如何在完成后处理它。可观察对象是RxSwift的基本组成部分，但它们本质上是只读的。您只能订阅它们以获得它们产生的新事件的通知。</p>
+<p>在开发应用程序时，一个常见的需求是在运行时手动向可观察对象中添加新值以发送给订阅者。你想要的是既能作为可观察对象又能作为observer的东西。这个东西叫做<strong>Subject</strong>。</p>
+<p>在本章中，你将学习RxSwift中不同类型的subjects，了解如何使用每个subject，以及为什么你可能会基于一些常见的用例选择一个而不是另一个。您还将学习relays，这是围绕主题的包装。我们待会再打开!</p>
+<h3 id="11-a-namegettingstartedagetting-started">1.1. <a name='Gettingstarted'></a>Getting started</h3>
+<pre><code class="language-swift">example(of: &quot;PublishSubject&quot;) {
+  let subject = PublishSubject&lt;String&gt;()
+}
+</code></pre>
+<p>您刚刚创建了一个PublishSubject。它的名字很贴切，因为就像报纸出版商一样，它会接收信息，然后发布给订阅者。它的类型是String，所以它只能接收和发布字符串。初始化后，它就可以接收字符串了。</p>
+<p>将以下代码添加到示例中:</p>
+<pre><code class="language-swift">subject.on(.next(&quot;Is anyone listening?&quot;))
+</code></pre>
+<p>这给主题添加了一个新字符串。还没有打印出来，因为没有观察者。通过订阅主题创建一个。将以下代码添加到示例中:</p>
+<pre><code class="language-swift">let subscriptionOne = subject
+  .subscribe(onNext: { string in
+    print(string)
+  })
+</code></pre>
+<p>您创建了主题的订阅，就像在上一章中一样，打印下一个事件。但是，Xcode的输出控制台仍然没有显示任何内容。到底发生了什么事?</p>
+<p>这里发生的是，PublishSubject只发送给当前订阅者。所以如果你没有订阅它当一个事件被添加到它，你将不会得到它当你订阅。想想树倒在树林里的类比。如果一棵树倒了，没人在旁边听，那你的非法伐木生意就成功了吗?:]</p>
+<p>要修复这些问题，请将以下代码添加到示例的结尾:</p>
+<pre><code class="language-swift">subject.on(.next(&quot;1&quot;))
+</code></pre>
+<p>请注意，因为您将发布主题定义为String类型，所以只能向其添加字符串。现在，因为subject有一个订阅者，它将产生附加价值:</p>
+<pre><code class="language-swift">--- Example of: PublishSubject ---
+1
+</code></pre>
+<p>与订阅操作符类似，on(.next(_😃)是如何向主题添加一个新的next事件，并将元素作为参数传递。和订阅一样，主题也有快捷语法。将以下代码添加到示例中:</p>
+<pre><code class="language-swift">subject.onNext(&quot;2&quot;)
+</code></pre>
+<p>nNext(<em>:)和on(.next(</em>))做同样的事情。只是眼睛更舒服一点。现在2也被打印出来了</p>
+<pre><code class="language-swift">--- Example of: PublishSubject ---
+1
+2
+</code></pre>
+<p>有了这个温和的介绍，现在是时候深入学习所有主题了。</p>
+<h3 id="12-a-namewhataresubjectsawhat-are-subjects">1.2. <a name='Whataresubjects'></a>What are subjects?</h3>
+<p>Subjects既是被观察对象，又是观察者。您在前面看到了它们如何接收事件和订阅。在上面的示例中，主题接收到下一个事件，对于每一个事件，它都将其发送给它的订阅者。</p>
+<p>RxSwift中有四种主题类型:</p>
+<ul>
+<li>PublishSubject: 开始时为空，只向订阅者发出新元素。</li>
+<li>BehaviorSubject: 从一个初始值开始，并将其或最新元素回放给新订阅者。</li>
+<li>ReplaySubject: 使用缓冲区大小初始化，将维护一个缓冲区的元素达到该大小，并将其重放给新订阅者。</li>
+<li>AsyncSubject:  只发出序列中的最后一个next事件，并且仅当主题接收到一个完成的事件时。这是一个很少使用的主题，你不会在这本书中使用它。这里列出它是为了完整。</li>
+</ul>
+<p>RxSwift还提供了一个称为<strong>Relays</strong>的概念。RxSwift提供了其中两个，名为PublishRelay和BehaviorRelay。这些包裹各自的主题，但只接受和传递下一个事件。您根本不能将completed or error事件添加到中继中，因此它们非常适合非终止(<strong>non-terminating</strong>)序列。</p>
+<p>接下来，您将了解更多关于这些subjects和relays的信息，以及如何使用它们，从发布主题开始。</p>
+<h3 id="13-a-nameworkingwithpublishsubjectsaworking-with-publish-subjects">1.3. <a name='Workingwithpublishsubjects'></a>Working with publish subjects</h3>
+<p>如果您只是想让订阅者从订阅点开始收到新事件的通知，直到他们取消订阅，或者主题以完成或错误事件终止，那么发布主题就很有用。</p>
+<p>在下面的弹珠图中，最上面一行是发布主题，第二和第三行是订阅者。向上的箭头表示订阅，向下的箭头表示发出的事件。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqp0epdj3sj31060hiq67.jpg" alt="avatar" loading="lazy"></figure>
+<p>将1添加到subject后的第一个订阅者订阅，因此它不会收到该事件。不过它得到了2和3。因为第二个订阅者在2之后才加入，所以它只得到3。</p>
+<p>返回playground，在相同示例的底部添加以下代码:</p>
+<pre><code class="language-swift">let subscriptionTwo = subject
+  .subscribe { event in
+    print(&quot;2)&quot;, event.element ?? event)
+  }
+</code></pre>
+<p>事件有一个可选的元素属性，该属性包含为下一个事件发出的元素。如果存在一个元素，可以使用这里的nil-coalescing操作符打印;否则，打印事件。</p>
+<p>正如预期的那样，subscritiontwo还没有打印任何内容，因为它在发出1和2之后进行了订阅。现在添加以下代码:</p>
+<pre><code class="language-swift">subject.onNext(&quot;3&quot;)
+</code></pre>
+<p>3被打印两次，一次用于subscriptionOne，一次用于subscriptionTwo。</p>
+<pre><code class="language-swift">3
+2) 3
+</code></pre>
+<p>添加以下代码以终止subscriptionOne，然后在主题上添加另一个下一个事件:</p>
+<pre><code class="language-swift">subscriptionOne.dispose()
+
+subject.onNext(&quot;4&quot;)
+</code></pre>
+<p>值4只用于订阅2)，因为订阅1已被释放。</p>
+<pre><code class="language-swift">2) 4
+</code></pre>
+<p>当发布主题接收到完成或错误事件(也称为停止事件)时，它将向新订阅者发出该停止事件，并且不再发出下一个事件。但是，它将向未来的订阅者重新发出停止事件。将以下代码添加到示例中:</p>
+<pre><code class="language-swift">// 1
+subject.onCompleted()
+
+// 2
+subject.onNext(&quot;5&quot;)
+
+// 3
+subscriptionTwo.dispose()
+
+let disposeBag = DisposeBag()
+
+// 4
+subject
+  .subscribe {
+    print(&quot;3)&quot;, $0.element ?? $0)
+  }
+  .disposed(by: disposeBag)
+
+subject.onNext(&quot;?&quot;)
+</code></pre>
+<p>从上面开始，你:</p>
+<ul>
+<li>使用on(.completed)的便利方法将一个completed事件添加到主题上。这就终止了对象的可观察序列。</li>
+<li>在subject上添加另一个元素。但是，这不会发出和打印出来，因为主题已经终止了。</li>
+<li>释放订阅。</li>
+<li>订阅该主题，这一次将其一次性添加到dispose bag。</li>
+</ul>
+<p>也许新订户会重新启动这个主题?没有，但您仍然会获得completed事件重播。</p>
+<pre><code class="language-swift">2) completed
+3) completed
+</code></pre>
+<p>实际上，一旦终止，subject将重新向未来的订阅者发送其停止事件。因此，在代码中包含停止事件的处理程序是一个好主意，不仅是为了在它终止时得到通知，而且是为了在订阅它时它已经终止。这有时会导致一些细微的bug，所以要小心!</p>
+<p>当你在建模对时间敏感的数据时，你可能会使用一个发布主题，比如在一个在线竞价应用程序中。提醒在上午10:01加入的用户，在上午9:59拍卖只剩下1分钟是没有意义的。当然，除非你喜欢你的竞价应用的1星评价。</p>
+<p>有时您希望让新订阅者知道最新发出的元素是什么，即使该元素是在订阅之前发出的。对于这一点，你有一些选择。</p>
+<p>Publish subjects 不会向新订阅者重放值。这使它们成为建模诸如“用户点击某物”或“通知刚刚到达”等事件的好选择。</p>
+<h3 id="14-a-nameworkingwithbehaviorsubjectsaworking-with-behavior-subjects">1.4. <a name='Workingwithbehaviorsubjects'></a>Working with behavior subjects</h3>
+<p>Behavior subjects 的工作方式与publish subjects类似，只不过它们将向新订阅者回放最新的下一个事件。来看看这张弹珠图:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqp0rn18rhj30t00ee772.jpg" alt="avatar" loading="lazy"></figure>
+<p>顶部的第一行是主题。第二行上的第一个订阅者在1之后但在2之前订阅，因此它在订阅时立即收到1，然后在主题发出它们时收到2和3。类似地，第二个订阅者在2之后但在3之前订阅，因此它立即接收2，然后在发出时接收3。</p>
+<p>在最后一个例子之后，将这段代码添加到你的游乐场:</p>
+<pre><code class="language-swift">// 1
+enum MyError: Error {
+  case anError
+}
+
+// 2
+func print&lt;T: CustomStringConvertible&gt;(label: String, event: Event&lt;T&gt;) {
+  print(label, (event.element ?? event.error) ?? event)
+}
+
+// 3
+example(of: &quot;BehaviorSubject&quot;) {
+  // 4
+  let subject = BehaviorSubject(value: &quot;Initial value&quot;)
+  let disposeBag = DisposeBag()
+}
+</code></pre>
+<p>Here’s the play-by-play:</p>
+<ol>
+<li>定义一个错误类型以在接下来的例子中使用。</li>
+<li>在前面示例中使用三元运算符的基础上，您创建了一个帮助函数，如果有元素，则输出元素;如果有元素，则输出错误;或者输出事件本身。多方便啊!</li>
+<li>开始一个新的例子。</li>
+<li>创建一个新的BehaviorSubject实例。它的初始化式接受一个初始值。</li>
+</ol>
+<blockquote>
+<p>注意:因为BehaviorSubject总是发出它的最新元素，你不能在不提供初始值的情况下创建一个。如果您不能在创建时提供初始值，这可能意味着您需要使用PublishSubject，或者将元素建模为Optional。</p>
+</blockquote>
+<p>接下来，将以下代码添加到示例中:</p>
+<pre><code class="language-swift">subject
+  .subscribe {
+    print(label: &quot;1)&quot;, event: $0)
+  }
+  .disposed(by: disposeBag)
+</code></pre>
+<p>您可以在创建主题后立即订阅该主题。因为没有向主题添加其他元素，所以它向订阅者回放其初始值。</p>
+<pre><code class="language-swift">--- Example of: BehaviorSubject ---
+1) Initial value
+</code></pre>
+<p>现在，在前面的订阅代码之前，但在主题定义之后插入以下代码:</p>
+<pre><code class="language-swift">subject.onNext(&quot;X&quot;)
+</code></pre>
+<p>X会被打印出来，因为现在订阅时它是最新的元素。</p>
+<pre><code class="language-swift">--- Example of: BehaviorSubject ---
+1) X
+</code></pre>
+<p>将以下代码添加到示例的末尾。但首先，看看你能不能决定要打印什么:</p>
+<pre><code class="language-swift">// 1
+subject.onError(MyError.anError)
+
+// 2
+subject
+  .subscribe {
+    print(label: &quot;2)&quot;, event: $0)
+  }
+  .disposed(by: disposeBag)
+
+</code></pre>
+<p>With this code, you:</p>
+<ol>
+<li>向subject添加错误事件。</li>
+<li>创建subject的新订阅。</li>
+</ol>
+<p>This prints:</p>
+<pre><code class="language-swift">1) anError
+2) anError
+</code></pre>
+<p>您是否发现错误事件将打印两次，每次订阅一次?如果是这样，那就对了!</p>
+<p>当您想用最新数据预填充视图时，Behavior subjects非常有用。例如，您可以将用户配置文件屏幕中的控件绑定到Behavior subjects，以便在应用程序获取新数据时，可以使用最新值预填充显示。</p>
+<p>Behavior subjects向新订阅者重复他们的最新价值。这使得它们成为建模诸如“请求正在加载”或“现在时间是9:41”等状态的好选择。</p>
+<p>如果您想显示比最新值更多的内容，该怎么办?例如，在搜索屏幕上，您可能希望显示最近使用的五个搜索词。这就是重放实验的切入点。</p>
+<h3 id="15-a-nameworkingwithreplaysubjectsaworking-with-replay-subjects">1.5. <a name='Workingwithreplaysubjects'></a>Working with replay subjects</h3>
+<p>Replay subjects 将临时缓存或缓冲它们发出的最新元素，最大可达您选择的指定大小。然后，他们会将缓冲区重放给新订户。</p>
+<p>下面的弹珠图描述了一个缓冲区大小为2的重放主题。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqp19w87drj310w0haaep.jpg" alt="avatar" loading="lazy"></figure>
+<p>第一个订阅者(中间一行)已经订阅了重放主题(顶部一行)，因此它在发送元素时获得元素。第二个订阅者(底线)在2之后订阅，所以它得到1和2重放给它。</p>
+<p>请记住，当使用重放主题时，该缓冲区保存在内存中。在这里，你绝对可以搬起石头砸自己的脚，例如，如果你为某个类型的重放对象设置了一个较大的缓冲区大小，其实例每个都占用大量内存，比如图像。</p>
+<p>另一件需要注意的事情是创建项目数组的replay subject。每个发射的元素将是一个数组，因此缓冲区的大小将缓冲那么多数组。如果你不小心的话，很容易产生内存压力。</p>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;ReplaySubject&quot;) {
+  // 1
+  let subject = ReplaySubject&lt;String&gt;.create(bufferSize: 2)
+  let disposeBag = DisposeBag()
+
+  // 2
+  subject.onNext(&quot;1&quot;)
+  subject.onNext(&quot;2&quot;)
+  subject.onNext(&quot;3&quot;)
+
+  // 3
+  subject
+    .subscribe {
+      print(label: &quot;1)&quot;, event: $0)
+    }
+    .disposed(by: disposeBag)
+
+  subject
+    .subscribe {
+      print(label: &quot;2)&quot;, event: $0)
+    }
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>From the top, you:</p>
+<ol>
+<li>创建一个新的replay subject缓冲区大小为2。replay subject使用类型方法create(bufferSize:)初始化。</li>
+<li>在主题上添加三个元素。</li>
+<li>创建主题的两个订阅。</li>
+</ol>
+<p>最新的两个元素被重放给两个订阅者;1永远不会被触发，因为2和3会在任何订阅对象之前以缓冲区大小为2的形式添加到重放主题上。</p>
+<pre><code class="language-swift">--- Example of: ReplaySubject ---
+1) 2
+1) 3
+2) 2
+2) 3
+</code></pre>
+<p>接下来，将以下代码添加到示例中:</p>
+<pre><code class="language-swift">subject.onNext(&quot;4&quot;)
+
+subject
+  .subscribe {
+    print(label: &quot;3)&quot;, event: $0)
+  }
+  .disposed(by: disposeBag)
+
+</code></pre>
+<p>使用此代码，您可以向主题添加另一个元素，然后创建对该主题的新订阅。前两个订阅将正常接收该元素，因为在向主题添加新元素时它们已经订阅了，而新的第三个订阅方将获得最后两个缓冲元素的回放。</p>
+<pre><code class="language-swift">1) 4
+2) 4
+3) 3
+3) 4
+</code></pre>
+<p>你现在已经很擅长这个了，所以应该没什么好惊讶的了。但是如果你想破坏一切，将会发生什么呢?在向主题添加4之后，在创建第三个订阅之前添加这行代码:</p>
+<pre><code class="language-swift">subject.onError(MyError.anError)
+</code></pre>
+<p>可能会让你吃惊。如果是这样，那也没关系。生活充满了惊喜。:]</p>
+<pre><code class="language-swift">1) 4
+2) 4
+1) anError
+2) anError
+3) 3
+3) 4
+3) anError
+</code></pre>
+<p>这是怎么回事?replay subject以一个错误终止，它将重新发送给新订阅者—您在前面已经了解了这一点。但是缓冲区仍然挂起，所以在停止事件被重新触发之前，它也会被重放给新的订阅者。</p>
+<p>在添加错误后立即添加这行代码:</p>
+<pre><code class="language-swift">subject.dispose()
+</code></pre>
+<p>通过事先显式地在replay subject上调用dispose()，新订阅者将只收到一个错误事件，表明主题已经被释放。</p>
+<pre><code class="language-swift">3) Object `RxSwift...ReplayMany&lt;Swift.String&gt;` was already disposed.
+</code></pre>
+<p>在replay subject上像这样显式地调用dispose()通常不是您需要做的事情。如果你已经添加了你的订阅到一个释放包，那么所有的东西都将被释放和释放当所有者-比如一个视图控制器或视图模型-被释放。</p>
+<p>注意这些边缘情况下的小问题是很好的。</p>
+<blockquote>
+<p>注意:如果你想知道什么是ReplayMany，它是一个内部类型，用于创建重放主题。</p>
+</blockquote>
+<p>通过使用publish, behavior, or replay subject，您应该能够对几乎任何需求进行建模。有时候，你可能只是想用老派的方法问一个可观察类型，“嘿，你的当前值是多少?”Relays FTW here!</p>
+<h3 id="16-a-nameworkingwithrelaysaworking-with-relays">1.6. <a name='Workingwithrelays'></a>Working with relays</h3>
+<p>您在前面已经了解到，relay在包装一个对象的同时，还保持其回放行为。不像其他对象-和一般的观察对象-你添加一个值到relay使用accept(<em>:)方法。换句话说，您不使用onNext(</em>😃。这是因为relay只能接受值，也就是说，您不能向它们添加错误或已完成的事件。</p>
+<p>一个PublishRelay包装一个PublishSubject，而一个BehaviorRelay包装一个BehaviorSubject。<strong>将relays与包装好的对象分开的是它们保证永远不会终止</strong>。</p>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;PublishRelay&quot;) {
+  let relay = PublishRelay&lt;String&gt;()
+  
+  let disposeBag = DisposeBag()
+}
+</code></pre>
+<p>与创建PublishSubject相比，这里没有什么新东西，除了名称。但是，为了向发布中继添加一个新值，您可以使用accept(_:)方法。将这段代码添加到你的示例中:</p>
+<pre><code class="language-swift">relay.accept(&quot;Knock knock, anyone home?&quot;)
+</code></pre>
+<p>还没有订阅者，所以没有发出任何东西。创建一个订户，然后向relay添加另一个值:</p>
+<pre><code class="language-swift">relay
+  .subscribe(onNext: {
+    print($0)
+  })
+  .disposed(by: disposeBag)
+
+relay.accept(&quot;1&quot;)
+</code></pre>
+<p>输出与你创建了一个publish subject而不是一个relay一样:</p>
+<pre><code class="language-swift">--- Example of: PublishRelay ---
+1
+</code></pre>
+<p>没有办法将错误或已完成的事件添加到relay中。任何尝试这样做，如以下将产生一个编译器错误(不要添加此代码到你的操场，它不会工作):</p>
+<pre><code class="language-swift">relay.accept(MyError.anError)
+relay.onCompleted()
+</code></pre>
+<p>请记住，发布relays封装publish subject并像它们一样工作，除了接受部分和它们不会终止。来点更有趣的怎么样?来和我的小朋友打个招呼吧， BehaviorRelay。</p>
+<p>BehaviorRelay也不会因完成或错误事件而终止。因为它包装了一个BehaviorSubject，所以使用初始值创建了一个BehaviorRelay，并且它将向新订阅者回放其最新的或初始的值。BehaviorRelay的特殊之处在于，你可以随时询问它的当前值。这个特性以一种有用的方式连接了命令式世界和反应式世界。</p>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;BehaviorRelay&quot;) {
+  // 1
+  let relay = BehaviorRelay(value: &quot;Initial value&quot;)
+  let disposeBag = DisposeBag()
+  
+  // 2
+  relay.accept(&quot;New initial value&quot;)
+  
+  // 3
+  relay
+    .subscribe {
+      print(label: &quot;1)&quot;, event: $0)
+    }
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>Here’s what you’re doing this time:</p>
+<ol>
+<li>
+<p>您创建了一个带有初始值的BehaviorRelay。BehaviorRelay的类型是推断出来的，但是你也可以显式地声明类型为BehaviorRelay<String>(value: &quot;Initial value&quot;)。</p>
+</li>
+<li>
+<p>给BehaviorRelay添加一个新元件。</p>
+</li>
+<li>
+<p>订阅转播节目。</p>
+</li>
+</ol>
+<p>订阅接收最新的值。</p>
+<pre><code class="language-swift">--- Example of: BehaviorRelay ---
+1) New initial value
+</code></pre>
+<p>接下来，将此代码添加到相同的示例中:</p>
+<pre><code class="language-swift">// 1
+relay.accept(&quot;1&quot;)
+
+// 2
+relay
+  .subscribe {
+    print(label: &quot;2)&quot;, event: $0)
+  }
+  .disposed(by: disposeBag)
+
+// 3
+relay.accept(&quot;2&quot;)
+</code></pre>
+<p>From the top:</p>
+<ol>
+<li>
+<p>给relay添加一个新元件。</p>
+</li>
+<li>
+<p>创建对relay的新订阅。</p>
+</li>
+<li>
+<p>在relay上添加另一个新元素。</p>
+</li>
+</ol>
+<p>现有的订阅1)接收添加到中继上的新值1。新订阅在订阅时收到相同的值，因为这是最新的值。当它被添加到中继时，两个订阅都接收到2。</p>
+<pre><code class="language-swift">1) 1
+2) 1
+1) 2
+2) 2
+</code></pre>
+<p>最后，将以下代码添加到最后一个示例中:</p>
+<pre><code class="language-swift">print(relay.value)
+</code></pre>
+<p>记住，BehaviorRelay允许您直接访问它们的当前值。在本例中，添加到BehaviorRelay上的最新值是2，因此这就是打印到控制台的内容。</p>
+<pre><code class="language-swift">2
+</code></pre>
+<p>这在连接命令式世界和反应式世界时非常有用。你将在本章的第二个挑战中尝试这个方法。</p>
+<p>BehaviorRelay是万能的。您可以订阅它们，以便能够在发出新的下一个事件时作出响应，就像任何其他主题一样。它们还可以满足一次性需求，比如只需要检查当前值而不需要订阅接收更新。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hTOsaF_cT/" class="tag">
+                    subjects
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/chapter-2-observables/">
+                  <h3 class="post-title">
+                    Chapter 2: Observables
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

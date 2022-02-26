@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Expert Swift Chapter 5 : Numerics &amp; Ranges | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Representing numbers
+
+
+
+
+Integers
+
+
+2.1. Protocol oriented integers
+2.2. Getting started with BitViewer
+2.3. Underst..." />
+    <meta name="keywords" content="expert swift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Expert Swift Chapter 5 : Numerics &amp; Ranges</h2>
+            <div class="post-date">2021-09-04</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gucizkizyaj61900u0n1e02.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Representingnumbers">Representing numbers</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Integers">Integers</a></li>
+</ol>
+<ul>
+<li>2.1. <a href="#Protocolorientedintegers">Protocol oriented integers</a></li>
+<li>2.2. <a href="#GettingstartedwithBitViewer">Getting started with BitViewer</a></li>
+<li>2.3. <a href="#Understandingtwoscomplement">Understanding two’s complement</a></li>
+<li>2.4. <a href="#Negationintwoscomplement">Negation in two’s complement</a></li>
+<li>2.5. <a href="#Exercises">Exercises</a></li>
+<li>2.6. <a href="#AddingintegeroperationstoBitViewer">Adding integer operations to BitViewer</a></li>
+<li>2.7. <a href="#Settingvalueoperations">Setting value operations</a></li>
+<li>2.8. <a href="#Endianoperations">Endian operations (字节序)</a></li>
+<li>2.9. <a href="#Bitmanipulationoperations">Bit manipulation operations</a></li>
+<li>2.10. <a href="#Arithmeticoperations">Arithmetic operations</a></li>
+<li>2.11. <a href="#Implementingacustomreverseoperation">Implementing a custom reverse operation</a></li>
+<li>2.12. <a href="#ImprovingbitReversed">Improving bitReversed</a></li>
+</ul>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Floating-point">Floating-point</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#Thefloating-pointprotocols">The floating-point protocols</a></li>
+<li>3.2. <a href="#UnderstandingIEEE-754">Understanding IEEE-754</a></li>
+<li>3.3. <a href="#Addingfloating-pointoperationstoBitViewer">Adding floating-point operations to BitViewer</a></li>
+<li>3.4. <a href="#Settingvalueoperations-1">Setting value operations</a></li>
+<li>3.5. <a href="#Subnormals">Subnormals</a></li>
+<li>3.6. <a href="#Setspecialvaluesoperations">Set special values operations</a></li>
+<li>3.7. <a href="#Steppingandfunctionsoperations">Stepping and functions operations</a></li>
+</ul>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Fullgenericprogrammingwithfloating-point">Full generic programming with floating-point</a></li>
+</ol>
+<ul>
+<li>4.1. <a href="#Understandingtheimprovednumericprotocols">Understanding the improved numeric protocols</a></li>
+<li>4.2. <a href="#GettingstartedwithMandelbrot">Getting started with Mandelbrot</a></li>
+<li>4.3. <a href="#WhatistheMandelbrotset">What is the Mandelbrot set?</a></li>
+<li>4.4. <a href="#ConvertingtoandfromCGPoint">Converting to and from CGPoint</a></li>
+<li>4.5. <a href="#Addatestpointpath">Add a test point path</a></li>
+<li>4.6. <a href="#Explorethelandmarks">Explore the landmarks</a></li>
+<li>4.7. <a href="#ImplementMandelbrotimagegeneration">Implement Mandelbrot image generation</a></li>
+<li>4.8. <a href="#Precisionandperformance">Precision and performance</a></li>
+<li>4.9. <a href="#ImprovingperformancewithSIMD">Improving performance with SIMD</a></li>
+<li>4.10. <a href="#Wherearethelimits">Where are the limits?</a></li>
+</ul>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Ranges">Ranges</a></li>
+</ol>
+<ul>
+<li>5.1. <a href="#Loopingoverarange">Looping over a range</a></li>
+<li>5.2. <a href="#Stridingbackwardandatnon-unitintervals">Striding backward and at non-unit intervals</a></li>
+<li>5.3. <a href="#Rangeexpressions">Range expressions</a></li>
+</ul>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Keypoints">Key points</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="numerics-ranges">Numerics &amp; Ranges</h1>
+<p>在本章中，你将完成两个iPad应用程序来研究整数和浮点数的属性。第一个应用程序是<strong>BitViewer</strong>，它可以让你查看位级的表示和操作。第二个应用程序是<strong>Mandelbrot</strong>，它允许你测试苹果的新<strong>Swift numerics</strong>软件包。 这个应用程序可以让你可视化不同浮点类型的精度。最后，您将使用一个<strong>playground</strong>来探索Swift如何实现<strong>ranges and strides</strong>。在整个章节中，您将展示泛型编程的力量，并编写适用于一系列类型的代码。</p>
+<p>这一章可能感觉有点学术性，因为它处理的是数字的低级机器表示。在这方面的一些知识会给你额外的自信和处理低级问题的能力，如果他们出现了。例如，如果您直接处理文件格式，或者发现自己担心数值范围和准确性，这些主题将会很有用。您在前几章看过<strong>Swift numerics</strong>也是一个很好的使用协议和泛型的案例研究。</p>
+<h2 id="1-a-namerepresentingnumbersarepresenting-numbers">1. <a name='Representingnumbers'></a>Representing numbers</h2>
+<p>计算机是由开关晶体管组成的数字运算机器。以10为基数的数字123.75为例。你可以用1、2、3、7和5来表示，如果你把每个数字乘以一个合适的权重:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu2c6eetn6j60ab06ljrf02.jpg" alt="avatar" loading="lazy"></figure>
+<p>图表显示了数字是如何组成的。在本例中，基数是10，位置决定了每个数字所乘的权重。</p>
+<p>计算机晶体管就像高速开关，可以开也可以关。 如果你只有两种状态(0和1)来表示一个数字而不是10，会是什么样子? 123.75看起来像这样:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu2c7pr733j60fg07qaa802.jpg" alt="avatar" loading="lazy"></figure>
+<p>这里的基数是2。它需要更多的双状态二进制数字，而不是10状态的十进制数字来表示这个数字。 但是在空间和计算方面，存储十进制数的效率较低。它需要4位来存储一个10状态的十进制数，这意味着您将为存储的每个数字浪费4-log2(10)或0.678位。</p>
+<p>第一个位(64位)有一个特殊的名称。它被称为最重要位或MSB。这是因为它对整体价值的影响最大。最后一位(在0.25位)称为最低有效位或LSB。它对整体价值的影响最小。</p>
+<p>你可以看到数字系统依赖于指数。如果你需要复习这些，你可以去可汗学院快速浏览一下。https://bit.ly/3k0Tsin。</p>
+<h2 id="2-a-nameintegersaintegers">2. <a name='Integers'></a>Integers</h2>
+<p>第一代个人计算机一次只能处理1个字节——8位(数字从0到255)。 你需要调整这些小值来产生更大的值。多年来，计算机能够处理的信息的大小翻了一番——在最新的英特尔和苹果处理器上分别是16位、32位和现在的64位。</p>
+<p>Swift支持所有标准整数大小，包括Int8、Int8、Int16、Int16、Int32、UInt32、Int64和UInt64。这些位宽对于系统级编程是必要的，并且通常还具有本地的、专门的硬件支持。</p>
+<p>下面的表格显示了每种类型及其支持的值范围:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu2cl6zj4zj60iy0dpwfe02.jpg" alt="avatar" loading="lazy"></figure>
+<p>在日常编程中，您将希望使用Int，它在较老的32位硬件上是32位，在64位硬件上是64位。 由于限制如此之大，您很少需要担心溢出。它被认为是非常不可能的，如果你碰巧超过了限制，Swift将停止你的程序。这种安全特性使得大量的缺陷显而易见。但是，如果您使用的是不安全的语言，比如C，那么您的程序将继续运行，从而产生难以调试的意外结果。</p>
+<h3 id="21-a-nameprotocolorientedintegersaprotocol-oriented-integers">2.1. <a name='Protocolorientedintegers'></a>Protocol oriented integers</h3>
+<p>Swift的整数类型是基于结构的值，封装了LLVM内置数值类型。因为它们是名义类型，所以它们可以定义属性和方法并符合协议。这些协议是神奇的成分，使您能够以相同的方式轻松处理整数类型，同时还利用每种类型的独特特征。例如，当最终出现Int的Int128表示时，这将是一个相对容易的转换。整数的协议层次结构是这样的:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu2cohd9pdj60kc0mrmyh02.jpg" alt="avatar" loading="lazy"></figure>
+<p>Int和UInt类型分别采用<strong>FixedWidthInteger</strong>协议和<strong>SignedInteger和UnsignedInteger</strong>。这为它们提供了大量共享的功能，并将它们的两个互补表示进行了编码，稍后您将了解到这一点。</p>
+<p>但还有更多。多亏了附加的协议和方法，整型可以无损地与String类型进行转换和转换。</p>
+<p>协议关系如下所示:</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu2cqxf009j60am0jqq3f02.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="22-a-namegettingstartedwithbitvieweragetting-started-with-bitviewer">2.2. <a name='GettingstartedwithBitViewer'></a>Getting started with BitViewer</h3>
+<p>要获得整数的实际操作经验，请打开本章projects/starter文件夹中的BitViewer项目。当你使用设备或模拟器运行时，旋转到横屏，点击左上角的show侧边栏项目，你会看到这样的屏幕:</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu2d9daqivj60cr09z74f02.jpg" alt="avatar" loading="lazy"></figure>
+<p>选择一个数字类型。在本节中，重点介绍整数类型。你可以看到数字的二进制表示，点击位来切换它们。水平滚动所有位，或选中复选框，将它们垂直堆叠成字节。 稍后，您将添加对所有整数类型进行通用操作的代码。</p>
+<h3 id="23-a-nameunderstandingtwoscomplementaunderstanding-twos-complement">2.3. <a name='Understandingtwoscomplement'></a>Understanding two’s complement</h3>
+<p>使用BitViewer，你可以戳一下比特，看看值是如何变化的。 对于Int8，最低有效位(LSB)是位置0，最高有效无符号位是位置6。 如果你打开这两个位，你得到2的6次方(64)加上2的0次方(1)总共是65。</p>
+<p>位置7很特殊:它是符号位。您可能会猜测，翻转这个位将使值为-65。现在，所有的现代硬件都使用2的补码表示，符号位加上最大的负值。在这种情况下，- 2的7次方(-128)加上65等于-63。作为一个图表，它看起来像这样:</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu2dfodsusj60dv07x3ym02.jpg" alt="avatar" loading="lazy"></figure>
+<p>关于2的补码的奇妙之处在于，每个比特模式都有一个唯一的值(只有一个0，而不是+0和-0)。此外，加法和减法使用相同的硬件电路——也就是说，减法只是对一个负数进行加法。节省的硅空间巩固了二进制补码作为所有现代硬件选择代表的优势。</p>
+<h3 id="24-a-namenegationintwoscomplementanegation-in-twos-complement">2.4. <a name='Negationintwoscomplement'></a>Negation in two’s complement</h3>
+<p>一元运算符和求反方法改变了整数的符号，但是位会发生什么变化呢? 若要用二的补码来求一个数的反，请切换所有位并加一。例如，0b00000010(2)被否定将是0b11111101 + 1 = 0b11111110(-2)。现在在BitViewer中尝试一些数字。记住，当你加1的时候，你必须进位才能得到正确的答案。</p>
+<blockquote>
+<p>早期的计算机系统使用不同的策略来表示负数。例如，IBM 7090有一个符号位，它只是翻转了数字的符号。PDP-1使用了一个补码，在这个补码中，否定是通过翻转所有的位来实现的。这些方程组的问题是它们有两个0的表示。另外，加减运算需要不同的硬件电路。二的补码的出现解决了这些问题。</p>
+</blockquote>
+<h3 id="25-a-nameexercisesaexercises">2.5. <a name='Exercises'></a>Exercises</h3>
+<ul>
+<li>虚构的Int4和Int10类型的最小和最大可表示值是什么?</li>
+<li>使用Int4哪个位模式表示-2?(把它加到2，看看是否等于零。)</li>
+<li>列出本章(上图)中显示的所有Int32支持的协议。</li>
+</ul>
+<p>请在本章的下载材料中找到练习答案。</p>
+<h3 id="26-a-nameaddingintegeroperationstobitvieweraadding-integer-operations-to-bitviewer">2.6. <a name='AddingintegeroperationstoBitViewer'></a>Adding integer operations to BitViewer</h3>
+<p>是时候给BitViewer添加一些功能了。打开项目，花一些时间在高层熟悉代码。以下是一些需要注意的要点:</p>
+<ul>
+<li><strong>Model/ModelStore.swift contains the model</strong> — 每个整数和浮点类型的实例列表。</li>
+<li>所有的数字都被分解成位，并由包含在<strong>IntegerView或FloatingPointView</strong>中的BitsView显示。</li>
+<li>每个位都有一个“语义”类型，例如符号、指数或意义，以不同的方式显示并在<strong>Model/BitSemantic.swift</strong>中定义。</li>
+<li>许多抽象都是泛型的，所以它们适用于任何整数或浮点类型。</li>
+</ul>
+<p>现在，打开<strong>Model/NumericOperation.swift</strong>并将其添加到文件中:</p>
+<pre><code class="language-swift">enum IntegerOperation&lt;IntType: FixedWidthInteger&gt; {
+  // 1
+  typealias Operation = (IntType) -&gt; IntType
+
+  // 2
+  struct Section {
+    let title: String
+    let items: [Item]
+  }
+
+  // 3
+  struct Item {
+    let name: String
+    let operation: Operation
+  }
+}
+</code></pre>
+<p><strong>IntegerOperation</strong>是一个无法实例化的无人居住(<strong>uninhabited type</strong>)类型(一个没有cases的enum)。</p>
+<p>它提供了一个命名空间和符合FixedWidthInteger协议的通用占位符IntType。如果您回想一下前面的整数协议层次结构，就会发现IntType具有Int和UInt类型的大部分功能。以下是该片段的其他一些重要部分:</p>
+<ol>
+<li><strong>Operation</strong>是一个函数，它接受一个<strong>IntType</strong>并返回一个由UI显示的修改后的IntType。</li>
+<li><strong>Section</strong>有一个标题，允许对操作进行逻辑分组。</li>
+<li><strong>Item</strong>是一个带有显示名称的菜单选择项，以及在选中时调用的Operation。</li>
+</ol>
+<p>接下来，定义一个静态属性菜单来保存稍后要添加的操作部分。</p>
+<pre><code class="language-swift">extension IntegerOperation {
+  static var menu: [Section] {
+    [
+      // Add sections below 
+    ]
+  }
+}
+</code></pre>
+<p>这个菜单可以通过SwiftUI界面呈现。要启用它，请打开<strong>Views/NumericOperationsView.swift</strong>并取消注释第40行左右的代码块:</p>
+<p>此时，您可以构建并运行<strong>BitViewer</strong>。您还不会看到任何更改。但当你完成了下面的所有部分，它将是这样的:</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3eps5myuj60hh0cy74p02.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="27-a-namesettingvalueoperationsasetting-value-operations">2.7. <a name='Settingvalueoperations'></a>Setting value operations</h3>
+<p>回到<strong>Model/NumericOperation.swift</strong>，给静态菜单属性添加如下内容:</p>
+<pre><code class="language-swift">Section(title: &quot;Set Value&quot;, items:
+[
+  Item(name: &quot;value = 0&quot;) { _ in 0 },
+  Item(name: &quot;value = 1&quot;) { _ in 1 },
+  Item(name: &quot;all ones&quot;) { _ in ~IntType.zero },
+  Item(name: &quot;value = -1&quot;) { _ in -1 },
+  Item(name: &quot;max&quot;) { _ in IntType.max },
+  Item(name: &quot;min&quot;) { _ in IntType.min },
+  Item(name: &quot;random&quot;) { _ in 
+    IntType.random(in: IntType.min...IntType.max) 
+  }
+]), // To be continued
+</code></pre>
+<p>您可以再次构建并运行应用程序。这些都是IntType上的泛型方法，它被限制为<strong>FixedWidthInteger</strong>。因此，您可以选择任何整数类型，并对其运行操作，以查看位如何变化。</p>
+<p>第一部分的操作依赖于<strong>ExpressibleByIntegerLiteral</strong>来初始化0、1和-1。因为它定义了一个不可失败的初始化式，如果值超出了可表示的范围，它就变成0。尝试通过点击操作将<strong>unsigned</strong>类型设置为-1来实现。</p>
+<p>若要将所有位设置为1，请使用<strong>AdditiveArithmetic</strong>中的.zero和BinaryInteger中的按位~补码操作符来翻转所有位。</p>
+<p>FixedWidthInteger支持max、min和random。</p>
+<h3 id="28-a-nameendianoperationsaendian-operations-字节序">2.8. <a name='Endianoperations'></a>Endian operations (字节序)</h3>
+<p><strong>endian</strong>这个词指的是乔纳森·斯威夫特的《格列佛游记》中两种相互竞争的意识形态，在你应该敲鸡蛋的小端还是大端这个问题上的冲突。在计算机数字表示法中，端序描述最小字节或最大字节是出现在第一个还是最后一个。 使用<strong>little-endian</strong>，最小的(最低有效的)字节排在前面。</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3f2xj6jdj60fu074dg102.jpg" alt="avatar" loading="lazy"></figure>
+<p>将此添加到菜单属性:</p>
+<pre><code class="language-swift">Section(title: &quot;Endian&quot;, items:
+[
+  Item(name: &quot;bigEndian&quot;) { value in value.bigEndian },
+  Item(name: &quot;littleEndian&quot;) { value in value.littleEndian },
+  Item(name: &quot;byteSwapped&quot;) { value in value.byteSwapped }
+]),
+</code></pre>
+<p>构建和运行。因为ARM和英特尔的硬件都是小端序的，所以点击小端序菜单选项什么都做不了。 点击<strong>bigEndian</strong>将交换字节。如果您运行在大端机器上，则相反。 <strong>byteswap</strong>访问器总是交换字节，不管你在什么平台上。</p>
+<p>尝试一些多字节类型，并确保它们按照您的预期工作。</p>
+<p>即使在像苹果这样的硬件生态系统中，所有东西都是小端式的，如果你试图解码一个文件格式，比如PNG，你会发现自己需要同时处理两个端式。Swift integer types make it easy.</p>
+<h3 id="29-a-namebitmanipulationoperationsabit-manipulation-operations">2.9. <a name='Bitmanipulationoperations'></a>Bit manipulation operations</h3>
+<p>仍然在IntegerOperation的菜单中，添加一些位操作操作:</p>
+<pre><code class="language-swift">Section(title: &quot;Bit Manipulation&quot;, items:
+ [
+   Item(name: &quot;toggle&quot;) { value in ~value },
+   Item(name: &quot;value &lt;&lt; 1&quot;) { value in value &lt;&lt; 1 },
+   Item(name: &quot;value &gt;&gt; 1&quot;) { value in value &gt;&gt; 1 },
+   Item(name: &quot;reverse&quot;) { print(&quot;do later&quot;); return $0 }
+]),
+</code></pre>
+<p>得益于BinaryInteger协议，Swift整数类型拥有翻转和屏蔽位的所有基本操作。您已经在设置值一节中看到了补码操作符~。在这里，它是用来切换位的。</p>
+<p>操作符&gt;&gt;和&lt;&lt;分别可以向左和向右移动位。这里的一个关键概念是符号扩展。操作符&gt;&gt;对于无符号类型和有符号类型的工作方式不同。如果类型是unsigned的，&gt;&gt;将始终将0插入到最高有效位。但是如果它有符号，它会复制符号位。你自己用一些数字试试。</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3fhe1su0j60f30c7dge02.jpg" alt="avatar" loading="lazy"></figure>
+<p>反向操作目前只打印“do later”。您马上就会实现它来颠倒所有位的顺序。</p>
+<h3 id="210-a-namearithmeticoperationsaarithmetic-operations">2.10. <a name='Arithmeticoperations'></a>Arithmetic operations</h3>
+<p>添加这些算术运算:</p>
+<pre><code class="language-swift">Section(title: &quot;Arithmetic&quot;, items:
+ [
+   Item(name: &quot;value + 1&quot;) { value in value &amp;+ 1 },
+   Item(name: &quot;value - 1&quot;) { value in value &amp;- 1 },
+   Item(name: &quot;value * 10&quot;) { value in value &amp;* 10 },
+   Item(name: &quot;value / 10&quot;) { value in value / 10 },
+   Item(name: &quot;negate&quot;) { value in ~value &amp;+ 1 }
+])
+</code></pre>
+<p>当additiveartharithmetic和Numeric协议为您提供基本的加法、减法和乘法时，FixedWidthInteger引入了封装操作的概念。这些操作符看起来像我们熟悉的+、-和*操作符，但是有一个&amp;前缀。 例如，while UInt8.max + 1将暂停你的程序，UInt8.Max &amp;+ 1将把它绕回零。您将希望使用&amp;+，这样您的程序不会崩溃，而只是在用户增量超过最大值时进行包装。</p>
+<blockquote>
+<p>Note: 您可能认为&amp;+是“快速”操作。它们确实是，但它们也可能导致您的程序的整体放缓。原因是，特别是当操作计算数组索引时，编译器就不能再考虑内存安全性了。 因此，额外的检查可能会在内部循环中结束，导致严重的性能损失。</p>
+</blockquote>
+<p>SignedInteger允许您访问一个求反方法和一元运算符。然而，由于IntType仅受FixedWidthInteger协议的约束，您需要手动执行它。对于2的补数，你可以像之前看到的那样，翻转比特并加上1。在BitViewer中尝试您的自定义操作，并看到它像魔术一样工作!</p>
+<h3 id="211-a-nameimplementingacustomreverseoperationaimplementing-a-custom-reverse-operation">2.11. <a name='Implementingacustomreverseoperation'></a>Implementing a custom reverse operation</h3>
+<p>为了展示你的比特破解能力，在FixedWidthInteger上做一个扩展，反转所有的比特。首先，通过在<strong>Model/NumericOperation.swift</strong>的顶部添加这个来实现UInt8的私有扩展:</p>
+<pre><code class="language-swift">private extension UInt8 {
+  mutating func reverseBits() {
+    self = (0b11110000 &amp; self) &gt;&gt; 4 | (0b00001111 &amp; self) &lt;&lt; 4
+    self = (0b11001100 &amp; self) &gt;&gt; 2 | (0b00110011 &amp; self) &lt;&lt; 2
+    self = (0b10101010 &amp; self) &gt;&gt; 1 | (0b01010101 &amp; self) &lt;&lt; 1
+  }
+}
+</code></pre>
+<blockquote>
+<p>当您在进行信号处理或使用低级硬件(如设备驱动程序)时，像反向这样的位操作可以派上用场。位反转运算是快速傅里叶变换(FFT)算法中著名的操作，具有广泛的应用。</p>
+</blockquote>
+<p>这段代码使用了所谓的分治方法，将一个大问题分解成子问题，直到子问题变得微不足道:</p>
+<ul>
+<li>它使用位掩码和移位4来交换字节的小字节。</li>
+<li>它交换了小字节的上半部分和下半部分。</li>
+<li>它每隔一比特就交换一次。</li>
+</ul>
+<p>如果你把每一个比特想象成ABCDEFGH，下面是第一行反向小字节的工作原理:</p>
+<figure data-type="image" tabindex="11"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3fso3tt6j60jm0cwdgl02.jpg" alt="avatar" loading="lazy"></figure>
+<p>将小字节的上半部和下半部分翻转，其他部分的操作方式相同。</p>
+<p>现在，在同一个文件中，添加以下内容，使其适用于所有整数大小:</p>
+<pre><code class="language-swift">extension FixedWidthInteger {
+  var bitReversed: Self {
+    var reversed = byteSwapped
+    withUnsafeMutableBytes(of: &amp;reversed) { buffer in
+      buffer.indices.forEach { buffer[$0].reverseBits() }
+    }
+    return reversed
+  }
+}
+</code></pre>
+<p>可以使用end操作byteswapping来翻转所有字节，然后为它们获取一个原始缓冲区。 然后，您可以调用reverseBits()私有方法来更改每个单独的字节。</p>
+<p>要将它连接到接口中，请更改菜单中反向项的定义，使其变成:</p>
+<pre><code class="language-swift">Item(name: &quot;reverse&quot;) { value in value.bitReversed }
+</code></pre>
+<h3 id="212-a-nameimprovingbitreversedaimproving-bitreversed">2.12. <a name='ImprovingbitReversed'></a>Improving bitReversed</h3>
+<p>上面的代码需要8次迭代来反转本机64位类型。你能做得更好，使用处理器的全宽度吗?是的,你可以。</p>
+<p>首先，注释掉(或重命名)bitReversed的当前定义，为新的定义腾出空间。然后输入:</p>
+<pre><code class="language-swift">extension FixedWidthInteger {
+  var bitReversed: Self {
+    precondition(MemoryLayout&lt;Self&gt;.size &lt;= 
+                 MemoryLayout&lt;UInt64&gt;.size)
+
+    var reversed = UInt64(truncatingIfNeeded: self.byteSwapped)
+    reversed = (reversed &amp; 0xf0f0f0f0f0f0f0f0) &gt;&gt; 4 | 
+               (reversed &amp; 0x0f0f0f0f0f0f0f0f) &lt;&lt; 4
+    reversed = (reversed &amp; 0xcccccccccccccccc) &gt;&gt; 2 | 
+               (reversed &amp; 0x3333333333333333) &lt;&lt; 2
+    reversed = (reversed &amp; 0xaaaaaaaaaaaaaaaa) &gt;&gt; 1 | 
+               (reversed &amp; 0x5555555555555555) &lt;&lt; 1
+    return Self(truncatingIfNeeded: reversed)
+  }
+}
+</code></pre>
+<p>关键是要使用无符号类型，以防止在移位位时出现符号扩展。一个看起来很神秘的数字，例如0xf0....是0 b11110000……从你的第一个版本在一个紧凑的格式拼写了8次。对于所有其他看起来神秘的值也是如此。</p>
+<p>最后，特殊的初始化器FixedWidthInteger.init(truncatingIfNeeded:)将小整数宽度扩展到64位。最后，它又把它们切掉。如果不能转换数值，标准整数初始化器将陷入陷阱。例如，UInt64(Int(-1))将暂停您的程序，因为-1是不可表示的。truncatingIfNeeded只是把比特切掉而没有错误。</p>
+<blockquote>
+<p>这个版本只支持最大64位，否则会在运行时停止。您可以通过循环使用words.reversed()并使用本机大小UInt而不是显式的UInt64来支持更大的(还不是标准的)格式。</p>
+</blockquote>
+<p>有了这段代码，在BitViewer中测试它，看看它会像你所期望的那样工作在所有大小。</p>
+<h2 id="3-a-namefloating-pointafloating-point">3. <a name='Floating-point'></a>Floating-point</h2>
+<p>浮点数可以表示小数值。 标准浮点类型包括64位Double、32位Float和相对较新的16位Float16。 有一种英特尔专用的Float80类型，可以追溯到个人电脑拥有独立的数学协处理器芯片的时候。因为ARM不支持它，你只会在基于英特尔的平台上遇到这种类型，比如英特尔Mac或在英特尔Mac上运行的iPad模拟器。</p>
+<h3 id="31-a-namethefloating-pointprotocolsathe-floating-point-protocols">3.1. <a name='Thefloating-pointprotocols'></a>The floating-point protocols</h3>
+<p>就像整数有一个协议层次来统一它们的功能一样，浮点数遵循如下协议:</p>
+<figure data-type="image" tabindex="12"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3gfc9hsfj60jy0kpt9y02.jpg" alt="avatar" loading="lazy"></figure>
+<p>其中一些协议，如SignedNumeric，与用于整数的协议相同。 繁重的工作始于FloatingPoint，它支持大多数硬件本地的IEEE-754浮点标准。BinaryFloatingPoint添加了更多的功能，它处理基数为2时的特定情况。</p>
+<h3 id="32-a-nameunderstandingieee-754aunderstanding-ieee-754">3.2. <a name='UnderstandingIEEE-754'></a>Understanding IEEE-754</h3>
+<p>一个64位的2的补码可以从一个巨大的-9,223,372,036,854,775,808 (Int64.min)到9,223,372,036,854,775,807 (Int64.max)。但64位Double的范围可达深不可测的±1.8e+308(Double.greatestFiniteMagnitude)。而且，同样的Double也可以表示小到4.9e-324的数字(Double. leastnonzeromagnitude)。这怎么可能?</p>
+<p>答案是IEEE-754标准定义的一个有思想的表示，它利用了变量精度的思想。它使数字非常细粒度地接近于零，同时使巨大的数字变得更大。</p>
+<p>要探究这个问题，再次打开BitViewer并选择一个浮点类型。使用Float16是最舒适的，因为它的限制和尺寸都相对较小。Float16最大的可表达有限星等为65504.0，最小的非零星等为6e-08。</p>
+<figure data-type="image" tabindex="13"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3gmwygrij60cp0a50t002.jpg" alt="avatar" loading="lazy"></figure>
+<p>位有三种:1个符号位，5个指数位和10个有效位，总共16个。 该方程确定了有限数的值:</p>
+<pre><code class="language-swift">(-1 ^ sign) * significand * (radix ^ exponent)
+</code></pre>
+<p>以下是一些要点:</p>
+<ul>
+<li>^代表取幂。</li>
+<li>对于任何BinaryFloatingPoint，基数是2。基数2是一种非常有效的机器表示，但不能确切地表示一些普通的数字，如0.1。</li>
+<li>符号将数字翻转为正或负。任何数的0次方都被定义为1(正)。当取一次方时，这一项变成- 1(负的),与2的补码不同，浮点0有两种表示方式:-0和+0。</li>
+<li><strong>significand</strong>是从原始显著性位以下面描述的特定方式派生出来的。<strong>FloatingPoint</strong>协议为您提供了可以在上述公式中使用的比特的成熟版本。</li>
+<li><strong>exponent</strong>也是由位派生的，它的成熟值可以从<strong>FloatingPoint</strong>协议中获得。</li>
+</ul>
+<p>棘手的魔法在于如何计算有效和指数。</p>
+<p>有效位决定了实际的有效值。为了用最少的位数获得最大的范围，IEEE-754假设一个幻像，前导1位，即使它没有存储在内存中。这就是前导位惯例。这就是为什么有效位都被设为零来表示数字1。如果在上面的例子中打开第9位，它将增加0.5(2<sup>-1)并将整体值更改为1.5。打开第8位将增加0.25(2</sup>-2)变成1.75，以此类推。试试看。</p>
+<p>指数计算同样微妙而巧妙，可以用最少的位产生最大的范围。指数的计算方法是取一个偏置值并减去指数位的大小。IEEE-754标准确定的偏差为:</p>
+<pre><code class="language-swift">bias = 2 ^ (exponentBitCount -1) - 1
+</code></pre>
+<p>在Float16的情况下，它的计算结果为pow(2, Float16.exponentbitcount -1) -1，即15。为了表示上面示例中的值1.0，指数位被设置为0b01111或15，因此偏差- 15 = 0。因此，根^ 0 = 1。</p>
+<p>在尝试改变位时，您可能已经注意到某些位模式是特殊的大小写值，上面的计算规则被忽略了。例如，如果打开所有的指数位，数字就会变成一个特殊的NaN，代表“非数字”</p>
+<h3 id="33-a-nameaddingfloating-pointoperationstobitvieweraadding-floating-point-operations-to-bitviewer">3.3. <a name='Addingfloating-pointoperationstoBitViewer'></a>Adding floating-point operations to BitViewer</h3>
+<p>要进一步研究浮点数，请在BitViewer中添加一些操作。 再次打开源文件Model/NumericOperation.swift，并将其添加到底部:</p>
+<pre><code class="language-swift">enum FloatingPointOperation&lt;FloatType: BinaryFloatingPoint&gt; {
+  typealias Operation = (FloatType) -&gt; FloatType
+
+  struct Section {
+    let title: String
+    let items: [Item]
+  }
+
+  struct Item {
+    let name: String
+    let operation: Operation
+  }
+
+  static var menu: [Section] {
+    [
+      // Add sections below
+    ]
+  }
+}
+</code></pre>
+<p>这段代码看起来应该很熟悉:它只是处理整数的浮点版本。泛型占位符FloatType被限制为BinaryFloatingPoint，这使您能够跨具体的浮点类型访问许多功能。</p>
+<p>要在UI中启用这些操作，你可以尝试一下，转到<strong>Views/NumericOperationsView.swift</strong>并取消以以下代码开头的代码块的注释:</p>
+<p>这段代码将每个操作显示在一个列表中，并在您点击它时调用它。</p>
+<h3 id="34-a-namesettingvalueoperations-1asetting-value-operations">3.4. <a name='Settingvalueoperations-1'></a>Setting value operations</h3>
+<p>回到Model/NumericOperation.swift中，将此部分添加到浮点菜单属性中。</p>
+<pre><code class="language-swift">Section(title: &quot;Set Value&quot;, items:
+[
+  Item(name: &quot;value = 0&quot;) { _ in 0 },
+  Item(name: &quot;value = 0.1&quot;) { _ in FloatType(0.1) },
+  Item(name: &quot;value = 0.2&quot;) { _ in FloatType(0.2) },
+  Item(name: &quot;value = 0.5&quot;) { _ in FloatType(0.5) },
+  Item(name: &quot;value = 1&quot;) { _ in 1 },
+  Item(name: &quot;value = -1&quot;) { _ in -1 },
+  Item(name: &quot;value = pi&quot;) { _ in FloatType.pi },
+  Item(name: &quot;value = 100&quot;) { _ in 100 }
+]),
+</code></pre>
+<p>构建和运行。选择Float16类型。本节操作主要使用协议ExpressibleByIntegerLiteral和ExpressibleByFloatLiteral来设置值。</p>
+<p>注意使用一组二进制计算属性描述值的Attributes。1.0将isFinite, isCanonical和isNormal设置为true。 isFinite意味着它使用你之前看到的公式来计算值。isCanonical暗示该值是其规范形式。</p>
+<p>以不同方式表示的相同价值被称为队列。使用可表达的协议将确保您得到规范的表示。</p>
+<p>试一下其他的值。特别是0.1。 由于只有16位和基数为2，所以不可能精确地表示它。 即使是64位的Double，也不能准确地得到它。这需要无数的有效位来完成。</p>
+<blockquote>
+<p>如果你正在编写与货币有关的应用程序，你可能会希望使用精确表示0.1的数字类型，以避免会计错误。尽管IEEE-754指定了一个基数10类型可以处理这个问题，但它还没有为Swift本地实现。然而，Swift在Objective-C的NSDecimalNumber上提供了一个覆盖(包装类型)Decimal。</p>
+</blockquote>
+<h3 id="35-a-namesubnormalsasubnormals">3.5. <a name='Subnormals'></a>Subnormals</h3>
+<p>值可以是正常的或低于正常的，或者在为零的情况下两者都不是。一个正常的数字使用您在1.0中看到的前导位约定。 低于正常值(也称非正常值)假定前导位为零，并支持非常小的数字。通过保持所有的指数位为零并设置一个有效位来创建低于正常值的数字。试试看!</p>
+<blockquote>
+<p>低于正常值的数字是IEEE-754规范中一个有争议的部分。虽然在Intel和更新的ARM设备上实现了，但并不是在ARM的所有版本(ARMv7和更早的版本)上实现的。因此，您会发现对这些数字的操作要花费50-100倍的时间，因为所有操作都是在软件中实现的，而不是在硬件中。这些平台支持刷新到零的控制寄存器，这只是使这些小值为零。</p>
+</blockquote>
+<h3 id="36-a-namesetspecialvaluesoperationsaset-special-values-operations">3.6. <a name='Setspecialvaluesoperations'></a>Set special values operations</h3>
+<p>在浮点菜单属性中添加另一节:</p>
+<pre><code class="language-swift">Section(title: &quot;Set Special Values&quot;, items:
+[
+  Item(name: &quot;infinity&quot;) { _ in 
+    FloatType.infinity 
+  },
+  Item(name: &quot;NaN&quot;) { _ in 
+    FloatType.nan 
+  },
+  Item(name: &quot;Signaling NaN&quot;) { _ in
+    FloatType.signalingNaN 
+  },
+  Item(name: &quot;greatestFiniteMagnitude&quot;) { _ in
+    FloatType.greatestFiniteMagnitude
+  },
+  Item(name: &quot;leastNormalMagnitude&quot;) { _ in
+    FloatType.leastNormalMagnitude
+  },
+  Item(name: &quot;leastNonzeroMagnitude&quot;) { _ in
+    FloatType.leastNonzeroMagnitude
+  },
+  Item(name: &quot;ulpOfOne&quot;) { _ in 
+    FloatType.ulpOfOne 
+  }
+]),
+</code></pre>
+<p>构建并运行，并选择Float16。</p>
+<p>正如您已经看到的，浮点数可以表示整数不能表示的特殊值。这部分操作设置它们，以便查看生成的位模式。</p>
+<p>将所有的指数位设置为1表示无穷大，你可以通过设置符号位使其为-无穷大。 你可以将其与greatestfinitemmagnitude和leastNormalMagnitude进行比较。对于绝对最小的可表示数，可以使用subnormal leastNonzeroMagnitude。</p>
+<p>“非数字”有两种形式。如果您对信令NaN进行操作，可能会导致硬件trap。这种行为有利于在问题发生时立即停止，而不是在以后的数百万或数十亿条指令中停止。不幸的是，并不是所有的硬件(包括ARM)都支持它，所以你不能依赖它。许多硬件平台会立即将信令NaN转换为安静NaN。</p>
+<p>您可以通过将所有指数位和最高有效位设置为1来创建一个安静NaN。</p>
+<p>通过设置其他有效位，您可以将错误代码与NaN一起发送。理论上，这些额外的信息可以用来识别导致值变成nan的操作。但在实践中并没有这样做。</p>
+<blockquote>
+<p>有这么多代表不同NaN代码的错误代码被认为是IEEE-754的一个显著弱点。 科学计算领域的新兴标准避免了这种情况，但是在撰写本文时，硬件的采用是不可用的。查看Type III Unum - Posit，了解浮点表示的最新发展[https://en.wikipedia.org/wiki/Unum_(number_format)]。未来的Apple Silicon会支持这一功能吗? 尽管它不在M1中，Swift数字似乎正在为这种类型的进化绘制一条路径。</p>
+</blockquote>
+<h3 id="37-a-namesteppingandfunctionsoperationsastepping-and-functions-operations">3.7. <a name='Steppingandfunctionsoperations'></a>Stepping and functions operations</h3>
+<p>最后两节探讨ulp或浮点数精度最低的单位。把它们添加到菜单中。</p>
+<pre><code class="language-swift">Section(title: &quot;Stepping&quot;, items:
+[
+  Item(name: &quot;.nextUp&quot;) { $0.nextUp },
+  Item(name: &quot;.nextDown&quot;) { $0.nextDown },
+  Item(name: &quot;.ulp&quot;) { $0.ulp },
+  Item(name: &quot;add 0.1&quot;) { $0 + 0.1 },
+  Item(name: &quot;subtract 0.1&quot;) { $0 - 0.1 }
+]),
+Section(title: &quot;Functions&quot;, items:
+[
+  Item(name: &quot;.squareRoot()&quot;) { $0.squareRoot() },
+  Item(name: &quot;1/value&quot;) { 1/$0 }
+])
+</code></pre>
+<p>构建并运行应用程序。选择Float16。</p>
+<p>许多人对浮点数的精度会根据其值而变化感到惊讶。 值越大，精度越低。考虑以下情况:</p>
+<pre><code class="language-swift">if value == value + 1 { 
+  fatalError(&quot;Can this happen?&quot;) 
+}
+</code></pre>
+<p>如果值足够大，则会发生fatalError。例如，如果value为1e19，添加1没有任何作用。</p>
+<p>在Float16上，如果选择greatestFiniteMagnitude，然后选择ulp，它将报告一个32的值。如果你从greatestFiniteMagnitude(65504)开始，然后按下nextDown，你得到65472，这是32的距离。浮点值越大，它就越极端。</p>
+<p>其他的步进方法可以让您进行精确的实验。例如，在Float16上从0开始，然后加0.1十几次。你会发现你已经差了0.01，这可能会导致会计发疯，晚上睡不着觉。尽管BinaryFloatingPoint类型在总体范围和精度方面都很好，但它们不适合像currency这样的东西，对于这些东西，你应该使用Decimal类型。十进制可以精确地表示0.1。</p>
+<h2 id="4-a-namefullgenericprogrammingwithfloating-pointafull-generic-programming-with-floating-point">4. <a name='Fullgenericprogrammingwithfloating-point'></a>Full generic programming with floating-point</h2>
+<p>通过BitViewer应用程序，您看到了如何使用BinaryFloatingPoint对浮点类型进行通用操作。</p>
+<p>这个协议是有用的，但缺乏处理对数、指数和三角函数的方法。 如果需要，可以使用重载方法来调用操作系统的C函数。然而，调用这些函数并不是通用的。</p>
+<p>Swift Evolution 0246: Generic Math(s) Functions ([https://github.com/apple/swift-evolution/blob/master/proposals/0246-mathable.md])，于2019年3月正式被Swift核心团队接受，修复了这个问题。不幸的是，由于“与类型检查器性能和阴影规则相关的源代码破坏后果”，它还没有真正进入语言。但是，您可以通过导入Numerics包来使用它。苹果认为这一点非常重要，应该在WWDC20会议上进行深入讨论。</p>
+<h3 id="41-a-nameunderstandingtheimprovednumericprotocolsaunderstanding-the-improved-numeric-protocols">4.1. <a name='Understandingtheimprovednumericprotocols'></a>Understanding the improved numeric protocols</h3>
+<p>Swift Numerics包，最终将成为Swift本身的一部分，为标准库添加了重要的协议，包括:AlgebraicField, ElementaryFunctions, RealFunctions和Real。它们与当前的运输协议是这样的:</p>
+<figure data-type="image" tabindex="14"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3huw8gpqj60hf0gw3za02.jpg" alt="avatar" loading="lazy"></figure>
+<p>注意，这个改进的层次结构不再强调基数只有2的BinaryFloatingPoint的重要性。相反，它创建了一个新的名为Real的空协议，它结合了所有有趣的协议，所以你可以编写这样的通用数字算法:</p>
+<pre><code class="language-swift">func compute&lt;RealType: Real&gt;(input: RealType) -&gt; RealType {
+  // ...
+}
+</code></pre>
+<p>RealType是一个通用的占位符，通过符合Real可以访问它所需要的所有超越函数和代数运算。 这使得在任意浮点类型之间切换相对容易。</p>
+<p>Swift Numerics包还引入了一个复数类型，它由两个符合Real的浮点类型组成。它的布局与C和c++中发现的复杂类型兼容，这使得它可以使用流行的信号处理库。</p>
+<p>现在，通过实现著名的Mandelbrot集，您将获得使用numerics包、Real协议和复数类型的一些实际经验。(如果你从来没有听说过曼德尔勃洛特集合，不要担心。你会有好果子吃的。)</p>
+<h3 id="42-a-namegettingstartedwithmandelbrotagetting-started-with-mandelbrot">4.2. <a name='GettingstartedwithMandelbrot'></a>Getting started with Mandelbrot</h3>
+<p>打开Mandelbrot启动器项目，构建并运行应用程序。你会看到Swift Numerics包被加载并作为一个依赖项构建。</p>
+<p>Xcode可以让你轻松浏览项目中的Swift包的源代码。 花点时间来研究Numerics包，特别注意swift-numerics/Sources/RealModule下的文件。在那里，您将看到上面图中所有协议的实现。</p>
+<p>starter应用程序是另一个SwiftUI应用程序，在iPad上横屏显示如下:</p>
+<figure data-type="image" tabindex="15"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3i001d7aj60gt0czmxt02.jpg" alt="avatar" loading="lazy"></figure>
+<p>你可以拖动中心点，但它目前没有任何作用。</p>
+<p>同样，您不会关注swifttui的细节，但您将看到如何通用地编写浮点代码。</p>
+<p>对于这个应用程序，您将连续计算数百万个值。 启动器项目将调试方案设置为发布模式以最大化性能。这个设置将使特定循环的执行速度提高一个数量级。如果你想要启用更可靠的调试，使用Xcode方案编辑器切换回调试版本。</p>
+<h3 id="43-a-namewhatisthemandelbrotsetawhat-is-the-mandelbrot-set">4.3. <a name='WhatistheMandelbrotset'></a>What is the Mandelbrot set?</h3>
+<p>在数学中，集合是数学对象的集合。曼德尔勃洛特集合是复数的集合。听起来复杂吗? 它不是。复数是二维点x坐标是普通实数，y坐标是虚数单位是i。关于i的非凡之处在于当你平方它时，它等于-1，这就把它变成了x轴。</p>
+<blockquote>
+<p>复数是由两个值组成的Swift结构体。这些实分量和虚分量是同一类型的浮点值。和普通数字一样，复数也支持普通运算，如和、差、积等。如果您对这里讨论的内容以外的细节感兴趣，[https://www.khanacademy.org]是学习复数的一个很好的资源。</p>
+</blockquote>
+<p>为了找出一个数字是否包含在Mandelbrot集合中，重复平方它，它要么爆炸(发散)，要么不爆炸。不发散的值属于曼德尔勃洛特集合。</p>
+<p>大多数数字分歧。例如，取数字5并开始平方它。5 25 125 625 3125 15625，它爆炸了，所以不在曼德尔勃洛特集合中。拿0.1这个数字来说吧。它等于0.1 0.01 0.001 0.0001 0.00001。 这个数永远不会发散，并且在集合中。你只要把这个概念扩展到有两个分量的复数。 数学家已经证明，如果一个复数离原点的距离超过半径2，它就会发散。您可以使用这一事实来确定一个数字是否在集合中。</p>
+<blockquote>
+<p>因为集合是二进制的(要么在集合中，要么不在集合中)，您可能想知道为什么Mandelbrot集合图以迷幻的颜色出现，而不仅仅是黑色和白色。颜色来自于给定点发散的速度。</p>
+</blockquote>
+<h3 id="44-a-nameconvertingtoandfromcgpointaconverting-to-and-from-cgpoint">4.4. <a name='ConvertingtoandfromCGPoint'></a>Converting to and from CGPoint</h3>
+<p>SwiftUI和UIKit依赖于Core Graphics进行渲染。 可以在界面中拖动的红点表示一个CGPoint，它的x和y值由cgfloat组成。</p>
+<p>您需要将CGPoint转换为具有实部和虚部的Complex类型，然后再转换回来。starter项目定义了一个CGFloatConvertable协议，并为所有浮点类型实现了它，从而使这一过程变得简单。你可以在CGFloatConvertable.swift中找到它的实现。</p>
+<blockquote>
+<p>Float80仅在Intel平台上可用，因此必须使用#if arch(x86_64)条件化。只有在基于英特尔的Mac上运行iPad模拟器，你才能看到它。</p>
+</blockquote>
+<h3 id="45-a-nameaddatestpointpathaadd-a-test-point-path">4.5. <a name='Addatestpointpath'></a>Add a test point path</h3>
+<p>让泛型编程开始使用Real! 实现该方法需要一个测试点(可以拖动的点)，并计算到maxIterations的后续方块。为此，打开文件MandelbrotMath.swift并查找<strong>points(start:maxIterations:)</strong>。</p>
+<p>然后，将该函数替换为:</p>
+<pre><code class="language-swift">static func points&lt;RealType: Real&gt;(start: Complex&lt;RealType&gt;,
+                                   maxIterations: Int)
+  -&gt; [Complex&lt;RealType&gt;] {
+  // 1
+  var results: [Complex&lt;RealType&gt;] = []
+  results.reserveCapacity(maxIterations)
+
+   // 2
+  var z = Complex&lt;RealType&gt;.zero
+  for _ in 0..&lt;maxIterations {
+    z = z * z + start
+    defer {
+      results.append(z) // 3
+    }
+    // 4
+    if z.lengthSquared &gt; 4 {
+      break
+    }
+  }
+  return results
+}
+</code></pre>
+<p>这个函数在任何符合Real的类型中都是通用的。 它返回一个可以由Core Graphics绘制的点列表。这些点是平方的——maxIterations次数的最大值的起点。以下是一些关键的观察结果:</p>
+<ul>
+<li>您不知道将返回多少点，但您知道它不会超过maxIterations。 预分配结果数组将避免重复的中间分配。</li>
+<li>循环使用的事实是Complex类型是一个AlgebraicField，它可以被平方和相加。它为你处理<strong>real</strong>和<strong>imaginary</strong>。</li>
+<li>使用defer块，您可以保证在循环的每次迭代中都附加一个点，即使通过break提前退出。</li>
+<li>如果一个点超出半径2，它就偏离曼德尔勃洛特集合。为了避免计算昂贵的平方根，可以使用lengthSquared和2^2(4)作为极限。</li>
+</ul>
+<p>构建并运行应用程序。现在你可以通过拖动圆点来探索Mandelbrot集合中的特定点。MandelbrotView使用所有浮点类型调用函数，并以不同的线条粗细呈现它们。 在大多数情况下，它们会完美地对齐，但有时不会。</p>
+<h3 id="46-a-nameexplorethelandmarksaexplore-the-landmarks">4.6. <a name='Explorethelandmarks'></a>Explore the landmarks</h3>
+<p>该界面提供了一组可尝试的命名地标。点击地标名称，起始点移动到预设位置。</p>
+<ul>
+<li>发散型:这是在半径为2的圆之外，所以它立即停止。</li>
+<li>一次迭代:将数字平方一次，并在一次迭代中结束于圆之外。</li>
+<li>两次迭代:将数字平方，落在圆内，然后再次平方，最后在圆外结束，总共进行两次迭代。</li>
+<li>许多迭代:这是重复平方的数字，直到最大迭代，并保持在圆内，所以它是在Mandelbrot集合。</li>
+<li>Float16不同的路径:一个复杂的路径，与Float16不同。在大约25次迭代(您可以用滑块控制)时，所有不同的类型都会发散。</li>
+<li>所有大小不同的路径:这一点似乎收敛。但是在大约100次迭代时，所有不同的浮点类型都以不同的方向开始。Float16保持收敛，而其他32位、64位和80位的浮动分道扬镳。</li>
+</ul>
+<p>您可能想知道，如果您测试复平面上的每个点，并使用不同的颜色，这取决于它在半径(2个圆)之外发散的迭代次数，会发生什么情况。看起来会很酷吗?是的,它会。现在您将实现它。</p>
+<h3 id="47-a-nameimplementmandelbrotimagegenerationaimplement-mandelbrot-image-generation">4.7. <a name='ImplementMandelbrotimagegeneration'></a>Implement Mandelbrot image generation</h3>
+<p>是时候将浮点型编程改为11了。你会想要做你上面做过的事情。但是你想知道的不是点的列表，而是跳出半径2圈需要多少次迭代。你可以使用相同的方法，调用 .count，但这太低效了，因为你想以最快的速度处理数百万个点。</p>
+<p>在MandelbrotMath命名空间中，添加以下静态函数:</p>
+<pre><code class="language-swift">@inlinable static 
+func iterations&lt;RealType: Real&gt;(start: Complex&lt;RealType&gt;, 
+                                max: Int) -&gt; Int {
+  var z = Complex&lt;RealType&gt;.zero
+  var iteration = 0
+  while z.lengthSquared &lt;= 4 &amp;&amp; iteration &lt; max {
+    z = z * z + start
+    iteration += 1
+  }
+  return iteration
+}
+</code></pre>
+<p>@inlinable属性意味着您建议编译器将函数体注入到调用站点，这样您就不必为函数调用付出代价。</p>
+<p>这个函数非常高效地计算给定起始点所需的迭代次数，而不需要像前一个点函数对数组所做的那样需要任何堆分配。</p>
+<p>接下来，在MandelbrotMath.swift中找到这个方法:</p>
+<pre><code class="language-swift">static func makeImage&lt;RealType: Real &amp; CGFloatConvertable&gt;(
+  for realType: RealType.Type,
+  imageSize: CGSize,
+  displayToModel: CGAffineTransform,
+  maxIterations: Int,
+  palette: PixelPalette
+) -&gt; CGImage? {
+   // TODO: implement (2)
+  nil
+}
+</code></pre>
+<p>该方法采用特定的RealType(例如Float、Double、Float16)，并使用imageSize维度计算整个图像，其中每个像素都是一个测试点。</p>
+<p>displaytommodel是一个仿射变换，它指定了如何从显示坐标(原点在左上角)到数学坐标(原点从视图的中心开始，并遵循右手规则，y轴向上)。</p>
+<p>调色板是一个查找表，从特定点的迭代次数映射到32位红绿蓝alpha像素。</p>
+<p>启动项目包含像素和位图抽象，使图像生成更容易。这个抽象可以在Bitmap.swift中找到，并且在像素类型中是通用的。</p>
+<p>首先将上面的函数替换为:</p>
+<pre><code class="language-swift">static func makeImage&lt;RealType: Real &amp; CGFloatConvertable&gt;(
+  for realType: RealType.Type,
+  imageSize: CGSize,
+  displayToModel: CGAffineTransform,
+  maxIterations: Int,
+  palette: PixelPalette
+) -&gt; CGImage? {
+  let width = Int(imageSize.width)
+  let height = Int(imageSize.height)
+
+  let scale = displayToModel.a
+  let upperLeft = CGPoint.zero.applying(displayToModel)
+
+  // Continued below
+  return nil
+}
+</code></pre>
+<p>这个函数截断图像的宽度和高度，并将它们存储为宽度和高度的整数。</p>
+<p>然后它接受displayToModel转换，该转换可以将显示转换为数学模型点，并获取存储在矩阵的“a”变量中的比例。 这个操作是有效的，因为没有旋转或倾斜，x刻度和y刻度是等价的。</p>
+<p>upperLeft获取显示点(0,0)并推动它通过变换来找到复平面中的一个位置。</p>
+<p>接下来，用以下语句替换return nil语句:</p>
+<pre><code class="language-swift">let bitmap = Bitmap&lt;ColorPixel&gt;(width: width, height: height) { 
+  width, height, buffer in
+    for y in 0 ..&lt; height {
+      for x in 0 ..&lt; width {
+        let position = Complex(
+          RealType(upperLeft.x + CGFloat(x) * scale),
+          RealType(upperLeft.y - CGFloat(y) * scale))
+        let iterations =
+          MandelbrotMath.iterations(start: position, 
+                                    max: maxIterations)
+            buffer[x + y * width] = 
+              palette.values[iterations % palette.values.count]
+      }
+    }
+}
+return bitmap.cgImage
+</code></pre>
+<p>这段代码使用位图抽象来创建一个具有指定宽度和高度的CGImage。CGPoint初始化Complex类型作为起点。然后，它调用上面定义的内联迭代函数来确定特定测试点的迭代次数。最后，它将从调色板中查找的颜色值插入像素位置。cgImage访问器从这些像素初始化图像。</p>
+<p>准备好这段代码后，重新运行应用程序以详细研究Mandelbrot集。点击图像开关显示图像。你可以平移和缩放图像，揭示这个分形世界的无限复杂性。</p>
+<p>无限的模式和复杂性。都来自于一个数的平方。</p>
+<h3 id="48-a-nameprecisionandperformanceaprecision-and-performance">4.8. <a name='Precisionandperformance'></a>Precision and performance</h3>
+<p>浮动大小控件允许您选择调用哪个通用版本。 在英特尔和iPad Pro(第三代)上，Double precision的性能最好。 Float16在英特尔上表现不佳，因为它是在软件中模拟的。令人惊讶的是，它在实际设备上也做得不太好——CGFloat和Float16之间的所有转换都导致性能较低。</p>
+<p>Float16在低缩放倍数下渲染效果很好，但你可以看到，当你放大时，它很快就崩溃了。你开始看到像这样的块状工件:</p>
+<p>Float80在现代英特尔机器上的速度也慢得惊人。这种较低的性能是在CPU上以微码模拟计算的结果，而且因为在Core Graphics CGFloat大小之间进行封送需要时间。</p>
+<p>如果您使用其他类型进行试验，您将看到所有浮点类型最终具有相同的块性。类型的精度越高，就越能避免量化误差。</p>
+<h3 id="49-a-nameimprovingperformancewithsimdaimproving-performance-with-simd">4.9. <a name='ImprovingperformancewithSIMD'></a>Improving performance with SIMD</h3>
+<p>你能让渲染循环运行得更快并且保持纯Swift吗?是的,你可以。</p>
+<p>所有现代cpu都支持单指令多数据(SIMD)计算。例如，处理器可以将一组16个数字与另一组16个数字分组，并同时并行地执行所有16个加法，而不是逐个进行16个加法。一个时钟周期。这种性能要求对数据进行一些巧妙的变换，在某些情况下，编译器会自动为您完成这一工作。 这种优化被称为自动向量化，是编译器研究的一个活跃领域。</p>
+<p>为了帮助编译器，Swift提供了整数和浮点数的SIMD类型。 如果使用SIMD类型对数字进行分组，编译器可以更可靠地执行自动向量化。</p>
+<p>Swift支持SIMD2、SIMD4、SIMD8、SIMD16、SIMD32、SIMD64类型。其中每一个都包含整数或浮点数的Scalar类型。SIMD8据说包含8个标量通道。</p>
+<p>现在，使用SIMD8通过并行执行8个测试点计算来加速Mandelbrot图像计算。</p>
+<p>再次打开文件MandelbrotMath.swift并找到函数:</p>
+<pre><code class="language-swift">static func makeImageSIMD8_Float64(
+  imageSize: CGSize,
+  displayToModel: CGAffineTransform,
+  maxIterations: Int,
+  palette: PixelPalette
+) -&gt; CGImage? {
+   // TODO: implement (3)
+  nil
+}
+</code></pre>
+<p>替换为</p>
+<pre><code class="language-swift">static func makeImageSIMD8_Float64(
+  imageSize: CGSize,
+  displayToModel: CGAffineTransform,
+  maxIterations: Int,
+  palette: PixelPalette
+) -&gt; CGImage? {
+  typealias SIMDX = SIMD8
+  typealias ScalarFloat = Float64
+  typealias ScalarInt = Int64
+  // Continued below
+}
+</code></pre>
+<p>这段代码定义了一些类型别名，您可以使用它们来处理不同的大小。ScalarFloat和ScalarInt必须具有相同的位宽，因为这是现代硬件所需要的。如果您不小心使它们的大小不同，程序将不会进行类型检查。</p>
+<p>接下来，将以下代码添加到方法中:</p>
+<pre><code class="language-swift">let width = Int(imageSize.width)
+let height = Int(imageSize.height)
+
+let scale = ScalarFloat(displayToModel.a)
+let upperLeft = CGPoint.zero.applying(displayToModel)
+let left = ScalarFloat(upperLeft.x)
+let upper = ScalarFloat(upperLeft.y)
+// Continued below
+</code></pre>
+<p>此代码与以前的非simd版本类似。但是因为不能在SIMD类型中使用Complex，所以需要在循环中显式地执行操作。</p>
+<p>接下来，向方法中添加一些有用的常量:</p>
+<pre><code class="language-swift">let fours = SIMDX(repeating: ScalarFloat(4))
+let twos = SIMDX(repeating: ScalarFloat(2))
+let ones = SIMDX&lt;ScalarInt&gt;.one
+let zeros = SIMDX&lt;ScalarInt&gt;.zero
+// Continued below
+</code></pre>
+<p>这些常量出现在内部循环中。每个都有8条车道宽(由SIMDX确定，它别名为SIMD8)。</p>
+<p>现在，使用位图初始化器:</p>
+<pre><code class="language-swift">let bitmap = Bitmap&lt;ColorPixel&gt;(width: width, height: height) { 
+  width, height, buffer in
+      // 1
+    let scalarCount = SIMDX&lt;Int64&gt;.scalarCount
+    // 2
+    var realZ: SIMDX&lt;ScalarFloat&gt;
+    var imaginaryZ: SIMDX&lt;ScalarFloat&gt;
+    var counts: SIMDX&lt;ScalarInt&gt;
+    // 3
+    let initialMask = fours .&gt; fours // all false
+    var stopIncrementMask = initialMask
+    // 4
+    let ramp = SIMDX((0..&lt;scalarCount).map { 
+      left + ScalarFloat($0) * scale })
+    // 5
+    for y in 0 ..&lt; height {
+       // Continue adding code here
+    }
+  }
+return bitmap.cgImage
+</code></pre>
+<p>该代码创建位图并将其作为图像返回。以下是细节:</p>
+<ol>
+<li>scalarCount被设置为8，因为SIMDX别名为SIMD8。</li>
+<li>realZ和imaginaryZ是八列浮点数，用来跟踪这八个测试点的变化。 计数是每个测试点的8个迭代次数。</li>
+<li>initialMask和stopIncrementMask控制内部循环中递增的计数。 如果没有一个计数增加，循环将提前退出。这里，可以看到运算符&gt;。该操作对每个车道分别执行&gt;操作。</li>
+<li>ramp用来有效地确定下面复数的实值起点。</li>
+<li>逐行进行Y循环，创建图像。</li>
+</ol>
+<p>现在，将这个添加到y行循环中:</p>
+<pre><code class="language-swift">let imaginary = SIMDX(repeating: upper - ScalarFloat(y) * scale)
+
+for x in 0 ..&lt; width / scalarCount {
+  let real = SIMDX(repeating: ScalarFloat(x * scalarCount) * scale) + ramp
+  realZ = .zero
+  imaginaryZ = .zero
+  counts = .zero
+  stopIncrementMask = initialMask
+
+  // Continue adding code here
+}
+// Process remainder
+</code></pre>
+<p>这段代码计算用于整行像素的起始虚组件。然后，以8个像素块的形式处理每个宽度像素。 答案以realZ和imaginaryZ累积，而迭代则以计数累积。</p>
+<p>接下来，继续添加以下代码:</p>
+<pre><code class="language-swift">// 1
+for _ in 0..&lt;maxIterations {
+  // 2
+  let realZ2 = realZ * realZ
+  let imaginaryZ2 = imaginaryZ * imaginaryZ
+  let realImaginaryTimesTwo = twos * realZ * imaginaryZ
+  realZ = realZ2 - imaginaryZ2 + real
+  imaginaryZ = realImaginaryTimesTwo + imaginary
+
+  // 3
+  let newMask = (realZ2 + imaginaryZ2) .&gt;= fours
+
+  // 4
+  stopIncrementMask .|= newMask
+
+  // 5
+  let incrementer = ones.replacing(with: zeros, 
+                                   where: stopIncrementMask)
+  if incrementer == SIMDX&lt;ScalarInt&gt;.zero {
+    break
+  }
+
+  // 6
+  counts &amp;+= incrementer
+}
+
+// 7
+let paletteSize = palette.values.count
+for index in 0 ..&lt; scalarCount {
+  buffer[x * scalarCount + index + y * width] = 
+    palette.values[Int(counts[index]) % paletteSize]
+}
+</code></pre>
+<p>这段代码的作用如下:</p>
+<ol>
+<li>对于这8个值，您可以计算最大的迭代次数。</li>
+<li>这是用来计算一个复数的平方的代数运算。 (a+b)(a+b) = a<sup>2+2ab+b</sup>2因为b是虚数，平方它就是实数。Complex类型以前为您处理过这个，现在您要手动执行它。</li>
+<li>你检查是否有任何测试点位于半径为2的圆之外。如果是的话，这条路的假面具就是真的。</li>
+<li>累积这个蒙版，这样如果没有一条车道在增加，循环可以提前退出。</li>
+<li>你取8个1，如果车道停止增加，就把它们换成0。这种屏蔽是避免执行if/else计算的方法，因为它会扼杀并行性能。 如果每个计数都停止增加(incrementer全部为零)，则提前删除。</li>
+<li>“incrementer”是由8个“1”和“0”组成的车道，累积为“counts”。</li>
+<li>最后，您需要在调色板中查找每个迭代计数的颜色，并将其写入内存。</li>
+</ol>
+<p>此时，算法就完成了。为了使它适用于任何宽度(不只是8的倍数)，你可以添加以下代码来处理余数:</p>
+<pre><code class="language-swift">let remainder = width % scalarCount
+let lastIndex = width / scalarCount * scalarCount
+for index in (0 ..&lt; remainder) {
+  let start = Complex(
+    left + ScalarFloat(lastIndex + index) * scale,
+    upper - ScalarFloat(y) * scale)
+  var z = Complex&lt;ScalarFloat&gt;.zero
+  var iteration = 0
+  while z.lengthSquared &lt;= 4 &amp;&amp; iteration &lt; maxIterations {
+    z = z * z + start
+    iteration += 1
+  }
+  buffer[lastIndex + index + y * width] = 
+    palette.values[iteration % palette.values.count]
+}
+</code></pre>
+<p>上面的代码是非simd算法。如果你有一个不能被8整除的显示宽度，这段代码将处理几个剩余的像素。</p>
+<p>我们的SIMD实现现在已经完成了。你可以运行应用程序，现在使用8x64浮点类型。对于更少的迭代，您不会看到太多的加速。然而，如果您将迭代次数提高到255次，您将开始看到巨大的性能优势。例如，将最大迭代设置为255并设置一个较高的缩放因子，Float64需要750 ms，而SIMD8<Float64>实现需要332 ms。</p>
+<h3 id="410-a-namewherearethelimitsawhere-are-the-limits">4.10. <a name='Wherearethelimits'></a>Where are the limits?</h3>
+<p>SIMD工作得很好(尽管实现起来有点麻烦)，因为它告诉编译器要并行化工作。但是，如果达到32条64位通道(SIMD32<Float64>)的极端情况，可能会导致速度变慢。如果硬件不存在，编译器就不能有效地向量化。前面使用的类型别名使探索这一领域变得容易，但我发现在我拥有的硬件(Intel simulator, iPad Pro 3rd Gen)上SIMD8<Float64>(如上所示)工作得很好。</p>
+<blockquote>
+<p>为了比CPU提供的更快，你可以使用渲染算法并将其移植到GPU。这涉及到在OpenGL或Metal中编写作为着色器的算法。</p>
+</blockquote>
+<h2 id="5-a-namerangesaranges">5. <a name='Ranges'></a>Ranges</h2>
+<p>现在，将您的注意力转到您一直在使用的Swift数字类型的另一个重要方面——范围。在前面，您看到整数和浮点类型遵循Comparable协议。这种一致性对于支持对数字范围的操作至关重要。</p>
+<p>就像数字类型本身一样，可以合理地猜测范围是编译器中内置的概念。但是，与Swift的许多核心特性一样，它们只是一直可扩展的标准库的一部分。</p>
+<p>事实证明，Range是一个通用结构，其上下绑定类型都符合Comparable。例如，在一个空的playground(或starter文件夹中提供的)中，输入如下:</p>
+<pre><code class="language-swift">enum Number: Comparable {
+  case zero, one, two, three, four
+}
+</code></pre>
+<p>有了这个简单的定义，就有可能形成一个范围:</p>
+<pre><code class="language-swift">let longForm =
+  Range&lt;Number&gt;(uncheckedBounds: (lower: .one, upper: .three))
+</code></pre>
+<p>. .&lt;操作符让它看起来像一个内置的语言特性，并且是等价的:</p>
+<pre><code class="language-swift">let shortForm = Number.one ..&lt; .three
+shortForm == longForm   // true
+</code></pre>
+<p>范围的一个关键特性是它不包括上界。你可以通过运行下面的命令来看到:</p>
+<pre><code class="language-swift">shortForm.contains(.zero)   // false
+shortForm.contains(.one)    // true
+shortForm.contains(.two)    // true
+shortForm.contains(.three)  // false
+</code></pre>
+<p>如果需要包含上界，还有另一种名为closerange的范围类型。试试这个:</p>
+<pre><code class="language-swift">let longFormClosed =
+  ClosedRange&lt;Number&gt;(uncheckedBounds: (lower: .one, upper: .three))
+
+let shortFormClosed = Number.one ... .three
+
+longFormClosed == shortFormClosed  // true
+
+shortFormClosed.contains(.zero)   // false
+shortFormClosed.contains(.one)    // true
+shortFormClosed.contains(.two)    // true
+shortFormClosed.contains(.three)  // true
+</code></pre>
+<p>当然，这些还不是所有的range类型。 您还可以使用前缀和后缀操作符创建部分范围。添加:</p>
+<pre><code class="language-swift">let r1 = ...Number.three       // PartialRangeThrough&lt;Number&gt;
+let r2 = ..&lt;Number.three       // PartialRangeUpTo&lt;Number&gt;
+let r3 = Number.zero...        // PartialRangeFrom&lt;Number&gt;
+</code></pre>
+<p>如您所见，有许多方法可以指定范围。</p>
+<h3 id="51-a-nameloopingoverarangealooping-over-a-range">5.1. <a name='Loopingoverarange'></a>Looping over a range</h3>
+<p>您可能想知道是否可以在for循环中使用这些范围，例如:</p>
+<pre><code class="language-swift">for i in 1 ..&lt; 3 {
+  print(i)
+}
+</code></pre>
+<p>对于Number来说，并非如此。这一能力的条件是Strideable一致性。您可能还记得Swift的数字类型都是<strong>Strideable</strong>。另外，Strideable关联类型Stride必须符合SignedInteger。</p>
+<p>要看到这一点，让Number采用Strideable。首先，将定义改写为:</p>
+<pre><code class="language-swift">enum Number: Int, Comparable {
+  static func &lt; (lhs: Number, rhs: Number) -&gt; Bool {
+    lhs.rawValue &lt; rhs.rawValue
+  }
+
+  case zero, one, two, three, four
+}
+</code></pre>
+<p>接下来，添加一致性:</p>
+<pre><code class="language-swift">extension Number: Strideable {
+  public func distance(to other: Number) -&gt; Int {
+    other.rawValue - rawValue
+  }
+  public func advanced(by n: Int) -&gt; Number {
+    Number(rawValue: (rawValue + n) % 4)!
+  }
+  public typealias Stride = Int
+}
+</code></pre>
+<p>重要的是，Stride类型被设置为一个Int类型，这是一个signeinteger。使用Int使你的Number类型成为一个countablerrange，这是一个由系统定义的类型别名:</p>
+<pre><code class="language-swift">typealias CountableRange&lt;Bound&gt; = Range&lt;Bound&gt; 
+  where Bound: Strideable, Bound.Stride: SignedInteger
+</code></pre>
+<p>现在，你可以这样做:</p>
+<pre><code class="language-swift">for i in Number.one ..&lt; .three {
+  print(i)
+}
+</code></pre>
+<p>它将把1和2打印到调试控制台。</p>
+<h3 id="52-a-namestridingbackwardandatnon-unitintervalsastriding-backward-and-at-non-unit-intervals">5.2. <a name='Stridingbackwardandatnon-unitintervals'></a>Striding backward and at non-unit intervals</h3>
+<p>范围总是要求下界和上界是有序的。如果你想倒着数呢?</p>
+<p>一种常见的方法是将范围当作一个集合来处理，并像这样使用reversed()算法:</p>
+<pre><code class="language-swift">for i in (Number.one ..&lt; .three).reversed() {
+  print(i)
+}
+</code></pre>
+<p>然而，当您遵循Strideable时，即使您的类型不是CountableRange，也可以使用标准库的stride函数。试试这个:</p>
+<pre><code class="language-swift">for i in stride(from: Number.two, to: .zero, by: -1) {
+  print(i)
+}
+
+for i in stride(from: Number.two, through: .one, by: -1) {
+  print(i)
+}
+</code></pre>
+<p>您还可以在Mandelbrot应用程序中看到使用CGFloat的stride。在GraphingView.swift文件中，水平线和垂直线的步幅被创建为GridLines形状的一部分，以提供缩放图形纸的外观。</p>
+<h3 id="53-a-namerangeexpressionsarange-expressions">5.3. <a name='Rangeexpressions'></a>Range expressions</h3>
+<p>如果您正在编写一个接受范围作为输入的函数，您可能想知道应该使用五种样式中的哪一种。一个好的选择是使用RangeExpression协议来符合所有范围类型。如图所示:</p>
+<figure data-type="image" tabindex="16"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu3jl09uznj60j90cijrq02.jpg" alt="avatar" loading="lazy"></figure>
+<p>您可以通过跨范围类型抽象函数来利用这个协议。例如，如果你这样写:</p>
+<pre><code class="language-swift">func find&lt;R: RangeExpression&gt;(value: R.Bound, in range: R) 
+  -&gt; Bool {
+  range.contains(value)
+}
+</code></pre>
+<p>它允许你使用任何形式的范围，像这样:</p>
+<pre><code class="language-swift">find(value: Number.one, in: Number.zero ... .two) // true
+find(value: Number.one, in: ...Number.two)        // true
+find(value: Number.one, in: ..&lt;Number.three)      // true
+</code></pre>
+<p>使函数泛型使你的API比用户必须记住使用特定的范围操作符(如..&lt;或…)更加灵活。现在，它们都能正常工作。</p>
+<h2 id="6-a-namekeypointsakey-points">6. <a name='Keypoints'></a>Key points</h2>
+<p>您已经看到了Swift如何使用协议和泛型从头开始构建数值类型和范围。以下是一些要点:</p>
+<ul>
+<li>Swift通过协议组合来描述整数类型。</li>
+<li>当您向下移动协议层次结构到FixedWidthInteger时，您将获得越来越多的通用功能。</li>
+<li>整数用二进制补码表示。</li>
+<li>要使一个数在2的补数中为负数，只需翻转位并加一。</li>
+<li>有符号整数当值右移时将值扩展。无符号整数。</li>
+<li>如果溢出，Swift会捕获您的程序。 但是你可以使用以&amp;或特殊截断初始化器开头的操作符来关闭这个安全特性。</li>
+<li>Endian指的是字节在内存中的顺序。Little-endian是现代苹果平台上最常见的。</li>
+<li>Swift支持IEEE-754二进制浮点类型，并使用协议来描述。</li>
+<li>浮点数可以是有限的、无限的和nan。</li>
+<li>BinaryFloatingPoint符合类型的基数为2</li>
+<li>如果您正在处理货币，请考虑使用Decimal类型，它使用等于10的基数。</li>
+<li>硬件不支持某些浮点类型和特性。 (英特尔处理器模仿Float16。在ARM上不支持Float80。)</li>
+<li>Swift Numerics软件包还没有被合并到标准库中。然而，它允许使用Real协议进行完全的泛型编程。</li>
+<li>Swift Numerics提供了一个复数类型。</li>
+<li>SIMD类型允许对数据进行分组，以便编译器可以向量化它们。使用SIMD可以显著提高速度，但也增加了复杂性。</li>
+<li>Swift标准库定义了各种类型的范围。</li>
+<li>RangeExpression可以用来统一不同的范围类型。</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fhJM3gN7U/" class="tag">
+                    expert swift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/separation-of-concerns-in-software-design/">
+                  <h3 class="post-title">
+                    Separation of Concerns in Software Design
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

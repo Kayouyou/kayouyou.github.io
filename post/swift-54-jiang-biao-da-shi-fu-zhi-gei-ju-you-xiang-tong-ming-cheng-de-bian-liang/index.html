@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift 5.4 将表达式赋值给具有相同名称的变量 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+将表达式赋值给具有相同名称的变量
+
+
+
+
+
+1. 将表达式赋值给具有相同名称的变量
+Swift 5.4新增功能:现在可以创建一个局部变量，并将其赋值给具有相同名称的表达式，而无需手动用self消除歧义。
+例如，下面的ItemList..." />
+    <meta name="keywords" content="assign" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift 5.4 将表达式赋值给具有相同名称的变量</h2>
+            <div class="post-date">2021-05-15</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#">将表达式赋值给具有相同名称的变量</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namea将表达式赋值给具有相同名称的变量">1. <a name=''></a>将表达式赋值给具有相同名称的变量</h2>
+<p>Swift 5.4新增功能:现在可以创建一个局部变量，并将其赋值给具有相同名称的表达式，而无需手动用self消除歧义。</p>
+<p>例如，下面的ItemListViewController有一个方法可以让我们检索给定IndexPath的Item，我们选择了简单地调用item(at:):</p>
+<pre><code class="language-swift">class ItemListViewController: UIViewController {
+    ...
+
+    private func item(at indexPath: IndexPath) -&gt; Item {
+        ...
+    }
+}
+</code></pre>
+<p>在使用Swift 5.3或更早的版本时，如果我们想调用上面的方法，并将其结果赋给一个也叫做item的本地let或var变量，然后，我们必须在方法调用的前面加上self，以便编译器能够将这两者分开——就像这样:</p>
+<pre><code class="language-swift">class ItemListViewController: UIViewController {
+    ...
+
+    private func showDetailViewForItem(at indexPath: IndexPath) {
+        let item = self.item(at: indexPath)
+        ...
+    }
+}
+</code></pre>
+<p>然而，从Swift 5.4开始，这就不再需要了，编译器现在会自动理解右项符号指向对我们方法的调用，而不管我们是否使用self引用它:</p>
+<pre><code class="language-swift">class ItemListViewController: UIViewController {
+    ...
+
+    private func showDetailViewForItem(at indexPath: IndexPath) {
+        let item = item(at: indexPath)
+        ...
+    }
+}
+</code></pre>
+<p>也许我最喜欢的使用这种新语法特性的方式是在为异步代码编写单元测试时，这通常涉及使用内置的expectation API创建xctestexpect实例。 因为这种期望的最自然的名称通常是简单的expectation，现在能够做以下事情真的很好:</p>
+<pre><code class="language-swift">class ItemLoaderTests: XCTestCase {
+    ...
+
+    func testLoadingItem() {
+        let expectation = expectation(description: &quot;Loading item&quot;)
+        ...
+    }
+}
+</code></pre>
+<p>上述特性可以派上用场的另一种情况是，当我们想要创建属性的局部可变副本时。现在，当引用我们要复制的属性时，也可以不使用self来完成——例如:</p>
+<pre><code class="language-swift">struct Item {
+    var title: String
+    var prefix: String?
+    var suffix: String?
+    
+    func fullTitle() -&gt; String {
+        var title = title
+
+        if let prefix = prefix {
+            title = prefix + title
+        }
+
+        if let suffix = suffix {
+            title += suffix
+        }
+
+        return title
+    }
+}
+</code></pre>
+<p>当然，这可能不是一个革命性的新语法特性，不会完全改变我们编写Swift代码的方式——但是，嘿，不是每个特性或改变都需要如此。我个人认为这种“生活质量”的改进是非常受欢迎的，并且可以使某些类型的代码感觉更轻量级。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/OPr9Wu9oy/" class="tag">
+                    assign
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/ios-mo-kuai-hua-di-si-bu-fen-mo-kuai-jian-gong-xiang-pei-zhi/">
+                  <h3 class="post-title">
+                    iOS模块化第四部分:模块间共享配置
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

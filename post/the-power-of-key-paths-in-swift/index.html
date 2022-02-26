@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The power of key paths in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="由于Swift最初的设计重点是编译时安全性和静态类型，它基本上缺乏那些在更关注运行时的语言(如Objective-C、Ruby和JavaScript)中常见的动态特性。 例如，在Objective-C中，我们可以动态访问对象的任何属性或方法..." />
+    <meta name="keywords" content="key paths" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The power of key paths in Swift</h2>
+            <div class="post-date">2018-10-28</div>
+            
+            <div class="post-content" v-pre>
+              <p>由于Swift最初的设计重点是编译时安全性和静态类型，它基本上缺乏那些在更关注运行时的语言(如Objective-C、Ruby和JavaScript)中常见的动态特性。 例如，在Objective-C中，我们可以动态访问对象的任何属性或方法——甚至在运行时交换它的实现。</p>
+<p>虽然缺乏动态是Swift如此强大的主要原因，因为它可以帮助我们编写更可预测、更有可能正确的代码，但有时能够以更动态的方式处理代码将非常有用。</p>
+<p>值得庆幸的是，Swift不断获得越来越多的动态特性，同时仍然专注于类型安全代码。其中一个特性就是关键路径。本周，让我们来看看Swift中的关键路径是如何工作的，以及它们能让我们做的一些很酷很强大的事情。</p>
+<h2 id="the-basics">The basics</h2>
+<p>关键路径让我们可以将任何实例属性作为一个单独的值来引用。因此，它们可以被传递、在表达式中使用，并使一段代码能够在不实际知道它正在使用哪个确切属性的情况下获取或设置属性。</p>
+<p>关键路径有三种主要变体:</p>
+<p>KeyPath:提供对属性的只读访问。</p>
+<p>WritableKeyPath:提供对具有值语义的可变属性的读写访问(因此所涉及的实例也需要是可变的才能允许写入)。</p>
+<p>ReferenceWritableKeyPath:只能与引用类型(例如类的实例)一起使用，并提供对任何可变属性的读写访问。</p>
+<p>还有一些附加的键路径类型，它们的存在是为了减少内部代码重复，并有助于类型擦除，但在本文中，我们将重点关注主要类型。</p>
+<p>让我们深入了解一下如何使用键路径，以及是什么让它们变得有趣和可能非常强大。</p>
+<h2 id="functional-shorthands">Functional shorthands</h2>
+<p>假设我们正在构建一个应用程序，让用户可以阅读来自网络上的文章，我们有一个文章模型，我们用它来代表这样的一篇文章，看起来像这样:</p>
+<pre><code class="language-swift">struct Article {
+    let id: UUID
+    let source: URL
+    let title: String
+    let body: String
+}
+</code></pre>
+<p>每当我们处理这类模型的数组时，通常都希望从每个模型中提取一段数据来组成一个新数组-例如下面两个例子，我们从一个文章数组中收集所有的id和来源:</p>
+<pre><code class="language-swift">let articleIDs = articles.map { $0.id }
+let articleSources = articles.map { $0.source }
+</code></pre>
+<p>虽然上面的方法完全可行，但因为我们只对从每个元素中提取单个值感兴趣，所以我们并不真正需要闭包的全部功能，所以使用键路径可能是非常合适的。</p>
+<p>我们将从扩展Sequence开始，添加一个map覆盖，它接受一个键路径，而不是一个闭包。因为在这个用例中，我们只对只读访问感兴趣，所以我们将使用标准的KeyPath类型，并且为了实际执行数据提取，我们将使用带有给定键路径的下标作为参数-像这样:</p>
+<pre><code class="language-swift">extension Sequence {
+    func map&lt;T&gt;(_ keyPath: KeyPath&lt;Element, T&gt;) -&gt; [T] {
+        return map { $0[keyPath: keyPath] }
+    }
+}
+</code></pre>
+<p>注意:如果你使用Swift 5.2或更高版本，上面的扩展不再需要，因为关键路径现在可以自动转换为函数。</p>
+<p>有了上面的代码，我们现在可以使用一个非常漂亮和简单的语法从任意序列中的每个元素中提取单个值，这使得我们可以将前面的示例转换为下面的示例:</p>
+<pre><code class="language-swift">let articleIDs = articles.map(\.id)
+let articleSources = articles.map(\.source)
+</code></pre>
+<p>这很酷，但关键路径真正开始发挥作用的地方是，当它们被用于形成稍微复杂一些的表达式时，比如对一组值排序时。</p>
+<p>标准库能够自动排序任何包含可排序元素的序列，但对于所有其他类型，我们必须提供自己的排序闭包。但是，通过使用键路径，我们可以很容易地添加对基于键路径对可比较值排序的任何序列的支持。 就像之前一样，我们将在Sequence上添加一个扩展，将给定的键路径转换为排序表达式闭包:</p>
+<pre><code class="language-swift">extension Sequence {
+    func sorted&lt;T: Comparable&gt;(by keyPath: KeyPath&lt;Element, T&gt;) -&gt; [Element] {
+        return sorted { a, b in
+            return a[keyPath: keyPath] &lt; b[keyPath: keyPath]
+        }
+    }
+}
+</code></pre>
+<p>使用上面的方法，我们现在能够快速、轻松地对任何序列进行排序，只需给出我们想要排序的键路径。如果我们正在构建的应用程序处理任何形式的可排序列表——例如一个包含播放列表的音乐应用程序——这非常方便，因为我们现在可以根据任何可比较的属性(甚至是嵌套的)自由地对列表进行排序:</p>
+<pre><code class="language-swift">playlist.songs.sorted(by: \.name)
+playlist.songs.sorted(by: \.dateAdded)
+playlist.songs.sorted(by: \.ratings.worldWide)
+
+</code></pre>
+<p>做上面的事情可能看起来像简单地添加语法糖，但是可以使我们处理序列的一些更复杂的代码更容易阅读，也可以帮助减少代码重复，因为我们现在可以为任何属性重用相同的排序代码。</p>
+<h2 id="no-instance-required">No instance required</h2>
+<p>虽然适当的语法糖分会很好，但关键路径的真正强大之处在于它允许我们引用一个属性，而不必将其与任何特定的实例关联起来。和之前的音乐主题一样，现在假设我们正在开发一个显示歌曲列表的应用程序，为了在UI中为这样的列表配置一个UITableViewCell，我们使用一个配置器类型，看起来像这样:</p>
+<pre><code class="language-swift">struct SongCellConfigurator {
+    func configure(_ cell: UITableViewCell, for song: Song) {
+        cell.textLabel?.text = song.name
+        cell.detailTextLabel?.text = song.artistName
+        cell.imageView?.image = song.albumArtwork
+    }
+}
+</code></pre>
+<p>同样，上面的代码没有任何问题，但是我们很有可能想要以类似的方式渲染其他模型(许多表格视图单元格倾向于渲染标题、副标题和图像，而不管它们表示的是什么模型)， 因此，让我们看看是否可以使用关键路径的强大功能来创建一个可用于任何模型的共享配置器实现。</p>
+<p>让我们创建一个名为CellConfigurator的通用类型，由于我们想为不同的模型呈现不同的数据，我们将给它一组基于关键路径的属性-每一个我们想要渲染的数据:</p>
+<pre><code class="language-swift">struct CellConfigurator&lt;Model&gt; {
+    let titleKeyPath: KeyPath&lt;Model, String&gt;
+    let subtitleKeyPath: KeyPath&lt;Model, String&gt;
+    let imageKeyPath: KeyPath&lt;Model, UIImage?&gt;
+
+    func configure(_ cell: UITableViewCell, for model: Model) {
+        cell.textLabel?.text = model[keyPath: titleKeyPath]
+        cell.detailTextLabel?.text = model[keyPath: subtitleKeyPath]
+        cell.imageView?.image = model[keyPath: imageKeyPath]
+    }
+}
+</code></pre>
+<p>以上方法的美妙之处在于，我们现在可以很容易地为每个模型专门化我们的通用CellConfigurator，使用与以前相同的轻量级键路径语法——像这样:</p>
+<pre><code class="language-swift">let songCellConfigurator = CellConfigurator&lt;Song&gt;(
+    titleKeyPath: \.name,
+    subtitleKeyPath: \.artistName,
+    imageKeyPath: \.albumArtwork
+)
+
+let playlistCellConfigurator = CellConfigurator&lt;Playlist&gt;(
+    titleKeyPath: \.title,
+    subtitleKeyPath: \.authorName,
+    imageKeyPath: \.artwork
+)
+</code></pre>
+<p>就像标准库的函数操作(如map和sorted)一样，我们可以使用闭包来实现CellConfigurator。然而，有了关键路径，我们能够实现一个非常好的语法——而且我们也不需要任何专门化来实际处理模型实例——这使得它们既简单又更具声明性。</p>
+<h2 id="converting-to-functions">Converting to functions</h2>
+<p>到目前为止，我们只使用键路径读取值，但是现在让我们看看如何使用键路径动态地写入值。在许多不同的代码库中都可以看到一个非常常见的模式，类似于下面的例子——我们正在加载一个条目列表，并在ListViewController中呈现，当加载操作完成时，我们只需将加载的项目分配给视图控制器上的一个属性:</p>
+<pre><code class="language-swift">class ListViewController {
+    private var items = [Item]() { didSet { render() } }
+
+    func loadItems() {
+        loader.load { [weak self] items in
+            self?.items = items
+        }
+    }
+}
+</code></pre>
+<p>让我们看看键路径是否能帮助我们让上面的语法更简单一点，如果我们也能摆脱我们经常不得不做的弱self dance(与此同时，如果我们忘记捕捉对self的弱引用，就有可能意外引入retain cycle)。</p>
+<p>因为我们在上面所做的只是将传递给closure的值赋给视图控制器上的属性，如果我们能够将属性的setter作为函数传递，不是很酷吗? 这样我们就可以把这个函数直接作为完成处理程序传递给load方法，这样一切就都能正常工作了。</p>
+<p>为了实现这一点，让我们首先定义一个函数，该函数允许我们将任何可写的键路径转换为一个为该键路径设置属性的闭包。这一次，我们将使用ReferenceWritableKeyPath类型，因为我们希望将该功能限制为仅引用类型(否则，我们将只对值的本地副本进行更改)。 给定对象和该对象的键路径，我们将自动捕获该对象作为弱引用，并在函数被调用时指定与键路径匹配的属性，如下所示:</p>
+<pre><code class="language-swift">func setter&lt;Object: AnyObject, Value&gt;(
+    for object: Object,
+    keyPath: ReferenceWritableKeyPath&lt;Object, Value&gt;
+) -&gt; (Value) -&gt; Void {
+    return { [weak object] value in
+        object?[keyPath: keyPath] = value
+    }
+}
+</code></pre>
+<p>使用上面的方法，我们现在可以简化之前的代码，摆脱弱自我舞蹈，最终得到一个非常干净的语法:</p>
+<pre><code class="language-swift">class ListViewController {
+    private var items = [Item]() { didSet { render() } }
+
+    func loadItems() {
+        loader.load(then: setter(for: self, keyPath: \.items))
+    }
+}
+</code></pre>
+<p>很酷!😎甚至更酷的是，当类似于上面的东西与更高级的函数概念(如函数组合)相结合时-  因为我们现在可以将多个setter和其他函数链接在一起。在以后的文章中，我们将更详细地研究它以及一般的函数组合。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>首先，如何以及何时使用Swift key paths之类的特性可能有些困难，而且很容易将它们视为简单的语法糖而忽略。 能够以更动态的方式引用属性是一件非常强大的事情，即使闭包经常可以用来实现类似的结果，但是轻量级的语法和关键路径的声明性特性使它们非常适合处理多种数据。</p>
+<p><a href="https://www.swiftbysundell.com/articles/the-power-of-key-paths-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SaaEscPbvk/" class="tag">
+                    key paths
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/specializing-protocols-in-swift/">
+                  <h3 class="post-title">
+                    Specializing protocols in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

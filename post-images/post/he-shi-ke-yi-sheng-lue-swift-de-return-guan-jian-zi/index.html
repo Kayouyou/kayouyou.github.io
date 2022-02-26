@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>何时可以省略Swift的return关键字? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="何时可以省略Swift的return关键字?
+从第一版Swift开始，我们就可以在单表达式闭包中省略return关键字，比如这个闭包，它试图将String值数组中的每个元素转换为等效的Int:
+let strings = [&quot;1&..." />
+    <meta name="keywords" content="return,Q&A" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">何时可以省略Swift的return关键字?</h2>
+            <div class="post-date">2021-05-25</div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="何时可以省略swift的return关键字">何时可以省略Swift的return关键字?</h2>
+<p>从第一版Swift开始，我们就可以在<em>单表达式闭包中省略return关键字</em>，比如这个闭包，它试图将String值数组中的每个元素转换为等效的Int:</p>
+<pre><code class="language-swift">let strings = [&quot;1&quot;, &quot;2&quot;, &quot;3&quot;]
+
+let ints = strings.compactMap { string in
+    Int(string)
+}
+</code></pre>
+<p>但是，<em>如果给定的闭包包含多个表达式，则不能省略return关键字</em>，即使该闭包不包含任何条件或单独的代码分支。因此，传递给下面的map调用的闭包需要显式地将其最后一个表达式标记为返回值:</p>
+<pre><code class="language-swift">class GameController {
+    private(set) var players = [Player]()
+
+    func reviveAllPlayers() {
+        players = players.map { player in
+            var player = player
+            player.isActive = true
+            player.hitPoints = 100
+            return player
+        }
+    }
+}
+</code></pre>
+<p>在Swift 5.1中，上述行为被扩展为包括函数和计算属性，同时保持完全相同的规则。所以现在，当编写一个只包含一个计算返回值的表达式的函数时，我们也可以省略return关键字，如下所示:</p>
+<pre><code class="language-swift">extension GameController {
+    func playersQualifiedForNextLevel() -&gt; [Player] {
+        players.filter { player in
+            player.isActive &amp;&amp; player.score &gt; 1000
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>在上面，我们实际上省略了两个return关键字——都是函数内的顶级关键字，以及传递给filter的闭包关键字。</p>
+</blockquote>
+<p>同样,当实现一个计算属性,只返回一个表达式的结果,然后return关键字也可以被忽略——如果我们想这样做的话，这通常会使一个完整的计算属性实现在一行代码中是可能的:</p>
+<pre><code class="language-swift">extension GameController {
+    var gameCanBeStarted: Bool { players.count &gt; 1 }
+}
+</code></pre>
+<p>不过，值得注意的是，所有这些特性都是可选的。如果愿意，我们可以修改到目前为止所看到的每个示例，而不是始终使用显式return关键字，这样一切将保持完全相同的工作方式。</p>
+<p>然而，当我们开始采用SwiftUI时，可能会使上述行为稍微令人困惑。当使用闭包来构造swifitui容器体时，最初看起来我们实际上可以忽略return关键字，即使是在包含多个表达式或代码路径的闭包中，就像这样:</p>
+<pre><code class="language-swift">struct RootView: View {
+    @ObservedObject var loginController: LoginController
+
+    var body: some View {
+        NavigationView {
+            if let user = loginController.loggedInUser {
+                HomeView(user: user)
+            } else {
+                LoginView(handler: loginController.performLogin)
+            }
+        }
+    }
+}
+</code></pre>
+<p>然而，上面的闭包实际上并没有使用多个隐式返回，而是由SwiftUI的ViewBuilder处理——这是一个函数/结果构建器，它接受我们的每个视图表达式，并将它们组合成单个返回类型。</p>
+<p>为了说明这一点，让我们看看如果我们把上面的闭包变成一个方法会发生什么:</p>
+<pre><code class="language-swift">struct RootView: View {
+    @ObservedObject var loginController: LoginController
+
+    var body: some View {
+        NavigationView(content: makeContent)
+    }
+
+    private func makeContent() -&gt; some View {
+        if let user = loginController.loggedInUser {
+            HomeView(user: user)
+        } else {
+            LoginView(handler: loginController.performLogin)
+        }
+    }
+}
+</code></pre>
+<p>当尝试编译上述代码时，我们现在会得到以下构建错误:</p>
+<blockquote>
+<p>函数声明不透明的返回类型，但没有返回 语句，从中推断底层类型。</p>
+</blockquote>
+<p>为了解决这个问题，我们必须用与SwiftUI标记许多闭包参数相同的@ViewBuilder属性来标记新的makeContent方法——这再次使我们可以声明多个表达式而不返回任何关键字:</p>
+<pre><code class="language-swift">struct RootView: View {
+    @ObservedObject var loginController: LoginController
+
+    var body: some View {
+        NavigationView(content: makeContent)
+    }
+
+    @ViewBuilder private func makeContent() -&gt; some View {
+        if let user = loginController.loggedInUser {
+            HomeView(user: user)
+        } else {
+            LoginView(handler: loginController.performLogin)
+        }
+    }
+}
+</code></pre>
+<p>总结一下:</p>
+<ol>
+<li>
+<p>Swift的return关键字在所有单表达式闭包、函数和计算属性中都可以被省略。但是，如果我们愿意，我们仍然可以在这些上下文中使用显式返回。</p>
+</li>
+<li>
+<p>每当闭包、函数或computed属性包含多个顶级表达式时，我们需要用return关键字显式地标记返回值表达式。</p>
+</li>
+<li>
+<p>当然，实际上不返回任何东西(或者，从技术上来说，返回Void)的函数或闭包根本不需要包含任何return关键字，除非我们想手动退出该作用域——例如通过执行早期返回。</p>
+</li>
+<li>
+<p>SwiftUI在这个上下文中有点特殊，因为它不依赖隐式返回(在大多数情况下)，而是使用它的ViewBuilder将给定容器中的所有表达式组合成一个视图值。</p>
+</li>
+</ol>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/dYgI_JVat/" class="tag">
+                    return
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Ei6A0dFu0G/" class="tag">
+                    Q&amp;A
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/analyzing-and-improving-build-times-in-ios/">
+                  <h3 class="post-title">
+                    Analyzing and Improving Build times in iOS
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

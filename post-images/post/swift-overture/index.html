@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>swift-overture | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Motivation
+
+我们一直在与函数打交道，但函数的组成却隐藏在我们的眼皮底下!
+例如，当我们使用高阶方法时，我们使用函数，比如在数组上的map:
+[1, 2, 3].map { $0 + 1 }
+// [2, 3, 4]
+
+如果我们想..." />
+    <meta name="keywords" content="overture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">swift-overture</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="motivation">Motivation</h2>
+<hr>
+<p>我们一直在与函数打交道，但函数的组成却隐藏在我们的眼皮底下!</p>
+<p>例如，当我们使用高阶方法时，我们使用函数，比如在数组上的<strong>map</strong>:</p>
+<pre><code class="language-swift">[1, 2, 3].map { $0 + 1 }
+// [2, 3, 4]
+</code></pre>
+<p>如果我们想要修改这个简单的闭包，使其在递增后将值平方，事情就会变得一团糟。</p>
+<pre><code class="language-swift">[1, 2, 3].map { ($0 + 1) * ($0 + 1) }
+// [4, 9, 16]
+</code></pre>
+<p>函数允许我们识别和提取可重用代码。让我们定义一对组成上述行为的函数对。</p>
+<pre><code class="language-swift">func incr(_ x: Int) -&gt; Int {
+  return x + 1
+}
+
+func square(_ x: Int) -&gt; Int {
+  return x * x
+}
+</code></pre>
+<p>定义了这些函数后，我们可以直接将它们传递给<strong>map</strong>!</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .map(incr)
+  .map(square)
+// [4, 9, 16]
+</code></pre>
+<p>这个重构代码读起来更好，但性能更差:我们对数组进行了两次映射，并在此过程中创建了一个中间副本! 虽然我们可以使用<strong>lazy</strong>将这些调用融合在一起，但让我们采用一种更通用的方法:函数组合!</p>
+<pre><code class="language-swift">[1, 2, 3].map(pipe(incr, square))
+// [4, 9, 16]
+</code></pre>
+<p><strong>pipe</strong>函数将其他函数粘合在一起! 它可以接受两个以上的参数，甚至可以改变类型!</p>
+<pre><code class="language-swift">[1, 2, 3].map(pipe(incr, square, String.init))
+// [&quot;4&quot;, &quot;9&quot;, &quot;16&quot;]
+</code></pre>
+<p>函数组合使我们能够从较小的部分构建新的函数，使我们能够在其他上下文中提取和重用逻辑。</p>
+<pre><code class="language-swift">let computeAndStringify = pipe(incr, square, String.init)
+
+[1, 2, 3].map(computeAndStringify)
+// [&quot;4&quot;, &quot;9&quot;, &quot;16&quot;]
+
+computeAndStringify(42)
+// &quot;1849&quot;
+</code></pre>
+<p>函数是最小的代码构建块。函数组合使我们能够将这些模块组合在一起，并使用小的、可重用的、可理解的单元构建整个应用程序。</p>
+<h2 id="examples">Examples</h2>
+<h3 id="pipe">pipe</h3>
+<p><strong>Overture</strong>中最基本的组成部分。它将现有的功能整合在一起。也就是说，给定一个函数(<strong>A) -&gt; B和一个函数(B) -&gt; C</strong>，管道将返回一个全新的(<strong>A) -&gt; C</strong>函数。</p>
+<pre><code class="language-swift">let computeAndStringify = pipe(incr, square, String.init)
+
+computeAndStringify(42)
+// &quot;1849&quot;
+
+[1, 2, 3].map(computeAndStringify)
+// [&quot;4&quot;, &quot;9&quot;, &quot;16&quot;]
+</code></pre>
+<h3 id="with-and-update">with and update</h3>
+<p><strong>with和update</strong>函数对于将函数应用到值很有用。 它们很好地处理<strong>inout</strong>和可变对象世界，将必要的配置语句包装在表达式中。</p>
+<pre><code class="language-swift">class MyViewController: UIViewController {
+  let label = updateObject(UILabel()) {
+    $0.font = .systemFont(ofSize: 24)
+    $0.textColor = .red
+  }
+}
+</code></pre>
+<p>它恢复了我们在方法世界中习惯的从左到右的可读性。</p>
+<pre><code class="language-swift">with(42, pipe(incr, square, String.init))
+// &quot;1849&quot;
+
+</code></pre>
+<p>使用inout参数。</p>
+<pre><code class="language-swift">update(&amp;user, mut(\.name, &quot;Blob&quot;))
+</code></pre>
+<h3 id="concat">concat</h3>
+<p><strong>concat</strong>函数由单个类型组成。这包括以下函数签名的组成:</p>
+<ul>
+<li>(A) -&gt; A</li>
+<li>(inout A) -&gt; Void</li>
+<li>&lt;A: AnyObject&gt;(A) -&gt; Void</li>
+</ul>
+<p>使用<strong>concat</strong>，我们可以从很小的部分构建强大的配置函数。</p>
+<pre><code class="language-swift">let roundedStyle: (UIView) -&gt; Void = {
+  $0.clipsToBounds = true
+  $0.layer.cornerRadius = 6
+}
+
+let baseButtonStyle: (UIButton) -&gt; Void = {
+  $0.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+  $0.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+}
+
+let roundedButtonStyle = concat(
+  baseButtonStyle,
+  roundedStyle
+)
+
+let filledButtonStyle = concat(roundedButtonStyle) {
+  $0.backgroundColor = .black
+  $0.tintColor = .white
+}
+
+let button = with(UIButton(type: .system), filledButtonStyle)
+
+</code></pre>
+<h3 id="curry-flip-and-zurry">curry, flip, and zurry</h3>
+<p>这些功能构成了瑞士军刀的构成。它们使我们能够接受无法组合的现有函数和方法(例如，接受零或多个参数的函数和方法)，并恢复组合。</p>
+<p>例如，让我们将一个接受多个参数的字符串初始化器转换为可以使用<strong>pipe</strong>组合的东西。</p>
+<pre><code class="language-swift">String.init(data:encoding:)
+// (Data, String.Encoding) -&gt; String?
+
+</code></pre>
+<p>我们使用<strong>curry</strong>将多参数函数转换为接受单个输入并返回新函数以收集更多输入的函数。</p>
+<pre><code class="language-swift">curry(String.init(data:encoding:))
+// (Data) -&gt; (String.Encoding) -&gt; String?
+
+</code></pre>
+<p>我们用<strong>flip</strong>来改变参数的顺序。多参数函数和方法通常先取数据，再取配置，但我们通常可以在有数据之前应用配置，而<strong>flip</strong>正好可以做到这一点。</p>
+<pre><code class="language-swift">flip(curry(String.init(data:encoding:)))
+// (String.Encoding) -&gt; (Data) -&gt; String?
+
+</code></pre>
+<p>现在我们有了一个高度可重用的、可组合的构建块，我们可以用它来构建管道。</p>
+<pre><code class="language-swift">let stringWithEncoding = flip(curry(String.init(data:encoding:)))
+// (String.Encoding) -&gt; (Data) -&gt; String?
+
+let utf8String = stringWithEncoding(.utf8)
+// (Data) -&gt; String?
+
+</code></pre>
+<p>Swift还将方法公开为静态的、未绑定的函数。这些函数已经是<strong>curry</strong>过的了。我们要做的就是<strong>flip</strong>它们，让它们更有用!</p>
+<pre><code class="language-swift">String.capitalized
+// (String) -&gt; (Locale?) -&gt; String
+
+let capitalized = flip(String.capitalized)
+// (Locale?) -&gt; (String) -&gt; String
+
+[&quot;hello, world&quot;, &quot;and good night&quot;]
+  .map(capitalized(Locale(identifier: &quot;en&quot;)))
+// [&quot;Hello, World&quot;, &quot;And Good Night&quot;]
+
+</code></pre>
+<p>而<strong>zurry</strong>恢复了不带参数的函数和方法的复合。</p>
+<pre><code class="language-swift">String.uppercased
+// (String) -&gt; () -&gt; String
+
+flip(String.uppercased)
+// () -&gt; (String) -&gt; String
+
+let uppercased = zurry(flip(String.uppercased))
+// (String) -&gt; String
+
+[&quot;hello, world&quot;, &quot;and good night&quot;]
+  .map(uppercased)
+// [&quot;HELLO, WORLD&quot;, &quot;AND GOOD NIGHT&quot;]
+
+</code></pre>
+<h3 id="get">get</h3>
+<p><strong>get</strong>函数从关键路径生成<strong>getter</strong>函数。</p>
+<pre><code class="language-swift">get(\String.count)
+// (String) -&gt; Int
+
+[&quot;hello, world&quot;, &quot;and good night&quot;]
+  .map(get(\.count))
+// [12, 14]
+
+</code></pre>
+<p>我们甚至可以使用<strong>pipe</strong>函数将其他函数组合到<strong>get</strong>中。在这里，我们构建了一个函数，它对整数进行加1、平方，将其转换为字符串，然后获取字符串的字符数:</p>
+<pre><code class="language-swift">pipe(incr, square, String.init, get(\.count))
+// (Int) -&gt; Int
+
+</code></pre>
+<h3 id="prop">prop</h3>
+<p><strong>prop</strong>函数从关键路径生成<strong>setter</strong>函数。</p>
+<pre><code class="language-swift">let setUserName = prop(\User.name)
+// ((String) -&gt; String) -&gt; (User) -&gt; User
+
+let capitalizeUserName = setUserName(capitalized(Locale(identifier: &quot;en&quot;)))
+// (User) -&gt; User
+
+let setUserAge = prop(\User.age)
+
+let celebrateBirthday = setUserAge(incr)
+// (User) -&gt; User
+
+with(User(name: &quot;blob&quot;, age: 1), concat(
+  capitalizeUserName,
+  celebrateBirthday
+))
+// User(name: &quot;Blob&quot;, age: 2)
+
+</code></pre>
+<h3 id="over-and-set">over and set</h3>
+<p><strong>over和set</strong>函数产生(<strong>Root) -&gt;Root</strong> 转换函数，在给定键路径(或<strong>setter</strong>函数)的结构中处理Value。</p>
+<p><strong>over</strong>函数接受(<strong>Value) -&gt;Value</strong> 转换函数来修改现有值。</p>
+<pre><code class="language-swift">let celebrateBirthday = over(\User.age, incr)
+// (User) -&gt; User
+
+</code></pre>
+<p><strong>set</strong>函数用一个全新的值替换现有的值。</p>
+<pre><code class="language-swift">with(user, set(\.name, &quot;Blob&quot;))
+
+</code></pre>
+<h3 id="mprop-mver-and-mut">mprop, mver, and mut</h3>
+<p><strong>mprop、mver和mut</strong>函数是<strong>prop、over和set</strong>的可变变体。</p>
+<pre><code class="language-swift">let guaranteeHeaders = mver(\URLRequest.allHTTPHeaderFields) { $0 = $0 ?? [:] }
+
+let setHeader = { name, value in
+  concat(
+    guaranteeHeaders,
+    { $0.allHTTPHeaderFields?[name] = value }
+  )
+}
+
+let request = update(
+  URLRequest(url: url),
+  mut(\.httpMethod, &quot;POST&quot;),
+  setHeader(&quot;Authorization&quot;, &quot;Token &quot; + token),
+  setHeader(&quot;Content-Type&quot;, &quot;application/json; charset=utf-8&quot;)
+)
+
+</code></pre>
+<h3 id="zip-and-zipwith">zip and zip(with:)</h3>
+<p>这是Swift船的功能! 不幸的是，它仅限于对<strong>sequences</strong>。 <strong>Overture</strong>将<strong>zip</strong>定义为一次最多处理10个序列，这使得组合几组相关数据变得轻而易举。</p>
+<pre><code class="language-swift">let ids = [1, 2, 3]
+let emails = [&quot;blob@pointfree.co&quot;, &quot;blob.jr@pointfree.co&quot;, &quot;blob.sr@pointfree.co&quot;]
+let names = [&quot;Blob&quot;, &quot;Blob Junior&quot;, &quot;Blob Senior&quot;]
+
+zip(ids, emails, names)
+// [
+//   (1, &quot;blob@pointfree.co&quot;, &quot;Blob&quot;),
+//   (2, &quot;blob.jr@pointfree.co&quot;, &quot;Blob Junior&quot;),
+//   (3, &quot;blob.sr@pointfree.co&quot;, &quot;Blob Senior&quot;)
+// ]
+
+</code></pre>
+<p>立即<strong>map</strong>压缩值是很常见的。</p>
+<pre><code class="language-swift">struct User {
+  let id: Int
+  let email: String
+  let name: String
+}
+
+zip(ids, emails, names).map(User.init)
+// [
+//   User(id: 1, email: &quot;blob@pointfree.co&quot;, name: &quot;Blob&quot;),
+//   User(id: 2, email: &quot;blob.jr@pointfree.co&quot;, name: &quot;Blob Junior&quot;),
+//   User(id: 3, email: &quot;blob.sr@pointfree.co&quot;, name: &quot;Blob Senior&quot;)
+// ]
+
+</code></pre>
+<p>因此，<strong>Overture</strong>提供了一个<strong>zip(with:)<strong>助手，它预先接受一个</strong>transform</strong>函数并经过<strong>curry</strong>处理，因此它可以使用<strong>pipe</strong>与其他函数组合</p>
+<pre><code class="language-swift">zip(with: User.init)(ids, emails, names)
+
+</code></pre>
+<p><strong>Overture</strong>还扩展了zip的概念，以与可选值工作! 这是一种将多个可选值组合在一起的表达方式。</p>
+<pre><code class="language-swift">let optionalId: Int? = 1
+let optionalEmail: String? = &quot;blob@pointfree.co&quot;
+let optionalName: String? = &quot;Blob&quot;
+
+zip(optionalId, optionalEmail, optionalName)
+// Optional&lt;(Int, String, String)&gt;.some((1, &quot;blob@pointfree.co&quot;, &quot;Blob&quot;))
+
+</code></pre>
+<p>**zip(with:)**让我们将这些元组转换为其他值。</p>
+<pre><code class="language-swift">zip(with: User.init)(optionalId, optionalEmail, optionalName)
+// Optional&lt;User&gt;.some(User(id: 1, email: &quot;blob@pointfree.co&quot;, name: &quot;Blob&quot;))
+
+</code></pre>
+<p>使用<strong>zip</strong>可以作为<strong>let-unwrapping</strong>的一种表达方式</p>
+<pre><code class="language-swift">let optionalUser = zip(with: User.init)(optionalId, optionalEmail, optionalName)
+
+// vs.
+
+let optionalUser: User?
+if let id = optionalId, let email = optionalEmail, let name = optionalName {
+  optionalUser = User(id: id, email: email, name: name)
+} else {
+  optionalUser = nil
+}
+
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r92KlIgAE/" class="tag">
+                    overture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-17-styling-with-overture/">
+                  <h3 class="post-title">
+                    PointFree Episode 17: Styling with Overture
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

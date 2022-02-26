@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 93: Modular Dependency Injection: The Point | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Multiple environments
+
+
+
+
+Local dependencies
+
+
+
+
+Sharing dependencies
+
+
+
+
+Conclusion
+
+
+
+
+
+
+1. Multiple environments
+..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 93: Modular Dependency Injection: The Point</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Multipleenvironments">Multiple environments</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Localdependencies">Local dependencies</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Sharingdependencies">Sharing dependencies</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 93: Modular Dependency Injection: The Point -->
+<h2 id="1-a-namemultipleenvironmentsamultiple-environments">1. <a name='Multipleenvironments'></a>Multiple environments</h2>
+<p>我们提到的<strong>Current</strong>环境技术的第一个问题是，当每个特性模块都有自己的环境时，事情变得有点笨拙。这意味着每次我们想要编写一个包含两个特性的逻辑的测试时，我们必须记住模拟它们的每个环境。</p>
+<pre><code class="language-swift">func testIntegration() {
+  Counter.Current = .mock
+  FavoritePrimes.Current = .mock
+}
+</code></pre>
+<p>新的环境技术完全解决了这个问题。为了演示这一点，我们将编写一个集成测试，测试两个不同特性中的效果。为了做到这一点，我们需要使用<strong>assert helper</strong>，它在过去非常有用。我们首先在<strong>CounterTests</strong>模块中定义它，但在各集之间，我们将它提取到一个专用的<strong>ComposableArchitectureTestSupport</strong>模块，以便任何模块都可以使用它。</p>
+<p>我们可以导入这个新的测试支持模块，并且可以立即访问<strong>assert helper</strong>:</p>
+<pre><code class="language-swift">import ComposableArchitectureTestSupport
+</code></pre>
+<p>我们想要写一个测试完整的应用程序<strong>state</strong>，应用程序<strong>actions</strong>，应用程序<strong>environment</strong>和应用程序<strong>reducer</strong>。因此，让我们从一个<strong>assert</strong>的存根开始:</p>
+<pre><code class="language-swift">func testIntegration() {
+  assert(
+    initialValue: AppState(),
+    reducer: appReducer,
+    environment: (
+      fileClient: .mock,
+      nthPrime: { _ in .sync { 17 } }
+    )
+  )
+}
+</code></pre>
+<p>现在这个还不能编译，因为<strong>AppState和AppAction</strong>需要是相等的，所以让我们快速地做一下:</p>
+<pre><code class="language-swift">struct AppState: Equatable {
+  …
+  struct Activity: Equatable {
+    …
+    enum ActivityType: Equatable {
+      …
+    }
+  }
+  struct User: Equatable {
+    …
+  }
+}
+
+enum AppAction: Equatable {
+  …
+}
+</code></pre>
+<p>现在测试目标正在构建，从技术上讲，测试将通过，因为我们实际上没有测试任何步骤。让我们测试一下，当我们在<strong>counter</strong>视图中要求第n个质数时，会发生什么，然后我们从磁盘中加载最喜欢的质数列表。在一个测试中，我们将执行来自两个不同特性模块的副作用。</p>
+<p>这个测试写起来很简单:</p>
+<pre><code class="language-swift">func testIntegration() {
+  var fileClient = FileClient.mock
+  fileClient.load = { _ in
+    return Effect&lt;Data?&gt;.sync {
+      try! JSONEncoder().encode([2, 31, 7])
+    }
+  }
+
+  assert(
+    initialValue: AppState(count: 4),
+    reducer: appReducer,
+    environment: (
+      fileClient: fileClient,
+      nthPrime: { _ in .sync { 17 } }
+    ),
+    steps:
+    Step(.send, .counterView(.counter(.nthPrimeButtonTapped))) {
+      $0.isNthPrimeButtonDisabled = true
+    },
+    Step(.receive, .counterView(.counter(.nthPrimeResponse(17)))) {
+      $0.isNthPrimeButtonDisabled = false
+      $0.alertNthPrime = PrimeAlert(prime: 17)
+    },
+    Step(.send, .counterView(.counter(.alertDismissButtonTapped))) {
+      $0.alertNthPrime = nil
+    },
+    Step(.send, .favoritePrimes(.loadButtonTapped)),
+    Step(.receive, .favoritePrimes(.loadedFavoritePrimes([2, 31, 7]))) {
+      $0.favoritePrimes = [2, 31, 7]
+    }
+  )
+}
+</code></pre>
+<p>我们忘记在视频中测试一个步骤，在这里我们模拟了<strong>alert</strong>关闭按钮被点击。</p>
+<p>这个测试模拟的用户脚本为:</p>
+<ul>
+<li>
+<p>用户点击“what is the nth prime”按钮</p>
+</li>
+<li>
+<p>“nth prime”按钮被禁用</p>
+</li>
+<li>
+<p>副作用将一个action输入系统，这是一个带有数字17的响应。这个值直接来自我们环境中的依赖性</p>
+</li>
+<li>
+<p>“nth prime”按钮重新启用，并显示一个alert</p>
+</li>
+<li>
+<p>用户点击alert上的dismiss按钮，alert被dismissed</p>
+</li>
+<li>
+<p>alert dismissed</p>
+</li>
+<li>
+<p>然后用户点击最喜欢的prime屏幕上的“<strong>load</strong>”按钮</p>
+</li>
+<li>
+<p>State 没有变化</p>
+</li>
+<li>
+<p>最后从一个effect中接收一个action，将一些质数加载到state中。同样，这个值直接来自我们环境中的依赖性。</p>
+</li>
+<li>
+<p>设置state的最喜欢的质数数组</p>
+</li>
+</ul>
+<p>这个测试很酷的一点是，编译器强迫我们提供一个完整的环境来运行这段代码。<strong>assert helper</strong>需要一个单独的环境:</p>
+<pre><code class="language-swift">environment: (
+  fileClient: fileClient,
+  nthPrime: { _ in .sync { 17 } }
+),
+</code></pre>
+<p>因此，不可能忘记提供环境的特定部分，而且如果添加了新的环境字段，编译器将强制我们提供这些新的依赖项。</p>
+<p>与我们以前处理它的方式相比，我们的测试代码即使没有<strong>mock</strong>出单个依赖项也会运行。</p>
+<p>因此，我们对环境技术的新改造无疑解决了需要担心多个环境的混乱。</p>
+<hr>
+<h2 id="2-a-namelocaldependenciesalocal-dependencies">2. <a name='Localdependencies'></a>Local dependencies</h2>
+<p>我们所描述的全局环境的下一个问题是，我们没有机会定制每个特性所使用的<strong>effects</strong>类型。例如，当在生产环境中运行应用程序时，<strong>Counter</strong>特性使用<strong>Wolfram Alpha API</strong>。</p>
+<p>在应用程序的两个不同地方使用<strong>CounterView</strong>是不可能的，其中一个实例使用<strong>Wolfram Alpha API</strong>，而另一个实例使用完全不同的API。</p>
+<p>也许我们想尝试一种新的计算API，但只针对特定的用户。允许<strong>CounterView</strong>的某些实例使用一种<strong>effect</strong>而另一些实例使用另一种<strong>effect</strong>是非常困难的。</p>
+<p>然而，在我们新的环境风格下，这是非常容易的。为了说明这一点，我们将使用<strong>nthPrime</strong>函数的一个版本，它将简单地在本地进行计算，而不是调用外部API。它以一种非常天真的方式工作，但它完成了工作:</p>
+<pre><code class="language-swift">public func offlineNthPrime(_ n: Int) -&gt; Effect&lt;Int?&gt; {
+  Future { callback in
+    var nthPrime = 1
+    var count = 0
+    while count &lt;= n {
+      nthPrime += 1
+      if isPrime(nthPrime) {
+        count += 1
+      }
+    }
+    callback(.success(nthPrime))
+  }
+  .eraseToEffect()
+}
+</code></pre>
+<p>它通过返回<strong>Future</strong>来模拟我们的<strong>effect</strong>，这允许我们执行一些可能需要很长时间的工作，一旦完成，我们可以通过调用回调从发布者发出值。内部循环遍历每个大于1的数，每次遇到质数时增加一个计数。一旦质数计数达到我们要查找的数字，我们就调用<strong>future</strong>的回调，从而完成<strong>publisher</strong>。</p>
+<p>现在让我们使用这个新的脱机依赖项来演示我们可以在应用程序中多次使用<strong>CounterView</strong>，每次都有不同的依赖项。让我们创建一个全新的顶级导航链接，它允许我们深入到离线运行的<strong>CounterView</strong>版本。</p>
+<p>我们可以从一个导航链接的存根开始:</p>
+<pre><code class="language-swift">NavigationLink(
+  &quot;Offline counter demo&quot;,
+  destination: CounterView(
+    store: self.store.view(
+      value: { $0.counterView },
+      action: { .counterView($0) }
+    )
+  )
+)
+</code></pre>
+<p>这是当前导航到与其他导航链接相同的<strong>counter</strong>视图。相反，如果我们想让它导航到具有自身<strong>effects</strong>运行的<strong>CounterView</strong>版本，我们需要在特性的领域中对其建模。特别是，我们需要引入一组特定于脱机<strong>counter</strong>的新操作。</p>
+<p>这意味着我们可以将<strong>AppAction</strong>改为:</p>
+<pre><code class="language-swift">enum AppAction: Equatable {
+  case counterView(CounterViewAction)
+  case offlineCounterView(CounterViewAction)
+  case favoritePrimes(FavoritePrimesAction)
+}
+</code></pre>
+<p>然后导航链接变成:</p>
+<pre><code class="language-swift">NavigationLink(
+  &quot;Offline counter demo&quot;,
+  destination: CounterView(
+    store: self.store.view(
+      value: { $0.counterView },
+      action: { .offlineCounterView($0) }
+    )
+  )
+)
+</code></pre>
+<p>这允许新屏幕拥有自己的一组不同于“<strong>online</strong>”<strong>counter</strong>视图的操作。</p>
+<p>我们有一个编译器错误，那是在我们的<strong>activity feed</strong>高阶<strong>reducer</strong>中。这实际上是一个编译器错误，因为我们确实想要进入这些新动作，并在收藏的质数被添加和从离线计数器中删除时追加新的活动提要条目:</p>
+<pre><code class="language-swift">case .counterView(.counter),
+     .offlineCounterView(.counter),
+     .favoritePrimes(.loadedFavoritePrimes),
+     .favoritePrimes(.loadButtonTapped),
+     .favoritePrimes(.saveButtonTapped):
+  break
+case .counterView(.primeModal(.removeFavoritePrimeTapped)),
+     .offlineCounterView(.primeModal(.removeFavoritePrimeTapped)):
+  state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(state.count)))
+
+case .counterView(.primeModal(.saveFavoritePrimeTapped)),
+     .offlineCounterView(.primeModal(.saveFavoritePrimeTapped)):
+  state.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(state.count)))
+</code></pre>
+<p>如果我们现在运行应用程序，我们会发现离线计数器demo根本不起作用。点击任何按钮都不会做任何事情，这是因为我们没有一个<strong>reducer</strong>来处理它的功能。</p>
+<p>要添加这个功能，我们需要将另一个回拉的<strong>counterViewReducer</strong>实例合并到<strong>appReducer</strong>中，但是它的动作会沿着<strong>offlineCounterView</strong> case被回拉:</p>
+<pre><code class="language-swift">pullback(
+  counterViewReducer,
+  value: \AppState.counterView,
+  action: /AppAction.offlineCounterView,
+  environment: { $0.nthPrime }
+),
+</code></pre>
+<p>但这还不是正确的。在这种情况下，离线的计数器demo将与在线演示完全一样，这是因为我们将它交给一个环境，其<strong>nthPrime effect</strong> 使用实时<strong>Wolfram API</strong>。</p>
+<p>相反，我们希望传递离线效果。</p>
+<pre><code class="language-swift">pullback(
+  counterViewReducer,
+  value: \AppState.counterView,
+  action: /AppAction.offlineCounterView,
+  environment: { $0.offlineNthPrime }
+),
+</code></pre>
+<p>为了做到这一点，我们需要在我们的应用环境中表示它:</p>
+<pre><code class="language-swift">public typealias AppEnvironment = (
+  fileClient: FileClient,
+  nthPrime: (Int) -&gt; Effect&lt;Int?&gt;,
+  offlineNthPrime: (Int) -&gt; Effect&lt;Int?&gt;
+)
+</code></pre>
+<p>现在，我们唯一的编译器错误是，当我们为整个应用程序创建<strong>store</strong>时，我们需要在环境中指定<strong>offlineNthPrime</strong>效应:</p>
+<pre><code class="language-swift">environment: AppEnvironment(
+  fileClient: .live,
+  nthPrime: Counter.nthPrime,
+  offlineNthPrime: Counter.offlineNthPrime
+)
+</code></pre>
+<p>现在我们的整个应用程序都构建好了，新的离线计数器视图特性如预期的那样工作。当我们询问一个特定count的“nth prime'”时，我们几乎立即得到结果，因为我们是在局部进行计算。</p>
+<p>然而，在你问为什么不使用<strong>offlineNthPrime</strong>effect 代替<strong>Wolfram API</strong>之前，让我们看看当我们试图要求“<strong>nth prime</strong>”的非常大的数字时会发生什么:</p>
+<pre><code class="language-swift">initialValue: AppState(count: 20_000),
+</code></pre>
+<p>现在，当我们点击“第n个质数是什么”按钮时，我们看到界面在显示警报之前会挂起一段时间。如果我们把数字调高一点，比如4万:</p>
+<pre><code class="language-swift">initialValue: AppState(count: 40_000),
+</code></pre>
+<p>我们会发现完成计算的时间要长得多。您还会注意到，在进行计算时，整个UI都冻结了，我们为查看器做了一些练习来解决这个问题。</p>
+<p>这表明我们确实从<strong>CounterView</strong>中解锁了一个新功能。考虑到它可以自由处理多种不同的<strong>effects</strong>，而不仅仅是<strong>Wolfram Alpha API</strong>。当将它的<strong>reducer</strong>与应用程序的<strong>reducer</strong>结合时，我们可以选择当某些动作在它的域中发生时，它将执行哪些<strong>effects</strong>。</p>
+<p>这可能看起来是一个愚蠢的例子，但确实有实际应用。我们可能想要在我们的应用程序上执行一个A/B实验，其中一半用户通过Wolfram API获得反视图，另一半用户进行离线的“<strong>nth prime</strong>”计算。在这种情况下，我们肯定需要告诉<strong>counter</strong>视图它应该如何执行其副作用的能力。</p>
+<p>我们可以通过计算一个随机布尔值来证明这一点，然后使用该值来确定我们显示的导航链接:</p>
+<pre><code class="language-swift">let isInExperiment = Bool.random()
+
+struct ContentView: View {
+  @ObservedObject var store: Store&lt;AppState, AppAction&gt;
+
+  var body: some View {
+    NavigationView {
+      List {
+        if !isInExperiment {
+          NavigationLink(
+            &quot;Counter demo&quot;,
+            destination: CounterView(
+              store: self.store.view(
+                value: { $0.counterView },
+                action: { .counterView($0) }
+              )
+            )
+          )
+        } else {
+          NavigationLink(
+            &quot;Offline counter demo&quot;,
+            destination: CounterView(
+              store: self.store.view(
+                value: { $0.counterView },
+                action: { .offlineCounterView($0) }
+              )
+            )
+          )
+        }
+</code></pre>
+<p>你的A/B测试需要更加细致入微，但至少要证明这是可能的。</p>
+<hr>
+<h2 id="3-a-namesharingdependenciesasharing-dependencies">3. <a name='Sharingdependencies'></a>Sharing dependencies</h2>
+<p>我们描述的关于全局环境技术的第三个也是最后一个问题是很难在模块之间共享依赖关系。如果两个不同的模块需要访问相同的依赖项，我们要么必须为每个模块创建该依赖项的新实例，要么需要进行更高级别的协调，以确保每个模块使用相同的依赖项。</p>
+<p>为了表明我们已经解决了这个问题，我们将在我们这个小小的计数应用程序中添加另一个功能。当在最喜欢的质数屏幕上，我们将允许用户点击任意一行来询问这个数字的“nth prime”是多少。是的，我们将使用质数来问“nth prime”是什么。</p>
+<p>这将展示如何在多个模块中使用单个依赖项，在本例中是Wolfram Alpha API端点。</p>
+<p>首先，让我们把收藏的质数列表视图中的每一行都变成一个按钮:</p>
+<pre><code class="language-swift">public var body: some View {
+  List {
+    ForEach(self.store.value.favoritePrimes, id: \.self) { prime in
+      Button(&quot;\(prime)&quot;) {
+
+      }
+    }
+</code></pre>
+<p>在这个按钮的动作闭包里面，我们想要发送一个动作到<strong>store</strong>。我们可以把采集的精华传递下去。</p>
+<pre><code class="language-swift">public var body: some View {
+  List {
+    ForEach(self.store.value.favoritePrimes, id: \.self) { prime in
+      Button(&quot;\(prime)&quot;) {
+        self.store.send(.primeButtonTapped(prime))
+      }
+    }
+</code></pre>
+<p>然后我们需要在<strong>action enum</strong>中表示这个动作:</p>
+<pre><code class="language-swift">public enum FavoritePrimesAction: Equatable {
+  …
+  case primeButtonTapped(Int)
+}
+</code></pre>
+<p>并处理我们的<strong>reducer</strong>的新动作:</p>
+<pre><code class="language-swift">case let .primeButtonTapped(prime):
+  return [
+  ]
+</code></pre>
+<p>我们在这里要做的工作是产生一个能计算<strong>nth prime</strong>的副作用，我们不关心它是用Wolfram Alpha API还是其他方法来做的。这意味着我们需要更新我们的环境来获得这种<strong>effect</strong>。为此，我们将简单类型别名升级为元组:</p>
+<pre><code class="language-swift">public typealias FavoritePrimesEnvironment = (
+  fileClient: FileClient,
+  nthPrime: (Int) -&gt; Effect&lt;Int?&gt;
+)
+</code></pre>
+<p>这意味着我们需要更新在<strong>reducer</strong>中访问<strong>fileClient</strong>的方式:</p>
+<pre><code class="language-swift">environment.fileClient.save(&quot;favorite-primes.json&quot;, try! JSONEncoder().encode(state.favoritePrimes))
+…
+environment.fileClient.load(&quot;favorite-primes.json&quot;)
+</code></pre>
+<p>现在我们可以在点击质数时访问<strong>nthPrime</strong>依赖项。当我们触发这个<strong>effect</strong>时，它最终会返回一个可选的整数。我们希望将这些数据打包到一个新的操作中，以便将其反馈到<strong>store</strong>中。但是，我们还需要跟踪我们点击了哪个数字因为我们在警报中显示了这个信息，“<strong>The 5th prime is 11</strong>””。</p>
+<p>所以，让我们添加一个新动作来接受这两种信息:</p>
+<pre><code class="language-swift">case nthPrimeResponse(n: Int, prime: Int?)
+</code></pre>
+<p>这是当你点击<strong>prime</strong>时，我们的<strong>effect</strong>需要发出的动作:</p>
+<pre><code class="language-swift">case let .primeButtonTapped(prime):
+  return [
+    environment.nthPrime(prime)
+      .map { FavoritePrimesAction.nthPrimeResponse(n: prime, prime: $0) }
+      .receive(on: DispatchQueue.main)
+      .eraseToEffect()
+  ]
+</code></pre>
+<p>我们在<strong>counterReducer</strong>中处理<strong>nthprimerresponse</strong>动作的方法是有一个可选的<strong>PrimeAlert</strong>值，这样当它是非nil时，就会显示警报，当它是nil时，警报就会被隐藏。我们想在这里做类似的事情，这意味着我们需要在我们的状态中表示这个:</p>
+<pre><code class="language-swift">public typealias FavoritePrimesState = (
+  alertNthPrime: PrimeAlert?,
+  favoritePrimes: [Int]
+)
+</code></pre>
+<p>然而，在这个模块中我们没有访问<strong>PrimeAlert</strong>类型的权限，它目前存在于<strong>Counter</strong>模块中。但实际上没有理由让它存在于Counter模块中。可能有许多功能需要显示<strong>a prime alert</strong>。</p>
+<pre><code class="language-swift">public struct PrimeAlert: Equatable, Identifiable {
+  public let n: Int
+  public let prime: Int
+  public var id: Int { self.prime }
+
+  public init(n: Int, prime: Int) {
+    self.n = n
+    self.prime = prime
+  }
+
+  public var title: String {
+    return &quot;The \(ordinal(self.n)) prime is \(self.prime)&quot;
+  }
+}
+
+public func ordinal(_ n: Int) -&gt; String {
+  let formatter = NumberFormatter()
+  formatter.numberStyle = .ordinal
+  return formatter.string(for: n) ?? &quot;&quot;
+}
+</code></pre>
+<p>因此，让我们将它提取到它自己的模块中，这样我们就可以简单地导入该模块来访问该类型:</p>
+<pre><code class="language-swift">import PrimeAlert
+</code></pre>
+<p>现在我们可以升级我们的模块来使用<strong>FavoritePrimesState</strong>。</p>
+<pre><code class="language-swift">public func favoritePrimesReducer(state: inout FavoritePrimesState, action: FavoritePrimesAction, environment: FavoritePrimesEnvironment
+) -&gt; [Effect&lt;FavoritePrimesAction&gt;] {
+  …
+</code></pre>
+<p>然后在<strong>reducer</strong>中创建新的动作，我们可以创建<strong>PrimeAlert</strong>值:</p>
+<pre><code class="language-swift">case let .nthPrimeResponse(n, prime):
+  state.alertNthPrime = prime.map { PrimeAlert(n: n, prime: $0) }
+  return []
+</code></pre>
+<p>有了这个新状态，我们就可以实现SwiftUI视图部分。我们将更新<strong>FavoritePrimesView</strong>，使用一个<strong>store</strong>来保存完整的收藏状态:</p>
+<pre><code class="language-swift">public struct FavoritePrimesView: View {
+  @ObservedObject var store: Store&lt;FavoritePrimesState, FavoritePrimesAction&gt;
+
+  public init(store: Store&lt;FavoritePrimesState, FavoritePrimesAction&gt;) {
+    self.store = store
+  }
+</code></pre>
+<p>有了视图主体中可用的状态，我们可以在视图层次结构中添加一个.alert修饰符:</p>
+<pre><code class="language-swift">.alert(
+  item: .constant(self.store.value.alertNthPrime)
+) { primeAlert in
+  Alert(
+    title: ???,
+    dismissButton: .default(Text(&quot;Ok&quot;)) {
+      ???
+    }
+  )
+}
+</code></pre>
+<p>我们想在这里使用与<strong>counter</strong>视图相同的标题，所以也许我们应该提取一点逻辑到<strong>PrimeAlert</strong>类型:</p>
+<pre><code class="language-swift">extension PrimeAlert {
+  public var title: String {
+    return &quot;The \(ordinal(self.n)) prime is \(self.prime)&quot;
+  }
+}
+
+public func ordinal(_ n: Int) -&gt; String {
+  let formatter = NumberFormatter()
+  formatter.numberStyle = .ordinal
+  return formatter.string(for: n) ?? &quot;&quot;
+}
+</code></pre>
+<p>现在我们使用标题:</p>
+<pre><code class="language-swift">Alert(
+  title: Text(primeAlert.title),
+  dismissButton: .default(Text(&quot;Ok&quot;)) {
+    ???
+  }
+)
+</code></pre>
+<p>当点击Ok按钮时，我们想要发送一个新的动作到<strong>store</strong>:</p>
+<pre><code class="language-swift">dismissButton: .default(Text(&quot;Ok&quot;)) {
+  self.store.send(.alertDismissButtonTapped)
+}
+</code></pre>
+<p>当然，我们必须把它添加到<strong>action enum</strong>中:</p>
+<pre><code class="language-swift">public enum FavoritePrimesAction: Equatable {
+  …
+  case alertDismissButtonTapped
+}
+</code></pre>
+<p>并在我们的<strong>reducer</strong>中处理它:</p>
+<pre><code class="language-swift">case .alertDismissButtonTapped:
+  state.alertNthPrime = nil
+  return []
+</code></pre>
+<p>现在<strong>FavoritePrimes</strong>模块正在构建。在尝试修复应用程序的其余部分之前，让我们尝试在我们的专用playground上运行它。 我们只需要指定特性的新状态和环境:</p>
+<pre><code class="language-swift">var environment: FavoritePrimesEnvironment = (
+  fileClient: .mock,
+  nthPrime: { _ in .sync { 17 } }
+)
+environment.fileClient.load = { _ in
+  Effect.sync { try! JSONEncoder().encode(Array(1...10)) }
+}
+
+PlaygroundPage.current.liveView = UIHostingController(
+  rootView: NavigationView {
+    FavoritePrimesView(
+      store: Store&lt;FavoritePrimesState, FavoritePrimesAction&gt;(
+        initialValue: (
+          alertNthPrime: nil,
+          favoritePrimes: [2, 3, 5, 7, 11]
+        ),
+        reducer: favoritePrimesReducer,
+        environment: enviornment
+      )
+    )
+  }
+)
+</code></pre>
+<p>When we tap a row we see that it causes an alert to show.</p>
+<p>要构建整个应用程序，我们只需要做一些小事情。首先，我们需要修复回调:</p>
+<pre><code class="language-swift">pullback(
+  favoritePrimesReducer,
+  value: \.favoritePrimes,
+  action: /AppAction.favoritePrimes,
+  environment: { $0.fileClient }
+)
+</code></pre>
+<p>首先，沿着AppState的<strong>favoritePrimes</strong>字段回调状态不再正确，我们需要<strong>favoritePrimes和alertNthPrime</strong>字段。</p>
+<p>要做到这一点，我们只需要一个自定义的计算属性来获取关键路径:</p>
+<pre><code class="language-swift">extension AppState {
+  var favoritePrimesState: FavoritePrimesState {
+    get {
+      (self.alertNthPrime, self.favoritePrimes)
+    }
+    set {
+      (self.alertNthPrime, self.favoritePrimes) = newValue
+    }
+  }
+}
+</code></pre>
+<p>然后我们可以在回调中使用这个新的键路径:</p>
+<pre><code class="language-swift">pullback(
+  favoritePrimesReducer,
+  value: \.favoritePrimesState,
+  action: /AppAction.favoritePrimes,
+  environment: { $0.fileClient }
+)
+</code></pre>
+<p>只传递<strong>fileClient</strong>沿环境回调也不再有效，它还需要<strong>nthPrime effect</strong>。我们可以在回调中去掉最喜欢的质数特性需要的两个依赖项:</p>
+<pre><code class="language-swift">pullback(
+  favoritePrimesReducer,
+  value: \.favoritePrimesState,
+  action: /AppAction.favoritePrimes,
+  environment: { ($0.fileClient, $0.nthPrime) }
+)
+</code></pre>
+<p>我们只需要再修一些东西就可以开工了。我们需要导入<strong>prime alert</strong>模块，将新的收藏质数状态发送到收藏质数视图，并更新活动提要以忽略这些新操作。</p>
+<pre><code class="language-swift">import PrimeAlert
+…
+case .favoritePrimes(.primeButtonTapped),
+     .favoritePrimes(.nthPrimeResponse),
+     .favoritePrimes(.alertDismissButtonTapped):
+  break
+…
+NavigationLink(
+  &quot;Favorite primes&quot;,
+  destination: FavoritePrimesView(
+    store: self.store.view(
+      value: { $0.favoritePrimesState }
+      action: { .favoritePrimes($0) }
+    )
+  )
+)
+</code></pre>
+<p>就像这样，应用程序再次构建，这可能看起来令人惊讶，但请记住，我们重用了一个现有的依赖，所以应用程序环境不需要改变。</p>
+<hr>
+<h2 id="4-a-nameconclusionaconclusion">4. <a name='Conclusion'></a>Conclusion</h2>
+<p>唷,好吧! 这是相当多的工作，但我们能够证明这种新的环境依赖解决了全局环境的3个关键问题。</p>
+<ul>
+<li>
+<p>我们可以一次从许多不同的特性模块中简洁地联合环境。</p>
+</li>
+<li>
+<p>我们可以允许特性用不同的依赖项被多次实例化。</p>
+</li>
+<li>
+<p>我们可以共享特性模块之间的依赖关系。</p>
+</li>
+</ul>
+<p>我们做了很多工作才走到这一步，以这种新风格重构可组合架构，并重构我们的应用程序以利用它，但现在我们在编写表达性强、可测试的应用程序方面处于更有利的地位。</p>
+<p>现在，我们有了一个单独的顶级环境，该环境被分割并传递给每个单独的模块，我们不仅可以获得应用程序中状态更改的全局视图，还可以了解应用程序中依赖关系和效果的使用情况。这为潜在的复杂情况提供了清晰度和理解。如果一个依赖项出了问题，我们有一个单一的一致的方法来跟踪它的起源，一直追溯到根。</p>
+<p>我们所做的一些重构可能看起来很费力，但你也必须记住，我们所做的工作是为了在我们的模块之间有一个强大的、静态的联系。当回调编译时，我们得到了静态的确认，我们的模块被正确地插入到一起了。不仅如此，模块之间的这种静态粘合意味着，当我们为应用程序编写集成测试时，我们要从上到下测试架构的每个方面。</p>
+<p>我认为这种重构最令人惊奇的事情是，我们能够在不破坏可组合性或可测试性的情况下从中获得许多好处。我们仍然可以独立地构建自己的功能，而那些小功能仍然可以插入到更大的应用程序中。这真的很强大。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-92-dependency-injection-made-modular/">
+                  <h3 class="post-title">
+                    PointFree Episode 92: Dependency Injection Made Modular
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

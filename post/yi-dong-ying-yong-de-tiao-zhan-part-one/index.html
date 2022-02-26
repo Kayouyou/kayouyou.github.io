@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>App&#39;s challenges - Part One | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+CHALLENGES DUE TO THE NATURE OF MOBILE APPLICATIONS - PART 1
+
+
+1.1. STATE MANAGEMENT
+1.2. MISTAKES ARE HARD TO REVER..." />
+    <meta name="keywords" content="app-challenge-1" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">App&#39;s challenges - Part One</h2>
+            <div class="post-date">2021-04-27</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.pexels.com/photos/3077882/pexels-photo-3077882.jpeg?auto=compress&amp;cs=tinysrgb&amp;dpr=2&amp;w=500')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#CHALLENGESDUETOTHENATUREOFMOBILEAPPLICATIONS-PART1">CHALLENGES DUE TO THE NATURE OF MOBILE APPLICATIONS - PART 1</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#STATEMANAGEMENT">STATE MANAGEMENT</a></li>
+<li>1.2. <a href="#MISTAKESAREHARDTOREVERT">MISTAKES ARE HARD TO REVERT</a></li>
+<li>1.3. <a href="#THELONGTAILOFOLDAPPVERSIONS">THE LONG TAIL OF OLD APP VERSIONS</a></li>
+<li>1.4. <a href="#DEEPLINKS">DEEPLINKS</a></li>
+<li>1.5. <a href="#PUSHANDBACKGROUNDNOTIFICATIONS">PUSH AND BACKGROUND NOTIFICATIONS</a></li>
+<li>1.6. <a href="#APPCRASHES">APP CRASHES</a></li>
+<li>1.7. <a href="#OFFLINESUPPORT">OFFLINE SUPPORT</a></li>
+<li>1.8. <a href="#ACCESSIBILITY">ACCESSIBILITY</a></li>
+<li>1.9. <a href="#CICDTHEBUILDTRAIN">CI（持续集成）/CD（持续交付） &amp; THE BUILD TRAIN</a></li>
+<li>1.10. <a href="#THIRD-PARTYLIBRARIESANDSDKS">THIRD-PARTY LIBRARIES AND SDKS</a></li>
+<li>1.11. <a href="#DEVICEANDOSFRAGMENTATION">DEVICE AND OS FRAGMENTATION</a></li>
+<li>1.12. <a href="#IN-APPPURCHASES">IN-APP PURCHASES</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namechallengesduetothenatureofmobileapplications-part1achallenges-due-to-the-nature-of-mobile-applications-part-1">1. <a name='CHALLENGESDUETOTHENATUREOFMOBILEAPPLICATIONS-PART1'></a>CHALLENGES DUE TO THE NATURE OF MOBILE APPLICATIONS - PART 1</h2>
+<h3 id="11-a-namestatemanagementastate-management">1.1. <a name='STATEMANAGEMENT'></a>STATE MANAGEMENT</h3>
+<p>状态管理是原生手机开发最头疼的问题，类似于现代网页和后端开发。手机应用的不同之处在于，应用生命周期事件和转换并不是web和后端世界需要关注的问题。应用级生命周期转换的例子有:应用暂停并进入后台，然后返回前台或被挂起。iOS和Android的状态是相似的，但并不完全相同。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpxagb113xj30xa0jaq8z.jpg" alt="avatar" loading="lazy"></figure>
+<p>事件推动大多数移动应用的状态改变。这些事件以异步方式触发，例如应用程序状态更改、网络请求或用户输入。大多数错误和意外的崩溃通常是由意外或未测试的事件组合和应用程序的状态损坏引起的。状态损坏是应用程序的一个常见问题，因为全局或局部状态是由多个彼此未知的组件操纵的。遇到这个问题的团队开始尽可能隔离组件和应用程序状态，并倾向于迟早开始使用响应式状态管理。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpxakj8fyvj30xk0iyn6p.jpg" alt="avatar" loading="lazy"></figure>
+<p><a href="https://en.wikipedia.org/wiki/Reactive_programming">响应式编程</a>是处理大型有状态应用程序的首选方法，目的是隔离状态更改。您尽可能保持状态不变，将模型存储为发出状态变化的不变对象。这是<a href="https://github.com/uber/RIBs/wiki">Uber采用的做法</a>，也是Airbnb采用的方法，也是N26开发应用的方法。尽管这种方法在沿组件树传播状态更改时可能很繁琐，但同样的繁琐使得在不相关的组件中进行意外的状态更改很困难。</p>
+<p>与所有其他应用共享相同资源的应用，以及在短时间内扼杀应用的操作系统，是面向手机平台开发应用与面向其他平台开发应用(如后端和网页)的最大区别。操作系统监控CPU、内存和能耗。如果操作系统认为你的应用程序在前台或后台占用了太多的资源，那么它可以在没有任何警告的情况下被杀死。应用程序开发人员的职责是响应应用程序状态的变化，保存状态，并将应用程序恢复到它正在运行的位置。在iOS上，这意味着要处理应用状态和它们之间的转换。在Android上，你需要对Activity生命周期中的变化做出反应。</p>
+<p>全局应用程序状态(Global application state)，如权限、蓝牙和连接状态等，带来了一系列有趣的挑战。每当这些全局状态发生变化时，比如网络连接下降，那么应用的不同部分可能需要做出不同的反应。</p>
+<p>使用全局状态时，挑战就变成了决定哪个组件拥有监听这些状态更改的权利。在频谱的一端，应用程序屏幕或组件可以监听它们关心的全局状态更改;这会导致大量代码重复，但组件处理所有全局状态问题。另一方面，组件可以监听某些全局状态更改，并将这些更改转发给应用程序的特定部分。这可能会导致代码变得不那么复杂，但是现在全局状态处理程序和它所知道的组件之间有一个紧密耦合。</p>
+<p>应用的启动点，如深度链接或应用内部的快捷导航点，也增加了状态管理的复杂性。使用deeplink，可能需要在激活deeplink后设置应用程序状态。我们将在Deeplinks这一章进行更详细的讨论。</p>
+<h3 id="12-a-namemistakesarehardtorevertamistakes-are-hard-to-revert">1.2. <a name='MISTAKESAREHARDTOREVERT'></a>MISTAKES ARE HARD TO REVERT</h3>
+<p>移动应用是以二进制的形式发布的。一旦用户更新了一个带有客户端漏洞的版本，他们就会一直被这个漏洞困扰，直到新版本发布并用户进行更新。</p>
+<p>这种方法会带来很多挑战:</p>
+<ul>
+<li>
+<p><strong>苹果和谷歌都严格要求将可执行代码发送到应用程序中</strong>。根据苹果的程序政策，苹果不允许执行改变其商店指南功能的代码，谷歌可以将不相关的可执行代码标记为恶意软件。这意味着你不能远程更新应用程序。然而，恢复被破坏的功能的错误修复应该在两个商店的策略中:例如，在使用特性标志时。同时，苹果也允许执行非原生代码，比如JavaScript，这也是<a href="https://go.mobileatscale.com/codepush">Codepush</a>这样的解决方案越来越受欢迎的原因。Codepush允许React Native或Cordova应用实时发布更新。在优步，我们按照同样的思路打造了一个本土解决方案，其他几家公司也在这么做。</p>
+</li>
+<li>
+<p><strong>在商店中发布一个新的应用版本需要数小时到数天的时间</strong>。对于iOS，所有应用都需要手动审核，需要24-48小时才能完成。从历史上看，每一篇评论都有被拒绝的可能。截至2020年6月，苹果已经修改了指导方针，因此，除法律问题外，漏洞修复不再因违反指导方针而延迟。在Android平台上，人工审查并不总是会发生，但如果真的发生了，可能需要7天以上的时间。</p>
+</li>
+<li>
+<p><strong>新版本发布到应用商店后，用户需要几天时间才能更新到最新版本</strong>。即使用户开启了自动更新，也会出现这种延迟。</p>
+</li>
+<li>
+<p><strong>你不能假设所有用户都会得到这个更新版本</strong>。一些用户可能已经禁用了自动更新。即使更新，他们也可能跳过几个版本。</p>
+</li>
+</ul>
+<p>Facebook发布工程部门的查克·罗西(Chuck Rossi)在《软件工程日报》(Software engineering Daily)播客中总结了面向手机平台发布游戏的情况:</p>
+<blockquote>
+<p>“It was the most terrifying thing to take 10,000 diffs, package it into effectively a bullet, fire that bullet at the horizon and that bullet, once it leaves the barrel, it's gone. I cannot get it back, and it flies flat and true with no friction and no gravity till the heat death of the universe. It's gone. I can't fix it.”</p>
+</blockquote>
+<blockquote>
+<p>“这是最可怕的事情，将一万种不同的物质，有效地打包成一颗子弹，向地平线发射，而这颗子弹，一旦离开枪管，就消失了。我无法把它找回来，它会在没有摩擦和重力的情况下平稳地飞行直到宇宙热死。这是一去不复返了。我修不好。”</p>
+</blockquote>
+<p><strong>这意味着你的应用之前的所有版本都需要得到无限的支持，从理论上来说</strong>，你应该这么做。唯一的例外是，如果您使用自制控件并构建强制更新机制来限制支持过去的版本。Android支持Play Core库中的应用内更新。iOS没有类似的原生支持。我们将在强制升级章节中讨论更多。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpxb1lng4yj30xq0rwapb.jpg" alt="avatar" loading="lazy"></figure>
+<p>假设你拥有一款拥有数百万用户的应用，你将采取什么措施去减少旧版本中的漏洞或倒退?</p>
+<ul>
+<li>
+<p><strong>在各个层面进行彻底的测试</strong>。自动化测试，手动测试，以及带有简单反馈循环的beta测试。许多公司的普遍做法是向公司员工和测试用户发布测试应用，让其“烘焙”一周，收集任何问题的反馈。”</p>
+</li>
+<li>
+<p><strong>设置一个功能标记系统</strong>，这样你就可以及时修复bug。尽管如此，功能标志还是增加了更多的痛点。我们将在Feature Flag Hell章节中讨论这些要点。</p>
+</li>
+<li>
+<p><strong>考虑逐步推出</strong>，并进行监控，以确保一切按计划进行。我们将在分析、监控和警报一章中讨论这个主题。</p>
+</li>
+<li>
+<p><strong>强制升级</strong>是一个强大的解决方案，但你需要把它放到合适的位置，因此一些客户可能会流失。我们会在强制升级章节中进行更深入的讨论。</p>
+</li>
+</ul>
+<h3 id="13-a-namethelongtailofoldappversionsathe-long-tail-of-old-app-versions">1.3. <a name='THELONGTAILOFOLDAPPVERSIONS'></a>THE LONG TAIL OF OLD APP VERSIONS</h3>
+<p>老版本的应用将会存在很长一段时间，甚至几年。如果你是少数几个实施严格应用升级政策的团队之一，那么这个时间范围就会更短。有滚动升级窗口的应用程序包括Whatsapp和Messenger。还有几家频繁使用强制升级，比如银行应用Monzo或美国运通。</p>
+<p>虽然大多数用户会在几天内更新到新的应用版本，但仍有大量用户落后于多个版本。一些用户故意禁用自动更新，但许多不更新的用户会因为旧手机或操作系统而被屏蔽。与此同时，手机团队也不太可能定期测试旧版本的应用，因为这需要付出大量的努力，但收效甚微。</p>
+<p>即使是一个非破坏性的后端更改也可能破坏应用程序的旧版本——比如更改特定响应的内容。你可以采取以下做法来避免这种破坏:</p>
+<ul>
+<li>
+<p><strong>使用解决这些问题的专用工具，构建健壮的网络响应处理和解析</strong>。比起需要手动验证的REST接口，我更喜欢客户端和后端之间的强类型的、生成的契约，比如Thrift、GraphQL或其他带有代码生成的解决方案，如果有人忘记更新手机上的解析逻辑，那么REST接口必然会失效。</p>
+</li>
+<li>
+<p><strong>要提前做好破坏后端变化的计划</strong>。与后端团队建立开放的沟通渠道。找到测试旧应用版本的方法。</p>
+</li>
+<li>
+<p><strong>考虑构建新的端点，而不是淘汰旧端点</strong>，直到强制升级将所有当前应用程序用户从旧端点移走。</p>
+</li>
+<li>
+<p><strong>修改后端端点的版本</strong>，并创建新版本以适应中断的更改。在进行破坏性更改时，您通常会创建一个新的端点，并将现有端点标记为deprecated。注意，如果使用GraphQL，这可能不适用，因为GraphQL坚决反对版本控制。</p>
+</li>
+<li>
+<p><strong>当在后端弃用端点时，请谨慎操作</strong>。监控流量，如果需要，制定一个关于如何通道请求的迁移计划。</p>
+</li>
+<li>
+<p><strong>追踪应用版本的使用统计数据</strong>。滞后三个或更多版本的用户占多大比例?一旦你有了这些数据，你就更容易决定要花多少精力来确保旧版本的游戏体验良好。</p>
+</li>
+<li>
+<p><strong>将客户端监视和警报设置到位</strong>。这些警报可能被引导到专用的移动电话，或者仅仅是普通的电话。我们将在分析、监控和警报一章中对此进行深入研究。</p>
+</li>
+<li>
+<p><strong>考虑进行升级测试</strong>，至少是主要的更新。升级测试是昂贵的，难以自动化，并且可能有几种可供尝试的排列。因为这种开销，团队很少这样做。</p>
+</li>
+</ul>
+<h3 id="14-a-namedeeplinksadeeplinks">1.4. <a name='DEEPLINKS'></a>DEEPLINKS</h3>
+<p>深度链接——提供网页或设备链接，打开应用程序的一部分——在移动平台上成为一个令人惊讶的棘手问题。iOS和Android都提供了处理这一问题的api，但没有任何固执的原生框架或推荐的方法。就像Alberto De Bortoli在文章中所说的;</p>
+<blockquote>
+<p>“Deep linking is one of the most underestimated problems to solve on mobile.”</p>
+</blockquote>
+<blockquote>
+<p>深度链接是移动平台上最容易被低估的问题之一。</p>
+</blockquote>
+<p>一些事情让deeplinks面临挑战：</p>
+<ul>
+<li>
+<p><strong>向后兼容性</strong>:确保现有的深度链接在应用的旧版本中继续工作，即使在导航或逻辑发生重大变化之后。</p>
+</li>
+<li>
+<p><strong>状态问题</strong>当使用现有状态深入到一个正在运行的应用程序时。假设你有一个应用程序打开，并在一个详细页面。点击邮件应用程序中的一个深度链接，它会指向另一个细节页面。会发生什么?新的详细信息页面是否会被添加到导航堆栈中，从而保持当前的状态?或者应该重置状态?导致不确定性行为最少的解决方案是在接收到深度链接时完全重置应用的状态。然而，可能会有你不想破坏的流程，所以要仔细计划。</p>
+</li>
+<li>
+<p><strong>iOS和Android在执行方面存在差异</strong>。deep plink在iOS(通用链接和URL方案)和Android(基于意图)的实现是不同的。还有第三方的深度链接提供商，它们提供了用于单个接口的抽象，比如Firebase动态链接或分支。</p>
+</li>
+<li>
+<p><strong>缺乏预先计划</strong>。deep plink通常是在应用的多个版本发布后才想到的。然而，不同于在网络上添加链接/深度链接更简单，改造深度链接策略可能是一个真正的工程挑战。深度链接连接到状态管理和导航架构。</p>
+</li>
+</ul>
+<p>对于深度链接的最大挑战是，iOS和Android都没有提供关于如何设计和测试深度链接的武断方法。随着深度链接数量的增加，保持这些深度链接发挥作用的努力和复杂性越来越大。你必须提前做好计划，建立一个合理的、可扩展的深度链接实现。</p>
+<h3 id="15-a-namepushandbackgroundnotificationsapush-and-background-notifications">1.5. <a name='PUSHANDBACKGROUNDNOTIFICATIONS'></a>PUSH AND BACKGROUND NOTIFICATIONS</h3>
+<p>应用推送通知是一种常用的通知、沟通和营销工具。公司喜欢使用推送通知，作为开发者，你迟早会被要求支持这种方法。然而，推送通知会给你带来一系列新挑战。</p>
+<p>设置和运营推送通知非常复杂。对于Android和iOS，你的应用程序需要从服务器(Android上的FCM, iOS上的APNS)获得一个令牌，然后将这个令牌存储在后端。要让推送通知发挥作用，我们需要采取许多步骤。</p>
+<p>推送通知必须从后端发送。您需要与后端团队一起处理他们想要发送的通知类型及其触发器。你的后端同行必须熟悉手机推送通知的基础设施和功能，才能最大限度地利用这一渠道。</p>
+<p>在电子邮件和短信中使用推送通知是一种流行的营销策略。从理论上讲，这样的使用可能会违反iOS应用程序的指导原则。然而，苹果的大多数应用程序和许多第三方应用程序都是这样使用的。你肯定不会从头开始执行推送通知，而是使用第三方客户参与服务，如Twilio, Airship, Braze, onesigal等。</p>
+<p><strong>推送通知的挑战是众多的</strong>——除了执行它们:</p>
+<ul>
+<li>
+<p>就执行通知应该触发的行动而言，<strong>深度链接</strong>也面临着类似的挑战。推送通知是一个高级的深度链接:一条带有链接到应用中的操作的信息。考虑向后兼容性、状态问题和提前计划都适用于推送通知。</p>
+</li>
+<li>
+<p>用户要么选择<strong>退出推送通知</strong>，要么选择不加入。在iOS和Android上，你有不同的方法和限制来检测这种情况。一个有趣的边缘案例是，在iOS上，如果用户选择退出推送通知，他们仍然可以收到无声的背景通知。推送通知对于很多应用来说都是“不错的选择”，因为你不能保证每个用户都会选择它们，或者他们的设备会在线接收它们。</p>
+</li>
+<li>
+<p><strong>推送通知的发送并不能得到保证</strong>。特别是当大量发送时，苹果和谷歌都可能会限制推送通知。关于这个节流的规则是一个<em>黑盒</em>。然而，设备连接问题，以及操作系统限制最近不活跃的应用的通知，也可能导致人们看不到你发送的推送通知。</p>
+</li>
+<li>
+<p><strong>测试推送通知是一个挑战</strong>。当然，您可以手动进行测试。这更像是一种变通方法，但你可以在iOS和Android的模拟器上测试它们。然而，对于自动化测试，您需要编写端到端UI测试，创建和维护这些测试的成本很高。关于如何在iOS上实现这一点，请参阅<a href="https://medium.com/azimolabs/https-medium-com-pawel-zemsta-how-to-test-push-notifications-in-ui-tests-8ac76007c095">本教程</a>。</p>
+</li>
+<li>
+<p><strong>后台通知</strong>是一种特殊类型的推送消息，对用户来说是不可见的，但可以直接发送到你的应用中。这些类型的通知对于同步后端更新到客户端是很有用的。这些通知在Android上被称为数据消息，在iOS上被称为后台通知。参见使用<a href="https://developer.apple.com/documentation/usernotifications/implementing_background_push_notifications">iOS的例子</a>.</p>
+</li>
+</ul>
+<p>后台通知的概念对于实时和多设备场景非常方便。如果你的应用在这一领域，你可能会决定为iOS和Android实现一个跨平台解决方案，而不是移动应用轮询服务器，服务器通过后台推送通知向客户端发送数据。2016年重写Uber的Rider应用时，我们在方法上的一个重大转变就是这样的;通过内部消息推送服务，从轮询转向推送。</p>
+<p>后台通知可以简化架构和业务逻辑，但它们引入了消息交付性问题、消息顺序问题，你需要将这种方法与离线场景的本地数据缓存结合起来。</p>
+<h3 id="16-a-nameappcrashesaapp-crashes">1.6. <a name='APPCRASHES'></a>APP CRASHES</h3>
+<p>应用崩溃是任何移动应用中最明显的bugs之一，通常会对业务产生很大影响。用户可能无法完成关键流程，他们可能会变得沮丧并停止使用应用，或者留下糟糕的评论。</p>
+<p>崩溃并不是手机独有的问题。它们是后端主要关注的领域，其中监视未捕获的异常或5XX状态代码是常见的做法。在网络上，由于其本质——在沙盒中单线程执行——崩溃比在移动应用上更罕见。</p>
+<p><strong>崩溃的第一条规则是，你需要跟踪它们何时发生，并拥有足够的调试信息</strong>。跟踪崩溃后，您需要报告会话最终崩溃的百分比，并尽可能减少这个数字。在优步，我们从一开始就跟踪事故发生率，不断努力降低事故发生率。</p>
+<p>您可以选择构建自己的崩溃报告实现，或者使用现成的解决方案。到2021年，大多数团队都会选择针对原生应用的崩溃报告解决方案，如Crashlytics或<a href="https://www.bugsnag.com/?utm_source=gergely-ebook&amp;utm_medium=sponsored-content&amp;utm_campaign=2021-03-sponsoredcontent-gergelyebook">Bugsnag</a>。</p>
+<hr>
+<p>Bugsnag是一个错误监控和应用稳定性管理解决方案。并非所有漏洞都值得修复，而稳定性是决定是开发软件还是修复漏洞的关键。</p>
+<p>Bugsnag是移动工程师、产品经理、发布经理和可观察性团队用来管理高质量应用程序的每日稳定性仪表盘。</p>
+<p>他们的诊断数据使工程团队能够改善应用程序的健康状况，加速业务增长，被公认为一流的移动支持。Bugsnag有助于推动代码所有权，平衡更快的发布周期，减少技术债务，并改善用户体验。</p>
+<p>Bugsnag每天处理超过10亿份崩溃报告，深受Slack、Yelp、Lyft、Target和Pandora等行业领先应用程序的信任。你可以从Bugsnag.com免费开始。</p>
+<hr>
+<p>在iOS上，每次崩溃都会在设备上生成崩溃报告，你可以使用这些日志映射到你的代码。苹果为开发者提供了从选择通过TestFlight或App Store分享这些信息的用户那里收集崩溃日志的方法。这种方法适用于较小的应用程序。在Android上，谷歌Play还允许开发者通过谷歌Play Console中的Android Vitals查看崩溃堆栈跟踪。与苹果一样，只有选择向开发者发送漏洞报告的用户才会在这个门户网站上记录这些漏洞。</p>
+<p>第三方或定制的崩溃报告解决方案提供了一些优于App Store和谷歌Play的优势。优势是很多的，大多数中等规模或以上的应用要么与第三方合作，要么构建一个具有以下优势的解决方案:</p>
+<ul>
+<li>
+<p><strong>更多的诊断信息</strong>。你通常希望在应用中记录可能导致崩溃的事件的附加信息。</p>
+</li>
+<li>
+<p><strong>丰富的报告</strong>。第三方解决方案通常提供iOS和Android的崩溃率分组报告和比较。</p>
+</li>
+<li>
+<p><strong>监控和警报功能</strong>。当出现新类型的崩溃或某些崩溃时，你可以设置警报。</p>
+</li>
+<li>
+<p><strong>与其他开发堆栈的集成</strong>。你经常想要将新的崩溃与你的票务系统连接起来，或者在pull requests中引用它们。</p>
+</li>
+</ul>
+<p>在Uber，我们从一开始就使用第三方事故报告。然而，后来构建了一个内部解决方案。许多第三方崩溃报告解决方案的一个缺点是，它们只收集崩溃和非致命错误的健康信息，而不收集应用无响应(ANR)和内存问题的健康信息。拥有许多应用程序的组织可能也会发现报告内容不够丰富，可能希望构建自己的报告，以比较许多应用程序的健康状态。更好地与内部项目管理和编码工具集成也可能是定制化的一个原因。</p>
+<ul>
+<li>
+<p><strong>崩溃的重现性和可调试性</strong>是其他对移动平台的影响大于后端或网页团队的痛点。特别是在Android世界中，用户拥有各种各样的设备，运行着各种操作系统版本和各种应用版本。如果崩溃可以在模拟器或任何设备上重现，那么就没有理由不修复这个问题。但如果崩溃只发生在特定的设备上呢?</p>
+</li>
+<li>
+<p><strong>设置一个优先级框架来定义阈值</strong>，在阈值之上，你要花时间调查和修复崩溃。这个阈值将根据崩溃的性质、客户生命周期价值和其他业务考虑因素而有所不同。</p>
+</li>
+</ul>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpy1koos86j30rm0r8dqd.jpg" alt="avatar" loading="lazy"></figure>
+<p>你需要比较调查和修复的成本、修复的好处，以及工程师花费时间在其他事情上的机会成本，比如构建创收功能。</p>
+<ul>
+<li><strong>应用稳定性</strong>是你最终想要衡量的指标，以确保它不会倒退。你的应用永远不会真正避免崩溃，但如果你能将崩溃降低到一个稳定水平，这意味着受到影响的会话少于1万个，那么你就走上了正确的道路。你的目标是基于用户总会话计算应用稳定性分数，并投入时间去减少崩溃，直到你达到目标。</li>
+</ul>
+<p>Bugsnag发布了关于应用稳定性中值的指标:</p>
+<ul>
+<li>99.46%是由1-10名工程师开发的应用</li>
+<li>99.60%是由11-50名工程师开发的应用</li>
+<li>99.89%的应用是由51-100名工程师开发的</li>
+<li>99.79%的应用是由100多名工程师开发的。</li>
+</ul>
+<p>如果你的应用程序的稳定性得分达到99.99%或以上，你就远远领先于竞争对手，并达到了世界级的可靠性。</p>
+<p>延伸阅读:</p>
+<ul>
+<li><a href="https://www.bugsnag.com/content/unity-exception-error-handling-webinar">Error monitoring with Bugsnag and Splunk</a> from Zynga</li>
+<li><a href="https://engineering.linkedin.com/blog/2017/05/mobile-crash-reporting-at-linkedin">Mobile crash reporting process</a> from LinkedIn</li>
+<li><a href="https://go.mobileatscale.com/crash-pipleine-linkedin">The mobile crash reporting pipeline</a> from LinkedIn (video)</li>
+<li><a href="https://engineering.fb.com/2019/11/26/developer-tools/ccsm/">CCSM: scalable statistical anomaly detection to resolve app crashes faster</a> from Facebook</li>
+<li><a href="https://medium.com/turo-engineering/the-new-gold-standard-for-ios-releases-99-99-crash-free-d0b5993c5524">The path to 99.99% crash-free on iOS</a> from Turo Engineering</li>
+<li><a href="https://medium.com/strava-engineering/conquering-our-android-crash-count-acb02796f272">Conquering our Android crash count</a> from Strava Engineering</li>
+<li><a href="https://go.mobileatscale.com/debugging-crashes">Debugging native crashes in Android apps</a> from ProAndroidDev</li>
+<li><a href="https://issuetracker.google.com/issues/154855417">Google Maps SDK crashes, impacting hundreds of apps</a> from Google’s issue tracker</li>
+<li><a href="https://www.bugsnag.com/blog/sdks-should-not-crash-apps?utm_source=gergely-ebook&amp;utm_medium=sponsored-content&amp;utm_campaign=2021-03-sponsoredcontent-gergelyebook">SDKs should not crash apps - learnings from the Facebook outage</a> from Bugsnag</li>
+<li><a href="https://www.bugsnag.com/blog/sdks-should-not-crash-apps?utm_source=gergely-ebook&amp;utm_medium=sponsored-content&amp;utm_campaign=2021-03-sponsoredcontent-gergelyebook">Why a small Facebook bug wreaked havoc on some of the most popular iOS apps</a> from the Verge</li>
+<li><a href="https://www.bugsnag.com/research/app-stability-index-report?utm_source=gergely-ebook&amp;utm_medium=sponsored-content&amp;utm_campaign=2021-03-sponsoredcontent-gergelyebook">Application stability index</a> from Bugsnag</li>
+</ul>
+<h3 id="17-a-nameofflinesupportaoffline-support">1.7. <a name='OFFLINESUPPORT'></a>OFFLINE SUPPORT</h3>
+<p>尽管离线支持越来越多地成为富web应用的一种功能，但它一直是原生移动应用的核心用例。人们希望应用程序保持可用性，即使连通性下降。他们当然希望当信号下降或减弱时，state不会迷失。</p>
+<p><strong>适当的离线模式支持会给应用程序增加很多复杂性和意想不到的边缘情况</strong>，比如:</p>
+<ul>
+<li>
+<p><strong>可靠地检测手机何时离线</strong>。操作系统可以报告用户在线;然而，情况可能并非如此。当手机连接到使用强制网络门户的WiFi热点时，可能没有数据被传输。对于这种边缘情况，应用程序可能需要ping几个“始终在线”的域来确定这一点。</p>
+</li>
+<li>
+<p><strong>检测连接速度和延迟</strong>，并在必要时相应地改变应用程序的行为。流媒体应用程序将优化流以匹配可用带宽。其他应用程序可能会提醒用户，连接不良会影响应用程序的运行。事先计划好如何处理这些边缘情况。</p>
+</li>
+<li>
+<p><strong>当设备离线时保持本地状态</strong>，当连接恢复时进行回同步。当用户在多个设备上使用应用时，你需要考虑竞争条件，这些设备有的在线，有的离线。您应该特别注意修改本地存储数据的应用程序更新，将旧数据迁移到新格式。我们将在客户端数据迁移一章中讨论这个挑战。</p>
+</li>
+<li>
+<p><strong>决定哪些功能可以离线运行</strong>，哪些不能。许多团队都错过了这个简单的步骤，它使离线功能的规划更容易，并避免范围蔓延。我建议从应用程序的关键部分开始，慢慢扩展这个范围。获得“主”脱机模式如预期工作的真实反馈。你能否在应用的其他部分利用你的方法?</p>
+</li>
+<li>
+<p><strong>决定如何处理离线边缘情况</strong>。如果连接速度极慢，手机仍然在线，但数据连接速度太慢，你会怎么做?一个健壮的解决方案是将其视为脱机处理，并可能通知用户这一事实。超时呢?你愿意重试吗?</p>
+</li>
+</ul>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpy25hgoywj30xg0ksn3k.jpg" alt="avatar" loading="lazy"></figure>
+<p>重试可能是一个棘手的边缘情况。假设您有一个连接一段时间没有响应(软超时)，然后重试另一个请求。如果第一个请求返回，你可能会看到竞争条件或数据问题，然后第二个请求也会返回。</p>
+<ul>
+<li>
+<p><strong>设备和后端数据的同步</strong>是另一个常见但却极具挑战性的问题。这个问题随着设备的增多而增加。你需要选择一个冲突解决协议，它对于多个并行脱机编辑工作得足够好，并且是足够强健的处理中途对包问题。</p>
+</li>
+<li>
+<p><strong>重试策略</strong>是需要考虑的边缘情况。在重试之前，如何确定网络没有故障?如何处理用户疯狂重试并可能创建多个并行请求的情况?应用程序是否允许在前一个请求未完成时发出相同的请求?切换到离线模式后，应用程序如何判断网络何时可靠恢复?应用程序如何区分后端服务没有响应或网络缓慢?那么资源效率呢? 你应该考虑使用使用etag或if-match头的HTTP条件请求重试吗?</p>
+</li>
+</ul>
+<p>如果连通性不好，网络请求有时会超时。明智的重试策略或切换到脱机模式可能会有所帮助。这两种解决方案都需要进行大量的权衡。</p>
+<p>当使用响应式库来处理网络连接时，上面的许多情况可以相对简单地解决，比如RxSwift、苹果的Combine、RxJava或Kotlin协程。</p>
+<ul>
+<li><strong>不应该重试的请求会带来另一组问题</strong>。例如，您可能不想在付款请求正在进行时重试。但如果它以失败的形式返回呢?您可能认为重试是安全的。但是，如果请求超时了，但是服务器进行了支付怎么办?然后你就会向用户双倍收费。</li>
+</ul>
+<p>作为后端端点的消费者，你应该通过让这些端点<a href="https://blog.pragmaticengineer.com/distributed-architecture-concepts-i-have-learned-while-building-payments-systems/#idempotency">等幂</a>来确保API端点上的所有重试是安全的。对于幂等端点，您必须获得并发送幂等键，并跟踪一个额外的状态。你还必须担心一些边缘情况，比如应用崩溃和重启，以及幂等键不存在。安全地实现重试为团队增加了大量额外的工作。你必须与后端团队紧密合作，以映射要设计的用例。</p>
+<p>与状态管理一样，可维护的脱机模式和弱连接支持的关键是简单。使用不可变状态、简单的同步策略和简单的策略来处理慢连接。使用正确的工具进行大量的测试，例如 <a href="https://nshipster.com/network-link-conditioner/">Network Link Conditioner</a> for iOS or the networkSpeed capability on Android emulators.</p>
+<h3 id="18-a-nameaccessibilityaaccessibility">1.8. <a name='ACCESSIBILITY'></a>ACCESSIBILITY</h3>
+<p>可访问性对于流行应用来说是一个大问题，原因如下:</p>
+<ul>
+<li>
+<p>如果你拥有大量用户，他们中的许多人将会有各种各样的易用性需求，如果没有足够的支持，他们便很难或不可能与你的应用进行互动。</p>
+</li>
+<li>
+<p>如果应用无法访问，应用发行商就会面临固有的法律风险;美国已经发生了几起针对原生手机应用的易用性诉讼。</p>
+</li>
+</ul>
+<p>易用性不仅是一件“好”的事情，你的应用质量也会随着易用性的提高而提高。这个想法来自Victoria Gonda，她收集了优秀的iOS和Android易用性<a href="https://victoriagonda.com/talks/a11y-for-product.html">资源</a>。</p>
+<p>在你开始之前，你需要确认你将实施WCAG 2.1移动定义的深度。确保通过VoiceOver (iOS) / TalkBack (Android)的应用程序对视力正常的人是可行的，并确保颜色/关键元素有足够的对比度，这是典型的基线期望。根据你的应用类型，你可能需要考虑听力不好的人，或者有其他易访问性需求的用户。</p>
+<p>易访问性远不止确保视力正常的人可以使用应用程序。允许可访问性偏好与应用,如支持用户的字体大小选择——通过<a href="https://developer.apple.com/documentation/uikit/uifont/scaling_fonts_automatically">动态类型支持</a>iOS和Android使用与比例无关的像素作为测量——你应该遵循的都是实践。您还需要考虑设备碎片。例如，在Android世界中，一加手机的字体大小与生态系统中的其他手机不同。</p>
+<p>在iOS平台上，<strong>从一开始就执行易用性是一项非常简单的任务</strong>，而在Android平台上则是一个明智的选择。这两个平台都深入思考了易用性需求，并让添加易用性功能变得相对轻松。</p>
+<p>改造可达性是这个问题可能耗时的地方。将易访问性作为设计过程的一部分是一种更好的方法，这就是为什么将易访问性作为Planing/RFC过程的一部分是一个好主意。在页面层面考虑<a href="https://medium.com/capital-one-tech/ios-accessibility-best-practices-for-the-voiceover-user-experience-dc08112ef16">VoiceOver帧</a>(iOS)，并从一开始就遵循易用性最佳实践是很好的投资。</p>
+<p>测试可访问性是需要规划的事情。这里有一些你可以并且应该添加的易访问性测试级别:</p>
+<ul>
+<li>
+<p><strong>自动化</strong>可自动化的易访问性检查的部分，例如<a href="https://medium.com/@jchen_77520/accessibility-and-ui-testing-in-ios-3eb0822a17fb">检查屏幕上的易访问性标签</a>。在iOS上，你也可以将VoiceOver内容显示为文本，并可能自动进行这些检查。</p>
+</li>
+<li>
+<p><strong>手动测试易访问性</strong>，作为发布过程的一部分，至少要半定期地这样做。</p>
+</li>
+<li>
+<p>在你的测试程序中<strong>招募易访问性用户</strong>，直接从他们那里获得反馈。这对于大公司来说更加可行，但让这些用户与工程团队进行互动将是一种巨大的收益。</p>
+</li>
+<li>
+<p><strong>在开发过程中开启易用性功能</strong>，这是明智的做法。通过这种方式，你可以观察它们的工作情况，并对依赖它们的人们会如何使用它们产生更多的共鸣。</p>
+</li>
+</ul>
+<h3 id="19-a-namecicdthebuildtrainaci持续集成cd持续交付-the-build-train">1.9. <a name='CICDTHEBUILDTRAIN'></a>CI（持续集成）/CD（持续交付） &amp; THE BUILD TRAIN</h3>
+<p>用于简单的后端服务和小型web应用程序的CI/CD非常简单。然而，即使是简单的移动应用程序，它也不是。这主要是因为应用商店的手动提交步骤。对于iOS App Store应用来说，完全自动化的连续部署管道是不可能的，因为需要手动审核。在Android上，你可以自动化这个过程，就像iOS企业应用一样。</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpy3m19fgdj30rk0di0zi.jpg" alt="avatar" loading="lazy"></figure>
+<p>iOS和Android平台是不同的;每个都需要自己的构建系统和独立的管道。当选择第三方CI时，值得选择的是那些将iOS和Android手机版本视为一流的，在手机领域有良好记录，能够处理你的团队或公司想要的规模的公司。这里有几个你可以探索的供应商。</p>
+<hr>
+<p>Britrise是移动工程师为移动平台开发的CI/CD。从pull request到应用商店提交等等，Bitrise可以自动、监控和改善你的应用开发工作流程。使用Bitrise的团队构建的应用质量更好，交付速度更快，开发者也会很高兴。</p>
+<p>Britrise支持Android、iOS、React native、Flutter等原生手机框架。需要对特定开发步骤(如测试、代码签名或在构建出现问题时通知)的支持?有了一个包含数百个集成的开源库，你可能会找到你需要的东西，或者能够快速构建它。</p>
+<p>超过10万名开发者和数千家机构信任Bitrise。可以在Bitrise免费试用。IO和构建更好，更快的应用程序。</p>
+<hr>
+<p>与使用基于云的CI/CD供应商相比，拥有自己的构建基础设施可以给你更多的控制和更好的体验。多家工程公司的移动工程负责人都表示，他们更愿意在公司内部建设基础设施，即使有额外的成本。</p>
+<p>如果规模非常大，你可能会决定自行建造。在Uber，我们没有任何供应商能够可靠地处理我们正在做的构建数量，他们也不能提供我们内部系统所做的集成挂钩。 你可能会发现自己在使用流行的构建工具来自动执行各种构建步骤，如上传至应用商店。对于iOS，这可能是<a href="https://fastlane.tools">Fastlane</a>，而对于运行在Jenkins上的Android，它可能是Jenkins文件或类似的东西。</p>
+<p><strong>如果你没有专门的用户带宽来支持这个系统，那么在维护自己开发的CI系统时要小心</strong>。我见过很多初创公司反复建立一个Jenkins CI，并让其运行，但几个月后才意识到需要有人继续处理基础设施问题。我强烈建议要么购买一个供应商的解决方案——然后把基础架构部分交给供应商——要么让一个专门的人或团队来拥有移动平台的构建基础架构。</p>
+<p>对于大公司来说，拥有建设基础设施可能是有意义的。在Uber，我们有一个专门的移动基础设施团队，他们拥有像iOS和Android monoorepo这样的东西，或者保持master绿色的规模。其他拥有大型移动团队和足够资源的公司也使用专用硬件运行自己的ci。与此同时，乐天(Rakuten)等公司已经从内部CI架构转向Bitrise，并对这种变化感到满意。</p>
+<p>建立CI后的下一步就是<strong>构建序列</strong>。构建序列是一种跟踪每周或每两周发布的状态的方法。一旦为应用商店的“候选发行对象”做出了发行削减，就需要进行一系列验证步骤;有些是自动的，有些是手动的。这些步骤包括运行所有自动化测试、手动测试、本地化新资源、性能测试或dogfooding或beta测试阶段。</p>
+<p>一旦候选版本被验证，它就会上传到应用商店，等待审批。在获得批准后，你可能会推出分阶段发布，比如iOS上的分阶段发布和Android上的分阶段发布。</p>
+<p>你的构建队列会将上述所有的状态可视化;哪个提交是构建候选削减，验证过程在哪里，以及阶段性推出状态是什么。拥有发布过程的人可能会手动跟踪构建队列，一些拥有复杂发布步骤的公司和移动基础架构团队有时会构建自己的解决方案。</p>
+<p><strong>典型的推出阶段包括:</strong></p>
+<ul>
+<li>
+<p><strong>应用开发/每晚构建</strong>:由CI/CD系统构建的应用版本，有时以每晚的节奏完成。工程师或公司员工通常是唯一能够访问这个建筑的人。</p>
+</li>
+<li>
+<p><strong>Beta/dogfood发布</strong>:通常在正式推出前向大多数公司员工和Beta测试者发布。一个足够大的beta组可以帮助在全面推出之前捕获回归和问题。</p>
+</li>
+<li>
+<p><strong>一般，分阶段推出生产</strong>。在Android平台上，首次发布通常是阶段性的。</p>
+</li>
+</ul>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpy9lkzmlpj30ww0codmb.jpg" alt="avatar" loading="lazy"></figure>
+<p>是将iOS和Android结合在一起，还是分开，这将取决于发布团队的选择。在优步，为了简单和一致性，我们把它们结合起来。我们有一个每周发布的节奏，而更详细的发布时间表是没有意义的。</p>
+<p>手机应用的发布频率将取决于团队或公司的决定。每一个手机版本都会增加测试开销，这是非常重要的。与此同时，带有许多新更改和特性的大型版本更有可能出现倒退，这反过来可能进一步延迟已经较晚的版本。以下是公司倾向于采用的典型手机游戏发行时间表:</p>
+<ul>
+<li>
+<p><strong>Weekly</strong>: 拥有成熟版本和测试过程的大型移动团队通常遵循每周构建削减的方法。然后对构建裁剪进行测试，并向beta用户推出。如果没有发现任何倒退，应用程序就会进入商店，通常是在cut一周后。</p>
+</li>
+<li>
+<p><strong>Every two weeks</strong> 许多公司选择这种模式来配合sprint的长度，从而减少每次发布时测试的开销。</p>
+</li>
+<li>
+<p><strong>不那么频繁或ad-hoc发布</strong>:小应用程序可能只有在有足够重要的变化发布时才会发布。对于大型或复杂的应用程序，这是一种罕见的模式。<strong>较低的发布频率通常与较低的质量有关</strong>;更多的功能一次性提供，有更多的回归机会，然后需要更长的时间来修复。考虑提高发行节奏以提高应用质量。</p>
+</li>
+</ul>
+<p>Twitter上的一项非代表性调查显示，在268名受访者中，约65%的人每两周或更短时间发布一次手机应用。</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpy9waqib3j30pu0i0gs1.jpg" alt="avatar" loading="lazy"></figure>
+<p>移动构造队列是一种将上述所有状态可视化的方式;哪个提交是构建候选削减，验证过程在哪里，以及阶段性推出状态是什么。发布者可能会手动跟踪构建序列。拥有复杂发布步骤和移动基础架构团队的公司倾向于构建他们的定制解决方案。我们在Uber就是这么做的。</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpy9zhe68oj30u00xmwyz.jpg" alt="avatar" loading="lazy"></figure>
+<p>定义在发布“准备就绪”之前需要完成哪些检查。一旦您将这些正式化了，您可以自动化的检查越多，发布过程就会越顺利。</p>
+<p>在优步，每个发布阶段都需要通过以下测试:</p>
+<ul>
+<li>
+<p><strong>UI测试没有失败地执行</strong>. UI测试套件足够大，因此没有必要在CI上运行所有测试。在发布之前，执行所有测试。</p>
+</li>
+<li>
+<p>由拥有这些测试的团队或拥有流程的QA团队执行的<strong>手动完整性测试</strong>。如果运行正常测试失败，或者没有执行测试，列车将不会继续运行。</p>
+</li>
+<li>
+<p>完成所有字符串的<strong>本地化</strong>。自动检查会检查应用程序中是否有遗漏的翻译。</p>
+</li>
+<li>
+<p><strong>crash报告</strong>。在beta测试过程中没有发现任何回归。测试阶段的崩溃会自动触发警报或罚单，团队需要调查并解决它，然后才能继续推出。</p>
+</li>
+<li>
+<p><strong>内存使用情况</strong>。根据内存分析，没有回归。</p>
+</li>
+<li>
+<p><strong>业务指标</strong>。在推出期间没有回归(“端到端漏斗”指标)。在优步，我们监控各个地区的请求、调度和出行信号。如果bug会导致这些关键指标中的任何一个回归，我们可以检测问题，并采取行动来减轻它。</p>
+</li>
+</ul>
+<p>Further reading:</p>
+<ul>
+<li><a href="https://blog.bitrise.io/5-ways-the-best-mobile-teams-use-release-trains-for-increased-speed-and-efficiency?utm_source=sponsorship&amp;utm_medium=cpc&amp;utm_campaign=engineering-challenges-ebook">How mobile teams use release trains for increased speed and efficiency</a> from Bitrise</li>
+<li><a href="https://eng.uber.com/research/keeping-master-green-at-scale/">Keeping master green at scale</a> from Uber</li>
+<li><a href="https://www.slideshare.net/dhaval2025/uber-mobility-build-amp-release-74577549">The build and release process</a> from Uber</li>
+<li><a href="https://dzone.com/articles/lyfts-pm-make-the-pain-of-mobile-releases-a-thing">Create faster mobile release cycles</a> from Lyft</li>
+<li><a href="https://developers.soundcloud.com/blog/quality-mobile-trains">Release quality and mobile trains</a> from SoundCloud</li>
+<li><a href="https://engineering.fb.com/2017/08/31/web/rapid-release-at-massive-scale/">Rapid releases at massive scale</a> from Facebook</li>
+<li><a href="https://medium.com/@SkyscannerEng/the-present-and-future-of-app-release-at-skyscanner-b393c88972a8">The present and future of app release</a> from Skyscanner</li>
+<li><a href="https://github.com/MobileNativeFoundation/discussions/discussions/23">Running own CI approaches</a> from Mobile Native Foundation</li>
+</ul>
+<h3 id="110-a-namethird-partylibrariesandsdksathird-party-libraries-and-sdks">1.10. <a name='THIRD-PARTYLIBRARIESANDSDKS'></a>THIRD-PARTY LIBRARIES AND SDKS</h3>
+<p>随着你的应用开始成长，并与许多第三方库集成，构建过程变得复杂。这些库会有新版本，其中一些是破坏性的改变，需要你的源代码正确更新，并重新测试。</p>
+<p><strong>第三方库可能是一个安全隐患</strong>。例如，在谷歌Play Core Library中经常发现新的漏洞，允许本地代码执行(LCE)。用户可能会面临数据被盗的风险，或者在使用暴露给LCE的库的应用程序时，他们的设备运行未知代码的风险，特别是如果没有更新到新的应用程序版本来解决安全漏洞的话。</p>
+<p>你需要持续监控第三方库的漏洞。一种选择是聘请第三方安全提供商在发生这种情况时通知你。</p>
+<p>稳定性和可靠性是第三方库的另一个问题。例如，在2020年4月，谷歌地图SDK团队将代码推送到后端，导致嵌入它的应用崩溃。这影响了数百个应用程序，包括那些地图是一个关键功能的应用程序，导致这些应用程序在中断期间亏损。在2020年5月，Facebook SDK也发生了类似的情况，并在2020年7月再次发生了类似事件。</p>
+<p>这意味着许多公司已经将谷歌Maps SDK和Facebook SDK整合到他们的应用中，然后构建他们的二进制文件，并在发布到应用商店之前适当地测试所有内容。从这些公司的角度来看，一切都在掌控之中。但是从谷歌到Facebook的那些漏洞不断的改变被推送到了那些sdk的后端，当集成和构建完成后，这显然不是可以测试的东西。一旦崩溃发生，这些应用程序的开发者就无能为力了。他们的二进制在野外，他们无法控制。</p>
+<p>这就是为什么它是一种良好的实践特性标志专门为你的第三方库,这样你就可以封装库的加载和执行点,轻松地禁用任何库通过您的后端,如果有突发变化的团队开发的sdk。</p>
+<p><strong>让第三方库更新可逆是困难的</strong>，有时是不可能做到的。主要的库更新是有风险的。处理风险变更的一种实用方法是使用特性标志以分阶段的方式推出它们。然而，通常情况下，一个应用不可能同时拥有两个库版本;即使您可以嵌入两个库，您也需要几十个特性标志接触点来满足API更改。</p>
+<p>不幸的是，这意味着库更新是任何应用中最危险的变化之一。你需要在更新后仔细测试应用的行为，并在应用构建过程中监控崩溃报告和bug报告。”在主要的库更新之后进行更多的员工测试和beta测试，而不是做其他可逆的变更，这是一种很好的做法。</p>
+<p>使用第三方库还会带来许多其他风险，你需要考虑这些风险。一些移动团队创建了一个评估标准，并在接受新的第三方依赖之前进行了测试。该列表包含如下:</p>
+<ul>
+<li><strong>应用大小</strong>:依赖关系对bundle大小的影响有多大?</li>
+<li><strong>工具升级的风险</strong>:当你想要升级到一个新的XCode或Android Studio版本时，添加这个依赖是否会成为一个阻碍?</li>
+<li><strong>维护的风险</strong>:不维护依赖项的可能性有多大?例如，如果发现了安全漏洞，我们能合理地期望所有者在短时间内解决这个问题吗?</li>
+<li><strong>第三方响应</strong>:所有者对提出的问题的响应速度有多快?他们是否及时合并bug修复?</li>
+</ul>
+<p>这是一种健康的方法，将所有第三方依赖关系视为风险，跟踪它们，并重新评估是否需要定期使用它们。</p>
+<h3 id="111-a-namedeviceandosfragmentationadevice-and-os-fragmentation">1.11. <a name='DEVICEANDOSFRAGMENTATION'></a>DEVICE AND OS FRAGMENTATION</h3>
+<p>设备模式和操作系统分裂是iOS和Android的日常问题。设备分裂和奇怪的、与硬件相关的漏洞一直是Android的痛点。操作系统分裂在iOS上并不是什么大问题，而在Android上这一问题却越来越严重。</p>
+<p><strong>保持对新操作系统发布和伴随的API变化的关注需要移动工程师的关注</strong>。iOS和Android都在不断创新;特性和api不断被添加、更改和弃用。这不仅仅是像iOS 13上的SwiftUI或黑暗模式，或者iOS 8上的生物识别认证api(2014)这样的大改变。以及Android 10(2019年)。有几个较小的api，如Android Oreo上的信用卡自动填充，存在于一个平台上，而在另一个平台上没有相同的功能。老实说，了解WWDC或谷歌I/O上的新api，然后把它们添加到应用中，才是有趣的部分。</p>
+<p><strong>确保应用在旧操作系统和设备上能够正常运行是一个挑战</strong>。你通常需要建立一个内部设备实验室或使用第三方测试服务，以确保应用在所有主要机型上都能正常运行。</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpybcuwb4qj30we0pae81.jpg" alt="avatar" loading="lazy"></figure>
+<p>Android在特定设备的边缘情况和崩溃方面有更多的怪癖。例如，三星设备因与三星Android定制相关的奇怪崩溃而闻名，更不用说Galaxy Fold的特殊布局考虑了。硬件驱动程序和GPS传感器可能是一个令人头痛的问题，包括难以理解的堆栈跟踪。</p>
+<p>Android还有一个分裂性问题;Android分支不运行在谷歌的生态系统上。为Fire OS或未来华为设备开发的应用程序将无法访问谷歌Play Services。这意味着像Firebase通知这样的功能将无法工作。崩溃报告、用户bug报告和大规模的手动测试是你能够掌握新问题和回归的方法。所有这些都比大多数人预期的要耗费更多的时间和成本。</p>
+<p><strong>决定何时以及如何停止支持旧的OS版本</strong>是你的手机团队应该尽早考虑的问题。支持旧iOS和Android版本的成本很高，但回报却很低。这个行业自然会推动支持尽可能多的设备。团队需要量化这种支持的总和。当旧版本的收益或利润低于维护成本时，务实的解决方案是放弃对旧操作系统的支持。</p>
+<p>虽然某些行业可能有法律要求支持旧的操作系统版本，但你支持的版本越少，你移动的速度就越快。截至2021年，它是常见的Android团队支持从版本24和以上(牛轧糖)-但很少回到v21之前(棒棒糖)。在iOS上，由于操作系统的快速普及，许多企业在新操作系统发布后不久就放弃了对前两三个版本的支持。</p>
+<h3 id="112-a-namein-apppurchasesain-app-purchases">1.12. <a name='IN-APPPURCHASES'></a>IN-APP PURCHASES</h3>
+<p>应用内购买(IAP)是iOS和Android所独有的创收方式，在大型复杂应用中进行测试是一项挑战。</p>
+<p>IAP是手机平台所特有的，当你出售数字产品时，不执行它是不可能的。你必须为每年高达100万美元的收益支付15%的高额费用(iOS和Android都是如此)，以及30%以上的费用。除此之外，你还得努力克服无数的限制和挫折。</p>
+<hr>
+<p>RevenueCat让开发者能够更轻松地大规模构建和管理iOS和Android应用内购买。通过几行代码，RevenueCat提供了IAP基础设施，客户分析，数据集成，并让你从处理边缘情况和跨平台更新中获得时间。</p>
+<p>成千上万的世界上最好的应用都使用了RevenueCat来支持他们的应用内购买和订阅。你可以从<a href="https://www.revenuecat.com/?utm_source=scale_book&amp;utm_medium=referral">RevenueCat.com</a>免费开始。</p>
+<hr>
+<p>你可能遇到的IAP最大限制是:</p>
+<ul>
+<li>
+<p><strong>不同的iOS, Android IAP模式和功能，可能是不同于网页产品的模式</strong>。例如，谷歌Play允许暂停订阅以防止用户自愿流失，但iOS不允许。这是两个平台之间的几个不同之处之一。</p>
+</li>
+<li>
+<p>以一种防弹的方式<strong>实现IAP状态的改变</strong>。用户希望IAP效应立即出现。然而，这样做可能更具挑战性。你可以做一个纯粹的客户端实现，这可能更简单，但这使订阅完全绑定到App Store帐户。这也为不良行为者打开了攻击向量，如设置设备时钟，或运行“解锁”IAP功能的应用修改版本。您可以等待后端回调，但这可能意味着延迟，并且必须处理更多边缘情况。这些边缘情况只适用于你的应用和IAP功能。</p>
+</li>
+<li>
+<p><strong>僵化的定价</strong>。在苹果，你只能从预定义的价格层中进行选择，改变订阅价格变得很复杂。如果你的定价与建议的指导方针不同，你会发现为每个国家设定价格很有挑战性。如果你决定将IAP作为一种纯粹的客户端方法来实现，你就必须将产品硬编码成二进制。</p>
+</li>
+<li>
+<p><strong>可怜的API文档</strong>。iOS的订阅api没有文档说明。您将发现自己在对其工作的某些方面进行故障排除。Android IAP api有更好的文档记录，你在使用它们时就不会遇到什么麻烦。</p>
+</li>
+<li>
+<p><strong>报告的挑战</strong>。回答“一个特定用户能为我们带来多少收益”的问题变得非常具有挑战性，甚至可以说是不可能的。挑战在于计算用户总购买的净收益，包括后续交易的收益。一种常见的方法是保存毛价格信息，并根据毛价格、每日汇总报告和App Store定价矩阵等数据点估算净收益。</p>
+</li>
+<li>
+<p><strong>会计、和解和税务问题</strong>。iOS和Android的支付方式不同，报告/处理税收的方式也不同。苹果的财政日历本身就很疯狂，包括一个35天的会计月。你的会计团队可能会揪着他们的头发试图弄清楚事情是如何工作的，而移动团队中的某些人可能需要帮助他们弄清楚这些数字是如何相加的。</p>
+</li>
+<li>
+<p><strong>订阅支持</strong>。在iOS上，你没有取消或退款订阅的工具，即使用户要求你这么做。看看Disney+的订阅页面就知道这将导致何种类型的用户消息传递。</p>
+</li>
+<li>
+<p><strong>将IAP用户映射到后端系统</strong>。您需要将App Store用户凭据与存储在系统中的元数据配对。如果你做不到这一点，你可能不得不显示错误，让用户迷惑，并需要客户支持的帮助。</p>
+</li>
+<li>
+<p><strong>恢复iap流</strong>。当客户购买并设置一个新手机时应该发生什么?事情应该“正常运转”。要实现这一点，您可能需要向此流添加额外的业务逻辑。苹果对你可能需要采取的步骤有一个很好的<a href="https://developer.apple.com/documentation/storekit/in-app_purchase/restoring_purchased_products">概述</a>。给iOS的提示:在恢复收据时，交易id可能会改变，这需要你在后台处理。</p>
+</li>
+<li>
+<p><strong>IAP端点的可用性不是100%</strong>。例如，众所周知，苹果的verifyreceipt端点会返回5xx回复、模糊的错误消息或不正确的数据。苹果公司很少与外界沟通故障，所以很多工程师都依赖第三方监控系统，比如<a href="https://downdetector.com/status/app-store/">Downdetector</a>。</p>
+</li>
+<li>
+<p><strong>亚马逊或华为等非google Play商店</strong>的iap是另一个挑战。您需要查阅相应的开发人员文档。你需要平衡在这些平台上创建和支持iap的成本与这些平台将产生的收益。</p>
+</li>
+<li>
+<p><strong>B2B用例</strong>，支持批量折扣，或提供增值税收据。虽然苹果确实有应用的批量购买计划，但IAP却没有类似的功能。对于增值税发票，你需要引导用户在App Store中找到这个选项，或者通过谷歌Play请求。</p>
+</li>
+</ul>
+<p>IAP边缘案例和处理它们会给你带来大量工作。这些边缘情况并非IAP所独有，但在网页上也是一种挑战。你仍然需要验证这些案例。</p>
+<ul>
+<li>
+<p>IAP声明和处理这些内容，如取消一次性购买、取消订阅或取消后再购买。</p>
+</li>
+<li>
+<p>订阅的宽限期和试用期。如果需要更多的时间，人们能延长他们的试用吗?</p>
+</li>
+<li>
+<p>升级、降级、改变订阅。你拥有的层次越多，你需要考虑的边界情况就越多。</p>
+</li>
+<li>
+<p>折扣和与这些合作。你必须在iOS上使用促销优惠或订阅优惠，在Android上使用促销代码。管理、跟踪折扣以及取消折扣都变得越来越困难</p>
+</li>
+<li>
+<p>你的IAP后端终端会下降。如果你的IAP解决方案依赖于App Store Server Notifications，或谷歌Play针对服务器到服务器事件的实时开发者通知，你就需要接近100%的可用性来维持这些事件，即使你的处理能力下降了。如果你的终端不可用，App Store可能会重试，但这种行为在iOS或Android上都没有记录。</p>
+</li>
+<li>
+<p>Android平台上的其他边缘情况包括退款、信用卡故障、账户持有、宽限期或暂停订阅等。</p>
+</li>
+</ul>
+<p><strong>手动测试</strong>应用内置付费功能本身是个较小的挑战。苹果和谷歌都提供了测试iap的方法;苹果在iOS和StorekitTest上提供了用于单元测试的沙盒。对于Android，你可以在谷歌Play上通过Play Store沙盒中的授权测试者进行测试。</p>
+<p>请注意，沙盒环境是有局限性的。有些现实世界的场景无法在此设置中复制。你可能还需要调整后端以支持沙盒测试。</p>
+<p>在测试各种IAP场景时，验证应用内购买功能可能变得很复杂。</p>
+<ul>
+<li>
+<p>一次性购买测试是最简单的方案。不过，你还是想测试一下所有的购买类型，以确保它们都有效。</p>
+</li>
+<li>
+<p>验证收据内容是一个经常被忽略的步骤。客户收据上的资料应清楚，以避免无理由的退款或投诉。</p>
+</li>
+<li>
+<p>订阅升级测试意味着对从无订阅升级到订阅层的用户进行测试，并确保所有订阅层都能正常工作。</p>
+</li>
+<li>
+<p>订阅升级和降级是你应该测试的内容。降级时的情况尤其棘手。你是否需要注意用户可能丢失他们输入的一些数据的情况?</p>
+</li>
+<li>
+<p>用户可以在应用关闭时或在后台升级或降级订阅。你需要单独处理这些情况，确保应用程序在启动或恢复时“响应”这些更改。</p>
+</li>
+<li>
+<p>跨订阅是一种更罕见的情况。但是，如果你有多个订阅级别，并且没有升级或降级的路径，比如在月订阅和年订阅之间切换，那么你就需要测试这些情况。</p>
+</li>
+<li>
+<p>订阅的变化和宽限期特别难以测试，因为这些宽限期通常是几天或几周。你确实想确保宽限期得到正确处理。</p>
+</li>
+<li>
+<p>记录测试步骤、预期结果、用于测试的帐户以及执行测试所需的其他信息。</p>
+</li>
+<li>
+<p>阶段性测试。你需要检测并解析webhook IAP请求中的环境字段，以区分沙箱和生产回调。</p>
+</li>
+</ul>
+<p>苹果对你可能想要测试的测试场景有全面的概述，并从中获得Android的灵感。</p>
+<p>自动IAP测试具有挑战性，既因为可用工具有限，也因为手动测试IAP的复杂性。如果你有一个详细的IAP手动测试过程，自动化应该会更容易。可以用于IAP自动化的工具包括<a href="https://developer.apple.com/documentation/storekittest">StoreKit Test</a> (iOS)或BrowserStack等工具。</p>
+<p><strong>客户支持</strong>是确保你的客户服务团队与拥有IAP的工程师保持良好联系的关键，这样你才能发现并处理IAP问题。如果iap占据了应用收益的大部分，这一点就更明显了。</p>
+<p>您最终会希望帮助客户支持团队将运行本放置到位。他们应该如何处理常见的投诉?他们应该如何去安抚那些有有效投诉的顾客?如果客户报告了团队正在修复的新bug，该怎么办?这些问题很多都存在于工程决策泡泡之外。不过，我还是建议工程师们参与到讨论中来。</p>
+<p>工程师至少应该了解客户的反馈;应用商店评级，用户信息，以及深入探讨IAP功能的常见问题。付费的客户应该合理地期待产品“正常工作”，而作为工程师，我们应该知道什么时候以及为什么情况不是这样。</p>
+<p><strong>多平台IAP</strong>挑战将是你需要处理的一个反复出现的主题，假设你在iOS, Android以及其他平台(如网页)上销售游戏。每个平台都有不同的税收政策。你必须面对在一个平台上购买IAP的用户，然后转向另一个平台。</p>
+<p>例如，当用户在iOS上购买IAP，然后购买新的Android手机;他们还会订阅吗?你会构建一个流来支持“转移”订阅吗?你的后端会“检测”到同一个人在两个平台上订阅吗?你是否有一本客户支持手册，告诉人们如何给即将更换手机的人提供建议?在这种情况下，你的竞争对手会怎么做?你能做得更好吗?</p>
+<p><strong>A/B 测试iap具有挑战性</strong>，至少可以说:苹果和谷歌都不支持这种方法。你必须想出自己的解决方案去尝试定价点，并且很可能会发现自己需要建立并维持独立的订阅群组。在测试后，用户将被“锁定”在这些群组中，并添加一个你需要管理的“IAP债务”。</p>
+<p>将客户锁定在同一个订阅组有经济上的激励。如果用户订阅一年以上，苹果的订阅收入就会从30%下降到15%。但是，如果用户移动到不同的组，这个定时器将“重置”。这意味着没有什么经济激励来创建太多这样的组织。</p>
+<p>与网页相比，尝试不同的“包装”(游戏邦注:如层次、功能设置和定价)对于IAP来说更具挑战性。一个常见的挑战是针对不同用户群体测试不同定价。如果你想尝试简单的订阅以外的任何东西，你需要提前做好计划。</p>
+<p>过时的订阅定价是你可能面临的另一个问题，特别是当你通过应用程序销售SaaS产品时。假设你尝试了一个对大多数用户都不好的软件包，然后你放弃了这个产品。您的老客户购买了这个包并支持这个已经退休的产品一段时间，这是一个预期的最佳实践。如果你不这么做，你就会面临流失和用户反弹，你的品牌也会受到影响。</p>
+<p>试验不同IAP订阅的常见且明智方法是这样的。</p>
+<ul>
+<li>在定价实验成功和失败之前做好计划，明确下一步行动。你的成功标准是什么?</li>
+<li>短时间运行实验。</li>
+<li>提供一个月，取消订阅与定价实验。</li>
+<li>如果定价试验不成功，你需要提高价格，对订阅了这个定价计划的客户要尽可能灵活。</li>
+</ul>
+<p><strong>缺少对任何非基本场景的IAP工具支持</strong>可能是最让你头疼的问题。无论是苹果还是谷歌，都没有超越简单的一次性产品或订阅产品。当你在创造复杂的应用，或拥有许多用户的应用时，你可能会发现业务需要更多选择，而你自己也会考虑如何处理有限的IAP功能集。</p>
+<hr>
+<p><strong>应用内购买:最大的挑战</strong></p>
+<p>Andy Boedo是RevenueCat的软件工程师，他分享了自己在Elevate Labs和RevenueCat工作时观察到的一些最大的IAP挑战。</p>
+<p><strong>同时支持iOS和Android的iap</strong></p>
+<p>如果你想同时支持iOS和Android，你就必须执行并维护处理这两种iap的代码，这本身就很困难。然后，你必须追踪和匹配双方用户的购买情况，这样如果用户在Android上购买了一件商品，他们就可以在iOS上访问同样的商品。这是revenue ecat能够帮助解决的痛点。</p>
+<p><strong>IAP Testing</strong></p>
+<p>测试IAP的工具已经取得了很大的进步，比如StoreKit test。然而，仍有许多测试是不可能在沙盒环境中完成的。例如，你不能测试iOS家庭共享订阅、不同的店面、非更新订阅和其他用例。</p>
+<p>要进行适当的测试，您需要使用物理设备。对于苹果来说，这意味着拥有多个物理设备，因为watchOS、tvOS、macOS、macatalyst和iOS都支持购买，但功能因操作系统和版本而异。为了进行彻底的测试，您需要许多设备，它们都运行不同的OS版本。而对于Android系统，物理测试将根据所支持的Android设备和版本数量而增加</p>
+<p><strong>Client-side IAPs Challenges</strong></p>
+<p>纯粹的客户端IAP实现不会考虑一些边缘情况。使用设备上的验证方法仍然意味着看到加载时间，因为你需要刷新苹果的收据。设备上验证方法也不能抵抗设备时钟变化。</p>
+<p>当使用客户端IAP实现时，应用需要知道将提供给用户的产品标识符(字符串)。当一个纯客户端实现IAP方法就需要对产品进行硬编码。这意味着你不能更新产品和价格，除非你更新应用。采用后端驱动IAP购买的一个原因是，你可以通过自己的服务控制产品，避免它们被硬编码。</p>
+<p>最后，你可能需要在应用程序中嵌入苹果的公钥，以验证收据签名。如果这个公钥发生了变化，你需要在应用中更新它。你还需要实现验证逻辑。</p>
+<p><strong>订阅工具有限</strong></p>
+<p>大多数客户会认为你可以控制订阅的取消和退款，并认为你故意不给他们退款。现实情况是，即使您想这样做，您也没有对订阅进行更改的工具。除非你清楚地设定了期望，否则这种混乱可能是一星评价的常见来源。</p>
+<hr>
+<p><strong>与后台团队合作</strong>获取IAP用户数据对于创造一款可靠的产品至关重要。后端团队可能需要与iOS, Android以及网页团队合作，因为每个平台都以不同的方式处理付费和订阅。</p>
+<p>你需要告诉后端团队iOS或Android如何处理IAP，以及你需要测试的边界情况。与后端团队合作也是了解IAP在其他平台上如何运作以及网页如何处理相同问题的好机会。</p>
+<p>进一步阅读:</p>
+<ul>
+<li><a href="https://docs.revenuecat.com/docs/sandbox?utm_source=scale_book&amp;utm_medium=referral">Testing in-app purchases with sandbox on iOS and Android</a> from RevenueCat</li>
+<li><a href="https://developer.apple.com/documentation/storekit/in-app_purchase/testing_in-app_purchases_with_sandbox">Testing in-app purchases with Sandbox</a> from Apple</li>
+<li><a href="https://www.revenuecat.com/blog/the-ultimate-guide-to-subscription-testing-on-ios?utm_source=scale_book&amp;utm_medium=referral">The guide to iOS subscription testing</a> from RevenueCat</li>
+<li><a href="https://developer.android.com/google/play/billing/test">Testing your Google Play billing library integration</a> from Google</li>
+<li><a href="https://docs.revenuecat.com/docs/google-play-store?utm_source=scale_book&amp;utm_medium=referral">Testing purchases in Google Play Store Sandbox</a> from RevenueCat</li>
+<li><a href="https://www.raywenderlich.com/sessions/new?return_path=%2F5456-in-app-purchase-tutorial-getting-started">In-app purchases on iOS</a> from Ray Wenderlich</li>
+<li><a href="https://medium.com/bleeding-edge/testing-in-app-purchases-on-android-a6de74f78878">Testing in-app purchases on Android</a></li>
+<li><a href="https://solidgeargroup.com/en/ios-in-app-purchases-and-testing/">iOS in-app purchase and testing</a></li>
+<li><a href="https://exyte.com/blog/testing-in-app-purchases-in-ios-14">Testing in-app purchases in iOS 14</a></li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ZlGVwJWHx/" class="tag">
+                    app-challenge-1
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-deep-summary-of-optionals/">
+                  <h3 class="post-title">
+                    A deep summary of Optionals
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

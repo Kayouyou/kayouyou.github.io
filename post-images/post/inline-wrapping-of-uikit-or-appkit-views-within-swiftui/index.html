@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Inline wrapping of UIKit or AppKit views within SwiftUI | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="事实上，任何UIKit或AppKit视图都可以被包装以兼容wift，这是非常有用的，因为这在某种程度上提供了一个“逃生舱口”，每当SwiftUI还不支持特定类型的控件或UI元素时。
+然而,如果我们需要依靠大量的(没有更好的词)“历史遗留”视..." />
+    <meta name="keywords" content="swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Inline wrapping of UIKit or AppKit views within SwiftUI</h2>
+            <div class="post-date">2020-03-28</div>
+            
+            <div class="post-content" v-pre>
+              <p>事实上，任何UIKit或AppKit视图都可以被包装以兼容wift，这是非常有用的，因为这在某种程度上提供了一个“逃生舱口”，每当SwiftUI还不支持特定类型的控件或UI元素时。</p>
+<p>然而,如果我们需要依靠大量的(没有更好的词)“历史遗留”视图,必须不断地为他们其中的每个都写包装可能会开始变得有点乏味,尤其是对于简单的观点,不需要任何复杂的逻辑,或视图,我们只是想在一个地方使用。</p>
+<p>例如，假设我们想要使用UIActivityIndicatorView在一个基于SwiftUI的iOS应用程序中显示一个加载旋转器。为了做到这一点，我们必须编写一个包装器，看起来像这样:</p>
+<pre><code class="language-swift">struct ActivityIndicator: UIViewRepresentable {
+    func makeUIView(context: Context) -&gt; UIActivityIndicatorView {
+        UIActivityIndicatorView(style: .medium)
+    }
+
+    func updateUIView(_ view: UIActivityIndicatorView, context: Context) {
+        view.startAnimating()
+    }
+}
+</code></pre>
+<p>当写一个包装，符合UIViewRepresentation(或在Mac上的NSViewRepresentation)不是一个巨大的任务-它不是很好，如果我们可以只是包装任何遗留视图内联，就在我们需要使用它?</p>
+<p>让我们通过写一个泛型类型来实现能被用来包装任何UIView。让我们称它为Wrap，并让它有两个闭包，每个对应一个UIViewRepresentation要求的方法-像这样:</p>
+<pre><code class="language-swift">struct Wrap&lt;Wrapped: UIView&gt;: UIViewRepresentable {
+    typealias Updater = (Wrapped, Context) -&gt; Void
+
+    var makeView: () -&gt; Wrapped
+    var update: (Wrapped, Context) -&gt; Void
+
+    init(_ makeView: @escaping @autoclosure () -&gt; Wrapped,
+         updater update: @escaping Updater) {
+        self.makeView = makeView
+        self.update = update
+    }
+
+    func makeUIView(context: Context) -&gt; Wrapped {
+        makeView()
+    }
+
+    func updateUIView(_ view: Wrapped, context: Context) {
+        update(view, context)
+    }
+}
+</code></pre>
+<p>请注意上面@autoclosure的用法，它将使我们能够继续遵循UIViewRepresentation的约定并惰性地创建我们的视图，而不需要在调用站点上使用任何额外的语法。</p>
+<p>然而，当更新我们的视图时，新的Wrap类型当前要求我们始终同时处理视图本身和当前上下文。 虽然获得上下文参数可能对一些场景比较重要,让我们让它可选,通过引入了两个方便的api,会让我们要么接受我们的view作为唯一参数,或者选择完全舍弃更新，当我们的视图是完全静态时；</p>
+<pre><code class="language-swift">extension Wrap {
+    init(_ makeView: @escaping @autoclosure () -&gt; Wrapped,
+         updater update: @escaping (Wrapped) -&gt; Void) {
+        self.makeView = makeView
+        self.update = { view, _ in update(view) }
+    }
+
+    init(_ makeView: @escaping @autoclosure () -&gt; Wrapped) {
+        self.makeView = makeView
+        self.update = { _, _ in }
+    }
+}
+</code></pre>
+<p>有了以上这些，我们现在可以轻松地将任何UIView完全内联，同时也可以在底层状态发生变化时更新它——像这样:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    @ObservedObject var viewModel: ViewModel
+
+    var body: some View {
+        ZStack {
+            ...
+            Wrap(UIActivityIndicatorView()) {
+                if self.viewModel.isLoading {
+                    $0.startAnimating()
+                } else {
+                    $0.stopAnimating()
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>非常好!当然，这并不意味着我们应该完全放弃为某些视图构建适当的包装器，但对于更简单的视图，上面的包装类型非常方便</p>
+<p><a href="https://www.swiftbysundell.com/tips/inline-wrapping-of-uikit-or-appkit-views-within-swiftui/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-guide-to-the-swiftui-layout-system-part-1/">
+                  <h3 class="post-title">
+                    A guide to the SwiftUI layout system - Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

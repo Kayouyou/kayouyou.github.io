@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>String literals in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在大多数编程语言中，能够使用内联字面值表示基本值(如字符串和整数)是一个基本特性。然而，虽然许多其他语言都在其编译器中添加了对特定文字的支持，Swift却采用了一种更加动态的方法——使用自己的类型系统来定义如何通过协议处理各种文字。
+本周，..." />
+    <meta name="keywords" content="strings" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">String literals in Swift</h2>
+            <div class="post-date">2019-04-07</div>
+            
+            <div class="post-content" v-pre>
+              <p>在大多数编程语言中，能够使用内联字面值表示基本值(如字符串和整数)是一个基本特性。然而，虽然许多其他语言都在其编译器中添加了对特定文字的支持，Swift却采用了一种更加动态的方法——使用自己的类型系统来定义如何通过协议处理各种文字。</p>
+<p>本周，让我们特别关注字符串字面量，看看它们的许多不同的使用方式，以及我们如何 - 通过Swift高度面向协议的设计-能够自定义文字解释的方式，这让我们可以做一些真正有趣的事情。</p>
+<h2 id="the-basics">The basics</h2>
+<p>就像在许多其他语言中一样，Swift字符串通过引号括起来的字面值来表示——并且可以包含特殊序列(如换行符)、转义字符和内插值:</p>
+<pre><code class="language-swift">let string = &quot;\(user.name) says \&quot;Hi!\&quot;\nWould you like to reply?&quot;
+
+// John says &quot;Hi!&quot;
+// Would you like to reply?
+</code></pre>
+<p>虽然上面使用的特性已经为我们提供了很大的灵活性，并且对于绝大多数用例来说已经足够了，但在某些情况下，更强大的表达字面量的方法可能会派上用场。 让我们看一下其中的一些，从需要定义包含多行文本的字符串开始。</p>
+<h2 id="multiline-literals">Multiline literals</h2>
+<p>尽管任何标准字符串字面值都可以使用\n分解成多行，但这并不总是实用的——特别是当我们想要将一大块文本定义为内联字面值时。</p>
+<p>值得庆幸的是，由于Swift 4，我们还能够使用三个引号而不是一个引号来定义多行字符串字面值。例如，这里我们使用这个功能为Swift脚本输出一个帮助文本，以防用户在命令行调用它时没有传递任何参数:</p>
+<pre><code class="language-swift">// We're comparing against 1 here, since the first argument passed
+// to any command line tool is the current path of execution.
+guard CommandLine.arguments.count &gt; 1 else {
+    print(&quot;&quot;&quot;
+    To use this script, pass the following:
+        - A string to process
+        - The maximum length of the returned string
+    &quot;&quot;&quot;)
+
+    // Exit the program with a non-zero code to indicate failure.
+    exit(1)
+}
+</code></pre>
+<p>上面我们利用了这样一个事实，即多行字符串字面量在底部保留了它们的文本缩进(相对于结束的引号集)。它们还使我们能够更自由地在其中使用未转义的引号，因为它们是由一组三个引号定义的，这使得文字的边界不太可能出现歧义。</p>
+<p>以上两个特征使多行文字成为定义内联HTML的好工具——例如在某种形式的web页面生成工具中，或者在使用web view呈现应用程序的部分内容时——就像这样</p>
+<pre><code class="language-swift">extension Article {
+    var html: String {
+        // If we want to break a multiline literal into separate
+        // lines without causing an *actual* line break, then we
+        // can add a trailing '\' to one of our lines.
+        let twitterLink = &quot;&quot;&quot;
+        &lt;a href=&quot;https://twitter.com/\(author.twitterHandle)&quot;&gt;\
+        @\(author.twitterHandle)&lt;/a&gt;
+        &quot;&quot;&quot;
+
+        return &quot;&quot;&quot;
+        &lt;article&gt;
+            &lt;h1&gt;\(title)&lt;/h1&gt;
+            &lt;div class=&quot;author&quot;&gt;
+                &lt;p&gt;\(author.name)&lt;/p&gt;
+                \(twitterLink)
+            &lt;/div&gt;
+            &lt;div class=&quot;body&quot;&gt;\(body)&lt;/div&gt;
+        &lt;/article&gt;
+        &quot;&quot;&quot;
+    }
+}
+</code></pre>
+<p>在定义基于字符串的测试数据时，上述技术也非常有用。例如，假设我们的应用程序的设置需要导出为XML，并且我们想编写一个测试来验证该功能。我们不需要在单独的文件中定义我们想要验证的XML——我们可以使用一个多行字符串字面值将其内联到我们的测试中:</p>
+<pre><code class="language-swift">class SettingsTests: XCTestCase {
+    func testXMLConversion() {
+        let settings = Settings(
+            messageLimit: 7,
+            enableSync: true,
+            signature: &quot;Sent from my Swift app&quot;
+        )
+
+        XCTAssertEqual(settings.xml, &quot;&quot;&quot;
+        &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+        &lt;settings&gt;
+            &lt;messagelimit&gt;7&lt;/messagelimit&gt;
+            &lt;enablesync&gt;1&lt;/enablesync&gt;
+            &lt;signature&gt;Sent from my Swift app&lt;/signature&gt;
+        &lt;/settings&gt;
+        &quot;&quot;&quot;)
+    }
+}
+</code></pre>
+<p>像我们上面所做的那样，内联定义测试数据的好处是，在编写测试时更容易快速地发现任何错误——因为测试代码和预期的输出是并排放置的。 但是，如果一些测试数据的长度超过了几行，或者相同的数据需要在多个地方使用，仍然值得将其移动到自己的文件中。</p>
+<h2 id="raw-strings">Raw strings</h2>
+<p>Swift 5的新特性是，原始字符串使我们能够关闭所有动态字符串文字特性(比如插值和解释特殊字符，比如\n)，而只是将文字作为原始字符序列来处理。 原始字符串的定义是用#号(或者像孩子们所说的“hashtags”)包围字符串字面值:</p>
+<pre><code class="language-swift">let rawString = #&quot;Press &quot;Continue&quot; to close this dialog.&quot;#
+</code></pre>
+<p>就像我们上面使用多行文字来定义测试数据一样，当我们想要包含特殊字符(如引号或反斜杠)的内联字符串时，原始字符串文字特别有用。下面是另一个与测试相关的例子，在这个例子中，我们使用一个原始字符串字面量来定义一个JSON字符串来编码用户实例:</p>
+<pre><code class="language-swift">class UserTests: XCTestCase {
+    func testDecoding() throws {
+        let json = #&quot;{&quot;id&quot;: 37, &quot;name&quot;: &quot;John&quot;}&quot;#
+        let data = Data(json.utf8)
+        let user = try data.decoded() as User
+
+        XCTAssertEqual(user.id, 37)
+        XCTAssertEqual(user.name, &quot;John&quot;)
+    }
+}
+</code></pre>
+<p>上面我们从“Swift中的类型推理支持序列化”中使用了基于类型推理的解码API。</p>
+<p>虽然原始字符串在默认情况下会禁用字符串插值等特性，但有一种方法可以覆盖它，即在插值的前反斜杠后面添加另一个井号——像这样:</p>
+<pre><code class="language-swift">extension URL {
+    func html(withTitle title: String) -&gt; String {
+        return #&quot;&lt;a href=&quot;\#(absoluteString)&quot;&gt;\#(title)&lt;/a&gt;&quot;#
+    }
+}
+</code></pre>
+<p>最后，原始字符串在使用特定语法解释字符串时也特别有用，特别是当该语法严重依赖于通常需要在字符串字面量中转义的字符时——例如正则表达式。 通过使用原始字符串定义正则表达式，不需要转义，为我们提供了与它们获得的一样可读的表达式:</p>
+<pre><code class="language-swift">// This expression matches all words that begin with either an
+// uppercase letter within the A-Z range, or with a number.
+let regex = try NSRegularExpression(
+    pattern: #&quot;(([A-Z])|(\d))\w+&quot;#
+)
+</code></pre>
+<p>即使有了上述改进，正则表达式的阅读(和调试)是否容易还是个问题——特别是在像Swift这样的高度类型安全语言的上下文中使用时。这很可能归结为任何给定的开发人员以前使用正则表达式的经验，不管他们是否更喜欢使用正则表达式而不是直接在Swift中实现更多的自定义字符串解析算法。</p>
+<h2 id="expressing-values-using-string-literals">Expressing values using string literals</h2>
+<p>虽然默认情况下所有字符串字面值都被转换为字符串值，但我们也可以使用它们来表示自定义值。就像我们在“Swift中的类型安全标识符”中看到的那样，在我们自己的类型中添加字符串字面量支持可以让我们在不牺牲使用字面量的便利的情况下实现更高的类型安全性。</p>
+<p>例如，假设我们已经定义了一个可搜索协议，作为搜索应用程序使用的任何类型的数据库或底层存储的API -  我们使用查询枚举来建模执行这样的搜索的不同方式:</p>
+<pre><code class="language-swift">protocol Searchable {
+    associatedtype Element
+    func search(for query: Query) -&gt; [Element]
+}
+
+enum Query {
+    case matching(String)
+    case notMatching(String)
+    case matchingAny([String])
+}
+</code></pre>
+<p>上面的方法为我们执行每个搜索提供了强大的功能和灵活性，但是最常见的用例仍然可能是最简单的一个-搜索与给定字符串匹配的元素-如果我们能够使用字符串字面量来实现这一点，那就太好了。</p>
+<p>好消息是，我们可以让Query符合ExpressibleByStringLiteral，同时保持上述API的完整性:</p>
+<pre><code class="language-swift">extension Query: ExpressibleByStringLiteral {
+    init(stringLiteral value: String) {
+        self = .matching(value)
+    }
+}
+</code></pre>
+<p>这样，我们现在就可以自由地执行匹配搜索，而不必手动创建查询值——我们所需要做的就是传递一个字符串字面量，就好像我们调用的API实际上直接接受了一个字符串。这里，我们使用这个功能来实现一个测试，验证UserStorage类型是否正确地实现了它的搜索功能:</p>
+<pre><code class="language-swift">class UserStorageTests: XCTestCase {
+    func testSearch() {
+        let storage = UserStorage.inMemory
+        let user = User(id: 3, name: &quot;Amanda&quot;)
+        storage.insert(user)
+
+        let matches = storage.search(for: &quot;anda&quot;)
+        XCTAssertEqual(matches, [user])
+    }
+}
+</code></pre>
+<p>在很多情况下，定制字符串文字表达式可以让我们避免在处理基于字符串的类型(如查询和标识符)时，在类型安全性和方便性之间做出选择。它是一个很好的工具，可以用来实现API设计，从最简单的用例扩展到覆盖边缘用例，并在需要时提供更强大的功能和可定制性。</p>
+<h2 id="custom-interpolation">Custom interpolation</h2>
+<p>Swift字符串字面量的所有“味道”都有一个共同点，那就是它们都支持插值值。尽管我们总是能够通过符合CustomStringConvertible来定制给定类型的插值方式 - Swift 5引入了在字符串插补引擎的基础上实现自定义api的新方法。</p>
+<p>举个例子，假设我们想要通过对给定字符串可选地应用前缀和后缀来保存它。理想情况下，我们想简单地插值这些值来形成最终的字符串，像这样:</p>
+<pre><code class="language-swift">func save(_ text: String, prefix: String?, suffix: String?) {
+    let text = &quot;\(prefix)\(text)\(suffix)&quot;
+    textStorage.store(text)
+}
+</code></pre>
+<p>然而，由于前缀和后缀都是可选的，简单地使用它们的描述不会产生我们要寻找的结果——编译器甚至会给我们一个警告:</p>
+<p><em>String interpolation produces a debug description for an optional value</em></p>
+<p>在插值它们之前，我们总是可以选择unwrapping这两个选项，让我们看看如何使用自定义插值一次性完成这两个事情。<br>
+我们将从扩展String.StringInterpolation开始。一个新的appendInterpolation重载，可以接受任何可选值:</p>
+<pre><code class="language-swift">extension String.StringInterpolation {
+    mutating func appendInterpolation&lt;T&gt;(unwrapping optional: T?) {
+        let string = optional.map { &quot;\($0)&quot; } ?? &quot;&quot;
+        appendLiteral(string)
+    }
+}
+</code></pre>
+<p>上面的unwrapping: parameter标签是很重要的，因为我们将使用它来告诉编译器使用特定的插值方法-像这样:</p>
+<pre><code class="language-swift">func save(_ text: String, prefix: String?, suffix: String?) {
+    let text = &quot;\(unwrapping: prefix)\(text)\(unwrapping: suffix)&quot;
+    textStorage.store(text)
+}
+</code></pre>
+<p>尽管它只是语法上的糖，上面的看起来真的很整洁!  然而，这仅仅触及了自定义字符串插值方法的表面。它们可以是泛型的，也可以是非泛型的，可以接受任意数量的参数，可以使用默认值，以及“普通”方法可以做的几乎所有其他事情。</p>
+<p>下面是另一个例子，在这个例子中，我们将以前的URL转换为HTML链接的方法也用于字符串插值:</p>
+<pre><code class="language-swift">extension String.StringInterpolation {
+    mutating func appendInterpolation(linkTo url: URL,
+                                      _ title: String) {
+        let string = url.html(withTitle: title)
+        appendLiteral(string)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以很容易地从这样的URL生成HTML链接:</p>
+<pre><code class="language-swift">webView.loadHTMLString(
+    &quot;If you're not redirected, \(linkTo: url, &quot;tap here&quot;).&quot;,
+    baseURL: nil
+)
+</code></pre>
+<p>关于自定义字符串插值的最酷的事情是编译器如何获取我们的每个appendInterpolation方法，并将它们转换成相应的插值api - 让我们完全控制调用站点的样子，例如通过删除外部参数标签，就像我们在上面做的标题。</p>
+<p>在以后的文章中，我们将继续研究使用自定义字符串插值的更多方法，例如使用带属性字符串和其他类型的文本元数据。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然Swift的一些更高级的字符串文字功能仅在非常特定的情况下才真正有用，如本文中的情况，但在需要时提供它们是很好的-特别是因为它可以完全避免它们，只使用字符串“老式的方式”。</p>
+<p>字符串字面值是Swift面向协议设计的另一个亮点。通过将文字解释和处理的大部分工作委托给协议的实现者，而不是在编译器本身中硬编码这些行为，我们作为第三方开发人员能够大量定制文字处理的方式——同时仍然保持默认值尽可能简单。</p>
+<p><a href="https://www.swiftbysundell.com/articles/string-literals-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/-e6COW1bj/" class="tag">
+                    strings
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/value-and-reference-types/">
+                  <h3 class="post-title">
+                    Value and Reference Types
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

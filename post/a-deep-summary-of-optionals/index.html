@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A deep summary of Optionals | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+你真的明白什么是可选选项吗?
+
+
+
+
+为什么我们首先需要可选选项?
+
+
+
+
+使用可选值
+
+
+3.1. 强制解包
+3.2. 可选绑定
+3.3. nil合并
+3.4. HAPPY PATH AND EARLY EXIT
+
+
+
+
+结构和类..." />
+    <meta name="keywords" content="a deep summary,summary,optionals" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A deep summary of Optionals</h2>
+            <div class="post-date">2021-04-26</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#">你真的明白什么是可选选项吗?</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#-1">为什么我们首先需要可选选项?</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#-1">使用可选值</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#-1">强制解包</a></li>
+<li>3.2. <a href="#-1">可选绑定</a></li>
+<li>3.3. <a href="#nil">nil合并</a></li>
+<li>3.4. <a href="#HAPPYPATHANDEARLYEXIT">HAPPY PATH AND EARLY EXIT</a></li>
+</ul>
+</li>
+<li>
+<ol start="4">
+<li><a href="#-1">结构和类中的可选选项</a></li>
+</ol>
+<ul>
+<li>4.1. <a href="#-1">属性上的可选链</a></li>
+<li>4.2. <a href="#-1">方法的可选链</a></li>
+<li>4.3. <a href="#-1">多层链接</a></li>
+<li>4.4. <a href="#-1">可选协议上的可选链需求</a></li>
+</ul>
+</li>
+<li>
+<ol start="5">
+<li><a href="#nilcheck">避免 nil check</a></li>
+</ol>
+<ul>
+<li>5.1. <a href="#-1">隐式解包</a></li>
+<li>5.2. <a href="#-1">引用循环中的无主引用</a></li>
+<li>5.3. <a href="#IBOutlet">IBOutlet 初始化</a></li>
+<li>5.4. <a href="#Failable">Failable 初始化</a></li>
+<li>5.5. <a href="#unwrapped">关于隐式unwrapped可选值的注意点</a></li>
+</ul>
+</li>
+<li>
+<ol start="6">
+<li><a href="#-1">类型检测和向下类型转换</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#-1">不能初始化的值和对象</a></li>
+</ol>
+<ul>
+<li>7.1. <a href="#Failable-1">Failable 初始化</a></li>
+</ul>
+</li>
+<li>
+<ol start="8">
+<li><a href="#-1">可选值进阶</a></li>
+</ol>
+<ul>
+<li>8.1. <a href="#-1">遍历包含可选值数组</a></li>
+<li>8.2. <a href="#-1">可选双层嵌套</a></li>
+<li>8.3. <a href="#-1">可选选项在底层是如何工作的</a></li>
+<li>8.4. <a href="#-1">可选映射</a></li>
+<li>8.5. <a href="#FlatMap">FlatMap</a></li>
+</ul>
+</li>
+<li>
+<ol start="9">
+<li><a href="#-1"> 总结</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namea你真的明白什么是可选选项吗">1. <a name=''></a>你真的明白什么是可选选项吗?</h2>
+<p>自从Swift推出以来，可选选项似乎给学习这门语言的人带来了很多困惑。</p>
+<p>这个问题不是初学者才有的。许多来自其他语言的经验丰富的专业人士语法师需要时间来适应可选选项的概念。这是因为可选值是一个新颖的概念，它们的行为不同于其他语言中的nil(或null)值。</p>
+<p>诚然，当我学习Swift时，我也花了一段时间来理清我的思绪关于Optionals。</p>
+<p>在我的例子中，原因是我没有花必要的时间去完全理解什么是可选的。我怀疑这可能是许多其他人的情况。</p>
+<p>我的第一种方法是尝试在我的项目中使用它们。</p>
+<p>结果并不顺利。</p>
+<p>代码中到处出现的问号和感叹号只会让我越来越困惑。</p>
+<p>虽然我对它们的意思略知一二(至少我是这么认为的)，但在很多地方，我并不知道为什么我必须以某种方式编写代码，或者它是否正确。</p>
+<p>如果您是编程新手，可能很难理解为什么会首先出现可选选项。目前还不清楚它们解决了什么问题以及何时使用它们。</p>
+<p>除此之外，所有用于可选的Swift操作符都增加了混乱，因为它们在不同的上下文中有不同的含义。</p>
+<p>我写这个指南是为了阐明可选选项，并帮助您最终理解它们是什么以及如何使用它们。</p>
+<p>我们将从基础开始，然后转向越来越高级的用途。本指南涵盖了所有在Swift中需要可选选项的可能情况。</p>
+<p>有很多，所以让我们开始吧。</p>
+<h2 id="2-a-name-1a为什么我们首先需要可选选项">2. <a name='-1'></a>为什么我们首先需要可选选项?</h2>
+<p>在理想情况下，我们编写的代码总是与完整且定义良好的数据一起工作，并且每个操作都返回一个确定的值。</p>
+<p>但现实却截然不同。</p>
+<p>通常，我们必须处理可能或可能不产生值的操作。</p>
+<ul>
+<li>一个函数可能不能为每个输入计算结果。</li>
+<li>我们可能正在寻找一些不存在的东西，如一个列表中的实体，或磁盘上的文件。</li>
+<li>我们可能已经到达了来自网络的序列、文件或数据流的末尾。</li>
+<li>你的应用的用户可能没有提供所有必要的输入。</li>
+</ul>
+<p>等等。 让我们从一个简单的小例子开始。</p>
+<p>在许多教科书中可以找到的一个标准编程练习是用一个函数来计算一个数字的阶乘。</p>
+<p>一个整数的阶乘是这个数以内所有正整数的乘积。例如，5的阶乘是1 × 2 × 3 × 4 × 5 = 120。很简单。</p>
+<p>让我们在Swift中编写一个函数来计算它:</p>
+<pre><code class="language-swift">func factorial(_ number: Int) -&gt; Int {
+    var result = 1
+    for factor in 1...number {
+        result = result * factor
+    }
+    return result
+}
+///That's pretty straightforward. Let’s now try to use it:
+factorial(5)
+// 120
+factorial(7)
+// 5040
+factorial(-3)
+// Error
+</code></pre>
+<p>最后一个看起来不太好。</p>
+<p>这个错误给Swift带来了复杂的信息。但在真实的应用中，你就没那么幸运了。该错误将未被检测，并导致您的应用程序在运行时崩溃。</p>
+<p>原因是for循环中的range在factorial函数中，当我们给它一个负数时就不起作用了。</p>
+<p>这甚至不是唯一的问题。</p>
+<p>我们不能修复这个函数，即使我们用一些的东西替换这个范围，例如，一个while循环。</p>
+<p>这是因为负数的阶乘在数学中不存在。我们只是没有它的定义。</p>
+<p>因此，我们的阶乘函数需要为负输入返回一个唯一的值，以表明结果不存在。</p>
+<p>程序员使用许多不同的特定值来表示不存在的结果。这些被称为哨兵值。</p>
+<p>那么，我们可以从factorial函数返回什么前哨值呢?</p>
+<p>我们可以返回-1来表示“这个数没有阶乘”</p>
+<p>这是可行的，因为根据数学定义，一个数的阶乘总是一个正整数。事实上，这通常是其他编程语言的选择。</p>
+<p>但这不是一个理想的解决方案。</p>
+<p>当别人使用这个函数时，他怎么知道-1表示“没有结果”?对于不知道阶乘函数数学定义的人来说，判断这个结果是否正确是不可能的。</p>
+<p>我们可以为函数编写一些文档，但其他人可能不读它，仍然误用函数。不正确的值会传播到程序的其他部分，导致难以找到错误。</p>
+<p>当-1是一个函数的有效返回值时，这种方法会变得更有问题。而且，我们经常无法找到一个无效的值来作为哨兵。</p>
+<p>许多语言使用唯一的值，称为nil(有时为null)来表示没有值。但是在这些语言中，只有对对象的引用才有可能是空值。像整数这样的简单值不能为nil。</p>
+<p>Swift用可选选项解决了这个问题。</p>
+<p>当我们把a ?在类型声明之后，我们声明可以有值，也可以根本没有值。和其他语言一样，Swift也用nil表示“没有价值”。</p>
+<p>这是我们的哨兵，它总是能工作的，因为nil对任何东西都不是一个有效值。</p>
+<p>现在可以重写阶乘函数，使负数返回nil:</p>
+<pre><code class="language-swift">func factorial(_ number: Int) -&gt; Int? {
+    if (number &lt; 0) {
+        return nil
+    }
+    var result = 1
+    for factor in 1...number {
+        result = result * factor
+    }
+    return result
+}
+factorial(-3)
+// nil
+</code></pre>
+<p>函数的返回类型不再是Int类型，而是Int?代替。该声明现在显式地声明:“返回值可以是整数或nil。”</p>
+<p>这是Swift和其他所有使用nil值的语言之间的一个重要区别。在其他语言中，你永远不知道函数返回的值是否为nil。如果有任何提供，您需要阅读文档。</p>
+<p>在Swift，这一点很明显。我们总是知道哪些值可以为nil，哪些值总是有效的。</p>
+<p>一个小附注:正如读者建议的那样，阶乘函数还可以通过断言检查其输入，确保永远不会传递负值。</p>
+<p>因为阶乘对于负形参没有定义，所以函数不应该接受任何参数。</p>
+<p>这将是一种有效的方法，但断言是一个复杂的主题，它们不是本指南的重点。因为这只是一个理解Swift可选的简单例子，所以我更喜欢返回nil。</p>
+<h2 id="3-a-name-1a使用可选值">3. <a name='-1'></a>使用可选值</h2>
+<p>既然我们已经看到了为什么可选选项是有用的，为什么我们需要它们，让我们看看如何使用它们。</p>
+<p>在Swift中，开发人员不是唯一知道类型声明中哪些值是可选的人。编译器还可以读取信息，并进行一系列检查，这些检查在没有可选选项的语言中是不可能的。</p>
+<p>实际上，这意味着编译器可以确保我们不会在不该放nil值的地方放空值。它不允许我们这样做，并且当我们尝试运行这样的代码时就会给我们一个错误。或者，更好的是，Xcode会实时检查我们的代码，并在我们键入时立即显示错误。</p>
+<p>最好把尽可能多的检查委托给编译器。这有助于我们少犯错误。</p>
+<p>人类总是会忘记一些事情。相反，编译器不会让任何空值进入不需要的地方。</p>
+<p>不幸的是，当你不理解，这可能会变得令人沮丧。</p>
+<p>编译器可能会抱怨一些看起来正确的东西。但最终，编译器总是正确的。你需要理解它试图告诉你什么。</p>
+<p>这种情况经常发生在可选选项中，导致很多困惑。</p>
+<h3 id="31-a-name-1a强制解包">3.1. <a name='-1'></a>强制解包</h3>
+<p>让我们尝试使用我们刚刚创建的阶乘函数:</p>
+<pre><code class="language-swift">factorial(3) + 7
+// Value of optional type 'Int?' must be unwrapped to a value of type 'Int;
+</code></pre>
+<p>不幸的是,它失败了。 编译器似乎在抱怨什么，但事实并非如此清楚。</p>
+<p>为什么不能把这两个数相加?毕竟，我们确定3的阶乘是6，所以看起来我们的操作应该是可能的。</p>
+<p>问题是，我们试图为编译器添加两个具有两个不同类型的东西。记住，编译器不会让nil在任何地方溜走。</p>
+<p>阶乘函数不返回Int，而是返回Int?。你可能会认为?操作符说“可能有一个nil值”，但对编译器来说，这是两种完全不同的类型。</p>
+<p>稍后我们将看到它们不同的原因，当我们看更多的高级概念。现在，大多数时候，您只需要记住可选类型和它的基类型是不同的。</p>
+<p>而且你不会忘记它，因为编译器会一直提醒你。</p>
+<p>因为加法运算的操作数有不同的类型，所以不能将它们相加。同时，我们知道这是可能的因为我们知道阶乘的结果。</p>
+<p>错误消息有两个建议:<br>
+合并使用的? ?'来提供默认值，当可选值包含'nil'和使用'强制展开'!'如果可选值包含'nil'，则中止执行。</p>
+<p>同样，对于那些不太了解可选选项的人来说，这并不是最好的选择。</p>
+<p>我们接着看第二个。为了执行添加操作，我们使用强制解包装操作符或!</p>
+<pre><code class="language-swift">factorial(3)! + 7
+// 13
+</code></pre>
+<p>强制展开操作符告诉编译器:“我知道这个可选选项有一个值，所以使用它。”<br>
+它在这里工作，但大多数时候它是危险的使用强制解包。虽然在这个简单的例子中，我们知道结果不会是nil，但大多数情况下我们不会。</p>
+<p>如果你对一个nil值使用强制展开，它将导致一个运行时异常，使你的应用崩溃。</p>
+<p>只有当你说&quot;我确信这个值不会为nil我希望我的应用程序崩溃&quot;时你才应该使用它</p>
+<p>正如我们将看到的，在很少的情况下，崩溃比使用错误的值访问要好。但大多数时候你不会这么肯定。我们需要一种不同的方法。</p>
+<h3 id="32-a-name-1a可选绑定">3.2. <a name='-1'></a>可选绑定</h3>
+<p>因为强制展开空值会导致崩溃，所以我们必须确保一个可选的值在我们使用它之前有一个值。</p>
+<pre><code class="language-swift">let result = factorial(3)
+if result != nil {
+    result! + 7 
+}
+// 13
+</code></pre>
+<p>这里，在使用强制解包之前，我们确保result不是nil。</p>
+<p>这个方法很有效，但是有点重复。这是我们经常需要做的事情，所以它很重要。此外，如果我们以后必须再次使用结果常数，我们必须使用!每次操作符。</p>
+<p>出于这个原因，if语句支持可选绑定，我们可以使用该绑定来检查可选对象并提取其值(如果有的话)，在单个in结构中。</p>
+<p>这样，就不再需要强制展开包装了。</p>
+<pre><code class="language-swift">if let result = factorial(3) {
+    result + 7 
+}
+// 13
+</code></pre>
+<p>这也适用于多个绑定，以防我们需要同时检查多个可选的:</p>
+<pre><code class="language-swift">if let x = factorial(3), let y = factorial(5), let z = factorial(7) {
+    x + y + z
+}
+// 5166
+</code></pre>
+<p>有时，我们需要检查存储在常量/变量中的可选对象，而不是检查函数的结果。</p>
+<p>但是为绑定找到一个新名称并不容易。在编写代码时，正确的变量名总是一个问题。对每个选项加倍麻烦是不可取的。</p>
+<p>幸运的是，你不需要这样做。可选绑定在if主体的作用域中创建新的常量。所以你可以重用相同的名字:</p>
+<pre><code class="language-swift">let x = factorial(3)
+let y = factorial(5)
+let z = factorial(7)
+if let x = x, let y = y, let z = z {
+    x + y + z
+}
+// 5166
+</code></pre>
+<p>我们还可以像添加普通if语句一样添加布尔表达式可选绑定，以添加对绑定值的额外检查。例如，我们假设我们想要使用阶乘函数的偶数结果。</p>
+<pre><code class="language-swift">func isEven(_ number: Int) -&gt; Bool {
+    return number % 2 == 0 
+}
+let x = factorial(3)
+let y = factorial(5)
+let z = factorial(7)
+if let x = x, let y = y, let z = z,
+    isEven(x) &amp;&amp; isEven(y) &amp;&amp; isEven(z) {
+    x + y + z
+}
+// 5166
+</code></pre>
+<p>我添加了一点isEven(_:)函数来帮助我们，因为我们必须重复检查三次:<br>
+另外，上面的例子几乎总是执行if函数体，因为阶乘总是偶数。除了0和1的阶乘(都是1)之外，每个阶乘都是偶数因为它的因子中总是包含2。</p>
+<p>可选绑定也适用于while语句。当绑定产生一个有效值时，while循环将继续，当找到nil时将停止。<br>
+例如，假设我们有一个数字数组我们想找出第一个没有阶乘的数组的下标。</p>
+<pre><code class="language-swift">let numbers = [2, 5, 3, -1, 9, 12, 4]
+var index = 0
+while let result = factorial(numbers[index]) {
+    index += 1 
+}
+print(index)
+// 3
+</code></pre>
+<h3 id="33-a-namenilanil合并">3.3. <a name='nil'></a>nil合并</h3>
+<p>通常，当可选对象为nil时，我们希望使用默认值。当然，我们可以在else分支中使用可选绑定和默认值:</p>
+<pre><code class="language-swift">let result: Int
+if let factorial = factorial(-7) {
+    result = factorial
+} else {
+    result = 0 
+}
+// result is 0
+</code></pre>
+<p>这有点乏味。这就是为什么有一种更短、更实用的方法来编写这段代码:nil合并操作符。</p>
+<p>? ?操作符可以在一行代码中完成同样的工作。</p>
+<pre><code class="language-swift">let result = factorial(-7) ?? 0
+// result is 0
+</code></pre>
+<p>实际上，这意味着“如果阶乘为nil，就使用0”。如果一个可选的有一个值，??返回它。否则，返回第二个值。</p>
+<p>该操作符的一个很好的特性是，可以链接任意次数。</p>
+<p>例如，如果你有多个可选的，你想要取第一个有效值，你可以在同一指令中链接多个nil合并操作符:</p>
+<pre><code class="language-swift">let x = factorial(-3) // nil
+let y = factorial(5) // 120
+let z = factorial(7) // 5040
+let result = x ?? y ?? z ?? 0
+// result is 120
+</code></pre>
+<p>请注意，nil合并总是生成一个值，因此它的结果不是可选的。</p>
+<p>如果这是您想要的，您可以忽略末尾的默认值。在这种情况下，如果没有指令产生值，结果将为nil。</p>
+<pre><code class="language-swift">let x = factorial(-3)
+let y = factorial(-5)
+let z = factorial(-7)
+let result = x ?? y ?? z
+// result is nil
+</code></pre>
+<h3 id="34-a-namehappypathandearlyexitahappy-path-and-early-exit">3.4. <a name='HAPPYPATHANDEARLYEXIT'></a>HAPPY PATH AND EARLY EXIT</h3>
+<p>假设我们想要编写一个小函数，它接受名称、年龄和城市，并使用它们创建问候消息。<br>
+我们的函数应该只在所有三个值都存在的情况下工作。如果缺少，它将生成一个错误消息。</p>
+<pre><code class="language-swift">func messageWith(name: String?, age: Int?, city: String?) -&gt; String {
+    if let name = name, let age = age, let city = city {
+        return &quot;Hi \(name), I see you are \(age) years old. Nice age. And 
+    how is it living in \(city)?&quot;
+    } else {
+        return &quot;You did not provide all the information I need!&quot;
+    } 
+}
+let message = messageWith(name: &quot;Matteo&quot;, age: 35, city: &quot;Amsterdam&quot;)
+print(message)
+// Hi Matteo, I see you are 35 years old. Nice age. And how is it living in 
+Amsterdam?
+</code></pre>
+<p>这可以很好地工作，但是错误消息确实指出了丢失了哪些信息。让我们写一个更好的版本。</p>
+<p>我们将使用可用的信息生成消息。然后，我们将完成报告第一个缺少参数的消息。</p>
+<p>由于这次生成不同的消息，因此不能在单个if语句中使用多个绑定。相反，我们需要在单独的一个中检查每个parameter。</p>
+<p>我们试试吧。</p>
+<pre><code class="language-swift">func messageWith(name: String?, age: Int?, city: String?) -&gt; String {
+    if let name = name {
+        if let age = age {
+            if let city = city {
+                return &quot;Hi \(name), I see you are \(age) years old. Nice 
+                age. And how is it living in \(city)?&quot;
+            } else {
+                return &quot;Hey \(name), I know you are \(age) years old, but 
+                you didn't tell me where you live&quot;
+            }
+        } else {
+            return &quot;\(name), you forgot to tell me how old you are&quot;
+        }
+    } else {
+        return &quot;Please introduce yourself, at least!&quot;
+    } 
+}
+</code></pre>
+<p>这是可行的，但由于if语句的嵌套，它是不可读的。任何额外的检查都会让事情变得更糟，把嵌套越来越向右推。这就是为什么这通常被称为末日金字塔。</p>
+<p>这里的问题是，组装完整消息的代码在金字塔中丢失了，混杂在错误检查代码中。</p>
+<p>起作用的代码被称为幸福之路或黄金之路。它是没有错误发生时所遵循的路径。快乐路径是我们在阅读代码时所关心的部分。其余的只是为了处理错误。在我们的示例中，业务逻辑只有一行，但很少出现这种情况。真正的代码要复杂得多，我们不想在一堆错误消息中失去它的意义。</p>
+<p>这是在实际代码中反复出现的典型模式。通常情况下，情况会变得更糟，因为在每个中间步骤中，我们都需要处理部分结果。<br>
+它是这样的:</p>
+<pre><code class="language-swift">if first condition {
+    do something with result
+    if second condition {
+        do something with second result
+        if third condition {
+            do something with third result
+        } else {
+            error handling for third condition
+        }
+    } else {
+        error handling for second condition
+    }
+} else {
+    error handling for first condition
+}
+</code></pre>
+<p>所有那些“做某事”的指示(粗体部分)都代表着幸福之路。这是我们希望能够轻松阅读的代码。<br>
+还要注意，每个条件的错误处理都与生成它的条件分离。不仅如此，错误处理是按照相反的顺序安排的。最后一个错误语句远离相应的条件，后者出现在第一个if语句中。</p>
+<p>我们希望所有实际的业务逻辑都很容易被发现，错误处理与相应的条件保持一致。<br>
+我们通过检查if语句中的错误来做到这一点，而不是检查是否成功。当我们发现错误时，我们解决它并立即从函数返回。<br>
+这使错误靠近检查和if语句之外的业务逻辑，将其推到更容易找到的左边。</p>
+<pre><code class="language-swift">if first error {
+    first error handling
+    return
+}
+do something with first result
+if second error {
+    second error handling
+    return
+}
+do something with second result
+if third error {
+    third error handling
+    return
+}
+do something with third result
+</code></pre>
+<p>我们重写一下函数，把快乐路径推到左边:</p>
+<pre><code class="language-swift">func messageWith(name: String?, age: Int?, city: String?) -&gt; String {
+    if name == nil {
+        return &quot;Please introduce yourself, at least!&quot;
+    }
+    if age == nil {
+        return &quot;\(name!), you forgot to tell me how old you are&quot;
+    }
+    if city == nil {
+        return &quot;Hey \(name!), I know you are \(age!) years old, but you 
+        didn't tell me where you live&quot;
+    }
+    return &quot;Hi \(name!), I see you are \(age!) years old. Nice age. And how 
+    is it living in \(city!)?&quot;
+}
+</code></pre>
+<p>这个好多了，但还是有一点烦恼。<br>
+我们丢失了可选绑定，并且必须在每条消息中强制解包。这是可行的，因为我们确保每个可选的都不是nil。</p>
+<p>但是当我们不止一次使用一个值时，这就很烦人了。并且使用此代码可能会在不应该去的地方强制展开。<br>
+为了解决这个问题，Swift 2引入了保护语句。Guard语句允许我们检查nil并尽早返回，同时将a值绑定到一个常量。</p>
+<pre><code class="language-swift">func messageWith(name: String?, age: Int?, city: String?) -&gt; String {
+    guard let name = name else {
+        return &quot;Please introduce yourself, at least!&quot;
+    }
+    guard let age = age else {
+        return &quot;\(name), you forgot to tell me how old you are&quot;
+    }
+    guard let city = city else {
+        return &quot;Hey \(name), I know you are \(age) years old, but you didn't 
+        tell me where you live&quot;
+    }
+    return &quot;Hi \(name), I see you are \(age) years old. Nice age. And how is 
+    it living in \(city)?&quot;
+}
+</code></pre>
+<p>多亏了这些保护语句，我们不再需要使用强制解包。<br>
+使用guard语句时，必须提前退出。这意味着你必须包含一个退出语句:</p>
+<ul>
+<li>return to exit from a function;</li>
+<li>or continue or break inside for and while loops.</li>
+</ul>
+<h2 id="4-a-name-1a结构和类中的可选选项">4. <a name='-1'></a>结构和类中的可选选项</h2>
+<h3 id="41-a-name-1a属性上的可选链">4.1. <a name='-1'></a>属性上的可选链</h3>
+<p>可选值不仅用作函数的返回值。我们还可以将它们用于结构和类的属性。</p>
+<p>在这些情况下，我们使用可选表示变量或属性有时可能不包含值。</p>
+<p>例如，让我们创建一个结构来保存订阅公共库的people的信息。每个人都有一张借书证，上面有借书清单。</p>
+<pre><code class="language-swift">struct Person {
+    var libraryCard: LibraryCard? 
+}
+struct LibraryCard {
+    var numberOfBorrowedBooks = 0 
+}
+</code></pre>
+<p>一个人可能因为不同的原因进入数据库(可能他们是不读书的雇员)。因此，Person的libraryCard属性是可选的，对于没有卡的人它将为nil。</p>
+<p>我们现在想要打印出一个人过去借了多少本书。要获得numberOfBorrowedBooks属性，我们必须遍历Person的可选libraryCard属性，它可能是nil。</p>
+<p>当然，我们可以使用可选绑定。当libraryCard不为nil时，我们访问numberOfBorrowedBooks的解包值。</p>
+<p>但这很快就会变得单调乏味。</p>
+<p>出于这个原因，Swift提供了一种替代机制，允许我们通过可选的方式，直接访问我们想要访问的属性。</p>
+<p>这种机制称为可选链接(optional chains)，您可以通过将?操作符放在可选属性后:</p>
+<pre><code class="language-swift">let john = Person()
+if let numberOfBorrowedBooks = john.libraryCard?.       numberOfBorrowedBooks {
+    print(&quot;John has borrowed \(numberOfBorrowedBooks) books&quot;)
+} else {
+    print(&quot;John does not have a library card&quot;) 
+    }
+// prints &quot;John does not have a library card&quot;
+</code></pre>
+<p>在这种情况下，这个?操作符与将其放在类型声明之后的操作符不同。</p>
+<p><em><strong>而后者的意思是“这个值可能不存在”当我们在变量或属性之后使用?，它的意思是“如果有一个值，就访问指定的属性，否则返回nil。”</strong></em></p>
+<p>这是让可选选项令人困惑的原因之一。? Operator有两种不同的含义，这取决于您在哪里使用它。</p>
+<p>所以，在上面的例子中，当libraryCard不为nil时，我们可以访问它的numberOfBorrowedBooks属性。否则，我们得到nil。</p>
+<p>这与使用!操作符强制可选对象解包不同，后者会发现nil时导致崩溃。</p>
+<p>还要记住，因为访问numberOfBorrowedBooks属性可能会失败，所以可选链接返回的值也是可选的。这是真的，即使当我们的最终访问的属性不会失败。</p>
+<p>在我们的例子中，numberOfBorrowedBooks属性的类型是Int，但是john.libraryCard?.numberOfBorrowedBooks返回值的类型是Int?</p>
+<p>这就是为什么在本例中我仍然使用可选绑定来获取链接的结果。</p>
+<p>也可以通过可选的链接设置属性。</p>
+<p><em>虽然赋值通常没有返回类型，但尝试通过可选链接设置属性将返回Void?类型的值。这允许我们检查赋值是否成功</em>:</p>
+<pre><code class="language-swift">var john = Person()
+if (john.libraryCard?.numberOfBorrowedBooks = 1) != nil {
+    print(&quot;The assignment was successful&quot;)
+} else {
+    print(&quot;It was not possible to assign a new identifier&quot;) 
+}
+// &quot;It was not possible to assign a new identifier&quot;
+</code></pre>
+<h3 id="42-a-name-1a方法的可选链">4.2. <a name='-1'></a>方法的可选链</h3>
+<p>可选链接也可用于调用可选对象上的方法。<br>
+让我们扩展我们的LibraryCard结构，包括一个已借的图书列表:</p>
+<pre><code class="language-swift">struct Person {
+    var libraryCard: LibraryCard? 
+}
+struct LibraryCard {
+    var borrowedBooks: [Book] = []
+    var numberOfBorrowedBooks: Int {
+        return borrowedBooks.count
+    }
+    mutating func add(_ book: Book) {
+        borrowedBooks.append(book)
+    } 
+}
+struct Book {
+    let title: String
+}
+</code></pre>
+<p>要获得LibraryCard的add(<em>:)方法，我们仍然必须转换Person的LibraryCard属性，这是可选的。<br>
+和赋值的情况一样，add(</em>:)方法的返回类型是Void。但通过可选的链接，这将成为Void?，允许我们检查方法调用是否成功。</p>
+<pre><code class="language-swift">var john = Person()
+let mobyDick = Book(title: &quot;Moby Dick&quot;)
+if (john.libraryCard?.add(mobyDick)) != nil {
+    print(&quot;John has borrowed \(mobyDick.title)&quot;)
+} else {
+    print(&quot;John has not a library card and cannot borrow books&quot;) 
+}
+// prints &quot;John has not a library card and cannot borrow books&quot;
+</code></pre>
+<h3 id="43-a-name-1a多层链接">4.3. <a name='-1'></a>多层链接</h3>
+<p>可选链接可以连接到任意多个可选级别。</p>
+<p>让我们在LibraryCard中添加一个属性来检索每个人所借的最后一本书:</p>
+<pre><code class="language-swift">struct LibraryCard {
+    var borrowedBooks: [Book] = []
+    var numberOfBorrowedBooks: Int {
+        return borrowedBooks.count
+    }
+    var lastBorrowedBook: Book? {
+        return borrowedBooks.last
+    }
+    mutating func add(_ book: Book) {
+        borrowedBooks.append(book)
+    } 
+}
+</code></pre>
+<p>通过重复使用?操作符在我们的路径上发现的任何可选值，我们现在可以使用多级链接获取John借的最后一本书的书名；</p>
+<pre><code class="language-swift">var john = Person()
+john.libraryCard = LibraryCard()
+let mobyDick = Book(title: &quot;Moby Dick&quot;)
+john.libraryCard?.add(mobyDick)
+if let bookTitle = john.libraryCard?.lastBorrowedBook?.title {
+    print(&quot;The last book John has borrowed is \(bookTitle)&quot;)
+} else {
+    print(&quot;John has not borrowed any books&quot;) 
+}
+// prints &quot;The last book John has borrowed is Moby Dick&quot;
+</code></pre>
+<p>正如我们已经看到的，<em>即使属性或方法的类型不是可选的，可选链接也会使其成为可选的。如果一个类型已经是可选的，它将不会使它“更多”可选</em>。</p>
+<p>在本例中，我们有两层链接，但返回类型仍然是String?而不是String??(如果你想知道这是否可能:是的，它是。稍后详细介绍)。</p>
+<p>最后，您可以对数组下标或字典使用可选链。我在这里展示的所有关于属性和方法的内容也适用于下标。</p>
+<h3 id="44-a-name-1a可选协议上的可选链需求">4.4. <a name='-1'></a>可选协议上的可选链需求</h3>
+<p>到目前为止，我们已经使用了可选的东西，可能没有value，如变量/属性或函数/方法。<br>
+可选的链接也可以用于protocol中不需要的属性和方法。这些被称为可选协议要求。<br>
+这意味着符合协议的类型不会被迫实现这些需求。他们可以选择不这样做。所以在这种情况下，可能不存在的不仅仅是价值。属性和方法可能会完全丢失。</p>
+<p>可选协议要求只发生在Objective-C协议中。<br>
+在Swift中，首选的解决方案是将需求拆分为多个协议，然后使用协议组合。</p>
+<p>这也意味着你只能在Objective-C类中使用它们。Swift结构和类不能符合Objective-C协议。</p>
+<p>尽管如此，iOS SDK中的许多协议还是来自于Objective-C。你也可以在Swift中定义新的Objective-C协议。这是你需要知道的一个特性。</p>
+<p>要访问可选协议要求，您仍然使用?操作符，但你把它放在不同的地方了。这也是optionals的一个部分，如果你不理解潜在的原因，你会感到困惑。</p>
+<p>假设我们正在制作一个处理形状的应用程序。大多数形状，比如正方形和三角形，都有一个面积。但有些独特的形状没有面积，比如线和点。</p>
+<p>我们可以用带有可选需求的协议来表示这一点。</p>
+<pre><code class="language-swift">import Foundation
+@objc protocol Shape {
+    @objc optional func area() -&gt; Float
+}
+class Square: Shape {
+    let side: Float
+    init(side: Float) {
+        self.side = side
+    }
+    func area() -&gt; Float {
+        return side * side
+    } 
+}
+class Line: Shape {
+    let length: Float
+    init(length: Float) {
+        self.length = length
+    } 
+}
+</code></pre>
+<p>注意，这一次，我们没有将area()方法的返回类型声明为可选的。如果一个形状有一个区域，这个方法总是返回一个Float。例如，一个正方形总是有一个面积。</p>
+<p>但是没有area的对象根本就不会实现area()方法。因为整个方法都是可选的，而不是它的返回值，所以我们在它之前使用optional关键字。</p>
+<p>您可以看到Line类符合Shape，但是没有实现area()方法。</p>
+<p>我们现在可以创建一个形状数组，并尝试打印它们的面积。如果他们没有，我们就打印一条特别信息。</p>
+<pre><code class="language-swift">let shapes: [Shape] = [Square(side: 2.0), Line(length: 3.0), Square(side: 4.0)]
+for (index, shape) in shapes.enumerated() {
+    if let area = shape.area?() {
+        print(&quot;The area of shape \(index) is \(area)&quot;)
+    } else {
+        print(&quot;Shape \(index) has no area&quot;) 
+    } 
+}
+// The area of shape 0 is 4.0
+// Shape 1 has no area
+// The area of shape 2 is 16.0
+</code></pre>
+<p>注意到了吗，<em>这一次?操作符在方法调用的括号之前，而不是像标准可选链接那样在括号之后。在这里,?操作符检查该方法是否存在</em>。</p>
+<p>但是，结果仍然和我们使用标准链ing得到的结果一样。调用area()返回一个Float?我们像往常一样使用可选绑定。</p>
+<h2 id="5-a-namenilchecka避免-nil-check">5. <a name='nilcheck'></a>避免 nil check</h2>
+<h3 id="51-a-name-1a隐式解包">5.1. <a name='-1'></a>隐式解包</h3>
+<p>现在很清楚，可选选项给你的代码增加了很多:</p>
+<ul>
+<li>? and ! operators, and</li>
+<li>if and guard statements with optional bindings.</li>
+</ul>
+<p>虽然这些都增加了安全性，但它们也使代码更难阅读。这是一种可选值的权衡。</p>
+<p>但有时，我们知道在给可选的已存储属性赋值后，它将永远不会再变成nil。在这种情况下，解包和绑定是多余的，因为这不再是可选的。</p>
+<p>对于这些情况，可以将属性声明为隐式unwrapped。<br>
+我们通过在其类型后放置一个!，而不是通常的?。<em>这将使属性在初始化时以nil值开始。</em></p>
+<p>但是，尽管该属性仍然是可选的，我们可以在代码中使用它，就像它不是一样。这意味着不需要展开、绑定、if或guards。</p>
+<p>在实践中，将一个可选的声明为隐式unwrapped等同于每次使用后放置！。编译器会帮我们完成。</p>
+<p>这使得隐式未包装的可选选项非常危险。</p>
+<p>隐式未包装的可选值仍然是可选值。我们只是让它使用起来更方便。你可以在任何时候给它赋一个空值。由于每次使用都是强制打开，任何一种都将导致崩溃。</p>
+<p>但在某些情况下，隐式解包装可选选项是有用的，有时是需要的。我们将在下面的部分中看到它们。</p>
+<h3 id="52-a-name-1a引用循环中的无主引用">5.2. <a name='-1'></a>引用循环中的无主引用</h3>
+<p>在ARC下，两个相互持有强引用的对象创造一个强引用循环。</p>
+<p>这会导致这两个对象在应用的生命周期内一直留在内存中。当你的应用超过内存阈值时，iOS操作系统会杀死它。</p>
+<p>循环并不总是坏的，有时是需要的。我们要避免的是那些强烈的。</p>
+<p>为此，我们将循环中涉及的一些属性声明为弱或无主。</p>
+<ul>
+<li>弱属性必须声明为可选的。当一个对象被ARC从内存中移除时，它们自动变成nil。</li>
+<li>无主属性不是可选的。但在特定情况下，它们要求其他属性是可选的。</li>
+</ul>
+<p>在三种特殊情况下，我们可以创建强循环引用，我们用弱或无主属性来修复。</p>
+<blockquote>
+<h4 id="1-两个类都有一个对另一个的可选引用">1. 两个类都有一个对另一个的可选引用。</h4>
+</blockquote>
+<p>这是最容易解决的，因为两个引用都是可选的。<br>
+例如，一个人住在公寓里，公寓里有一个房客。因此Person和Apartment对象创建了一个引用cycle。</p>
+<p>但这两个物体也可以独立存在。一个人可能无家可归，一间公寓可能空无一人。所以两者都有可选的引用。</p>
+<p>这里我们需要将一个引用标记为弱引用，以避免强引用循环。选择哪一个取决于代码的细节。</p>
+<pre><code class="language-swift">class Person {
+    var apartment: Apartment? 
+}
+class Apartment {
+    weak var tenant: Person? 
+}
+</code></pre>
+<blockquote>
+<h4 id="2-两个引用中的一个必须始终有一个值但另一个可以是可选的">2. 两个引用中的一个必须始终有一个值，但另一个可以是可选的</h4>
+</blockquote>
+<p>当具有非可选属性的对象只在另一个对象存在时才存在，就会发生这种情况。</p>
+<p>例如，一个银行帐户可以有一个相关联的信用卡，因此这个属性可以是可选的。相反，信用卡总是需要一个关联的银行账户。</p>
+<p><em>只有可选选项可以是weak</em>，我们有一个。但是如果我们使它weak，信用卡对象就不会停留在内存中，因为它依赖于银行账户的存在。</p>
+<p><em>我们通过将非可选引用变为unowned来解决这个问题，这打破了强循环</em>。</p>
+<pre><code class="language-swift">class Account {
+    var card: CreditCard? 
+}
+class CreditCard {
+    unowned let account: Account
+    init(account: Account) {
+        self.account = account
+    } 
+}
+</code></pre>
+<blockquote>
+<h4 id="3-两个引用都必须有一个值">3. 两个引用都必须有一个值。</h4>
+</blockquote>
+<p>这是最棘手和罕见的情况。你通常可以避开上面的两个例子。但是，当您想要严格执行代码时，您需要了解这种技术。</p>
+<p>让我们看一个例子:一个国家必须有一个首都，一个城市必须属于一个国家。这两个类都不允许有对另一个类的nil引用。</p>
+<p>这也意味着我们不能独立地创建两个实例，因为这需要一个可选属性。</p>
+<p>要同时创建两个引用，两个对象中的一个必须在其初始化式中创建另一个。为了创建循环，第一个对象将一个self引用传递给第二个对象的初始化式。</p>
+<p>但问题来了。在实例完全初始化之前，Swift不允许你在初始化器中引用self。但是要完全初始化，第一个对象需要创建第二个对象的实例，它需要将self作为参数传递给第二个对象，正如我刚才说的，这是禁止的。</p>
+<p>这就是隐式解包可选的拯救之处。</p>
+<p><em><strong>使父对象中的属性隐式地展开，允许它暂时为nil，直到我们有第二个实例</strong></em>。</p>
+<pre><code class="language-swift">class Country {
+    var capitalCity: City! {
+        didSet {
+            assert(capitalCity != nil) 
+        } 
+    }
+    init() {
+        self.capitalCity = City(country: self) 
+    } 
+}
+class City {
+    unowned let country: Country
+    init(country: Country) {
+        self.country = country
+    } 
+}
+</code></pre>
+<p>说实话，第一个引用仍然是可选的，即使我们可以把它当作不是一个引用来使用。没有可选选项的循环是不可能的。<br>
+如果你想，你可以强制它不再为nil通过assert。这可以帮助你在开发应用程序时发现错误。</p>
+<h3 id="53-a-nameiboutletaiboutlet-初始化">5.3. <a name='IBOutlet'></a>IBOutlet 初始化</h3>
+<p>隐式unwrapped可选选项的另一个典型场景是将来自stroyboadr或nib文件的视图控制器连接到视图的outlets。<br>
+视图控制器是第一个被实例化的对象。界面中的的所有视图在此之后实例化。这意味着输出口不能在初始化时被连接，所以它们需要为nil。</p>
+<p>不过，通常情况下，一旦outlets被填充，它们就不会再变成nil。这就是为什么它们被声明为隐式unwrapped optional。</p>
+<h3 id="54-a-namefailableafailable-初始化">5.4. <a name='Failable'></a>Failable 初始化</h3>
+<p>有时，对象的初始化可能会失败。在这种情况下，initializer应该尽快返回nil。虽然不是所有的属性都被初始化了。</p>
+<p>Swift不允许init方法在所有属性初始化之前返回，即使你希望它失败并返回nil。</p>
+<p><em>隐式解包装的可选选项也可以解决这个问题</em>。我们将在后面关于失败初始化器的章节中更详细地看到这一点。</p>
+<h3 id="55-a-nameunwrappeda关于隐式unwrapped可选值的注意点">5.5. <a name='unwrapped'></a>关于隐式unwrapped可选值的注意点</h3>
+<p>隐式打开可选选项是危险的，应该谨慎使用。</p>
+<p><em>请记住，它们仍然是可选的</em>，即使您不需要解包它们。所以它们可能会在任何时候变成nil，因为它们没有检查就被打开了，它们可能会导致崩溃。</p>
+<p>它们只适用于您确定一个值在初始化后将始终存在的情况。当你确定这一点，隐式解包可选是非常方便的。</p>
+<p>不过，提前知道这一点并不总是容易的。</p>
+<p>对于不属于这一规则的情况，很容易陷入使用隐式unwrapped optionals的诱惑。它们通常看起来像是阻止编译器抱怨的一种非常方便的方法。</p>
+<p>请记住，编译器检查存在是有原因的。你的目标不是让他们闭嘴，因为这破坏了可选项的全部意义。</p>
+<p>即使您确定您永远不会忘记一个可选的隐式unwrapped，您或您的队友可能不知道这一点，并编写代码将nil赋给其中一个。</p>
+<p>当有疑问时，使用常规可选的代替。</p>
+<h2 id="6-a-name-1a类型检测和向下类型转换">6. <a name='-1'></a>类型检测和向下类型转换</h2>
+<p>当您处理子类型时，您可能有一个值或一个对象，但您只知道它的超类型。<br>
+子类型时发生:</p>
+<ul>
+<li>你使用了子类，所以超类型是一个超类;</li>
+<li>使用符合协议的类或值类型，在这种情况下，超类型就是协议。</li>
+</ul>
+<p>但也有一些情况下，当您想检查您的值是否具有特定的子类型，并在这种情况下访问子类型的属性或方法。</p>
+<p>为此，必须将值/对象从其泛型supertype向下转换为特定的子类型。Swift为此提供了两种类型转换操作符:as!它的可选版本是as?</p>
+<p>当您确定对象的类型，并希望将其转换为另一种类型时，可以使用第一个操作符。</p>
+<p>不过，这种情况很少发生。使用的!操作符与强制解包装可选对象相同。如果失败，将导致运行时异常。</p>
+<p>在大多数情况下，我们用as?操作符。这将返回一个可选的值，如果向下转换失败，该值将为nil。</p>
+<p>让我们回到我们的库示例。现在的图书馆不仅借书，而且还借电影。我们需要Book和Movie类型。我们将在这个示例中使用类，因为它们提供了一个更清晰的示例。</p>
+<p>书籍和电影都是我们的图书馆所包含的项目，并且都有共同属性。我们在一个LibraryItem超类中总结了这些内容。</p>
+<pre><code class="language-swift">class LibraryItem {
+    let title: String
+    init(title: String) {
+        self.title = title
+    } 
+}
+class Book: LibraryItem {
+    let author: String
+    init(title: String, author: String) {
+        self.author = author
+        super.init(title: title)
+    } 
+}
+class Movie: LibraryItem {
+    let director: String
+    init(title: String, director: String) {
+        self.director = director
+        super.init(title: title)
+    } 
+}
+</code></pre>
+<p>我们可以将库的整个目录放入一个数组中。</p>
+<p>数组只能包含具有相同类型的对象。在我们的例子中，该类型是LibraryItem超类。<br>
+但是，如果想打印目录，则需要知道每个条目是书籍还是电影，以便能够访问每个对象的正确属性。</p>
+<p>因为我们事先不知道每个对象的类型，所以我们用as?操作符。因为它返回一个可选的值，所以我们使用optional binding来检查向下转换是否成功:</p>
+<pre><code class="language-swift">let catalog = [
+    Book(title: &quot;Moby Dick&quot;, author: &quot;Herman Melville&quot;),
+    Movie(title: &quot;2001: A Space Odissey&quot;, director: &quot;Stanley Kubrick&quot;) 
+]
+for item in catalog {
+    if let book = item as? Book {
+        print(&quot;Book: \(book.title), written by \(book.author)&quot;)
+    } else if let movie = item as? Movie {
+        print(&quot;Movie: \(movie.title), directed by \(movie.director)&quot;) 
+    } 
+}
+// &quot;Book: Moby Dick, written by Herman Melville&quot;
+// &quot;Movie: 2001: A Space Odissey, directed by Stanley Kubrick&quot;
+</code></pre>
+<h2 id="7-a-name-1a不能初始化的值和对象">7. <a name='-1'></a>不能初始化的值和对象</h2>
+<h3 id="71-a-namefailable-1afailable-初始化">7.1. <a name='Failable-1'></a>Failable 初始化</h3>
+<p>有时，让结构、类或枚举的初始化失败是有用的。这有助于防止创建内部状态错误的值或对象。</p>
+<p>在Swift中，你可以让初始化器失效。这意味着initialization可能失败并返回nil。</p>
+<p>你让一个初始化器失效通过放置?操作符在init后、括号前。</p>
+<p>作为一个例子，让我们假设我们有一个表示animals的结构。我们希望在传递错误的物种名称时防止初始化。</p>
+<p>非可选参数已经完成了部分检查，因为它们不允许将nil值传递给初始化器。但在本例中，我们还希望确保传递给初始化器的字符串不是空的。</p>
+<pre><code class="language-swift">struct Animal {
+    let species: String
+    init?(species: String) {
+        guard !species.isEmpty else {
+        return nil
+        }
+        self.species = species
+    } 
+}
+</code></pre>
+<p>因为这个初始化器可能会失败，所以我们需要检查当我们创建Animal value时返回的值:</p>
+<pre><code class="language-swift">if let giraffe = Animal(species: &quot;Giraffe&quot;) {
+    print(&quot;A new \(giraffe.species) was born!&quot;) 
+}
+// Prints &quot;A new Giraffe was born!&quot;
+</code></pre>
+<p>如果我们想让Animal类型成为一个类，上面的代码不能工作。<br>
+在类中，一个可失败的初始化式必须在触发失败之前为每个属性提供一个值。但是物种属性在触发失败的检查之后才能初始化。</p>
+<p>解决方案是使物种属性隐式解包可选:</p>
+<pre><code class="language-swift">struct Animal {
+    let species: String!
+    init?(species: String) {
+        guard !species.isEmpty else {
+            return nil
+        }
+        self.species = species
+    } 
+}
+</code></pre>
+<p>与前面代码的唯一区别是，这里我们有一个!操作符在字符串类型的物种属性后面。其余的都保持不变。</p>
+<h2 id="8-a-name-1a可选值进阶">8. <a name='-1'></a>可选值进阶</h2>
+<h3 id="81-a-name-1a遍历包含可选值数组">8.1. <a name='-1'></a>遍历包含可选值数组</h3>
+<p>有时，我们需要使用可选数组。这意味着集合中的一些值可能为nil。通常，我们不关心nil值，我们只想使用有效的值。</p>
+<p>例如，当我们将字符串数组转换为整数时，其中一些字符串可能是不可转换的。Int的init(_:)初始化器是可失败的，在这些情况下返回nil。因此，结果数组将包含转换失败的字符串的nil值。</p>
+<p>我们只能使用已经很熟悉的optional binding来考虑有效整数:</p>
+<pre><code class="language-swift">let strings = [&quot;2&quot;, &quot;7&quot;, &quot;four&quot;, &quot;3&quot;, &quot;giraffe&quot;, &quot;9&quot;,       &quot;screwdriver&quot;]
+let integers = strings.map { Int($0) }
+// integers is now [2, 7, nil, 3, nil, 9, nil] and has type [Int?]
+for value in integers {
+    if let integer = value {
+        print(integer)
+    } 
+}
+// Prints 2, 7, 3, 9
+</code></pre>
+<p>如果您不熟悉Array<T>类型的map方法，那么它所做的就是接受一个函数并返回一个新数组，其中的元素是将该函数应用于原始数组的每个元素的结果。</p>
+<p>这里我们对字符串数组中的每个元素应用一个将其转换为整数的函数。我们得到的是一个Int型数组?，其中包含转换失败时的空值。</p>
+<p>使用可选绑定可以工作，但有点乏味。我们有两种方法来避免它，使我们的代码更简洁易读。</p>
+<blockquote>
+<p>第一种方法是在for循环中添加where子句:</p>
+</blockquote>
+<pre><code class="language-swift">for integer in integers where integer != nil {
+    print(integer)
+}
+</code></pre>
+<blockquote>
+<p>Swift还支持一种更简洁的方式来表达这一点，允许使用case语句在for循环中执行optional binding:</p>
+</blockquote>
+<pre><code class="language-swift">for case let integer? in integers {
+    print(integer)
+}
+</code></pre>
+<p>还有另一种方法可以一次性过滤掉所有的nil值，我们稍后会看到。</p>
+<h3 id="82-a-name-1a可选双层嵌套">8.2. <a name='-1'></a>可选双层嵌套</h3>
+<p>此时，您可能认为自己已经掌握了可选内容以及如何使用它们。你知道它们是什么，以及Swift提供的所有处理它们的技巧。</p>
+<p>所以你开始在代码中使用它们。</p>
+<p>但是奇怪的事情发生了。</p>
+<p>让我们从上一节中获取可选数组并打印它:</p>
+<pre><code class="language-swift">let strings = [&quot;2&quot;, &quot;7&quot;, &quot;four&quot;, &quot;3&quot;, &quot;giraffe&quot;, &quot;9&quot;, &quot;screwdriver&quot;]
+let integers = strings.map { Int($0) }
+print(integers)
+// [Optional(2), Optional(7), nil, Optional(3), nil, Optional(9), nil]
+</code></pre>
+<p>这里已经发生了一些奇怪的事情。</p>
+<p>如我们所料，所有奇数字符串都变成了nil。其他的值被打印为Optional(2)，而不仅仅是它们的值。</p>
+<p>我们知道数字数组的类型是[Int?]。也许这只是Swift的一个功能，告诉我们什么时候值是可选的?</p>
+<p>让我们看看当我们单独打印数组中的最后一个值时会发生什么，我们知道它是nil:</p>
+<pre><code class="language-swift">print(integers.last)
+// Prints &quot;Optional(nil)&quot;
+</code></pre>
+<p>等等，这是怎么回事?</p>
+<p>我们期望为nil，但我们得到了一个Optional(nil)。那是什么意思?nil也可以是nil?这没有多大意义。</p>
+<p>为了弄清楚这里发生了什么，让我们看看Swift标准库中Array类型最后一个属性的声明:</p>
+<pre><code class="language-swift">public struct Array&lt;Element&gt; {
+...
+public var last: Element? { get }
+...
+}
+</code></pre>
+<p>last的类型是一个可选的Element，它是一个泛型表示，发送数组中元素的类型。因为我们的数组包含Int?类型的值，最后一个属性返回Int??类型的值。</p>
+<p>因此，似乎调用number数组的last会产生一个两次可选值。这些类型的可选选项称为双重嵌套可选选项。</p>
+<p>正如您所看到的，它们很容易在您的代码中弹出，因此您需要做好准备。<br>
+让我们试着看看我们是否也可以直接生产它们:</p>
+<pre><code class="language-swift">let doublyNested: Int?? = 3
+print(doublyNested)
+// Prints &quot;Optional(Optional(4))&quot;
+let triplyNested: Int??? = 7
+print(triplyNested)
+// Prints &quot;Optional(Optional(Optional(7)))&quot;
+</code></pre>
+<p>实际上，我们可以将可选选项嵌套在其他可选选项中，想多深就有多深。为了理解这是如何实现的以及它意味着什么，我们必须看看在引擎盖下是什么可选的。</p>
+<h3 id="83-a-name-1a可选选项在底层是如何工作的">8.3. <a name='-1'></a>可选选项在底层是如何工作的</h3>
+<p>乍一看，可选选项似乎是Swift编译器执行的一些魔术。通过一些巫术(可选操作符)，我们可以使用nil值作为任何类型的哨兵。</p>
+<p>大多数语言都没有这个特性。它们只为指针/引用提供空值。这是因为引用是内存地址，0不是有效的。在这些语言中，nil就是0。</p>
+<p>这就省去了一些简单的类型，比如整数、浮点数、字符和布尔值。对于这些，0是一个可接受的值(对于布尔值，0通常意味着false)。</p>
+<p>相反，Swift采用了不同的方法。</p>
+<p>可选选项并不像你想的那么模糊。它们是通过使用您也可以使用的标准语言特性实现的，这意味着我们可以在不查看编译器代码的情况下揭示它们是如何工作的。</p>
+<p>在swift.org上的Swift编程语言指南的末尾，有一个语言参考部分，很多人通常会跳过。</p>
+<p>这并不奇怪，因为这对Swift的语法来说是一个枯燥乏味的定义。</p>
+<p>里面有一章是关于类型的，你可以读(我强调的):</p>
+<p>type Optional<Wrapped>是一个枚举，有两个cases, none和some(Wrapped)，它们用来表示可能出现也可能不出现的值。任何类型都可以显式声明为(或隐式转换为)可选类型。”</p>
+<p>这就解决了一个谜题:可选选项只是一个有两种情况的枚举。</p>
+<p>none情况实际上是nil值，而有效值被包装在。some(_:)情况中。</p>
+<p>从这个角度看，很明显这是两种不同的类型。一般来说，任何可选类型都与非可选对应类型完全不同。</p>
+<p>这允许编译器在不允许使用可选选项时阻止我们使用它们。分配一个Int ?对于编译器来说，将String值赋给Int变量等同于将String值赋给Int变量。这两种类型不匹配。</p>
+<p>这也是我们讨论解包装可选对象的原因:我们需要的值被包装在Optional枚举中。我们需要打开包装才能使用它。</p>
+<p>我们在本指南中看到的所有操作符都是可选枚举的语法糖，它使我们的生活更舒适。如果没有，我们仍然可以使用可选选项。它只是更swifty。</p>
+<p>例如，由于一个可选值是数字中的一种情况，我们可以使用switch语句来匹配它，就像我们对任何其他枚举所做的一样:</p>
+<pre><code class="language-swift">switch factorial(3) {
+    case let .some(result):
+        print(&quot;The result of the factorial is \(result)&quot;)
+    case .none:
+        print(&quot;The factorial has no result&quot;) 
+}
+</code></pre>
+<p>这相当于可选绑定。</p>
+<p>所以，即使没有围绕?，??的语法糖，和!操作符和可选绑定，你也可以使用可选。但这很快就会让心烦意乱。</p>
+<p>幸运的是，Swift的开发者在设计语言时考虑到了这一点。</p>
+<h3 id="84-a-name-1a可选映射">8.4. <a name='-1'></a>可选映射</h3>
+<p>我们已经看到了可选<Wrapped>是一种类似于其他类型的类型。和所有其他类型一样，它也带有一些函数。</p>
+<p>其中之一是map(_:)函数。您可能对数组中的这个函数很熟悉，我在本章开头的一个示例中使用了它。</p>
+<p>如果你不知道它是干什么的，这里有一个简短的解释。map(_:)对数组中的所有元素应用一个转换函数，并返回一个带有结果的新数组。</p>
+<p>映射一个可选的是什么意思呢?这个解释对于数组来说是清楚的，但是对于可选的就不那么清楚了。</p>
+<p>让我们看一下这两种类型的map(_:)的定义(Array<Element>类型的map是在Collection协议中定义的)。</p>
+<pre><code class="language-swift">func map&lt;T&gt;(_ transform: (Element) -&gt; T) -&gt; [T] // Arrays
+func map&lt;U&gt;(_ transform: (Wrapped) -&gt; U) -&gt; U? // Optionals
+</code></pre>
+<p>很明显，这两种方法非常相似。</p>
+<ul>
+<li>对于包含Element类型值的数组，map(_:)方法接受一个函数，该函数将Ele类型的值转换为T类型的元素，并返回一个T Ele ments的数组。</li>
+<li>对于包含Wrapped类型值的可选值，map(_:)方法接受一个函数，该函数将Wrapped类型的值转换为U类型的元素，并返回一个可选的U类型的值。</li>
+</ul>
+<p>正如您所看到的，这实际上是相同的功能。<br>
+在两种情况下，map(_:)方法:</p>
+<ul>
+<li>应用于包含一种类型值的容器;</li>
+<li>接受一个函数将同一类型的值转换为另一类型的值;</li>
+<li>返回一个新的容器与转换值。</li>
+</ul>
+<p>可选的也是容器。唯一的区别是，数组包含许多元素，而可选数组只包含一个元素。<br>
+好的,理论足够了。</p>
+<p>这个发现的实际意义是什么?如何在可选对象上使用map(_:)函数?</p>
+<p>注意，map(_:)接受的函数并不关心optionals。transform参数具有类型(Wrapped) -&gt; U，其中Wrapped和U都不是可选类型。</p>
+<p>我们可以使用map(<em>:)来应用于通常不接受可选参数的可选函数。使用这个函数，map(</em>:)将一个可选对象转换为另一个可选对象。如果可选元素包含nil，那么map(_😃 返回另一个nil。</p>
+<p>这样做的好处是，在应用转换之前，我们不需要解包可选值。<br>
+让我们以一个简单的函数为例来计算一个数的平方。</p>
+<pre><code class="language-swift">func square(_ number: Int) -&gt; Int {
+    return number * number
+}
+</code></pre>
+<p>我们的square(_:)函数只适用于Int类型的值，不接受可选值。我们可以只计算数字的平方，nil不是一个数字。</p>
+<p>虽然我们有一个Int?类型的值也可能发生我们要计算它的平方。通常情况下，我们必须先打开可选选项:</p>
+<pre><code class="language-swift">let optionalInt: Int? = 3
+let result: Int?
+if let number = optionalInt {
+    result = square(number)
+} else {
+    result = nil
+}
+</code></pre>
+<p>这种“接受一个可选的，如果它不是nil就转换它”的模式经常出现在Swift代码中。使用map(_:)我们可以避免展开:</p>
+<pre><code class="language-swift">let result = optionalInt.map(square)
+</code></pre>
+<p>这也适用于返回可选项的函数，例如factorial(_:)函数。使用map，我们可以先计算一个数字的阶乘，然后再计算它的平方，而不需要解包中间的结果。</p>
+<pre><code class="language-swift">let result = factorial(5).map(square)
+print(result)
+// Prints: Optional(14400)
+</code></pre>
+<p>你可以使用map(_:)链接任意多的函数。Naturally，最后一个结果是可选的，但是，你只需要打开那个，而不是每一个中间结果。</p>
+<h3 id="85-a-nameflatmapaflatmap">8.5. <a name='FlatMap'></a>FlatMap</h3>
+<p>可选函数还有另一个映射函数flatMap(<em>😃。它的定义与map(</em>:)稍有不同。</p>
+<pre><code class="language-swift">func flatMap&lt;U&gt;(_ transform: (Wrapped) -&gt; U?) -&gt; U?
+</code></pre>
+<p>这里唯一的区别是transform函数返回一个可选的，而在map(_:)中不是这样的。</p>
+<p>这是一个显著的区别。在上一节的例子中，将square(<em>:)函数链接到factorial(</em>:)函数，生成了一个可选函数。</p>
+<p>如果我们想计算这个结果的阶乘呢?</p>
+<pre><code class="language-swift">///If we use map(_:), we get a doubly-nested optional.
+let result = factorial(2) .map(square) .map(factorial)
+print(result)
+// Prints Optional(Optional(24))
+</code></pre>
+<p>这是因为map(<em>:)返回由转换函数转换的任何类型的可选。因为factorial(</em>:)返回一个Int?， map(_:)返回一个Int??</p>
+<p>这就是我们可以使用flatMap(_:)的地方，它返回与转换函数相同的类型。</p>
+<pre><code class="language-swift">let result = factorial(2) .map(square) .flatMap(factorial)
+print(result)
+// Prints Optional(Optional(24))
+</code></pre>
+<p>这就是为什么这个函数被称为flatMap(_😃。它简化了可选选项，防止了深度嵌套。(顺便说一下，上面的例子只适用于数字0、1和 2.从3开始，最后一个阶乘的结果变得太大，不能包含在一个Int值。)</p>
+<p>这为函数式编程的概念打开了大门，如func函数式、应用函数式和单子。这些是复杂的主题(带有可怕的名称)，需要自己的指南来解释，所以我将省略它们。</p>
+<p>无可否认，你不会经常在你的应用中使用这种代码，除非你在你的类型上使用像方法链接这样的高级技术。这些是一些流行的反应式框架所使用的，我通常建议避免使用。</p>
+<p>但是对于flatMap(<em>:)还有最后一个有用的提示。与map(</em>:)类似，扁平的 map(_:)也适用于任何其他容器，包括数组。</p>
+<p>你可以使用flatMap(_:)从数组中删除任何nil值。我们已经有了一个这样的例子，我们使用了一个for循环和一个where子句或模式匹配。</p>
+<p>You can use flatMap(_😃 instead.</p>
+<pre><code class="language-swift">let strings = [&quot;2&quot;, &quot;7&quot;, &quot;four&quot;, &quot;3&quot;, &quot;giraffe&quot;, &quot;9&quot;, &quot;screwdriver&quot;]
+let integers = strings.flatMap { Int($0) }
+print(integers)
+// [2, 7, 3, 9]
+</code></pre>
+<p>实际上，您可以使任何容器扁平化—例如，数组包含其他数组。</p>
+<pre><code class="language-swift">let nested = [[1 ,2, 3], [4, 5, 6], [7, 8, 9]]
+let integers = nested.flatMap { $0 }
+print(integers)
+// [1, 2, 3, 4, 5, 6, 7, 8, 9]
+</code></pre>
+<h2 id="9-a-name-1a-总结">9. <a name='-1'></a> 总结</h2>
+<p>尽管对某些开发人员来说，可选选项可能是一个新概念，但它们并不能解决新问题。表示不存在的值是编程中长期存在的问题。</p>
+<p>许多语言，比如Objective-C，通过为引用类型(比如对象)添加nilvalues来解决这个问题。但是，虽然Swift也有nil值，但可选选项处理问题的方式不同。</p>
+<p>一个直接的好处是Swift允许我们使用任何类型的nil值，而不仅仅是引用。</p>
+<p>但是，可选值还能带来什么好处呢? 第一个是，在Swift中，如果一个值可以是nil或不是，它总是从类型中明确。</p>
+<p>在其他许多语言中，没有这样的保证。一些函数返回空值;别人永远不会懂的。有些人甚至会选择一些其他值作为哨兵(例如-1)。</p>
+<p>参数也是一样。有些函数可能接受nil作为参数，有些则不接受。</p>
+<p>在这两种情况下，函数的签名都没有给我们任何线索。当然，您必须检查代码或阅读其文档。或者，就像许多开发者所做的那样，猜测并希望它不会导致意想不到的问题(这不是最好的策略，但让我们现实一点。我们都这样做)。</p>
+<p>虽然您没有访问源代码，但它经常发生。<br>
+文档通常是缺乏的，如果它存在，并可能不是人无值。在阅读一些Ob objective - c类或函数的文档时，我经常发现自己在想nil值是否可以接受，没有明确的答案。</p>
+<p>在Swift中，不存在这个问题。</p>
+<p>如果返回值或参数的类型不是可选的，我们可以确定nil值永远不会出现。要使用空值，我们必须在语法中显式地允许它。</p>
+<p>这使我们避免了编写代码时可能积累的许多精神包袱。当我用其他语言写代码时，尤其是用Obobjective - c，我必须不断地记住哪些值可以为nil，哪些不能为nil。</p>
+<p>在Objective-C中，对nil值调用方法什么都不做，所以nil值会在你的代码基中传播。这使代码更短，但有时nil值最终会出现在意想不到的地方，导致obscure错误。</p>
+<p>这就是为什么Swift有可选选项。Swift迫使您在代码中出现nil值时就处理它们。这就阻止了它们进入代码的其他部分。</p>
+<p>你可以决定nil values 的位置。</p>
+<p>可选的第二个优点是编译器会为我们做许多需要的检查。</p>
+<p>即使你试着考虑所有可能的边界情况，一些nil values 可能会漏出来。我们只是人类，我们不能一直记住所有这些信息。</p>
+<p>当然，我们可以尝试使用断言来捕获这些错误，但这不会有什么效果。如果我们在测试应用时没有触发特定的断言，我们仍然可以发布bug。<br>
+但是编译器可以在我们出错时立即停止我们。</p>
+<p>我知道在开始的时候，让编译器在可选选项上唠叨是很烦人的。另一方面，如果不这样做，您可能会导致bug，这将需要您花费更多的时间和精力来修复。</p>
+<p>Swift是一种非常武断的语言，有些人会不同意这些观点。可选选项就是其中之一。</p>
+<p>对于Objective-C，我一开始认为，总是检查nil值是很烦人的，就像在Java中一样。但最后，我发现自己很欣赏可选项带来的价值。</p>
+<p>当你开始使用它们时，它们需要更多的思考，但你很快就会习惯它们。在我看来，好处超过了不必要的烦恼。</p>
+<p>阅读互联网上的评论和博客文章，许多人似乎讨厌“可选”选项。我认为大多数时候，这只是因为理解不够。</p>
+<p>当你确切地知道为什么一些值可能是可选的，以及如何处理它们时，很多挫折就会消失。</p>
+<p>如果需要，您仍然可以绕过编译器抱怨。当您确定时，显式的解包装可选的存在，以避免不必要的萨利检查。如果你知道你在做什么，这是没问题的，我有时也会这样做。</p>
+<p>这里的要点是，当您理解了可选选项的工作方式以及为什么您有这些工具来更好地解释您的代码并做出决策时。</p>
+<p>像许多其他事情一样，这需要理解你的决定的好处和陷阱。这让你可以选择那些一开始看起来很危险，但实际上比看起来安全得多的路线。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/BKc_eiC_7/" class="tag">
+                    a deep summary
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/mQbhOOb5q/" class="tag">
+                    summary
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l0njz2RSr/" class="tag">
+                    optionals
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/architecting-swiftui-apps-with-mvc-and-mvvm/">
+                  <h3 class="post-title">
+                    Architecting-SwiftUI-apps-with-MVC-and-MVVM
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

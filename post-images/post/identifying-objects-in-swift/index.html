@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Identifying objects in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="我们经常遇到这样的情况:我们需要找到一种基于某种身份概念存储对象的方法。无论是在缓存中、存储在磁盘上的对象表示，还是仅仅使用字典——我们经常需要找到唯一标识我们处理的对象的方法。
+本周，让我们来看看Swift中使用的一些常见的身份概念，以及..." />
+    <meta name="keywords" content="identifiers" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Identifying objects in Swift</h2>
+            <div class="post-date">2017-07-16</div>
+            
+            <div class="post-content" v-pre>
+              <p>我们经常遇到这样的情况:我们需要找到一种基于某种身份概念存储对象的方法。无论是在缓存中、存储在磁盘上的对象表示，还是仅仅使用字典——我们经常需要找到唯一标识我们处理的对象的方法。</p>
+<p>本周，让我们来看看Swift中使用的一些常见的身份概念，以及我们如何以不同的方式将它们用于值和对象。</p>
+<h2 id="equatable">Equatable</h2>
+<p>一个经常被用来比较对象和值的核心协议是Equatable。这是一个您可能已经熟悉的协议，因为任何时候您想要使==操作符与类型一起使用，您需要遵循它。这里有一个例子:</p>
+<pre><code class="language-swift">struct Book {
+    let title: String
+    let author: String
+}
+extension Book: Equatable {
+    static func ==(lhs: Book, rhs: Book) -&gt; Bool {
+        guard lhs.title == rhs.title else {
+            return false
+        }
+        guard lhs.author == rhs.author else {
+            return false
+        }
+        return true
+    }
+}
+</code></pre>
+<p>注意，上面的==的手动实现实际上不再需要了，因为编译器会自动将一致性合成为Equatable，对于任何只有Equatable属性的类型(就像我们上面的Book类型)。</p>
+<h2 id="instance-equatable">Instance equatable</h2>
+<p>虽然Equatable非常适合处理值(如结构或枚举)，但对于对象/类，它可能不是您要寻找的。有时你想检查两个对象是否是同一个实例。要做到这一点，我们使用<mark>的兄弟姐妹;</mark>=，它允许你基于实例来比较两个对象，而不是它们的值。</p>
+<p>让我们看一个例子，我们想重新加载一个InventoryManager，每次它被分配了一个新的数据源:</p>
+<pre><code class="language-swift">// Protocols with the 'AnyObject' constraint can only be conformed to
+// by classes, enabling us to assume that an object will be used.
+protocol InventoryDataSource: AnyObject {
+    var numberOfItems: Int { get }
+    func item(at index: Int) -&gt; Item
+}
+class InventoryManager {
+    var dataSource: InventoryDataSource? {
+        // 'oldValue' is a magic variable that always contains the
+        // previous value of the property when a new one is set
+        didSet { dataSourceDidChange(from: oldValue) }
+    }
+    private func dataSourceDidChange(from previousDataSource: InventoryDataSource?) {
+        // We don't want to reload if the same data source is re-assigned
+        guard previousDataSource !== dataSource else {
+            return
+        }
+        reload()
+    }
+}
+</code></pre>
+<p>正如你在上面看到的，使用===可以非常整洁，因为它使你可以执行检查，而不需要符合某个协议的类型也实现Equatable(这增加了样板文件，也对协议进行了自我约束——更多关于后者的内容将在以后的文章中介绍)。</p>
+<h2 id="hashable">Hashable</h2>
+<p>与Equatable一样，另一个在处理值类型时非常常见的协议是可哈希的。当您在某种基于散列的集合(如集合)中使用类型或在字典中作为键时，这是一个需求。</p>
+<p>让我们将之前的Book类型扩展到也符合Hashable:</p>
+<pre><code class="language-swift">extension Book: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(title)
+        hasher.combine(author)
+    }
+}
+</code></pre>
+<p>同样，如果类型的所有属性也符合Hashable，编译器也能够自动合成上述一致性。</p>
+<p>例如，我们现在可以建立一个独特的书籍收藏:</p>
+<pre><code class="language-swift">class BookStore {
+    var inventory = [Book]()
+    var uniqueBooks = Set&lt;Book&gt;()
+
+    func add(_ book: Book) {
+        // Inventory will contain all books, including duplicates
+        inventory.append(book)
+
+        // By using a set (which we can, now that 'Book' conforms to 'Hashable')
+        // we can guarantee that 'uniqueBooks' only contains unique values
+        uniqueBooks.insert(book)
+    }
+}
+</code></pre>
+<h2 id="protocols-and-hashable">Protocols and Hashable</h2>
+<p>虽然Hashable在处理具体类型时很容易使用(尽管实现起来有点样板式)(比如上面书店的例子)，但在处理协议时可能会有点棘手。</p>
+<p>在使用散列值时需要记住的一件事是，只有当您知道所有对象或值都是完全相同的类型时，您才能依赖它们。由于这不是协议的情况，我们不得不依赖其他一些方法。</p>
+<p>假设我们正在构建一个渲染API，在这个API中，不同的对象可以请求在屏幕下次绘制帧时进行渲染。要使用这个API，对象遵循一个可渲染的协议，并且在需要的时候使用一个渲染器来进入自己的渲染队列(类似于UIView的setNeedsLayout方法)，像这样:</p>
+<pre><code class="language-swift">class Circle {
+    var radius: CGFloat {
+        didSet { renderer?.enqueue(self) }
+    }
+    var strokeColor: UIColor {
+        didSet { renderer?.enqueue(self) }
+    }
+    weak var renderer: Renderer?
+}
+extension Circle: Renderable {
+    func render(in context: CGContext) {
+       context.drawCircle(withRadius: radius, strokeColor: strokeColor)
+    }
+}
+</code></pre>
+<p>作为一个优化，我们想要确保我们在每一帧中只渲染一个对象一次，即使它可能会在一帧绘制之前要求多次渲染。为了实现这一点，我们需要跟踪已经进入队列的符合Renderable的唯一实例，但由于这些实例可能是完全不同的类型，我们不能只添加Equatable或Hashable作为要求。</p>
+<h2 id="objectidentifier">ObjectIdentifier</h2>
+<p>解决上述问题的一个方法是使用Swift的ObjectIdentifier类型来识别实例，并确保我们的渲染队列不会包含重复的对象。在Swift中，每个类的实例都有一个唯一的标识符，你可以通过为它创建一个ObjectIdentifier来获得它，像这样:</p>
+<pre><code class="language-swift">func enqueue(_ renderable: Renderable) {
+    let identifier = ObjectIdentifier(renderable)
+}
+</code></pre>
+<p>ObjectIdentifier已经符合Equatable和Hashable，这使我们能够围绕Renderable编写一个精简的包装类型，使用每个实例的标识符为其提供身份:</p>
+<pre><code class="language-swift">class RenderableWrapper {
+    fileprivate let renderable: Renderable
+    init(renderable: Renderable) {
+        self.renderable = renderable
+    }
+}
+extension RenderableWrapper: Renderable {
+    func render(in context: CGContext) {
+        // Forward the call to the underlying instance
+        renderable.render(in: context)
+    }
+}
+extension RenderableWrapper: Equatable {
+    static func ==(lhs: RenderableWrapper, rhs: RenderableWrapper) -&gt; Bool {
+        // Compare the underlying instances
+        return lhs.renderable === rhs.renderable
+    }
+}
+extension RenderableWrapper: Hashable {
+    func hash(into hasher: inout Hasher) {
+        // Use the instance's unique identifier for hashing
+        hasher.combine(ObjectIdentifier(renderable))
+    }
+}
+</code></pre>
+<p>我们现在可以简单地使用Set来跟踪需要在渲染器中渲染的唯一实例:</p>
+<pre><code class="language-swift">class Renderer {
+    private var objectsNeedingRendering = Set&lt;RenderableWrapper&gt;()
+
+    func enqueue(_ renderable: Renderable) {
+        // Since we use a 'Set', duplicates will automatically be
+        // discarded, we don't have to write any code for it
+        let wrapper = RenderableWrapper(renderable: renderable)
+        objectsNeedingRendering.insert(wrapper)
+    }
+
+    func screenDidDraw() {
+        // Start by emptying the queue
+        let objects = objectsNeedingRendering
+        objectsNeedingRendering = []
+
+        // Render each object
+        for object in objects {
+            let context = makeContext()
+            object.render(in: context)
+        }
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>当使用值时，可平等性和可哈希性可能是在身份方面的做法——因为你更多的是比较一个值的规范化表示，而不是唯一的实例。然而，当处理对象时，使用这篇文章中的一些技术可以使你的api更容易使用，从而降低复杂性，增加稳定性。</p>
+<p>没有要求实现者遵守Equatable，或公开某种形式的唯一标识符(如UUID)，您可以使用===操作符和ObjectIdentifier类型这样的技术来快速且唯一地标识对象，而不需要太多额外的代码。</p>
+<p><a href="https://www.swiftbysundell.com/articles/identifying-objects-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1sLScrWc1/" class="tag">
+                    identifiers
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/modelling-state-in-swift/">
+                  <h3 class="post-title">
+                    Modelling state in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

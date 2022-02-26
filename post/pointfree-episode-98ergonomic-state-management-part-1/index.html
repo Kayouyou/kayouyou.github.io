@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 98:Ergonomic State Management: Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+The architecture's surface area
+
+
+
+
+Free functions
+
+
+
+
+Reducer as a struct
+
+
+
+
+Reducer methods
+
+
+
+
+..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 98:Ergonomic State Management: Part 1</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Thearchitecturessurfacearea">The architecture's surface area</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Freefunctions">Free functions</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Reducerasastruct">Reducer as a struct</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Reducermethods">Reducer methods</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Updatingtheappsmodules">Updating the app's modules</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 98:Ergonomic State Management: Part 1 -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>现在，我们已经花了很多很多周的时间，从第一性原理;构建了我们的可组合架构。其核心设计的动机是试图解决五个问题，我们发现这五个问题对任何应用程序架构都至关重要。</p>
+<p>然后，我们改进了这个设计，解决了一些内存泄漏问题，以及我们的架构最初如何与SwiftUI接口的潜在性能问题。解决后一个问题使我们有机会增强我们的体系结构，使其更能适应各种情况，这允许我们在多个平台上共享核心业务逻辑，同时改进每个平台与共享逻辑交互的方式。</p>
+<p>在我们的架构中还有很多很多东西需要探索，但是在解决了这些漏洞和性能问题之后，我们认为是时候将这些东西打包在我们的应用程序中使用了。我们甚至可以把它作为一个开源项目与全世界分享。</p>
+<p>但在此之前，我们觉得还有改进的空间。首先，我们没有花大量的时间在可组合架构的人体工学上。核心库非常小:不到几百行代码。</p>
+<hr>
+<h2 id="2-a-namethearchitecturessurfaceareaathe-architectures-surface-area">2. <a name='Thearchitecturessurfacearea'></a>The architecture's surface area</h2>
+<p>它从其核心单元的定义开始:一个简单的函数，我们称之为“<strong>reducer</strong>”:</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action, Environment&gt; = (inout Value, Action, Environment) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p>这个签名描述了整个应用程序的逻辑:</p>
+<ul>
+<li>它可以改变应用程序状态(这是由<strong>Value</strong>类捕获的)给定一个动作(通常是一个用户动作，比如点击按钮)</li>
+<li>还提供了这个<strong>Environment</strong>类型，其中包含我们所有特性的依赖项，比如API客户端、文件客户端和其他需要进入混乱的外部世界的任何东西。</li>
+<li>我们必须返回一个将在业务逻辑执行后运行的<strong>effects</strong>数组。这使我们能够与外部世界交互，并将外部世界的信息反馈到我们的应用程序中。</li>
+</ul>
+<p>如果我们使用这个签名并试图在一个函数中为整个应用程序编写逻辑，随着状态和操作的增长，事情很快就会变得难以处理。但幸运的是，函数是超级可组合的，<strong>reducer</strong>也不例外。它们可以被分解成越来越小、更容易理解的单元，然后这些单元可以被粘合在一起，形成一个整体。</p>
+<p>我们能够做到这一点的方法是通过两个强大的操作，<strong>combine</strong>和<strong>pullback</strong>。</p>
+<pre><code class="language-swift">public func combine&lt;Value, Action, Environment&gt;(
+  _ reducers: Reducer&lt;Value, Action, Environment&gt;...
+) -&gt; Reducer&lt;Value, Action, Environment&gt; {
+  …
+}
+public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction, GlobalEnvironment, LocalEnvironment&gt;(
+  _ reducer: @escaping Reducer&lt;LocalValue, LocalAction, LocalEnvironment&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;,
+  environment: @escaping (GlobalEnvironment) -&gt; LocalEnvironment
+) -&gt; Reducer&lt;GlobalValue, GlobalAction, GlobalEnvironment&gt; {
+  …
+}
+</code></pre>
+<p><strong>combine</strong>函数允许我们把一堆<strong>reducers</strong>工作在同一个域组合进一个,<strong>mega-reducer</strong> 运行引擎盖下的所有<strong>reducers</strong>,而<strong>pullback</strong>允许我们将一个在局部域中工作的<strong>reducer</strong>转换为一个在更全局域中工作的<strong>reducer</strong>。它们使我们能够将应用程序逻辑分解为一堆较小的简化程序，这些简化程序可以独立存在于它们自己的独立模块中。然后，在应用程序级别，我们可以把所有更小的、更特定于领域的<strong>reducer</strong>拉回全局的应用程序域，在那里它们可以合并成一个单一的<strong>reducer</strong>，为我们的应用程序提供动力。</p>
+<p>在这些函数的正下方，我们有另一个函数，<strong>logging</strong>，我们称之为“高阶”<strong>reducer</strong>，因为它将<strong>reducer</strong>作为输入，并返回一个<strong>reducer</strong>作为输出。</p>
+<pre><code class="language-swift">public func logging&lt;Value, Action, Environment&gt;(
+  _ reducer: Reducer&lt;Value, Action, Environment&gt;
+) -&gt; Reducer&lt;Value, Action, Environment&gt; {
+  …
+}
+</code></pre>
+<hr>
+<h2 id="3-a-namefreefunctionsafree-functions">3. <a name='Freefunctions'></a>Free functions</h2>
+<p>在我们继续讨论这个文件的其余部分之前，让我们来解决一个事实，即这些api可能比较突出，因为它们都被定义为自由函数:“<strong>free</strong>”是因为它们没有被限制在一个类型中。尽管如此，它们在日常使用中还是会感觉有点不合适，而且它们可能会引入一些尴尬的人体工程学。</p>
+<p>要查看<strong>pullback and combine</strong>在实践中的效果，我们可以跳到我们的应用目标，在那里我们构建了顶级的<strong>app reducer</strong>:</p>
+<pre><code class="language-swift">let appReducer = combine(
+  pullback(
+    counterViewReducer,
+    value: \AppState.counterView,
+    action: /AppAction.counterView,
+    environment: { $0.nthPrime }
+  ),
+  pullback(
+    counterViewReducer,
+    value: \AppState.counterView,
+    action: /AppAction.offlineCounterView,
+    environment: { $0.offlineNthPrime }
+  ),
+  pullback(
+    favoritePrimesReducer,
+    value: \.favoritePrimes,
+    action: /AppAction.favoritePrimesState,
+    environment: { ($0.fileClient, $0.nthPrime) }
+  )
+)
+</code></pre>
+<p>像这样的函数调用对大多数Swift开发人员来说可能是一个奇怪的景象，对一些人来说甚至可能是一个不舒服的! 感觉上好像<strong>pullback and combine</strong>已经泄露到“<strong>global</strong>”名称空间中了。</p>
+<p>函数调用也变得嵌套，在Swift中难以阅读:你的眼睛需要浏览圆括号层，以获得函数调用顺序的句柄。</p>
+<p>现在有了解决嵌套问题的方法。事实上，早在Point-Free的第一集中，我们就看到，在一两个操作符的帮助下，可以使自由函数调用更具可读性。然而,我们理解,自定义操作符的话题在Swift社区讨论很激烈,而不是每个人或每个团队将舒适的引入他们代码库,所以一段时间以后,我们引入了另一个操作符的形式“<strong>Overture</strong>”,一组通用函数式编程的功能。它也旨在解决这种嵌套问题，但不需要自定义操作符。</p>
+<p>虽然在<strong>combine</strong>中嵌套<strong>pullback</strong>并不是那么糟糕，但是嵌套会随着我们添加额外功能而增加，就像我们使用更高阶的<strong>reducers</strong>(如日志记录)一样。</p>
+<p>事实上，如果我们跳转到我们的<strong>scene delegate</strong>，我们会看到:</p>
+<pre><code class="language-swift">rootView: ContentView(
+  store: Store(
+    initialValue: AppState(),
+    reducer: with(
+      appReducer,
+      compose(
+        logging,
+        activityFeed
+      )
+    ),
+    …
+  )
+)
+</code></pre>
+<p>这里我们看到一组嵌套函数调用，用于添加<strong>logging</strong>和另一个高阶<strong>reducer activityFeed</strong>，到我们的应用<strong>reducer</strong>。我们也可以通过<strong>with和compose</strong>函数看到这一点，它们来自我们的Overture库!如果没有它们，我们递给商店的减速器将是这样的:</p>
+<pre><code class="language-swift">logging(activityFeed(appReducer))
+</code></pre>
+<p>这个特殊的例子是相对简单的，所以我们要避免的嵌套并不是世界上最糟糕的，但是你可以想象当你有六个高阶的<strong>reducers</strong>时，嵌套会变得越来越笨拙。</p>
+<pre><code class="language-swift">logging(activityFeed(barEnhancer(fooEnhancer(appReducer))))
+</code></pre>
+<p><strong>Overture</strong>是针对这些问题的完美解决方案，但理想情况下它不是可组合架构的依赖，也不是以人体工程学方式使用我们的架构的要求。</p>
+<p>如果不是在自由函数中，我们应该在哪里定义这些东西? Swift似乎更喜欢将逻辑放在静态函数和类型的方法中，所以我们可能会把这个逻辑移动到一个<strong>Reducer</strong>扩展中:</p>
+<pre><code class="language-swift">extension Reducer {
+}
+🛑 Non-nominal type ‘Reducer’ cannot be extended
+</code></pre>
+<p>但这不会起作用，因为<strong>Reducer</strong>只是一个函数签名的类型别名，而函数是Swift称为“non-nominal”类型的一个例子，而非标称类型目前不能用静态函数或方法扩展。</p>
+<p>幸运的是，我们还有另一个选择。有一种非常简单的方法可以为函数创建一个漂亮的名称空间，比如<strong>reducers</strong>，那就是将它们包装在一个结构体中。</p>
+<p>为了人机工程学，我们将这个函数包装为一个类型:</p>
+<p>事实上，这个故事甚至已经在可组合架构中出现了! 我们首先将<strong>Effect</strong>类型作为函数的简单类型别名引入。</p>
+<pre><code class="language-swift">typealias Effect&lt;A&gt; = (@escaping (A) -&gt; Void) -&gt; Void
+</code></pre>
+<p>但是当我们开始探索<strong>effects</strong>是如何组合和转换时，我们也把它包装在一个结构中!</p>
+<pre><code class="language-swift">//struct Effect&lt;A&gt; {
+//  let run: (@escaping (A) -&gt; Void) -&gt; Void
+//}
+</code></pre>
+<p>每次我们将一个函数包装在一个类型中，在这个过程中它变得更加符合人体工程学。</p>
+<hr>
+<h2 id="4-a-namereducerasastructareducer-as-a-struct">4. <a name='Reducerasastruct'></a>Reducer as a struct</h2>
+<p>这里我们又有了另一个函数，<strong>reducer</strong>。让我们把它包装在一个结构体中，看看我们是否可以再次改善使用它们的人体工程学。</p>
+<p>首先，我们将简单地注释掉定义的类型别名。</p>
+<pre><code class="language-swift">//public typealias Reducer&lt;Value, Action, Environment&gt; = (inout Value, Action, Environment) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p>并在具有单个字段的结构体中进行交换。</p>
+<pre><code class="language-swift">public struct Reducer&lt;Value, Action, Environment&gt; {
+  let reducer: (inout Value, Action, Environment) -&gt; [Effect&lt;Action&gt;]
+}
+</code></pre>
+<p>我们希望能够从可组合架构模块外部实例化这些值，因此让我们在这里添加一个公共初始化器。</p>
+<pre><code class="language-swift">public init(
+  _ reducer: @escaping (inout Value, Action, Environment) -&gt; [Effect&lt;Action&gt;]
+) {
+  self.reducer = reducer
+}
+</code></pre>
+<p>好了，这个模块中有很多东西坏了。让我们一次解决一个问题。</p>
+<p>首先，我们在组合函数中有几个错误。</p>
+<pre><code class="language-swift">public func combine&lt;Value, Action, Environment&gt;(
+  _ reducers: Reducer&lt;Value, Action, Environment&gt;...
+) -&gt; Reducer&lt;Value, Action, Environment&gt; {
+  return { value, action, environment in
+
+🛑 Cannot convert return expression of type ‘(_, _, _) -&gt; _’ to return type ‘Reducer&lt;Value, Action, Environment&gt;’
+</code></pre>
+<p>既然<strong>reducers</strong>是一种类型，那么使用裸闭包创建它们就不再有效了。相反，我们可以将这个函数作为一个尾随闭包传递给<strong>Reducer</strong>初始化器。</p>
+<pre><code class="language-swift">public func combine&lt;Value, Action, Environment&gt;(
+  _ reducers: Reducer&lt;Value, Action, Environment&gt;...
+) -&gt; Reducer&lt;Value, Action, Environment&gt; {
+  return Reducer { value, action, environment in
+    let effects = reducers.flatMap { $0.reducer(&amp;value, action, environment) }
+</code></pre>
+<blockquote>
+<p>🛑 Cannot call value of non-function type ‘Reducer&lt;Value, Action, Environment&gt;’</p>
+</blockquote>
+<p>第二个问题是Reducer现在是一个结构体，我们不能再把它作为函数直接调用。</p>
+<p>我们的一个选择是进入它的<strong>reducer</strong>字段:</p>
+<pre><code class="language-swift">public func combine&lt;Value, Action, Environment&gt;(
+  _ reducers: Reducer&lt;Value, Action, Environment&gt;...
+) -&gt; Reducer&lt;Value, Action, Environment&gt; {
+  return Reducer { value, action, environment in
+    let effects = reducers.flatMap { $0.reducer(&amp;value, action, environment) }
+</code></pre>
+<p>但我们也可以依赖Swift5.2 的全新功能“<strong>callable values</strong>”。如果类型定义了<strong>callAsFunction</strong>方法，那么可以直接调用它，就像它是一个函数一样。</p>
+<pre><code class="language-swift">extension Reducer {
+  public func callAsFunction(
+    _ value: inout Value,
+    _ action: Action,
+    _ environment: Environment
+  ) -&gt; [Effect&lt;Action&gt;] {
+    self.reducer(&amp;value, action, environment)
+  }
+}
+</code></pre>
+<p>现在<strong>reducer</strong>可以像以前一样愉快地被调用。</p>
+<pre><code class="language-swift">let effects = reducers.flatMap { $0(&amp;value, action, environment) }
+</code></pre>
+<p>我们的下一个错误是<strong>pullback</strong>。</p>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction, LocalEnvironment, GlobalEnvironment&gt;(
+  _ reducer: @escaping Reducer&lt;LocalValue, LocalAction&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;,
+  environment: @escaping (GlobalEnvironment) -&gt; LocalEnvironment
+) -&gt; Reducer&lt;GlobalValue, GlobalAction&gt; {
+  return { globalValue, globalAction, globalEnvironment in
+    guard let localAction = globalAction[keyPath: action] else { return [] }
+    let localEffects = reducer(&amp;globalValue[keyPath: value], action: localAction, environment: environment(globalEnvironment))
+</code></pre>
+<blockquote>
+<p>🛑 @escaping attribute only applies to function types 🛑 Cannot convert return expression of type ‘(_, _, _) -&gt; _’ to return type ‘Reducer&lt;Value, Action, Environment&gt;’</p>
+</blockquote>
+<ul>
+<li>
+<p>我们不再需要@escaping属性，因为它只适用于函数类型，而<strong>Reducer</strong>现在是一个结构体，而且<strong>Reducer</strong>结构体的初始化器已经捕获了函数已转义的事实。</p>
+</li>
+<li>
+<p>我们还需要将返回的函数包装在<strong>Reducer</strong>初始化器中。</p>
+</li>
+</ul>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction, LocalEnvironment, GlobalEnvironment&gt;(
+  _ reducer: Reducer&lt;LocalValue, LocalAction&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;,
+  environment: @escaping (GlobalEnvironment) -&gt; LocalEnvironment
+) -&gt; Reducer&lt;GlobalValue, GlobalAction&gt; {
+  return .init { globalValue, globalAction, globalEnvironment in
+    guard let localAction = globalAction[keyPath: action] else { return [] }
+    let localEffects = reducer(&amp;globalValue[keyPath: value], localAction, environment(globalEnvironment))
+</code></pre>
+<p>我们需要对日志的高阶<strong>reducer</strong>做同样的更改:</p>
+<pre><code class="language-swift">public func logging&lt;Value, Action, Environment&gt;(
+  _ reducer: Reducer&lt;Value, Action, Environment&gt;
+) -&gt; Reducer&lt;Value, Action, Environment&gt; {
+  return .init { value, action, environment in
+</code></pre>
+<p>只剩下几个错误了，它们在<strong>Store</strong>中，<strong>Store</strong>是支持我们架构的运行时类。</p>
+<p><strong>Stores</strong>是用一个<strong>reducer</strong>初始化的，所以我们需要再次删除@<strong>escaping</strong>要求:</p>
+<pre><code class="language-swift">public init&lt;Environment&gt;(
+  initialValue: Value,
+  reducer: Reducer&lt;Value, Action, Environment&gt;,
+  environment: Environment
+) {
+</code></pre>
+<p>在初始化器的主体中，我们用一个新的<strong>reducer</strong>包装给定的<strong>reducer</strong>，以便“消除”它的环境，这是我们在模块依赖管理的章节中提到的。这个<strong>reducer</strong>也需要调用<strong>Reducer</strong>的初始化器:</p>
+<pre><code class="language-swift">) {
+  self.reducer = Reducer { value, action, environment in
+    reducer(&amp;value, action, environment as! Environment)
+  }
+  self.value = initialValue
+  self.environment = environment
+}
+</code></pre>
+<p>最后，<strong>stores</strong>有一个<strong>scope</strong>方法，它可以将全局状态和全局操作上的<strong>stores</strong>转换为更多局部状态和局部操作上的<strong>stores</strong>。 正是这个操作允许我们将应用程序的视图隔离到它们自己的模块中。</p>
+<p>在内部，它创建了一个需要新的<strong>reducer</strong>的新<strong>store</strong>，因此我们需要调用<strong>reducer</strong>。再次初始化:</p>
+<pre><code class="language-swift">public func view&lt;LocalValue, LocalAction&gt;(
+  value toLocalValue: @escaping (Value) -&gt; LocalValue,
+  action toGlobalAction: @escaping (LocalAction) -&gt; Action
+) -&gt; Store&lt;LocalValue, LocalAction&gt; {
+  let localStore = Store&lt;LocalValue, LocalAction&gt;(
+    initialValue: toLocalValue(self.value),
+    reducer: .init { localValue, localAction, _ in
+</code></pre>
+<p>就像这样，可组合架构又开始构建了!</p>
+<hr>
+<h2 id="5-a-namereducermethodsareducer-methods">5. <a name='Reducermethods'></a>Reducer methods</h2>
+<p>好了，现在我们有了一个自然的命名空间，我们所有的组合函数可以更新为更符合人体工程学的静态函数和方法:</p>
+<p>让我们从<strong>combine</strong>开始。它是一个自由的、可变的函数，结合了任意数量的给定<strong>reducers</strong>。我们可以把它作为一个静态函数嵌套在<strong>Reducer</strong>扩展中，然后去掉泛型，因为它们现在在类型中是隐式的:</p>
+<pre><code class="language-swift">extension Reducer {
+  public static func combine(
+    _ reducers: Reducer...
+  ) -&gt; Reducer {
+    return Reducer { value, action, environment in
+      let effects = reducers.flatMap { $0(&amp;value, action, environment) }
+      return effects
+    }
+  }
+}
+</code></pre>
+<p>这个函数体中的任何东西都不需要改变。</p>
+<p>我们将其作为一个静态函数而不是方法，因为不清楚是否有一个特定的<strong>reducer</strong>可以进行点连接。相反，我们有一个完整的列表，所有的<strong>reducers</strong>都是同等重要的。</p>
+<p>接下来:<strong>pullback</strong>。因为<strong>pullback</strong>以单个<strong>reducer</strong>作为输入，而不是创建另一个静态函数，我们可能可以更好地将其功能表达为增强当前self<strong>reducer</strong>的方法。</p>
+<p>我们也可以将<strong>pullback</strong>移动到我们的<strong>Reducer</strong>结构体中，消除<strong>Reducer</strong>参数:</p>
+<pre><code class="language-swift">extension Reducer {
+  // …
+  public func pullback&lt;GlobalValue, GlobalAction, GlobalEnvironment&gt;(
+    value: WritableKeyPath&lt;GlobalValue, Value&gt;,
+    action: WritableKeyPath&lt;GlobalAction, Action?&gt;,
+    environment: @escaping (GlobalEnvironment) -&gt; Environment
+  ) -&gt; Reducer&lt;GlobalValue, GlobalAction, GlobalEnvironment&gt; {
+    return .init { globalValue, globalAction, globalEnvironment in
+      guard let localAction = globalAction[keyPath: action] else { return [] }
+      let localEffects = self(&amp;globalValue[keyPath: value], localAction, environment(globalEnvironment))
+</code></pre>
+<p>我们甚至能够通过利用<strong>reducer</strong>的<strong>Value, Action, and Environment</strong>摆脱3个本地泛型。</p>
+<p>让我们继续讨论<strong>logging</strong>的高阶<strong>reducer</strong>。它是一个以单个<strong>reducer</strong>为输入的函数。因此，就像<strong>pullback</strong>一样，它应该是另一个被定义为操作self的方法的候选:</p>
+<pre><code class="language-swift">extension Reducer {
+  …
+  public func logging() -&gt; Reducer {
+    return .init { value, action, environment in
+      let effects = self.reduce(into: &amp;value, action: action, environment: environment)
+</code></pre>
+<p>好吧! 一切都是建立，我们已经移动了所有的操作组合和转化<strong>reducer</strong>到新的<strong>reducer</strong>类型。</p>
+<p>但是在继续之前，当我们在这里对架构的工效学进行改进时，让我们先概括一下日志功能，因为它可以访问环境。我们目前使用Swift标准库的打印函数，但是我们可能想调用其他的日志记录方法。</p>
+<p>那么，如果我们可以通过描述如何从一个环境中取出一台打印机来定制在引线罩下使用的打印机类型，会怎么样呢?</p>
+<pre><code class="language-swift">public func logging(
+  printer: (Environment) -&gt; (String) -&gt; Void,
+) -&gt; Reducer {
+  return .init { value, action, environment in
+    let effects = self.reduce(into: &amp;value, action: action, environment: environment)
+    let newValue = value
+    let print = printer(environment)
+    return [.fireAndForget {
+      print(&quot;Action: \(action)&quot;)
+      print(&quot;Value:&quot;)
+      var dumpedNewValue = &quot;&quot;
+      dump(newValue, to: &amp;dumpedNewValue)
+      print(dumpedNewValue)
+      print(&quot;---&quot;)
+      }] + effects
+</code></pre>
+<p>现在这个函数中所有的打印都要通过我们从环境中提取的打印机完成。</p>
+<p>如果在我们的环境中，当Swift标准库的打印功能在手边时，要求我们总是持有一台打印机，这似乎有点笨拙，我们可以默认这个参数忽略环境，直接访问该功能。</p>
+<pre><code class="language-swift">public func logging(
+  printer: (Environment) -&gt; (String) -&gt; Void = { _ in { print($0) } }
+) -&gt; Reducer {
+</code></pre>
+<p>这表明，通过允许我们描述我们对环境的需求，提高具有更强能力的高阶<strong>reducer</strong>是多么容易。</p>
+<hr>
+<h2 id="6-a-nameupdatingtheappsmodulesaupdating-the-apps-modules">6. <a name='Updatingtheappsmodules'></a>Updating the app's modules</h2>
+<p>一切都是在可组合架构中构建的。当然，每当我们对架构进行更改时，我们都需要在应用的模块中做大量工作来重新构建所有内容。所以让我们一次更新每个模块，看看人体工程学有什么变化。</p>
+<p>如果我们切换到最喜欢的质数模块，我们会发现，有趣的是，所有的东西仍然可以构建! 这是因为我们在这个文件中没有一个对<strong>Reducer</strong>的引用，这是因为我们将<strong>favoritePrimesReducer</strong>直接定义为一个函数:</p>
+<pre><code class="language-swift">public func favoritePrimesReducer(
+  state: inout FavoritePrimesState,
+  action: FavoritePrimesAction,
+  environment: FavoritePrimesEnvironment
+) -&gt; [Effect&lt;FavoritePrimesAction&gt;] {
+</code></pre>
+<p>相反，让我们将其定义为一个<strong>Reducer</strong>值。这只是调用一个带尾闭包的初始化器的问题:</p>
+<pre><code class="language-swift">public let favoritePrimesReducer
+  = Reducer&lt;FavoritePrimesState, FavoritePrimesAction, FavoritePrimesEnvironment&gt; { state, action, environment in
+</code></pre>
+<p>这似乎是本模块中需要更改的所有内容。我们甚至可以跳转到这个模块的<strong>playground</strong>，以确保一切仍在工作。</p>
+<p>让我们进入主模态。</p>
+<p>它也仍然构建，但也需要实例化它的<strong>reducer</strong>作为一个值:</p>
+<pre><code class="language-swift">public let primeModalReducer
+  = Reducer&lt;PrimeModalState, PrimeModalAction, Void&gt; { state, action, _ in
+</code></pre>
+<p>需要注意的一点是，<strong>prime modal reducer</strong>没有执行任何副作用，因此我们给它一个Void环境，这表示这个环境不保存任何有意义的东西，因此不需要任何依赖项来完成它的工作</p>
+<p>计数器模块有点复杂，并且不再在建造秩序中。但是在我们处理这些错误之前，让我们更新<strong>counter reducer</strong>为一个<strong>reducer</strong>值:</p>
+<pre><code class="language-swift">public let counterReducer
+  = Reducer&lt;CounterState, CounterAction, CounterEnvironment&gt; { state, action, environment in
+</code></pre>
+<p>那么，为什么模块构建不成功呢? 它负责使用回调和组合将一对reduce组合在一起，它仍然使用旧的、自由的函数接口，它不再存在:</p>
+<pre><code class="language-swift">public let counterViewReducer = combine(
+  pullback(
+    counterReducer,
+    value: \CounterViewState.counter,
+    action: /CounterViewAction.counter,
+    environment: { $0 }
+  ),
+  pullback(
+    primeModalReducer,
+    value: \.primeModal,
+    action: /CounterViewAction.primeModal,
+    environment: { _ in () }
+  )
+)
+</code></pre>
+<blockquote>
+<p>🛑 Use of unresolved identifier ‘combine’ 🛑 Use of unresolved identifier ‘pullback’</p>
+</blockquote>
+<p><strong>combine</strong>函数现在静态地存在于<strong>Reducer</strong>上，所以我们可以调用它。我们可以在每个<strong>Reducer</strong>的值上直接调用<strong>callback</strong>作为方法。</p>
+<pre><code class="language-swift">public let counterViewReducer = Reducer.combine(
+  counterReducer.pullback(
+    value: \CounterViewState.counter,
+    action: /CounterViewAction.counter
+    environment: { $0 }
+  ),
+  primeModalReducer.pullback(
+    value: \.primeModal,
+    action: /CounterViewAction.primeModal,
+    environment: { _ in () }
+  )
+)
+</code></pre>
+<p>这就是在计数器模块中需要改变的一切!</p>
+<p>主应用目标也还没有完全构建，这是因为，像<strong>counter</strong>模块一样，它负责回调和合并一些<strong>reducers</strong>，而这些调用需要更新到新的接口:</p>
+<pre><code class="language-swift">let appReducer Reducer&lt;AppState, AppAction, AppEnvironment&gt; = .combine(
+  counterViewReducer.pullback(
+    value: \AppState.counterView,
+    action: /AppAction.counterView
+    environment: { $0.counter }
+  ),
+  counterViewReducer.pullback(
+    value: \AppState.counterView,
+    action: /AppAction.offlineCounterView,
+    environment: { $0.offlineNthPrime }
+  ),
+  favoritePrimesReducer.pullback(
+    value: \.favoritePrimes,
+    action: /AppAction.favoritePrimes
+    environment: { $0.favoritePrimes }
+  )
+)
+</code></pre>
+<p><strong>activityFeed</strong>高阶<strong>reducers</strong>也有一些错误。我们可以删除@<strong>escaping</strong>并使用<strong>reducer</strong>初始化器包装它返回的<strong>reducer</strong>。</p>
+<pre><code class="language-swift">func activityFeed(
+  _ reducer: Reducer&lt;AppState, AppAction, AppEnvironment&gt;
+) -&gt; Reducer&lt;AppState, AppAction, AppEnvironment&gt; {
+
+  return .init { state, action, environment in
+</code></pre>
+<p>但更好的是，我们可以将这个逻辑移动到<strong>Reducer</strong>类型中，就像我们对高阶日志记录函数所做的那样。</p>
+<p>我们只需要有条件地扩展<strong>Reducer</strong>，其中值、动作和环境都在我们的应用程序域中，然后定义<strong>activityFeed</strong>作为一个计算属性来增强<strong>self</strong>。</p>
+<pre><code class="language-swift">extension Reducer where Value == AppState, Action == AppAction, Environment == AppEnvironment {
+  func activityFeed() -&gt; Reducer {
+    .init { state, action, environment in
+      …
+      return self(&amp;state, action, environment)
+    }
+  }
+}
+</code></pre>
+<p>在创建根视图并将其传递给<strong>store</strong>时，我们只出现了几个构建错误:</p>
+<pre><code class="language-swift">window.rootViewController = UIHostingController(
+  rootView: ContentView(
+    store: Store(
+      initialValue: AppState(),
+      reducer: with(
+        appReducer,
+        compose(
+          logging,
+          activityFeed
+        )
+      ),
+      …
+    )
+  )
+)
+</code></pre>
+<blockquote>
+<p>🛑 Use of unresolved identifier ‘logging’ 🛑 Use of unresolved identifier ‘activityFeed’</p>
+</blockquote>
+<p><strong>logging和activityFeed</strong>都转移到了<strong>reducer</strong>类型，这意味着我们不再需要依赖<strong>Overture的with和compose</strong>函数。相反，我们可以将这些属性直接链在<strong>appReducer</strong>上，我们只需要确保我们获得了正确的顺序，以确保活动提要被记录:</p>
+<pre><code class="language-swift">window.rootViewController = UIHostingController(
+  rootView: ContentView(
+    store: Store(
+      initialValue: AppState(),
+      reducer: appReducer
+        .activityFeed()
+        .logging(),
+      …
+    )
+  )
+)
+</code></pre>
+<p>这读起来真的很好!我们可以很容易地看到，我们正在通过一个活动feed和日志记录来增强我们的<strong>app reducer</strong>。</p>
+<p>更好的是，使用方法可以更容易地将这些更改本地化到我们所关心的<strong>reducer</strong>。假设我们不想记录整个应用中的每一个动作，但是我们现在只关心<strong>counter reducer</strong>。我们可以从这里移除.<strong>logger</strong>，并将其连接到<strong>counter reducer</strong>的末端:</p>
+<pre><code class="language-swift">public let counterReducer = Reducer&lt;CounterState, CounterAction, CounterEnvironment&gt; { state, action, environment in
+  ...
+}
+.logging()
+</code></pre>
+<p>现在我们将只记录通过<strong>counter reducer</strong>的操作。这对于将功能本地化到特定的<strong>reducer</strong>来说是非常强大的。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-97adaptive-state-management-the-point/">
+                  <h3 class="post-title">
+                    PointFree Episode 97:Adaptive State Management: The Point
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 97:Adaptive State Management: The Point | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Cross-platform SwiftUI views
+
+
+
+
+Dedicated platform SwiftUI views
+
+
+
+
+Conclusion
+
+
+
+
+
+
+1. Cross-platform SwiftUI vie..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 97:Adaptive State Management: The Point</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Cross-platformSwiftUIviews">Cross-platform SwiftUI views</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#DedicatedplatformSwiftUIviews">Dedicated platform SwiftUI views</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 97:Adaptive State Management: The Point -->
+<h2 id="1-a-namecross-platformswiftuiviewsacross-platform-swiftui-views">1. <a name='Cross-platformSwiftUIviews'></a>Cross-platform SwiftUI views</h2>
+<p>让我们看看，如果我们天真地改变一些views，让它对Mac友好，会发生什么。</p>
+<p>首先，我们需要做一些工作来让Xcode项目成型，以便它能够同时为iOS和macOS构建框架。特别地，我们在项目中有这些<strong>xcconfig</strong>文件，并且它们已经被添加到项目中的所有框架中。</p>
+<p>一旦完成，我们可以尝试为Mac构建<strong>Counter</strong>模块，但我们会立即得到一个错误:</p>
+<pre><code class="language-swift">.navigationBarTitle(&quot;Counter demo&quot;)
+🛑 Value of type ‘some View’ has no member ‘navigationBarTitle’
+</code></pre>
+<p>原来macOS应用程序没有“<strong>navigation bar titles</strong>”的概念，因为这不是Mac应用程序的UI外观。只有iOS、watchOS和tvOS应用程序能够使用这个视图修饰符。对于macOS，我们需要特殊处理。</p>
+<p>我们可以这样做的一种方法是为视图提取一个小助手属性，它在这个特殊的逻辑中烘焙:</p>
+<pre><code class="language-swift">extension View {
+  var counterNavBarTitle: some View {
+    #if os(macOS)
+    return self
+    #else
+    return self.navigationBarTitle(&quot;Counter demo&quot;)
+    #endif
+  }
+}
+</code></pre>
+<p>然后在视图中我们可以这样做:</p>
+<pre><code class="language-swift">.counterNavBarTitle
+</code></pre>
+<p>如果我们在macOS平台上，它什么都不会做。</p>
+<p>但这只是冰山一角。有很多api只适用于单个平台或平台的一个子集。例如，动作表单不在macOS上，所以如果您计划在跨平台应用程序中使用这些api，那么您将需要执行更多特例操作。也有一些api是在iOS和macOS上，但不是在<strong>watchOS或tvOS</strong>上，如<strong>RotationGesture和magnationgesture</strong>。</p>
+<p>但除了这个小问题，我们还有这段代码，每当你点击“<strong>is this prime</strong>”按钮时，它会显示一个模式:</p>
+<pre><code class="language-swift">.sheet(
+  item: .constant(self.viewStore.value.isPrimeModal),
+  onDismiss: { self.viewStore.send(.primeModalDismissed) }
+) { isPrimeDetail in
+  IsPrimeModalView(
+    store: self.store.scope(
+      value: { (isPrimeDetail.count, $0.favoritePrimes) },
+      action: { .primeModal($0) }
+    )
+  )
+}
+</code></pre>
+<p>对于这个应用程序的macOS版本，我们实际上想使用一个弹窗而不是一个模态。我们想要<strong>popovers</strong>是一种超轻量的方式来显示一些额外的UI与其他UI相关，<strong>popovers</strong>甚至不能在iphone上工作，只能在ipad上。</p>
+<p><strong>popovers</strong>的API非常类似于模态，但我们仍然需要做额外的特殊的外壳逻辑，以便根据平台显示弹窗或模态。</p>
+<p>我们可以尝试在视图扩展助手中做那个特殊的加工，比如:</p>
+<pre><code class="language-swift">extension View {
+  var primeDetail: some View {
+    #if os(iOS)
+    // modal
+    #elseif os(macOS)
+    // popover
+    #endif
+  }
+}
+</code></pre>
+<hr>
+<h2 id="2-a-namededicatedplatformswiftuiviewsadedicated-platform-swiftui-views">2. <a name='DedicatedplatformSwiftUIviews'></a>Dedicated platform SwiftUI views</h2>
+<p>所有这些微小的差异真的会累积起来。在开发这个功能的几个月里，我们可能会在这个视图中进行几十个小调整，这取决于我们运行的是iOS应用程序还是Mac应用程序。</p>
+<p>幸运的是，SwiftUI对于我们在这里看到的问题有一个很好的故事。SwiftUI的立场是，UI的构造应该是应用程序中最简单的部分。毕竟，它只是一个简单的函数，它将视图的状态映射到SwiftUI类型的层次结构，包括堆栈、按钮、文本视图、列表等等。 而且，由于UI的构造可以变得如此简单，所以当您想要支持的每个平台的UI显著偏离时，为它们复制视图代码可能是可行的。</p>
+<p>我们完全同意SwiftUI的这一立场。通常情况下，Mac视图的惯例和设计与iOS视图有很大不同，所以最好是为每个平台从头创建视图，而不是抽象它们的共性并统一它们的差异。</p>
+<p>这就是我们要做的。我们将提取出我们的<strong>CounterView</strong>到一个名为<strong>CounterView_iOS</strong>.swift的新文件中，我们将把它的定义包装在:</p>
+<pre><code class="language-swift">#if os(iOS)
+import ComposableArchitecture
+import PrimeAlert
+import PrimeModal
+import SwiftUI
+…
+#endif
+</code></pre>
+<p>然后我们要复制这个文件，将其命名为<strong>CounterView_macOS</strong>.swift，并将条件更改为:</p>
+<pre><code class="language-swift">#if os(macOS)
+…
+#endif
+</code></pre>
+<p>比到处都是#if条件语句更好的方法是创建所有新的框架，只保存iOS或macOS特定的内容。然后Counter模块可以只关注业务逻辑中不可知的部分，与特定于平台的实现无关。</p>
+<p>现在我们已经有了一个专门为macOS创建的视图，我们可以开始对其进行修改，使其能够编译，并且更适合macOS。首先，让我们去掉导航栏的标题:</p>
+<pre><code class="language-swift">// .navigationBarTitle(&quot;Counter demo&quot;)
+</code></pre>
+<p>接下来，我们要解决模态表单的问题，我们希望在macOS上以弹出窗口的形式呈现它。我们只需要从<strong>sheet</strong>API切换到<strong>popover</strong>API，并从我们的存储中构造一个绑定。</p>
+<pre><code class="language-swift">.popover(
+  isPresented: Binding(
+    get: { self.viewStore.value.isPrimeModalShown },
+    set: { _ in self.viewStore.send(.primeModalDismissed) }
+  )
+) {
+  IsPrimeModalView(
+    store: self.store.scope(
+      value: { ($0.count, $0.favoritePrimes) },
+      action: { .primeModal($0) }
+    )
+  )
+}
+</code></pre>
+<p>但我们的<strong>state和actions</strong>的命名并不理想。几个月后，当我们遇到这段代码时，我们可能会感到困惑，因为我们正在显示一个<strong>popover</strong>，即使状态清楚地告诉我们它是一个<strong>modal</strong>。</p>
+<p>我们可以做得更好。我们将使我们的核心业务逻辑对UI更加不可知，并允许我们的每个视图将这种不可知状态转换为对它们有意义的状态。</p>
+<p>因此，与其以将要显示的UI类型来命名状态，当你问当前计数是否为质数时我们会显示一些细节屏幕，它可能是<strong>modal, a popover, an alert</strong> 等等。我们将它命名为<strong>isPrimeDetailShown</strong>:</p>
+<pre><code class="language-swift">public typealias CounterState = (
+   …
+   isPrimeDetailShown: Bool
+ )
+</code></pre>
+<p>而不是调用操作<strong>isPrimeModalDismissed</strong>，我们将通过调用<strong>isPrimeDetailDismissed</strong>使它更加不可知:</p>
+<pre><code class="language-swift">public enum CounterAction: Equatable {
+  …
+  case primeDetailDismissed
+}
+</code></pre>
+<p>这意味着在<strong>reducer</strong>中，我们现在需要与新的状态和动作一起工作:</p>
+<pre><code class="language-swift">case .isPrimeButtonTapped:
+  state.isPrimeDetailShown = true
+  return []
+
+case .primeDetailDismissed:
+  state.isPrimeDetailShown = false
+  return []
+</code></pre>
+<p>然后我们需要更新<strong>CounterFeatureState</strong>，这是一个包含计数器UI和<strong>the prime modal</strong>的所有数据的结构体:</p>
+<pre><code class="language-swift">public struct CounterFeatureState: Equatable {
+  …
+  public var isPrimeDetailShown: Bool
+
+  public init(
+    …
+    isPrimeDetailShown: Bool = false
+  ) {
+    …
+    self.isPrimeDetailShown = isPrimeDetailShown
+  }
+
+  var counter: CounterState {
+    get { (self.alertNthPrime, self.count, self.isNthPrimeRequestInFlight, self.isPrimeDetailShown) }
+    set { (self.alertNthPrime, self.count, self.isNthPrimeRequestInFlight, self.isPrimeDetailShown) = newValue }
+  }
+
+  …
+}
+</code></pre>
+<p>这就是我们需要在这个文件中更新的，让我们跳转到<strong>counterview_macos</strong>.swift，构建我们的Mac应用程序。它的本地域是不对的，因为它提到了<strong>modal</strong>，我们想为macOS应用程序使用<strong>popovers</strong>，所以让我们相应地重命名:</p>
+<pre><code class="language-swift">struct State: Equatable {
+  …
+  let isPrimePopoverShown: Bool
+}
+enum Action {
+  …
+  case primePopoverDismissed
+}
+</code></pre>
+<p>还要记住，我们已经把<strong>modal</strong>换成了<strong>popovers</strong>，代码看起来是这样的:</p>
+<pre><code class="language-swift">.popover(
+  isPresented: Binding(
+    get: { self.viewStore.value.isPrimePopoverShown },
+    set: { _ in self.viewStore.send(.primePopoverDismissed) }
+  )
+  ) {
+    IsPrimeModalView(
+      store: self.store.scope(
+        value: { ($0.count, $0.favoritePrimes) },
+        action: { .primeModal($0) }
+      )
+    )
+}
+</code></pre>
+<p>然后我们需要更新转换，使我们的状态和动作为<strong>view store</strong>的形状:</p>
+<pre><code class="language-swift">extension CounterView.State {
+  init(counterFeatureState state: CounterFeatureState) {
+    …
+    self.isPrimePopoverShown = state.isPrimeDetailShown
+  }
+}
+
+extension CounterFeatureAction {
+  init(counterViewAction action: CounterView.Action) -&gt; CounterFeatureAction {
+    switch action {
+    …
+    case .primePopoverDismissed:
+      return .counter(.primeDetailDismissed)
+    …
+    }
+  }
+}
+</code></pre>
+<p>现在一切都在构建中，但仍有一些领域特定的命名我们可以满足。首先，我们可以看到<strong>IsPrimeModalView</strong>名称可能有点误导人。它可能也应该推广到<strong>IsPrimeDetailView</strong>，但它的功能可能需要在将来的某一天被分成macOS和iOS版本。</p>
+<p>我们还想从Mac应用中删除一些逻辑。我们不想支持双击手势，所以我们可以将其注释掉。</p>
+<pre><code class="language-swift">// .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+// .background(Color.white)
+// .onTapGesture(count: 2) {
+//   self.viewStore.send(.doubleTap)
+// }
+</code></pre>
+<p>这意味着我们也可以在<strong>action enum</strong>中去掉<strong>case doubleTap</strong>:</p>
+<pre><code class="language-swift">enum Action {
+  …
+//  case doubleTap
+}
+
+…
+
+extension CounterFeatureAction {
+  init(counterViewAction action: CounterView.Action) -&gt; CounterFeatureAction {
+    switch action {
+    …
+//    case .doubleTap:
+//      return .counter(.requestNthPrime)
+    }
+  }
+}
+</code></pre>
+<p>虽然我们正在为Mac创造内容，但我们却在改变作用域时破坏了iOS实现。让我们跳转到<strong>CounterView_iOS</strong>.swift文件，在那里我们需要做两个小的改变，我们构建了<strong>view store</strong>状态和动作:</p>
+<pre><code class="language-swift">extension CounterView.State {
+  init(counterFeatureState state: CounterFeatureState) {
+    …
+    self.isPrimeModalShown = state.isPrimeDetailShown
+  }
+}
+
+extension CounterFeatureAction {
+  init(counterViewAction action: CounterView.Action) -&gt; CounterFeatureAction {
+    switch action {
+    …
+    case .primeModalDismissed:
+      return .counter(.primeDetailDismissed)
+    }
+  }
+}
+</code></pre>
+<p>这很酷。这里我们得到了<strong>isPrimeDetailShown</strong>的不可知值，我们将它映射到一个更特定于领域的<strong>isPrimeModalShown</strong>的值，因为这是iOS UI所关心的。然后我们得到了更特定于作用域的<strong>primeModalDismissed</strong>值，并将它映射到不可知的.<strong>counter(.primeDetailDismissed)</strong>，这是驱动业务逻辑的reducer所理解的。</p>
+<p>就像这样，我们有一个为iOS和macOS编译的框架，其中包含两个平台之间共享的核心业务逻辑，以及为每个平台适当调整的视图。每个平台视图都处理对其平台有意义的状态和操作，并且没有任何需要解释的未知域，或者不适用于视图的额外域。</p>
+<hr>
+<h2 id="3-a-nameconclusionaconclusion">3. <a name='Conclusion'></a>Conclusion</h2>
+<p>这就是为什么我们认为为了支持共享业务逻辑，我们可以在视图中加入一点复制。我们将在两个为不同平台量身定制的视图之间分享我们功能的真正大脑。事实上，支持iOS应用的effects能够无缝地应用于Mac应用是一件令人惊讶的事情。请记住，我们对这些effects进行了很好的测试覆盖，所以我们可以放心，在iOS和macOS上运行时，事情都能像我们预期的那样运行。</p>
+<p>我们已经开启了使我们的核心业务逻辑不受UI中用例影响的能力，这是我们应用程序中所有真正困难的工作发生的地方，同时仍然允许我们将这种不受影响的特性应用到特定于我们的视图的领域中。</p>
+<p>我们同时得到了多层次的好处。我们一方面通过一般化处理业务逻辑的方式来简化，另一方面通过专门化从应用程序状态构造视图的方式来简化。</p>
+<p>我们已经到了将可组合架构(**Composable Architecture)**引入生产就绪状态的最后阶段。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-96adaptive-state-management-actions/">
+                  <h3 class="post-title">
+                    PointFree Episode 96:Adaptive State Management: Actions
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using Combine’s share operator to avoid duplicate work | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Duplicate, concurrent network calls
+
+
+
+
+Reusing publishers
+
+
+
+
+New subscriber, new values
+
+
+
+
+Using the share operat..." />
+    <meta name="keywords" content="share,concurrency,combine" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using Combine’s share operator to avoid duplicate work</h2>
+            <div class="post-date">2021-09-22</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Duplicateconcurrentnetworkcalls">Duplicate, concurrent network calls</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Reusingpublishers">Reusing publishers</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Newsubscribernewvalues">New subscriber, new values</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Usingtheshareoperator">Using the share operator</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>在使用Combine编写异步代码时，有时我们可能希望共享给定的并发操作集的结果，而不是为每个操作执行重复的工作。让我们看看<strong>share</strong>操作符是如何让我们以一种非常简洁的方式做到这一点的。</p>
+<h2 id="1-a-nameduplicateconcurrentnetworkcallsaduplicate-concurrent-network-calls">1. <a name='Duplicateconcurrentnetworkcalls'></a>Duplicate, concurrent network calls</h2>
+<p>举个例子，假设我们正在使用下面的ArticleLoader，它使用URLSession从给定的URL加载Article模型:</p>
+<pre><code class="language-swift">class ArticleLoader {
+    private let urlSession: URLSession
+    private let decoder: JSONDecoder
+
+    init(urlSession: URLSession = .shared,
+         decoder: JSONDecoder = .init()) {
+        self.urlSession = urlSession
+        self.decoder = decoder
+    }
+
+    func loadArticle(from url: URL) -&gt; AnyPublisher&lt;Article, Error&gt; {
+        urlSession
+            .dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: Article.self, decoder: decoder)
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>现在让我们假设我们期望以上loadArticle方法被多次调用，以并行或快速连续的方式，使用相同的URL—这目前会导致重复的网络请求，因为对我们方法的每次调用都会产生一个全新的发布者。</p>
+<h2 id="2-a-namereusingpublishersareusing-publishers">2. <a name='Reusingpublishers'></a>Reusing publishers</h2>
+<p>为了解决这个问题，让我们将创建的每个<strong>Publisher</strong>存储在一个字典中(以每个Publisher所对应的URL作为关键字)，然后当我们接收到loadArticle调用时，我们将首先检查该字典是否包含可重用的已有<strong>Publisher</strong>——像这样:</p>
+<pre><code class="language-swift">class ArticleLoader {
+    typealias Publisher = AnyPublisher&lt;Article, Error&gt;
+
+    private let urlSession: URLSession
+    private let decoder: JSONDecoder
+    private var publishers = [URL: Publisher]()
+    ...
+
+    func loadArticle(from url: URL) -&gt; Publisher {
+        if let publisher = publishers[url] {
+            return publisher
+        }
+
+        let publisher = urlSession
+            .dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: Article.self, decoder: decoder)
+            .handleEvents(receiveCompletion: { [weak self] _ in
+                self?.publishers[url] = nil
+            })
+            .eraseToAnyPublisher()
+
+        publishers[url] = publisher
+        return publisher
+    }
+}
+</code></pre>
+<blockquote>
+<p>请注意，我们还将在每个<em>publisher</em>完成后从字典中删除它们，以避免将旧<em>publisher</em>保留在内存中。我们使用<em>receiveCompletion</em>，而不是<em>receiveOutput</em>，也可以在遇到错误时得到通知。</p>
+</blockquote>
+<p>现在，看看上面的代码，乍一看似乎我们已经解决了问题。但是，如果我们查看网络日志(或者简单地在<em>handleEvents</em>闭包中放入一个*print(“Done”)*调用)，就会发现我们实际上仍然在执行多个重复的操作。怎么可能呢?</p>
+<p>事实证明，即使我们确实重用了<strong>publisher</strong>实例，也不能保证我们确实重用了那些<strong>publisher</strong>正在执行的工作。事实上，在默认情况下，每个<strong>publisher</strong>将通过连接到它的每个<strong>subscriber</strong>的整个数据管道运行。这一开始可能看起来相当奇怪，所以让我们从一个稍微不同的角度来检查这种行为。</p>
+<h2 id="3-a-namenewsubscribernewvaluesanew-subscriber-new-values">3. <a name='Newsubscribernewvalues'></a>New subscriber, new values</h2>
+<p>作为另一个简单的例子，这里我们创建了一个<strong>publisher</strong>，它使用Timer每秒钟发布一个新的随机数，然后我们将两个独立的<strong>subscriber</strong>附加到该<strong>publisher</strong>，这两个订阅者都只是打印它们收到的数字:</p>
+<pre><code class="language-swift">var cancellables = Set&lt;AnyCancellable&gt;()
+
+let randomNumberGenerator = Timer
+        .publish(every: 1, on: .main, in: .common)
+        .autoconnect()
+        .map { _ in Int.random(in: 1...100) }
+
+randomNumberGenerator
+    .sink { number in
+        print(number)
+    }
+    .store(in: &amp;cancellables)
+
+randomNumberGenerator
+    .sink { number in
+        print(number)
+    }
+    .store(in: &amp;cancellables)
+</code></pre>
+<p>如果我们的两个<strong>subscriber</strong>每秒都得到相同的数字，这可能会有点奇怪，因为我们希望每个数字都是完全随机的(因此在某种程度上是“唯一的”)。因此，从这个角度来看，Combine出版商为每个订阅者产生独立的输出确实很有意义。</p>
+<p>但是，回到我们的<strong>ArticleLoader</strong>，我们如何修改默认行为以防止执行重复的网络调用呢?</p>
+<h2 id="4-a-nameusingtheshareoperatorausing-the-share-operator">4. <a name='Usingtheshareoperator'></a>Using the share operator</h2>
+<p>好消息是，我们所要做的就是使用<strong>share</strong>操作符，它(顾名思义)修改给定的Combine管道，以便其工作结果在所有<strong>subscriber</strong>之间自动共享:</p>
+<pre><code class="language-swift">class ArticleLoader {
+    ...
+
+    func loadArticle(from url: URL) -&gt; Publisher {
+        if let publisher = publishers[url] {
+            return publisher
+        }
+
+        let publisher = urlSession
+            .dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: Article.self, decoder: decoder)
+            .handleEvents(receiveCompletion: { [weak self] _ in
+                self?.publishers[url] = nil
+            })
+            .share()
+            .eraseToAnyPublisher()
+
+        publishers[url] = publisher
+        return publisher
+    }
+}
+</code></pre>
+<p>有了这个小小的改变，我们现在完全解决了我们的问题。 现在，即使多个loadArticle调用快速连续发生，也只会执行一个网络调用，其结果将被报告给每个调用站点。</p>
+<p>好吧，也许“完全解决”并不完全正确，因为我们的实现仍然有一个潜在的问题-它目前没有考虑这样一个事实，即我们的ArticleLoader很可能被调用在不同的线程上，而不是在URLSession返回它的数据任务输出的线程上。虽然这可能永远不会导致任何实际问题，但我们是否可以做一个快速的额外工作，使我们的实现完全线程安全呢?</p>
+<p>为此，让我们对<em>loadArticle</em>实现做一些调整。首先，我们将基于输入URL创建Combine管道，然后立即跳转到内部DispatchQueue，当从某个<strong>publisher</strong>接收到完成事件时，我们也将使用这个DispatchQueue。通过这种方式，我们可以保证我们的<strong>publishers</strong>字典将始终在完全相同的队列上读取和写入:</p>
+<pre><code class="language-swift">class ArticleLoader {
+    ...
+    private let queue = DispatchQueue(label: &quot;ArticleLoader&quot;)
+
+    func loadArticle(from url: URL) -&gt; Publisher {
+        Just(url)
+            .receive(on: queue)
+            .flatMap { [weak self, urlSession, queue, decoder] url -&gt; Publisher in
+                if let publisher = self?.publishers[url] {
+                    return publisher
+                }
+
+                let publisher = urlSession
+                    .dataTaskPublisher(for: url)
+                    .map(\.data)
+                    .decode(type: Article.self, decoder: decoder)
+                    .receive(on: queue)
+                    .handleEvents(receiveCompletion: { [weak self] _ in
+                        self?.publishers[url] = nil
+                    })
+                    .share()
+                    .eraseToAnyPublisher()
+
+                self?.publishers[url] = publisher
+                return publisher
+            }
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>通过这些调整，我们现在有了一个完全线程安全的实现，它成功地重用了发布者，避免了执行任何重复的工作。下一步可能是在上述实现中添加缓存(我们目前只依赖于URLSession提供的默认缓存机制)，如果我们认为这是有用的的话。</p>
+<h2 id="5-a-nameconclusionaconclusion">5. <a name='Conclusion'></a>Conclusion</h2>
+<p>就是如何使用<strong>share</strong>操作符来避免在Combine管道中重复工作。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iXnrjLCYo/" class="tag">
+                    share
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ArhVOQ_GL/" class="tag">
+                    concurrency
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/codable-synthesis-for-swift-enums/">
+                  <h3 class="post-title">
+                    Codable synthesis for Swift enums
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>When can a structs memberwise initializer be used ? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在Swift中，定义为struct的类型会自动获得编译器合成的默认初始化器——所谓的“memberwise初始化器”，因为编译器会根据给定的struct成员(即其存储的属性)生成它。
+例如，如果我们定义了一个用户结构，它有一个name和一个..." />
+    <meta name="keywords" content="memberwise" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">When can a structs memberwise initializer be used ?</h2>
+            <div class="post-date">2020-03-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>在Swift中，定义为struct的类型会自动获得编译器合成的默认初始化器——所谓的“memberwise初始化器”，因为编译器会根据给定的struct成员(即其存储的属性)生成它。</p>
+<p>例如，如果我们定义了一个用户结构，它有一个name和一个preferences属性，我们可以通过传递这两个属性的值来使用它的memberwise初始化来创建实例:</p>
+<pre><code class="language-swift">struct User {
+    var name: String
+    var preferences: Preferences
+}
+
+let user = User(name: &quot;John&quot;, preferences: Preferences())
+</code></pre>
+<p>另一方面，当编译器合成memberwise初始化式时，计算属性完全被忽略 - 所以即使添加了一个，仍然可以像前面一样继续使用上面的初始化式:</p>
+<pre><code class="language-swift">struct User {
+    var name: String
+    var preferences: Preferences
+    var icon: Icon { .user }
+}
+
+let user = User(name: &quot;John&quot;, preferences: Preferences())
+</code></pre>
+<p>在Swift 5.1中，memberwise初始化器也将默认属性值考虑在内 - 这意味着如果我们给preferences属性一个默认值，我们就可以通过传递一个名字来创建一个User实例:</p>
+<pre><code class="language-swift">struct User {
+    var name: String
+    var preferences = Preferences()
+}
+
+let user = User(name: &quot;John&quot;)
+
+</code></pre>
+<p>一个很酷的事情是，我们可以继续使用类型的memberwise初始化器，即使该类型有私有属性——只要这些属性有默认值，就像这样:</p>
+<pre><code class="language-swift">struct User {
+    var name: String
+    private var preferences = Preferences()
+}
+
+let user = User(name: &quot;John&quot;)
+</code></pre>
+<p>然而，如果私有属性没有默认值，我们将不得不手动编写该类型的初始化式——以便能够从外部为该属性注入值:</p>
+<pre><code class="language-swift">struct User {
+    var name: String
+    private var preferences: Preferences
+
+    init(name: String, preferences: Preferences = .init()) {
+        self.name = name
+        self.preferences = preferences
+    }
+}
+</code></pre>
+<p>但是要记住的一点是，memberwise初始化式永远不会拥有高于internal的访问级别，这意味着我们只能在定义其类型的模块内部使用它们。</p>
+<p>这乍一看似乎是一个奇怪的限制，但它确实有优点，因为我们应该始终为公共消费设计显式的api——而不是将它们与数据的内部结构绑定。</p>
+<p>因此，总结一下，我们可以在以下情况下使用结构体的memberwise初始化式:</p>
+<p>它的所有成员要么是可见的，要么有一个默认值。<br>
+我们正在定义结构体的模块中创建实例。<br>
+所有其他情况都要求我们手动实现初始化器，至少目前是这样。</p>
+<p><a href="https://www.swiftbysundell.com/tips/when-can-memberwise-initializers-be-used/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/uRPAUW2Oq_/" class="tag">
+                    memberwise
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/writing-small-utility-functions-in-swift/">
+                  <h3 class="post-title">
+                    Writing small utility functions in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

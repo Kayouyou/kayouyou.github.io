@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>RxSwift: FlatMap的实现细节 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+RxSwift: FlatMap的实现细节
+
+
+1.1. FlatMap 函数签名
+
+1.1.1. 官方定义
+
+
+1.2. 一些基本概念
+1.3. 摇摆起来
+1.4. Events（事件）
+1.5. PublishSubject
+1..." />
+    <meta name="keywords" content="flatmap,rxswift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">RxSwift: FlatMap的实现细节</h2>
+            <div class="post-date">2021-05-06</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gq8pm8dsc6j30m80ar0u5.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#RxSwift:FlatMap">RxSwift: FlatMap的实现细节</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#FlatMap">FlatMap 函数签名</a>
+<ul>
+<li>1.1.1. <a href="#">官方定义</a></li>
+</ul>
+</li>
+<li>1.2. <a href="#-1">一些基本概念</a></li>
+<li>1.3. <a href="#-1">摇摆起来</a></li>
+<li>1.4. <a href="#Events">Events（事件）</a></li>
+<li>1.5. <a href="#PublishSubject">PublishSubject</a></li>
+<li>1.6. <a href="#SubscriptionChain">Subscription Chain</a></li>
+<li>1.7. <a href="#SendEvent">Send Event</a></li>
+<li>1.8. <a href="#Filter">Filter</a></li>
+<li>1.9. <a href="#Map">Map</a></li>
+<li>1.10. <a href="#-1">执行流程</a></li>
+<li>1.11. <a href="#FlatMap-1">FlatMap</a></li>
+<li>1.12. <a href="#TheDiagram">The Diagram</a></li>
+<li>1.13. <a href="#TheDefinition">The Definition</a></li>
+<li>1.14. <a href="#UsingFlatMap">Using FlatMap</a></li>
+<li>1.15. <a href="#HandlingErrors">Handling Errors</a></li>
+<li>1.16. <a href="#WereSubscribingWereSubscribing">We’re Subscribing, We’re Subscribing…</a></li>
+<li>1.17. <a href="#FlatMapLatest">FlatMapLatest</a></li>
+<li>1.18. <a href="#UserInteractions">User Interactions</a></li>
+<li>1.19. <a href="#CompletionBlock">Completion Block</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namerxswiftflatmaparxswift-flatmap的实现细节">1. <a name='RxSwift:FlatMap'></a>RxSwift: FlatMap的实现细节</h2>
+<p>ReactiveX中最强大的操作符之一是FlatMap。但对很多人来说，它也是最难理解的操作符之一。</p>
+<p>今天我们将深入了解FlatMap，当我们完成时，你将确切地知道它是如何工作的，何时使用它，以及如何避免它周围的一些陷阱。</p>
+<p>为了做到这一点，我们将了解一些RxSwift操作符的内部。一旦您理解了一些实现细节，其余部分也会变得容易理解得多。</p>
+<p>尽管Combine的实现可能有所不同，但一旦你理解了RxSwift版本背后的关键概念，你就可以在任何地方、任何平台上使用它。</p>
+<p>让我们开始吧。</p>
+<hr>
+<h3 id="11-a-nameflatmapaflatmap-函数签名">1.1. <a name='FlatMap'></a>FlatMap 函数签名</h3>
+<p>The function signature isn’t much help.</p>
+<pre><code class="language-swift">extension ObservableType {
+  func flatMap&lt;O:Observable&gt;(_ selector:(E) -&gt; O) -&gt; Observable&lt;O.E&gt;
+}
+</code></pre>
+<p>为了清晰起见，我稍微编辑了一下签名，但除非你是RxSwift和泛型方面的专家，否则它仍然相当密集。让我们试试官方的定义。</p>
+<h4 id="111-a-namea官方定义">1.1.1. <a name=''></a>官方定义</h4>
+<p>引用ReactiveX网站上的FlatMap文档:</p>
+<blockquote>
+<p>The FlatMap operator transforms an Observable by applying a function that you specify to each item emitted by the source Observable, where that function returns an Observable that itself emits items. FlatMap then merges the emissions of these resulting Observables, emitting these merged results as its own sequence.<br>
+This method is useful, for example, when you have an Observable that emits a series of items that themselves have Observable members or are in other ways transformable into Observables, so that you can create a new Observable that emits the complete collection of items emitted by the sub-Observables of these items.</p>
+</blockquote>
+<p>我第一次看到它的时候，它读起来像古梵文，我的眼睛开始变得呆滞。再读一遍(第三遍、第四遍、第五遍)也无济于事。</p>
+<p>本文开头所示的大理石图似乎也没有什么意义。3个项目进去了，6个项目出来了——但是它们都混在一起了。这是怎么呢?</p>
+<p>但是今天，我能读懂它们并理解它们想要表达的意思，当我们完成时，你们也能。</p>
+<h3 id="12-a-name-1a一些基本概念">1.2. <a name='-1'></a>一些基本概念</h3>
+<p>我将从一些对今天的讨论很重要的基本原理开始。请通读一遍，以确定你和我的看法一致，我们在讨论同样的事情。</p>
+<p>在RxSwift中，我们可以订阅一个Observable来接收未来的事件。这与我们在iOS中使用NotificationCenter的方式没有什么不同。</p>
+<pre><code class="language-swift">NotificationCenter.default
+    .addObserver(self, selector: #selector(onOrientationChange(_:)), name: UIDevice.orientationDidChangeNotification, object: nil)
+func onOrientationChange(_ sender:AnyObject) {
+    // do something
+}
+</code></pre>
+<p>我们将一个观察者添加到orientationDidChangeNotification，并告诉它我们希望在将来该事件发生时得到通知。因此，当用户旋转他们的设备时，我们的onOrientationChange委托将被调用。</p>
+<p>在RxSpeak中，我们订阅了一个Observable来接收未来的事件。因此，在RxSwift中执行类似的操作也就不足为奇了。</p>
+<pre><code class="language-swift">NotificationCenter.default
+    .rx
+    .notification(UIDevice.orientationDidChangeNotification)
+    .subscribe(onNext: { _ in
+        // do something
+    })
+    .disposed(by: disposeBag)
+</code></pre>
+<p>唯一真正的区别是我们的订阅处理程序是一个闭包而不是委托函数，并且RxSwift使用了一个额外的dispose (by:)操作符来取消我们不再需要的订阅。</p>
+<hr>
+<h3 id="13-a-name-1a摇摆起来">1.3. <a name='-1'></a>摇摆起来</h3>
+<p>那么，如果我告诉您，我们需要一些代码来做类似于NotificationCenter的事情，但您实际上不能使用NotificationCenter(或Rx或Combine)呢?</p>
+<p>如果您仔细考虑一下，您可能会意识到，NotificationCenter的核心实际上就是一个字典，它的键是通知名称，值是一个observer数组。也许让字符串作为键和闭包为订阅者只是为了让实现更简单。</p>
+<p>当发送一个通知时，send函数所做的就是在字典中查找该通知，获取订阅数组，然后遍历数组，依次执行每个闭包。<strong>“Yo, guys. It’s time. Do your thing.</strong></p>
+<p>Something like this:</p>
+<pre><code class="language-swift">class MyNotificationCenter {
+    static var subscriptions: [String:[() -&gt; Void]] = [:]
+    static func subscribe(name: String, block: @escaping ()-&gt;Void) {
+        var subs = subscriptions[name] ?? []
+        subs.append(block)
+        subscriptions[name] = subs
+    }
+    static func send(name: String) {
+        subscriptions[name]?.forEach { $0() }
+    }
+}
+</code></pre>
+<p>然后，你可以这样做</p>
+<pre><code class="language-swift">MyNotificationCenter
+    .subscribe(name: &quot;myEvent&quot;) {
+        // do something when myEvent occurs
+    }
+MyNotificationCenter.send(name: &quot;myEvent&quot;)
+</code></pre>
+<p>我想说的是，在这些华丽的行话背后，这些东西只是代码。</p>
+<p>这并不是说代码不复杂。RxSwift在其Element类型和锁定中使用泛型，以确保它是线程安全的，并且可以一次性管理订阅生命周期。毫无疑问，所有这些都增加了复杂性。</p>
+<p>但是核心概念已经足够简单明了了。</p>
+<p>Observable是一个事件源。subscribe这些事件产生一个subscription。发送事件可以非常简单，只需遍历一组订阅者，并告诉每个订阅者他们感兴趣的事件已经发生。</p>
+<hr>
+<h3 id="14-a-nameeventsaevents事件">1.4. <a name='Events'></a>Events（事件）</h3>
+<p>在RxSwift中，我们讨论了很多事件。下面是它的实际定义:</p>
+<pre><code class="language-swift">public enum Event&lt;Element&gt; {
+    /// Next element is produced.
+    case next(Element)
+    /// Sequence terminated with an error.
+    case error(Swift.Error)
+    /// Sequence completed successfully.
+    case completed
+}
+</code></pre>
+<p>事件只是一个包含三种情况的枚举</p>
+<ol>
+<li>
+<p>next(Element)用于传递我们感兴趣的值。如果你创建了一个PublishSubject<String>，那么Element就是String。</p>
+</li>
+<li>
+<p>error(Swift.Error)用于传递任何可能发生的错误。</p>
+</li>
+<li>
+<p>“completed” 只是告诉我们我们已经完成了，并且不会有更多的事件发生。</p>
+</li>
+</ol>
+<p><strong>请注意，如果订阅链生成错误或完成事件，则整个订阅链将关闭</strong>。</p>
+<hr>
+<h3 id="15-a-namepublishsubjectapublishsubject">1.5. <a name='PublishSubject'></a>PublishSubject</h3>
+<p>你可能已经注意到，在创建MyNotificationCenter时，我们基本上构建了RxSwift 的PublishSubject的迷你版本。</p>
+<pre><code class="language-swift">let publisher = PublishSubject&lt;Void&gt;()
+publisher
+    .subscribe(onNext: { _ in
+        print(&quot;We've got one!&quot;)
+    })
+    .disposed(by: disposeBag)
+publisher.onNext(())
+</code></pre>
+<p>在RxSwift中，publishers使用onNext将下一个元素通过subscription chain向下发送给它的subscribers(对应于前面提到的Event枚举的下一部分)。</p>
+<hr>
+<h3 id="16-a-namesubscriptionchainasubscription-chain">1.6. <a name='SubscriptionChain'></a>Subscription Chain</h3>
+<p>RxSwift和Combine都处理订阅链。通常，您有一个某种类型的发布者，它可能在链的中间有一个或两个(或三个或15个)操作符，所有这些操作符最后都以订阅或绑定告终。</p>
+<pre><code class="language-swift">let publisher = PublishSubject&lt;Int&gt;()
+publisher
+    .map { $0 * 2.5 }
+    .filter { $0 &gt; 10 }
+    .subscribe(onNext: { n in
+        print(&quot;We've got number \(n)!&quot;)
+    })
+    .disposed(by: disposeBag)
+</code></pre>
+<p>订阅链是在你订阅或绑定到一个可观察对象或一个可观察对象链时构建的。换句话说，这就是可观察链。</p>
+<pre><code class="language-swift">let chain = publisher
+    .map { $0 * 3 }
+    .filter { $0 &gt; 10 }
+</code></pre>
+<p>订阅链是在代码订阅或绑定到该链的瞬间在后台构建的。</p>
+<pre><code class="language-swift">chain
+    .subscribe(onNext: { n in
+        print(&quot;We've got number \(n)!&quot;)
+    })
+    .disposed(by: disposeBag)
+</code></pre>
+<p>幕后背后发生的事情很迷人。</p>
+<p>实际上，subscribe函数会把闭包藏起来，并订阅链中的最后一个Observable。这里它订阅了过滤器，它告诉它，“老兄，当你碰巧得到一个你想传递的事件时，把它委托给我。”</p>
+<p>过滤器操作符依次对它的父操作符map执行相同的操作。“哟。把你收到的任何事件的结果发给我。当然，之后你要对他们做的事都结束了。”</p>
+<p>最后，将订阅映射到链中的父节点，即publisher，正如我们已经看到的，publisher只是将subscription添加到它的subscribers列表中。</p>
+<hr>
+<h3 id="17-a-namesendeventasend-event">1.7. <a name='SendEvent'></a>Send Event</h3>
+<p>现在，如果我们告诉发布者发送一个事件给它的观察者…</p>
+<pre><code class="language-swift">publisher.onNext(5)
+</code></pre>
+<p>…我们触发以下事件序列:</p>
+<ol>
+<li>
+<p>发布者打开订阅委托列表，取出第一个委托，并向其发送一个5。</p>
+</li>
+<li>
+<p>map操作符接收一个5，将值传递给它的闭包，然后将结果发送给链中的下一个委托(3*5=15)。</p>
+</li>
+<li>
+<p>filter操作符接收15并将值传递给它的比较闭包，在本例中该闭包返回true。因为它是true, filter将继续并将当前值发送给它的委托。</p>
+</li>
+<li>
+<p>订阅(subscribe)接收15并将其传递给onNext处理程序，该处理程序打印“我们得到了数字15!”</p>
+</li>
+<li>
+<p>订阅链就完成了。我们的所有嵌套调用都向上返回到发布者循环。</p>
+</li>
+<li>
+<p>循环现在将onNext值5发送到其列表中的下一个订阅者，以此类推，直到发布者所知的每个订阅链都收到了新值的通知。</p>
+</li>
+<li>
+<p>现在我们从onNext语句返回。</p>
+</li>
+</ol>
+<p>这里的要点是，Rx序列并不是黑魔法。告诉发布者onNext(5)启动一个调用委托的循环，该委托调用一个闭包，闭包的值被传递给链中的下一个委托。</p>
+<p>这个过程会不断重复，根据操作符的不同，还会有不同的附加功能，直到我们完成。</p>
+<hr>
+<h3 id="18-a-namefilterafilter">1.8. <a name='Filter'></a>Filter</h3>
+<p>为了更加清楚，让我们来看看过滤器运算符的一个假想实现。(这不是实际的RxSwift实现，但它确实演示了使用的实际机制。)</p>
+<pre><code class="language-swift">class FilterOperator: Observable&lt;Element&gt; {
+    var subscriber: Subscriber&lt;Element&gt;
+    var predicate: (_ value: Element) -&gt; Bool
+    func on(_ event: Event&lt;Element&gt;) {
+        switch event {
+        case .next(let value):
+            if predicate(value) {
+                subscriber.on(.next(value))
+            }
+        default:
+            subscriber.on(event)
+        }
+    }
+    ...    
+}
+</code></pre>
+<p>正如上面所提到的，在这个过程中，令人惊讶的是缺乏黑魔法。</p>
+<p>on(_ event: event <Element>)函数是一个委托协议，它会被它的父元素调用，并伴随着序列中的下一个事件。</p>
+<p>该函数switch事件类型。</p>
+<p>在下一个事件中，使用提取的值调用存储的闭包(谓词)，如果闭包返回true，则将相同的值传递给链中的下一个订阅者。</p>
+<p>如果闭包返回false，则不会调用下面的委托，事件会从链中“神奇地”过滤掉。</p>
+<p>注意，在此实现中，已完成事件和错误事件只是简单地沿链转发，跳过调用闭包的代码。</p>
+<hr>
+<h3 id="19-a-namemapamap">1.9. <a name='Map'></a>Map</h3>
+<p>现在让我们尝试Map操作符。</p>
+<pre><code class="language-swift">class MapOperator: Observable&lt;Output&gt; {
+    var subscriber: Subscriber&lt;Output&gt;
+    var transform: (_ value: Element) -&gt; Output
+    func on(_ event: Event&lt;Element&gt;) {
+        switch event {
+        case .next(let value):
+            let newValue = transform(value)         
+            subscriber.on(.next(newValue))
+        default:
+            subscriber.on(event)
+        }
+    }
+    ...
+}
+</code></pre>
+<p>再一次，on(_ event: event <Element>)函数是委托，它由它的父元素调用并传递一个值。</p>
+<p>在函数内部，使用传递的值调用存储的转换闭包。该函数返回一个新的映射值，同样，它只是作为下一个值传递给链中的下一个订阅者。</p>
+<hr>
+<h3 id="110-a-name-1a执行流程">1.10. <a name='-1'></a>执行流程</h3>
+<p>filter和map都是操作的主要例子，它们以平滑、不间断的流操作和传递它们接收到的事件和值。</p>
+<p>获得一个值。用这个值调用函数。得到的结果。将结果传递给链中的下一个委托。</p>
+<p>Dead simple.</p>
+<p>事实上，我们的代码不能以任何其他方式运行。在Swift中，调用一个函数，该函数必须返回一个值。</p>
+<p>诚然，该函数可以在一个循环中将160亿个数字加在一起，但就执行流程而言，我们调用的任何函数都必须有一个值退出。</p>
+<p>我们调用的任何函数都可以等待某个结果，但这样做会阻塞当前线程——因为该函数必须返回一个值。我是说，这是一个函数的定义。</p>
+<p>但是如果我们现在没有这个值，如果我们真的，真的，真的不想阻止当前线程等待它，会发生什么呢?假设我们需要进行一个API调用，然后在服务器给我们一个结果时返回结果?</p>
+<p>那么，当我对发送和接收未来事件感兴趣时，我在RxSwift中做什么?</p>
+<p>我创建一个可观察对象并订阅它。</p>
+<hr>
+<h3 id="111-a-nameflatmap-1aflatmap">1.11. <a name='FlatMap-1'></a>FlatMap</h3>
+<p>这又回到了我们来这里的原因。让我们再来看看FlatMap的功能签名。</p>
+<pre><code class="language-swift">extension ObservableType {
+  func flatMap&lt;O:Observable&gt;(_ selector:(E) -&gt; O) -&gt; Observable&lt;O.E&gt;
+}
+</code></pre>
+<p>现在光线开始透过雾照射出来。FlatMap接受一个函数作为参数，这个函数接受一个值，然后返回一个类型为E的可观察对象。</p>
+<p>基本上，你传递给flatMap的闭包是说，“好，我现在没有你想要的东西。但如果你观察Observable，我将返回你感兴趣的(或多个)值——它很快就会出现。&quot;</p>
+<p>一旦接收到，FlatMap将把该值(或多个值)传递给链中的下一个订阅者。</p>
+<p>根据我们已经看到和完成的内容，我怀疑您可以自己编写基本的实现，但下面是我的示例。</p>
+<pre><code class="language-swift">class FlatMapOperator: Observable&lt;Output&gt; {
+    var subscriber: Subscriber&lt;Output&gt;
+    var transform: (_ value: Element) -&gt; Observable&lt;Output&gt;
+    var subscriptions: [Disposable]
+    func on(_ event: Event&lt;Element&gt;) {
+        switch event {
+        case .next(let value):
+            let disposable = transform(value)
+                .subscribe(onNext: { newValue in
+                    self.subscriber.onNext(.next(newValue))
+                }, onError: { e in
+                    self.subscriber.onNext(.error(e))
+                ))
+            subscriptions.append(disposable)
+        default:
+            subscriber.onNext(event)
+        }
+    }
+    
+    ...
+}
+</code></pre>
+<p>接收一个带有值的事件。将这个值传递给函数，并通过调用transform得到一个Observable作为结果。在内部订阅这个Observable，然后等待它发送给我们一些东西。</p>
+<p>当该订阅接收到一个值时，将它传递给我们的委托，就像我们过去对过滤器和映射操作符所做的那样。</p>
+<p>跟踪一次性订阅只是内务管理。当我们的运营商离开时，我们会想要关闭我们追踪的所有订阅。</p>
+<hr>
+<h3 id="112-a-namethediagramathe-diagram">1.12. <a name='TheDiagram'></a>The Diagram</h3>
+<p>让我们看看这个麻烦的图是否讲得通。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq8pm8dsc6j30m80ar0u5.jpg" alt="avatar" loading="lazy"></figure>
+<p>对于每个接收到的值，闭包{}将把这个值转换成一个可观察对象，这个可观察对象会随着时间的推移返回自己的两个值。(为了清晰起见，我在这些事件中添加了数字。)</p>
+<p>我们得到一个红色的值并返回一个最终生成红色1和红色2的可观察对象。这些值沿流发送。然后这个Observable就会完成，flatMap会取消对它的订阅。</p>
+<p>我们得到一个绿色的值，它返回一个可观察对象，这个可观察对象反过来产生绿色1，但是在它设法生成第二个值之前，我们收到一个蓝色的事件。它的Observable快速生成blue 1，并被发送到流中。</p>
+<p>之后，我们的绿色和蓝色可观察对象都会生成它们自己的第二个事件，分别是绿色2和蓝色2，并将其传递下去。两者均已完成并取消订阅。</p>
+<p>最后，我们的输入Observable本身完成了，这将关闭整个订阅链。</p>
+<p>如果我们愿意，我们可以在RxSwift中编码这个序列:</p>
+<pre><code class="language-swift">let publisher = PublishSubject&lt;String&gt;()
+publisher
+    .flatMap { (color) -&gt; Observable&lt;String&gt; in
+        return .create { (observer) -&gt; Disposable in
+            observer.onNext(&quot;\(color) 1&quot;)
+            delay(0.1) {
+                observer.onNext(&quot;\(color) 2&quot;)
+                observer.onCompleted()
+            }
+            return Disposables.create()
+        }
+    }
+    .subscribe(onNext: { (color) in
+        print(color)
+    })
+    .disposed(by: disposeBag)
+delay(0.10) { publisher.onNext(&quot;red&quot;) }
+delay(0.30) { publisher.onNext(&quot;green&quot;) }
+delay(0.35) { publisher.onNext(&quot;blue&quot;) }
+delay(0.90) { publisher.onCompleted() }
+</code></pre>
+<p>函数delay只是一个辅助函数，用于在指定的延迟之后将闭包放到DispatchQueue上。</p>
+<pre><code class="language-swift">func delay( _ t: TimeInterval, f: @escaping ()-&gt;Void ) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + t, execute: f)
+}
+</code></pre>
+<p>输出是您所期望的，并与上面的图相匹配。</p>
+<pre><code class="language-swift">red 1
+red 2
+green 1
+blue 1
+green 2
+blue 2
+</code></pre>
+<hr>
+<h3 id="113-a-namethedefinitionathe-definition">1.13. <a name='TheDefinition'></a>The Definition</h3>
+<p>那我们最初的定义呢？</p>
+<blockquote>
+<p>“The FlatMap operator transforms an Observable by applying a function that you specify to each item emitted by the source Observable, where that function returns an Observable that itself emits items. FlatMap then merges the emissions of these resulting Observables, emitting these merged results as its own sequence.” — ReactiveX docs</p>
+</blockquote>
+<p>这可能需要一些脑力锻炼，但根据你现在所知道的，至少你的眼睛不应该呆滞。</p>
+<hr>
+<h3 id="114-a-nameusingflatmapausing-flatmap">1.14. <a name='UsingFlatMap'></a>Using FlatMap</h3>
+<p>当我们快结束的时候，你可能会说，“这很好，但我实际上会用它做什么呢?”</p>
+<p>FlatMap的一个非常常见的用例是将API调用链接在一起。考虑:</p>
+<pre><code class="language-swift">func login(_ credentials: Credentials) -&gt; Observable&lt;User&gt; {
+    return SSO.knownEndpoint()
+        .flatMap { (endpoint) -&gt; Observable&lt;String&gt; in
+            return SSO.authenticate(credentials, endpoint: endpoint)
+        }
+        .flatMap { (token) -&gt; Observable&lt;User&gt; in
+            return Users.loadUser(forToken: token)
+        }
+}
+</code></pre>
+<p>在这里，我调用API以获得授权端点，将token传递给身份验证API，然后将产生的token传递给另一个API，以加载当前用户的信息。</p>
+<p>每个被调用的函数返回它自己的Observable，它被简单地传递给FlatMap。下面是调用Users.loadUser，它还演示了RxSwift 6的newdecode操作符。</p>
+<pre><code class="language-swift">class Users {
+    static func loadUser(forToken t: String) -&gt; Observable&lt;User&gt; {
+        session.post(path: .user, parameters: [&quot;token&quot;:t])
+            .decode(type: User.self, decoder: JSONDecoder())
+    }
+    ...
+}
+</code></pre>
+<p>如上所示，FlatMap可以显著改善你需要将API调用连接在一起的情况，简化代码并避免错误处理金字塔的毁灭。</p>
+<hr>
+<h3 id="115-a-namehandlingerrorsahandling-errors">1.15. <a name='HandlingErrors'></a>Handling Errors</h3>
+<p>最后一点需要更多的解释。</p>
+<p>请注意，如果FlatMap内部的任何订阅返回一个错误，该错误将被传播并发送到订阅链，最终终止对我们的数据的任何订阅。实际上，我们在flatMap订阅处理程序中看到了这种机制。</p>
+<pre><code class="language-swift">.subscribe(onNext: { newValue in
+    self.subscriber.onNext(.next(newValue))
+}, onError: { e in
+    self.subscriber.onNext(.error(e))
+))
+</code></pre>
+<p>在上面的登录示例中，这不是问题。我们的订阅链将在每次用户试图登录时重新构建并调用，实际上看到返回的错误正是我们想要的。</p>
+<p>但这可能不是你在所有情况下都想要的行为。那么如何避免错误终止长期订阅呢?</p>
+<p>一个简单的解决方案是在FlatMap订阅看到错误之前捕获并处理它们。</p>
+<pre><code class="language-swift">...
+.flatMap { _ in
+    service.loadArticles()
+        .catchErrorJustReturn([])
+}
+...
+</code></pre>
+<p>在这里，我们试图加载一个文章列表，但如果加载失败，我们就打开并返回一个空数组。</p>
+<p>我在前一篇文章“RxSwift: CompactMap更好的错误处理”中写过关于FlatMap中的错误处理。</p>
+<p>最后一件值得强调的事情是，虽然错误会从FlatMap传播出去，但completions不会。从闭包返回.completed到包含的FlatMap只是一个订阅已经完成的信号，您不再需要监视它。</p>
+<hr>
+<h3 id="116-a-nameweresubscribingweresubscribingawere-subscribing-were-subscribing">1.16. <a name='WereSubscribingWereSubscribing'></a>We’re Subscribing, We’re Subscribing…</h3>
+<p>请注意，FlatMap会生成一个新的Observable，因此，对于它接收到的每个事件值，都会产生一个对该Observable的新订阅。</p>
+<p>这就是上述定义中的“FlatMap然后合并这些最终可观察对象的排放”部分。这是它的标准行为。这可能正是您想要的，但您应该知道还有另一个常见的FlatMap版本。</p>
+<hr>
+<h3 id="117-a-nameflatmaplatestaflatmaplatest">1.17. <a name='FlatMapLatest'></a>FlatMapLatest</h3>
+<p>FlatMapLatest做了很多它所宣传的事情，从最新生成的Observable中映射和返回结果。每次它接收到一个值，它就会取消先前订阅(如果有的话)，然后订阅闭包返回的最新的Observable。</p>
+<pre><code class="language-swift">class FlatMapLatestOperator: Observable&lt;Output&gt; {
+    var subscriber: Subscriber&lt;Output&gt;
+    var transform: (_ value: Element) -&gt; Observable&lt;Output&gt;
+    var disposable: Disposable?
+    func on(_ event: Event&lt;Element&gt;) {
+        switch event {
+        case .next(let value):
+            disposable?.dispose()
+            disposable = transform(value)
+                .subscribe(onNext: { newValue in
+                    self.subscriber.onNext(.next(newValue))
+                }, onError: { e in
+                    self.subscriber.onNext(.error(e))
+                ))
+        default:
+            subscriber.onNext(event)
+        }
+    }
+    ...    
+}
+</code></pre>
+<p>如果我们在上面的颜色生成示例中使用.flatMapLatest而不是.flatMap，那么输出将如下所示.</p>
+<pre><code class="language-swift">red 1
+red 2
+green 1
+blue 1
+blue 2
+</code></pre>
+<p>注意，绿色的2不见了，因为它的订阅在它的可观察对象生成第二个事件之前就被丢弃了。</p>
+<p>如果你的应用中有一个持续很长一段时间的订阅链，你可能会考虑使用.flatmaplatest。</p>
+<p>如果您正在执行类似提前输入搜索字段的操作，并且不再关心以前API请求可能返回的任何结果，那么它也很有用。</p>
+<hr>
+<h3 id="118-a-nameuserinteractionsauser-interactions">1.18. <a name='UserInteractions'></a>User Interactions</h3>
+<p>FlatMap和FlatMapLatest都等待事件发生并传递，这并不局限于进行API调用。您还可以使用它们来处理用户交互，如确认对话框。</p>
+<p>在这个例子中，FlatMapLatest是一个更好的选择，因为我只关心最近的操作。</p>
+<pre><code class="language-swift">button.rx.tap
+    .flatMapLatest { () -&gt; Observable&lt;Continue&gt; in
+        return Dialogs.confirmSaveDialog()
+    }
+    .filter { $0 == .continue }
+    ...
+</code></pre>
+<p>当点击按钮时，flatMapLatest会显示一个构造对话框，然后在继续序列之前等待响应。在这种情况下，将过滤接收到的响应，而序列的其余部分只有在用户点击Continue时才会执行。</p>
+<p>这是一个非常强大的概念，我保证以后会在另一篇文章中访问它。</p>
+<hr>
+<h3 id="119-a-namecompletionblockacompletion-block">1.19. <a name='CompletionBlock'></a>Completion Block</h3>
+<p>这就是FlatMap和它的近亲FlatMapLatest。</p>
+<p>我已经尽力消除了围绕它的一些困惑，阐明了它在内部是如何工作的，甚至还为您提供了一些如何在代码中使用它的示例。</p>
+<p>但是，我主要是试图提供我希望在第一次阅读ReactiveX定义时就能得到的定义和解释。</p>
+<p>Enjoy.</p>
+<p><a href="https://betterprogramming.pub/rxswift-deep-inside-flatmap-1ca150c41b18">原文地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/xSX2DddaT/" class="tag">
+                    flatmap
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/rxswift-shi-yong-compactmap-geng-hao-de-chu-li-cuo-wu/">
+                  <h3 class="post-title">
+                    RxSwift: 使用CompactMap更好的处理错误
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Custom container view controllers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="自iPhone早期以来，视图控制器遏制一直是UIKit的一个重要部分。通过像UINavigationController和UITabBarController这样的类，容器视图控制器在很多方面定义了我们如何与iOS上的大多数应用程序交互，以..." />
+    <meta name="keywords" content="ui developement,view controllers" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Custom container view controllers in Swift</h2>
+            <div class="post-date">2018-07-01</div>
+            
+            <div class="post-content" v-pre>
+              <p>自iPhone早期以来，视图控制器遏制一直是UIKit的一个重要部分。通过像UINavigationController和UITabBarController这样的类，容器视图控制器在很多方面定义了我们如何与iOS上的大多数应用程序交互，以及它们的各种屏幕是如何组织的。</p>
+<p>本质上，容器视图控制器是UIViewController的子类专门用于管理其他视图控制器，并以某种方式显示它们，就像UINavigationController在导航堆栈中显示它的子导航并管理导航条一样。</p>
+<p>本周，让我们看看如何构建我们自己的容器视图控制器，以及如何这样做可以帮助我们使部分UI代码更模块化，更容易管理。</p>
+<h2 id="managing-state">Managing state</h2>
+<p>许多UI代码都围绕着以这样或那样的方式管理状态展开。我们可能在等待用户完成表单，或者在显示加载旋转器时等待加载内容。通常状态的改变意味着转换到一个新的UI——例如显示一个表格视图，并在视图的内容可用时隐藏一个加载旋转器。</p>
+<p>它是非常常见的一个单一的视图控制器既负责这些状态之间的转换，也负责渲染它们。例如，下面是我们如何让ProductViewController处理它的加载、错误和渲染状态:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    ...
+
+    func loadProduct() {
+        showActivityIndicator()
+
+        productLoader.loadProduct(withID: productID) { [weak self] result in
+            switch result {
+            case .success(let product):
+                self?.render(product)
+            case .failure(let error):
+                self?.render(error)
+            }
+        }
+    }
+
+    private func showActivityIndicator() {
+        // Activity indicator setup and rendering
+        ...
+    }
+
+    private func render(_ product: Product) {
+        // Product view setup and rendering
+        ...
+    }
+
+    private func render(_ error: Error) {
+        // Error view setup and rendering
+        ...
+    }
+}
+</code></pre>
+<p>上面的可能看起来不是那么糟糕，但我们都知道，视图控制器有更多的职责，而不仅仅是加载和渲染内容。一旦我们添加了我们的布局代码，响应系统事件，如键盘出现，以及我们通常在视图控制器中执行的所有其他任务-可能我们手上还有另一个巨大的视图控制器。</p>
+<h2 id="child-view-controllers">Child view controllers</h2>
+<p>就像我们在“在Swift中使用子视图控制器作为插件”中看到的那样，缓解视图控制器大量增长问题的一种方法是将它们分割成多个，以便随时插入。如果我们给每个视图控制器一个狭窄的职责范围，我们可以让他们专注于他们做的最好的事情——控制视图。</p>
+<p>子视图控制器也使容器视图控制器成为可能。 但是，除了向视图中添加子元素之外，容器还更进一步，并控制子元素之间的转换。 这意味着我们的内容视图控制器可以专注于布局和渲染，而把UI状态管理留给它们的容器。</p>
+<p>让我们重构上面的ProductViewController，使用一个容器视图控制器来管理它的三个状态之间的转换。我们先为每个状态创建一个视图控制器:</p>
+<pre><code class="language-swift">class LoadingViewController: UIViewController {
+    private lazy var activityIndicator = UIActivityIndicatorView(
+        activityIndicatorStyle: .gray
+    )
+    ...
+}
+
+class ErrorViewController: UIViewController {
+    private lazy var errorLabel = UILabel()
+    ...
+}
+
+class ProductContentViewController: UIViewController {
+    private lazy var productView = ProductView()
+    ...
+}
+</code></pre>
+<p>正如你在上面看到的，每个视图控制器都是用来渲染特定状态的。</p>
+<p>LoadingViewController显示一个加载微调器，ErrorViewController显示遇到的任何错误，ProductContentViewController在加载后渲染实际的产品内容。</p>
+<h2 id="creating-a-container">Creating a container</h2>
+<p>接下来，让我们创建我们的容器视图控制器。 因为这个容器将在各种内容状态之间进行转换——我们把它叫做ContentStateViewController。就像在Swift中建模状态一样，我们将使用enum来表示三种可能的状态，我们将从添加一个方法开始，使我们的容器视图控制器转换到一个新的状态:</p>
+<pre><code class="language-swift">class ContentStateViewController: UIViewController {
+    private var state: State?
+
+    func transition(to newState: State) {
+        ...
+    }
+}
+
+extension ContentStateViewController {
+    enum State {
+        case loading
+        case failed(Error)
+        case render(UIViewController)
+    }
+}
+</code></pre>
+<p>注意我们实际上是如何传递在创建.render状态时应该被渲染的UIViewController，而不是传递一个产品。这样我们就可以为任何类型的内容使用新的容器视图控制器，我们不需要让它知道任何特定的模型 - 它只知道如何渲染任何内容视图控制器。</p>
+<p>接下来，让我们填充那个转换方法，并添加一个单独的方法来解决给定状态要呈现哪个子视图控制器:</p>
+<pre><code class="language-swift">class ContentStateViewController: UIViewController {
+    private var state: State?
+    private var shownViewController: UIViewController?
+
+    func transition(to newState: State) {
+        shownViewController?.remove()
+        let vc = viewController(for: newState)
+        add(vc)
+        shownViewController = vc
+        state = newState
+    }
+}
+
+private extension ContentStateViewController {
+    func viewController(for state: State) -&gt; UIViewController {
+        switch state {
+        case .loading:
+            return LoadingViewController()
+        case .failed(let error):
+            return ErrorViewController(error: error)
+        case .render(let viewController):
+            return viewController
+        }
+    }
+}
+</code></pre>
+<p>我再次使用我喜爱的扩展从“使用子视图控制器作为插件在Swift”上面，这使它更简单地添加和删除子视图控制器使用add()和remove()方法。</p>
+<p>最后，让我们使用.loading作为默认状态，以防容器视图控制器在视图加载时没有转换到任何特定的状态:</p>
+<pre><code class="language-swift">override func viewDidLoad() {
+    super.viewDidLoad()
+
+    if state == nil {
+        transition(to: .loading)
+    }
+}
+</code></pre>
+<p>就像这样，我们创建了我们自己的自定义容器视图控制器用于在不同内容状态之间转换!🎉</p>
+<h2 id="its-implementation-time">It's implementation time!</h2>
+<p>让我们来旋转一下我们的新ContentStateViewController。有两种方法。我们可以使用继承，并使ProductViewController成为ContentStateViewController的子类来获得它的能力， 或者我们可以使用组合，把我们的容器视图控制器添加为子控制器。 现在，我们选择后者，因为它在将来会给我们更多的灵活性。</p>
+<p>当所有的内容状态被委托给ContentStateViewController时，ProductViewController看起来是这样的:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    private lazy var stateViewController = ContentStateViewController()
+    
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        add(stateViewController)
+    }
+
+    func loadProduct() {
+        productLoader.loadProduct(withID: productID) { [weak self] result in
+            switch result {
+            case .success(let product):
+                self?.render(product)
+            case .failure(let error):
+                self?.render(error)
+            }
+        }
+    }
+
+    private func render(_ product: Product) {
+        let contentVC = ProductContentViewController(product: product)
+        stateViewController.transition(to: .render(contentVC))
+    }
+
+    private func render(_ error: Error) {
+        stateViewController.transition(to: .failed(error))
+    }
+}
+</code></pre>
+<p>很酷的是，使用上述方法，ProductViewController不需要包含太多(如果有的话)布局代码 - 因为所有的渲染都被委托给由我们的容器视图控制器管理的子视图控制器。作为顶级视图控制器，它可以专注于响应事件，并告诉它的嵌入式容器视图控制器做什么。</p>
+<h2 id="other-use-cases">Other use cases</h2>
+<p>还有很多其他的任务我们也可以使用容器视图控制器。我们可以，例如:</p>
+<p>实现一个KeyboardAwareViewController，它把它所有的子视图放到一个UIScrollView中。然后它观察键盘(使用NotificationCenter API)，当键盘显示或隐藏时，它相应地调整滚动视图的滚动位置。 这样我们就可以添加任何我们想要调整键盘事件的视图控制器，而不必在每个单独的视图控制器中实现观察。</p>
+<p>如果我们的应用程序有不同的登录状态，我们可以在顶层实现一个LoginStateViewController，并让它自动管理用户的登录状态。这样我们可以有一个单独的地方来处理登录代码，并让我们的容器显示和隐藏各种视图控制器，这取决于用户是否登录。</p>
+<p>如果我们的应用程序中有一个分页视图，我们可以实现一个PaginatedViewController，它给了我们一个简单的方法让用户在多个分页的子视图控制器之间滚动。</p>
+<p>一般来说，需要我们在不同视图或状态之间转换的屏幕通常是自定义容器视图控制器的一个很好的用例👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>iOS开发者在实现堆叠导航、标签栏、搜索控制器和其他类型的系统定义ui时，一直在使用容器视图控制器-但事实上，我们也可以很容易地创建自己的容器，这一点很容易被忽视。通过将子视图控制器之间的转换委托给一个专用类型，我们通常可以得到更简单、更易于管理的UI代码。</p>
+<p>无论我们正在构建什么应用程序，UI中有一些部分可以从视图控制器包含中受益的可能性很高。这里的技巧是尝试远离每个屏幕总是只包含一个视图控制器的心理模型。就像我们如何建立uiview的层次结构一样，通过嵌套视图控制器，我们通常会得到更细更简单的实现，它们更模块化。</p>
+<p><a href="https://www.swiftbysundell.com/articles/custom-container-view-controllers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/FhUIK00QN/" class="tag">
+                    ui developement
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/PG4tMePHd/" class="tag">
+                    view controllers
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/handling-mutable-models-in-swift/">
+                  <h3 class="post-title">
+                    Handling mutable models in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

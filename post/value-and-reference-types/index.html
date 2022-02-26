@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Value and Reference Types | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift类型通常可以分为两类——值类型和引用类型——这决定了它们将如何在不同的函数和其他代码范围之间处理。当使用值类型时，每个实例都被单独处理并作为值改变，而引用类型实例每一个都作为对象的引用。让我们看看这到底意味着什么，以及其中的一些实..." />
+    <meta name="keywords" content="value types,reference types" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Value and Reference Types</h2>
+            <div class="post-date">2019-04-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift类型通常可以分为两类——值类型和引用类型——这决定了它们将如何在不同的函数和其他代码范围之间处理。当使用值类型时，每个实例都被单独处理并作为值改变，而引用类型实例每一个都作为对象的引用。让我们看看这到底意味着什么，以及其中的一些实际含义是什么。</p>
+<p>让我们从引用类型开始，它在Swift中本质上是指定义为类的类型。假设我们正在开发一个社交网络应用程序，并且我们想定义一个类型来表示用户可以发布的帖子。 如果我们选择让它成为一个类，它可能看起来像这样:</p>
+<pre><code class="language-swift">class Post {
+    var title: String
+    var text: String
+    var numberOfLikes = 0
+    
+    init(title: String, text: String) {
+        self.title = title
+        self.text = text
+    }
+}
+</code></pre>
+<p>接下来，假设我们想要编写一个函数，当用户按下某种形式的like按钮时可以调用这个函数，它将增加帖子的like数量，并显示一个确认UI:</p>
+<pre><code class="language-swift">func like(_ post: Post) {
+    post.numberOfLikes += 1
+    showLikeConfirmation()
+}
+</code></pre>
+<p>将上述两段代码放在一起，我们现在可以创建一个Post实例，将它传递给like函数，并期望打印Post的likes数将导致调试控制台显示1:</p>
+<pre><code class="language-swift">let post = Post(title: &quot;Hello, world!&quot;, text: &quot;...&quot;)
+like(post)
+print(post.numberOfLikes) // 1
+</code></pre>
+<p>到目前为止，一切都很好，而且一般来说，类实例(或引用类型)的行为方式通常是非常直观的——特别是对于有其他面向对象语言背景的开发人员。 如果我们将一个对象传递给一个函数，那么在该函数内发生的任何突变也会反映在函数外-因为我们总是引用原始实例，即使我们将对象传递给代码库的不同部分。</p>
+<p>另一方面，值类型的行为则完全不同。让我们保持Post类型与之前完全相同，只是将它从一个类改为一个结构体:</p>
+<pre><code class="language-swift">struct Post {
+    var title: String
+    var text: String
+    var numberOfLikes = 0
+    
+    init(title: String, text: String) {
+        self.title = title
+        self.text = text
+    }
+}
+</code></pre>
+<p>完成上述更改后，编译器将强制我们修改一下like函数 -因为传入函数的值默认是常量，这意味着它们不能以任何方式改变。 -因为传入函数的值默认是常量，这意味着它们不能以任何方式改变。</p>
+<pre><code class="language-swift">func like(_ post: Post) {
+    // Simply re-assigning the post to a new, mutable, variable
+    // will actually create a new copy of it.
+    var post = post
+    post.numberOfLikes += 1
+    showLikeConfirmation()
+}
+</code></pre>
+<p>然而，问题是，由于我们现在复制的值，我们在like函数的作用域内对它所做的任何更改都不会应用到我们传入的原始Post值上——使我们的代码从现在开始打印0而不是1:</p>
+<pre><code class="language-swift">let post = Post(title: &quot;Hello, world!&quot;, text: &quot;...&quot;)
+like(post)
+print(post.numberOfLikes) // 0
+</code></pre>
+<p>解决上述问题的一种方法是使用inout关键字将like函数的Post参数转换为引用，即使它是一个值类型。 这样，我们就可以自由地改变函数内部的值，这些改变将被应用到传入的原始值上——就像使用引用类型一样:</p>
+<pre><code class="language-swift">func like(_ post: inout Post) {
+    post.numberOfLikes += 1
+    showLikeConfirmation()
+}
+</code></pre>
+<p>唯一的区别是，在调用站点，我们现在需要使用&amp;前缀传递Post值-表示我们将值类型作为一个引用传递，同样导致1被打印为likes的数量:</p>
+<pre><code class="language-swift">var post = Post(title: &quot;Hello, world!&quot;, text: &quot;...&quot;)
+like(&amp;post)
+print(post.numberOfLikes) // 1
+</code></pre>
+<p>虽然inout有它自己的用例，但是完全接受值类型的概念比把它们当作引用(如果我们需要引用，为什么不坚持使用类来代替呢?)为了做到这一点，让like函数返回一个新的、更新过的post副本，而不是试图改变原来的值:</p>
+<pre><code class="language-swift">func like(_ post: Post) -&gt; Post {
+    var post = post
+    post.numberOfLikes += 1
+    showLikeConfirmation()
+    return post
+}
+</code></pre>
+<p>有了上面的改变，我们现在可以简单地把调用like的结果赋值给我们原来的post变量，以确保我们的外部作用域反映了函数内部的改变:</p>
+<pre><code class="language-swift">var post = Post(title: &quot;Hello, world!&quot;, text: &quot;...&quot;)
+post = like(post)
+print(post.numberOfLikes) // 1
+</code></pre>
+<p>我们还可以做得更深入一些，为Post添加一个突变API，以增加点赞数，使Post值能够自身突变:</p>
+<pre><code class="language-swift">extension Post {
+    mutating func like() {
+        numberOfLikes += 1
+    }
+}
+</code></pre>
+<p>使用上述方法，我们还可以创建另一个方便的API，它可以一次完成喜欢一个帖子所需的复制和修改:</p>
+<pre><code class="language-swift">extension Post {
+    func liked() -&gt; Post {
+        var post = self
+        post.like()
+        return post
+    }
+}
+</code></pre>
+<p>有了上面的这些，我们现在可以回到我们的like函数，并简化它，只作为一个包装器来显示确认UI和执行我们的模型修改，使用我们新的便利API:</p>
+<pre><code class="language-swift">func like(_ post: Post) -&gt; Post {
+    showLikeConfirmation()
+    return post.liked()
+}
+</code></pre>
+<p>什么时候使用值，什么时候使用引用类型，这在很大程度上取决于我们希望一个类型具有哪种语义。 把它作为一个简单的值来处理(只能在特定的环境下局部变异)最有意义吗?还是让每个实例都有一个实际的标识并作为引用传递更有意义?</p>
+<p>不管我们最终选择了什么，通常更好的做法是采用我们选择的语义——并相应地调整我们的代码——而不是与类型系统作对。</p>
+<p><a href="https://www.swiftbysundell.com/basics/value-and-reference-types/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/K623Q1U6L/" class="tag">
+                    value types
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Ei0W0K7WF7/" class="tag">
+                    reference types
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/bindable-values-in-swift/">
+                  <h3 class="post-title">
+                    Bindable values in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

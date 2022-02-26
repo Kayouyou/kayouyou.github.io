@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Building a declarative animation framework in Swift - Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="当我在应用程序中使用动画时，我喜欢将它们分为3个单独的类别;基于场景、基于视图和基于框架。 几周前，我们探讨了SpriteKit如何成为基于场景动画的优秀工具， 也就是我们在独立场景的元素上执行动画的时候。
+本周，让我们看看如何在iOS上让..." />
+    <meta name="keywords" content="declarative programming,animations" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Building a declarative animation framework in Swift - Part 1</h2>
+            <div class="post-date">2017-07-23</div>
+            
+            <div class="post-content" v-pre>
+              <p>当我在应用程序中使用动画时，我喜欢将它们分为3个单独的类别;基于场景、基于视图和基于框架。 几周前，我们探讨了SpriteKit如何成为基于场景动画的优秀工具， 也就是我们在独立场景的元素上执行动画的时候。</p>
+<p>本周，让我们看看如何在iOS上让基于视图的动画(当我们在动画单个uiview时，如按钮和标签)更容易处理 -通过构建一个简单的框架，使我们能够以一种非常声明性的、可组合的方式来表达动画(如此多的流行词😅)。</p>
+<p>在这篇文章中，我们将构建这个框架的初始实现，下周我们将对它进行扩展，使其变得更加强大和灵活。让我们开始👍</p>
+<h2 id="normal-animations">Normal animations</h2>
+<p>通常，我们使用UIViews动画API在iOS上创建基于视图的动画，像这样:</p>
+<pre><code class="language-swift">UIView.animate(withDuration: 0.3) {
+    button.frame.size = CGSize(width: 200, height: 200)
+}
+</code></pre>
+<p>虽然这对于简单的动画来说非常有效(就像上面的例子，我们只是想要用动画来调整按钮的大小)，但是事情很快就会失控。 假设我们只是想在调整按钮大小之前添加一个淡入效果，我们必须这样写:</p>
+<pre><code class="language-swift">UIView.animate(withDuration: 0.3, animations: {
+    button.alpha = 1
+}, completion: { _ in
+    UIView.animate(withDuration: 0.3) {
+        button.frame.size = CGSize(width: 200, height: 200)
+    }
+})
+</code></pre>
+<p>很明显，我们在动画中添加的步骤越多，我们的代码就会变得越复杂和难以阅读。虽然复杂和难以阅读的代码是我们应该尽量避免的，但这对动画代码来说尤其糟糕，这通常需要大量的调整和实验，以使动画感觉“刚刚好”👌。</p>
+<h2 id="declarative-animations">Declarative animations</h2>
+<p>我真正喜欢声明式api和编码风格的部分原因是，它可以使代码更容易阅读。其思想是，我们不是逐行指定我们想要执行的所有操作，而是预先声明我们要执行的所有操作(我将在以后的博客文章中更多地介绍Swift的声明式编程技术)。</p>
+<p>如果我们可以简单地声明所有的动画步骤，而不必编写嵌套的闭包，这不是很好吗? 这将使淡入后再调整大小的按钮动画看起来像这样:</p>
+<pre><code class="language-swift">button.animate([
+    .fadeIn(duration: 0.3),
+    .resize(to: CGSize(width: 200, height: 200), duration: 0.3)
+])
+</code></pre>
+<p>使用如上API，调整我们的动画(如添加或删除步骤，更改持续时间或其他参数等)将非常容易。代码也变得更易于阅读和推理，因为我们不再需要尝试弄清n级嵌套闭包中发生了什么。</p>
+<p>好消息是，创建一个API来让我们编写像上面这样的动画并不需要很多工作——事实上，现在，我们将编写一个小框架，使我们能够做到这一点!😀</p>
+<h2 id="lets-open-up-a-playground">Let's open up a playground</h2>
+<p>每当我有了一个关于框架的新想法，我总是点燃一个操场。事实上，我的大多数开源项目几乎都是在操场上构建的。就像我喜欢在做测试驱动开发时在操场上工作一样，在创建新框架或新api时，快速反馈循环非常有价值。</p>
+<p>在Xcode中，选择File &gt; New &gt; Playground…开始(如果您安装了my Playground脚本，您也可以在命令行上输入Playground来快速创建一个)。</p>
+<p>因为我们将创建一个动画框架，让我们创建一个实时视图，它将让我们运行动画并查看实时结果。 为此，我们导入PlaygroundSupport，并为当前的PlaygroundPage分配一个liveView，如下所示:</p>
+<pre><code class="language-swift">import UIKit
+import PlaygroundSupport
+
+let view = UIView(frame: CGRect(
+    x: 0, y: 0,
+    width: 500, height: 500
+))
+
+view.backgroundColor = .white
+
+PlaygroundPage.current.liveView = view
+</code></pre>
+<h2 id="the-model">The model</h2>
+<p>为了能够以声明的方式表达动画，我们需要一个模型。让我们使用一个简单的结构体，它包含一个动画的持续时间，以及一个将在UIView上实际执行动画的闭包:</p>
+<pre><code class="language-swift">public struct Animation {
+    public let duration: TimeInterval
+    public let closure: (UIView) -&gt; Void
+}
+</code></pre>
+<p>现在，为了启用允许我们调用view.animate()和一个动画数组的nice API，我们需要一些为渐变、调整大小等返回动画值的工厂方法。</p>
+<p>为了添加这些，我们在动画上创建了一个扩展，并为我们想要支持的每种动画添加了静态方法。现在，我们将添加fadeIn()和resize(to:)方法:</p>
+<pre><code class="language-swift">public extension Animation {
+    static func fadeIn(duration: TimeInterval = 0.3) -&gt; Animation {
+        return Animation(duration: duration, closure: { $0.alpha = 1 })
+    }
+
+    static func resize(to size: CGSize, duration: TimeInterval = 0.3) -&gt; Animation {
+        return Animation(duration: duration, closure: { $0.bounds.size = size })
+    }
+}
+</code></pre>
+<p>这个动画解决方案(以及一般的声明式解决方案)的一大优点是，它非常容易通过新的实现进行扩展。例如，使用上述技术，我们可以快速添加工厂方法，返回动画淡出，移动，旋转，等等，只需要几行代码。</p>
+<p>在上面的代码中需要注意的一点是，duration形参使用了默认实参值。在面向公共的API和框架中，这通常是一个好主意，以使API在默认情况下更容易使用。通过这样做，淡入动画可以通过调用. fadein()来执行，如果使用默认的持续时间，则不必指定持续时间。</p>
+<h2 id="animating">Animating</h2>
+<p>现在我们有了一个合适的模型，让我们开始编写实际的动画代码。我们将添加两个动画API的变体，一个是按顺序执行所有动画，另一个是并行执行。 两者都将通过UIView上的扩展被添加，这使任何视图子类都能被动画化。</p>
+<p>让我们从顺序动画API开始，它是这样的:</p>
+<pre><code class="language-swift">public extension UIView {
+    func animate(_ animations: [Animation]) {
+        // Exit condition: once all animations have been performed, we can return
+        guard !animations.isEmpty else {
+            return
+        }
+
+        // Remove the first animation from the queue
+        var animations = animations
+        let animation = animations.removeFirst()
+
+        // Perform the animation by calling its closure
+        UIView.animate(withDuration: animation.duration, animations: {
+            animation.closure(self)
+        }, completion: { _ in
+            // Recursively call the method, to perform each animation in sequence
+            self.animate(animations)
+        })
+    }
+}
+</code></pre>
+<p>在按顺序执行操作时，使用递归非常好，就像我们上面所做的那样。 这样，我们就不需要维护很多状态，不需要有复杂的循环或嵌套的闭包 - 但相反，我们可以直接实现调用自己，直到满足退出条件(在本例中是初始的guard语句)。</p>
+<h2 id="lets-take-it-for-a-spin">Let's take it for a spin!</h2>
+<p>现在我们有了一个模型和一个API，我们可以使用这个模型来动画一系列动画值——让我们尝试一下，看看它是如何工作的!</p>
+<p>让我们创建一个简单的UIView来动画(我们称之为animationView)，我们将淡入和调整大小。我们将使用一个相当长的动画持续时间(在本例中为3秒)，以便真正看到操场上的慢动作动画:</p>
+<pre><code class="language-swift">let animationView = UIView(frame: CGRect(
+    x: 0, y: 0,
+    width: 50, height: 50
+))
+
+animationView.backgroundColor = .red
+animationView.alpha = 0
+view.addSubview(animationView)
+
+animationView.animate([
+    .fadeIn(duration: 3),
+    .resize(to: CGSize(width: 200, height: 200), duration: 3)
+])
+</code></pre>
+<p>打开你的操场的助理编辑器(by pressing ⌥ + ⌘ + ↩︎)来显示实时视图的渲染，现在你应该看到这样的东西:</p>
+<h2 id="parallelizing">Parallelizing</h2>
+<p>有时候我们不想按顺序执行动画，而是同时执行所有的动画——并行执行。我们也添加一个API。这个新的并行化API的实现实际上要简单得多，因为它所需要做的只是遍历所有动画并一次性执行它们的闭包(而不是一个接一个地排列它们)。它是这样的:</p>
+<pre><code class="language-swift">public extension UIView {
+    func animate(inParallel animations: [Animation]) {
+        for animation in animations {
+            UIView.animate(withDuration: animation.duration) {
+                animation.closure(self)
+            }
+        }
+    }
+}
+</code></pre>
+<p>为了看到它的实际效果，我们可以在调用animationView.animate()时简单地添加inParallel:前缀，像这样:</p>
+<pre><code class="language-swift">animationView.animate(inParallel: [
+    .fadeIn(duration: 3),
+    .resize(to: CGSize(width: 200, height: 200), duration: 3)
+])
+
+</code></pre>
+<h2 id="to-be-continued">To be continued</h2>
+<p>现在，我们有了一个易于使用的声明式动画框架的坚实基础-它也非常容易扩展，无论是在框架本身，还是在它将要使用的应用程序中。</p>
+<p>到目前为止，你可以在GitHub上找到我们编写的所有代码。 在下一篇文章中，我们将继续扩展我们的动画框架，使其能够在多个视图之间协调动画，并以一种漂亮的方式排列它们。</p>
+<p><a href="https://www.swiftbysundell.com/articles/building-a-declarative-animation-framework-in-swift-part-1/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l12eWlxBe/" class="tag">
+                    declarative programming
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nk7gw0vRGQ/" class="tag">
+                    animations
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/identifying-objects-in-swift/">
+                  <h3 class="post-title">
+                    Identifying objects in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

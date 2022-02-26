@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The different categories of Swift protocols | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="一般来说，协议(或接口)的主要作用是在具体实现之上定义通用的抽象——这种技术通常被称为多态性， 因为它使我们能够在不影响其公共API的情况下交换(或改变)我们的实现。
+虽然Swift提供了对这种基于接口的多态的全面支持，但协议在语言及其标准..." />
+    <meta name="keywords" content="protocols,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The different categories of Swift protocols</h2>
+            <div class="post-date">2020-05-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>一般来说，协议(或接口)的主要作用是在具体实现之上定义通用的抽象——这种技术通常被称为多态性， 因为它使我们能够在不影响其公共API的情况下交换(或改变)我们的实现。</p>
+<p>虽然Swift提供了对这种基于接口的多态的全面支持，但协议在语言及其标准库的总体设计中也扮演着更重要的角色 - Swift的主要功能是直接在各种协议上实现的。</p>
+<p>面向协议的设计也使我们能够在自己的代码中以许多不同的方式使用协议——所有这些从本质上可以分为四大类。 本周，让我们来看看这些类别，看看苹果如何在他们的框架内使用协议，以及我们如何以非常相似的方式定义我们自己的协议。</p>
+<h2 id="enabling-unified-actions">Enabling unified actions</h2>
+<p>让我们先来看看协议，这些协议要求符合它们的类型能够执行某些操作。例如，标准库的Equatable协议用于标记一个类型可以在两个实例之间执行相等性检查，而Hashable协议则被可哈希的类型所采用:</p>
+<pre><code class="language-swift">protocol Equatable {
+    static func ==(lhs: Self, rhs: Self) -&gt; Bool
+}
+
+protocol Hashable: Equatable {
+    func hash(into hasher: inout Hasher)
+}
+</code></pre>
+<p>这两种功能是使用类型系统定义的(而不是硬编码到编译器中)，一个很大的好处是它允许我们编写受这些协议约束的泛型代码， 这反过来又使我们能够充分利用这些代码中的功能。</p>
+<p>例如，如果数组的元素类型符合Equatable，我们可以使用一个方法来扩展Array，该方法允许我们计算一个值的所有出现次数:</p>
+<pre><code class="language-swift">extension Array where Element: Equatable {
+    func numberOfOccurences(of value: Element) -&gt; Int {
+        reduce(into: 0) { count, element in
+            // We can check whether two values are equal here
+            // since we have a guarantee that they both conform
+            // to the Equatable protocol:
+            if element == value {
+                count += 1
+            }
+        }
+    }
+}
+</code></pre>
+<p>一般来说，当我们定义基于动作的协议时，让这些协议尽可能通用是一个好主意(就像可平等性和可哈希性)，因为这让他们保持专注于操作本身，而不是过于依赖于任何特定的领域。</p>
+<p>例如，如果我们想统一几个加载不同对象或值的类型，我们可以定义一个具有关联类型的可加载协议-允许每个符合标准的类型声明它加载的结果:</p>
+<pre><code class="language-swift">protocol Loadable {
+    associatedtype Result
+    func load() throws -&gt; Result
+}
+</code></pre>
+<p>然而，并不是每个协议都定义了操作(毕竟，这只是四种协议中的第一类)。例如，虽然以下可缓存协议的名称可能表明它包含用于缓存的操作，它实际上只是用来让各种类型定义自己的缓存键:</p>
+<pre><code class="language-swift">protocol Cachable: Codable {
+    var cacheKey: String { get }
+}
+</code></pre>
+<p>将上面的内容与Cachable继承的内置可编码协议进行比较，后者为编码和解码都定义了操作-很明显，我们最终会出现命名不匹配的情况。</p>
+<p>毕竟，不是所有的协议都需要使用able后缀。事实上，仅仅为了定义一个协议，就把这个后缀强加到任何给定的名词上，可能会导致相当多的混乱——就像这个例子:</p>
+<pre><code class="language-swift">protocol Titleable {
+    var title: String { get }
+}
+</code></pre>
+<p>也许更令人困惑的是，当使用“able”后缀时，名字的含义与我们想要的完全不同。例如，我们在这里定义了一个协议，目的是让它作为颜色容器的API，但它的名称表明，它适用于本身可以着色的类型:</p>
+<pre><code class="language-swift">protocol Colorable {
+    var foregroundColor: UIColor { get }
+    var backgroundColor: UIColor { get }
+}
+</code></pre>
+<p>那么我们该如何改进这些协议呢——无论是在命名方面，还是在它们的结构方面? 让我们从第一个类别开始，并探索在Swift中定义协议的几种不同方式。</p>
+<h2 id="defining-requirements">Defining requirements</h2>
+<p>第二类是用于为给定类型的对象或API定义正式需求的协议。在标准库中，这些协议用于定义集合、数字或序列之类的东西的含义:</p>
+<pre><code class="language-swift">protocol Sequence {
+    associatedtype Iterator: IteratorProtocol
+    func makeIterator() -&gt; Iterator
+}
+</code></pre>
+<p>注意，上面的协议不被称为Sequencable，因为这表明它是关于将对象转换为序列的，而不是定义作为序列的要求。</p>
+<p>上面的序列定义告诉我们，任何Swift序列(如数组、字典或范围之类的东西)的主要作用是充当创建迭代器的工厂 -通过下列协议正式确定:</p>
+<pre><code class="language-swift">protocol IteratorProtocol {
+    associatedtype Element
+    mutating func next() -&gt; Element?
+}
+</code></pre>
+<p>上面的协议可以被称为Iterable，因为迭代器实际上自己执行每个迭代操作。然而，选择IteratorProtocol这个名称很可能是为了让它感觉更符合序列，因为简单地将其命名为迭代器会导致与同名的关联类型发生冲突。</p>
+<p>记住了上述两个协议，现在让我们回到前面定义的可缓存和可着色的协议，看看是否可以通过将它们转换为需求定义来改进它们。</p>
+<p>让我们从将Colorable重命名为ColorProvider开始，这给了协议一个全新的含义——即使它的要求完全相同。这听起来不再像是用来定义可以着色的对象，而是关于向我们系统的其他部分提供颜色信息——这正是我们想要的:</p>
+<pre><code class="language-swift">protocol ColorProvider {
+    var foregroundColor: UIColor { get }
+    var backgroundColor: UIColor { get }
+}
+</code></pre>
+<p>类似地，从内置的IteratorProtocol中获得灵感，我们可以将Cachable重命名为这样的东西:</p>
+<pre><code class="language-swift">protocol CachingProtocol: Codable {
+    var cacheKey: String { get }
+}
+</code></pre>
+<p>然而，在这种情况下，一个被证明更好的方法是将生成缓存键的概念与实际缓存的类型分离开来——这将使我们的模型代码免受特定于缓存的属性的影响。</p>
+<p>一种方法是将密钥生成代码移动到不同的类型中 -我们可以将使用CacheKeyGenerator协议的要求正式化:</p>
+<pre><code class="language-swift">protocol CacheKeyGenerator {
+    associatedtype Value: Codable
+    func cacheKey(for value: Value) -&gt; String
+}
+</code></pre>
+<p>另一种选择是将上述内容建模为一个闭包，这通常是只包含单个需求的协议的一个很好的替代方案。</p>
+<h2 id="type-conversions">Type conversions</h2>
+<p>接下来，让我们看看用于声明类型可与其他值转换的协议。我们将再次从标准库CustomStringConvertible的一个示例开始，该示例可用于将任何类型转换为自定义描述字符串:</p>
+<pre><code class="language-swift">protocol CustomStringConvertible {
+    var description: String { get }
+}
+</code></pre>
+<p>将上面的内容与它被称为Describable的内容相比较。 如果是这样，则期望它包含一个describe()方法或类似的东西。</p>
+<p>当我们希望能够从多个类型中提取单个数据时，这种设计特别有用 -这完全符合我们之前的Titleable协议(名字有点奇怪)的目的。</p>
+<p>通过将该协议重命名为TitleConvertible，我们不仅更容易理解该协议的用途，我们还使我们的代码与标准库更加一致——这通常是一件好事:</p>
+<pre><code class="language-swift">protocol TitleConvertible {
+    var title: String { get }
+}
+</code></pre>
+<p>类型转换协议也可以使用方法，而不是属性，当我们期望某些实现需要相当数量的计算时，通常更适合使用方法-例如在处理图像转换时:</p>
+<pre><code class="language-swift">protocol ImageConvertible {
+    // Since rendering an image can be a somewhat expensive
+    // operation (depending on the type being rendered), we're
+    // defining our protocol requirement as a method, rather
+    // than as a property:
+    func makeImage() -&gt; UIImage
+}
+</code></pre>
+<p>我们还可以使用这类协议以不同的方式表达某些类型——这是一种用于实现Swift对字面量的所有内置支持的技术—例如字符串和数组字面量。即使是nil的赋值也是通过协议实现的，这很酷:</p>
+<pre><code class="language-swift">protocol ExpressibleByArrayLiteral {
+    associatedtype ArrayLiteralElement
+    init(arrayLiteral elements: ArrayLiteralElement...)
+}
+
+protocol ExpressibleByNilLiteral {
+    init(nilLiteral: ())
+}
+</code></pre>
+<p>注意，虽然我们可以在自己的代码中自由地遵循大多数内置的文字协议，但不鼓励遵循ExpressibleByNilLiteral——因为Optional应该是唯一采用该协议的类型。</p>
+<p>虽然定义我们自己的协议来将文字连接到一个类型的实例可能不是那么常见(因为实际上，这需要对编译器进行更改)，当我们想要声明一个协议来使用较低级的表示来表示类型时，我们可以使用相同的设计。</p>
+<p>例如，下面是我们如何为可以使用原始UUID创建的标识符类型定义一个ExpressibleByUUID协议:</p>
+<pre><code class="language-swift">protocol ExpressibleByUUID {
+    init(uuid: UUID)
+}
+</code></pre>
+<p>另一种选择是使用rawrepresentation协议，它使枚举具有原始值。然而，尽管该协议肯定也是一个类型转换协议，但它的初始化器是失败的——这意味着它实际上只对可能导致nil的条件转换有用。</p>
+<h2 id="abstract-interfaces">Abstract interfaces</h2>
+<p>最后，让我们来看看在第三方代码中使用协议的最常见的方式——为与多种底层类型的接口定义抽象。</p>
+<p>这个模式的一个有趣的例子可以在Apple的Metal框架中找到，这是一个低级的图形编程API。由于gpu在不同设备之间的差异很大，而Metal的目标是提供一个统一的API来针对它所支持的任何类型的硬件进行编程，它使用一个协议将其API定义为一个抽象接口，如下所示:</p>
+<pre><code class="language-swift">protocol MTLDevice: NSObjectProtocol {
+    var name: String { get }
+    var registryID: UInt64 { get }
+    ...
+}
+</code></pre>
+<p>当使用Metal时，我们可以调用mtcreatesystemdefaultdevice函数，系统将返回一个适用于当前运行程序的设备的上述协议的实现:</p>
+<pre><code class="language-swift">func MTLCreateSystemDefaultDevice() -&gt; MTLDevice?
+</code></pre>
+<p>在我们自己的代码中，当我们想要支持同一接口的多个实现时，我们也可以使用完全相同的模式。 例如，我们可以定义一个网络引擎协议，以将我们执行网络调用的方式与任何特定的网络方式分离开来:</p>
+<pre><code class="language-swift">protocol NetworkEngine {
+    func perform(
+        _ request: NetworkRequest,
+        then handler: @escaping (Result&lt;Data, Error&gt;) -&gt; Void
+    )
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以根据需要自由定义任意数量的底层网络实现-例如一个用于生产的基于urlsession的版本，以及一个用于测试的模拟版本:</p>
+<pre><code class="language-swift">extension URLSession: NetworkEngine {
+    func perform(
+        _ request: NetworkRequest,
+        then handler: @escaping (Result&lt;Data, Error&gt;) -&gt; Void
+    ) {
+        ...
+    }
+}
+
+struct MockNetworkEngine: NetworkEngine {
+    var result: Result&lt;Data, Error&gt;
+
+    func perform(
+        _ request: NetworkRequest,
+        then handler: @escaping (Result&lt;Data, Error&gt;) -&gt; Void
+    ) {
+        handler(result)
+    }
+}
+</code></pre>
+<p>要了解更多关于单元测试中的mock，请查看“Swift中的mock”。</p>
+<p>上述技术也是封装第三方依赖项以防止它们扩散到整个代码库的好方法 -这也使得将来替换或删除这些依赖更加容易。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift的协议实现无疑是该语言最有趣的方面之一，它们被定义和使用的方式之多，确实显示了它们的强大-特别是当我们开始充分利用相关类型和协议扩展等特性时。</p>
+<p>正因为如此，重要的是不要以同样的方式对待每个协议，而是根据它们所属的类别来设计它们。总结一下，我喜欢把协议分成四类:</p>
+<p>动作激活器，它使我们能够对每个符合标准的类型执行一组给定的动作。它们的名字通常以“able”结尾，比如Equatable。</p>
+<p>需求定义使我们能够将需求形式化为特定类型的对象，例如序列、数字或颜色提供程序。</p>
+<p>类型转换协议用于让各种类型声明它们可以转换为另一种类型，或通过原始值或文字表示——如CustomStringConvertible或ExpressibleByStringLiteral。</p>
+<p>抽象接口充当多种类型可以实现的统一api，这反过来又让我们可以随心所欲地交换实现、封装第三方代码或在测试中模拟某些对象。</p>
+<p><a href="https://www.swiftbysundell.com/articles/different-categories-of-swift-protocols/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/querying-collections-in-swift/">
+                  <h3 class="post-title">
+                    Querying collections in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

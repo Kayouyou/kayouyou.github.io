@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Feature flags in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在为应用开发新功能时，拥有某种机制来逐步推出新的实现和功能是非常有用的，而不是一次性面向所有用户。这不仅能够帮助“降低”发行重大更改的风险(如果出现问题，我们可以随时进行回滚)，还能够帮助我们收集关于未完成功能的反馈，或使用A /B测试等技..." />
+    <meta name="keywords" content="feature flags,maintenance,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Feature flags in Swift</h2>
+            <div class="post-date">2018-03-25</div>
+            
+            <div class="post-content" v-pre>
+              <p>在为应用开发新功能时，拥有某种机制来逐步推出新的实现和功能是非常有用的，而不是一次性面向所有用户。这不仅能够帮助“降低”发行重大更改的风险(如果出现问题，我们可以随时进行回滚)，还能够帮助我们收集关于未完成功能的反馈，或使用A /B测试等技术进行实验。</p>
+<p>特性标记可以作为这样一种机制。它们实际上允许我们在特定条件下关闭代码库的某些部分，无论是在编译时还是在运行时。本周，让我们来看看在Swift中使用feature flags的几种不同方式</p>
+<h2 id="conditional-compilation">Conditional compilation</h2>
+<p>在处理正在进行的特性时，我们可以使用多种策略来处理代码库。 例如，我们可以使用特性分支之类的东西，并使用版本控制使正在开发的特性与我们的主分支完全分离。一旦该特性准备好发布，我们只需将其合并并发布即可。</p>
+<p>然而，不断地将新的实现和特性集成到我们的主分支中有一些很大的优势。它可以让我们更早地发现bug和问题，它可以让我们省去解决大量合并冲突的痛苦，如果两个分支有很多分歧，它还可以让我们在内部或beta测试中发布新特性的预发布版本。</p>
+<p>但是我们仍然需要一些方法去移除那些不应该被发布到App Store的代码。一种方法是使用编译器标记，它允许我们标记一个代码块，以便它只在标记已经设置的情况下才被编译。假设我们的应用程序目前正在使用Core Data，我们希望在生产中(目前)保持这种方式，同时仍然能够尝试一个新的解决方案——比如Realm。要做到这一点，我们可以使用DATABASE_REALM编译器标志，我们只在我们想要在其中使用Realm的构建中添加这个标志(例如beta构建)。然后，我们可以告诉编译器在构建应用程序时检查该标志，像这样:</p>
+<pre><code class="language-swift">class DataBaseFactory {
+    func makeDatabase() -&gt; Database {
+        #if DATABASE_REALM
+        return RealmDatabase()
+        #else
+        return CoreDataDatabase()
+        #endif
+    }
+}
+</code></pre>
+<p>要打开或关闭上述标志，我们可以在Xcode中打开目标的构建设置，并在Swift编译器下添加或删除DATABASE_REALM——自定义标志&gt;激活编译条件。这对于仍在积极开发中的特性特别有用，这使得开发人员可以在本地轻松地开发此类特性，而不会影响生产构建。</p>
+<h2 id="static-flags">Static flags</h2>
+<p>你想要从应用中完全删除一个新实现的代码时，条件编译是非常有用的。但有时这要么是不需要的，要么是不实际的，在这些情况下，在代码中定义特性标志可能是更好的选择。</p>
+<p>一种非常简单的方法是使用静态属性。例如，我们可以创建一个包含所有标记的featuflags结构体，如下所示:</p>
+<pre><code class="language-swift">struct FeatureFlags {
+    static let searchEnabled = false
+    static let maximumNumberOfFavorites = 10
+    static let allowLandscapeMode = true
+}
+</code></pre>
+<p>正如你在上面所看到的，标记对于调整现有的功能也非常有用，而不仅仅是推出全新的功能。使用上面的maximumnumberfavorites属性，我们可以很容易地试验一个用户可以拥有多少个收藏夹，从而找到一个我们认为能够达到正确平衡的值。</p>
+<p>有了上面的特性标志类型，我们现在可以在激活给定特性的代码路径中放置检查。下面是一个有条件地激活搜索特性的示例方法，它被ListViewController的viewDidLoad()方法调用:</p>
+<pre><code class="language-swift">extension ListViewController {
+    func addSearchIfNeeded() {
+        // If the search feature shouldn't be enabled, we simply return
+        guard FeatureFlags.searchEnabled else {
+            return
+        }
+
+        let resultsVC = SearchResultsViewController()
+        let searchVC = UISearchController(
+            searchResultsController: resultsVC
+        )
+
+        searchVC.searchResultsUpdater = resultsVC
+        navigationItem.searchController = searchVC
+    }
+}
+</code></pre>
+<p>静态标记的好处是，它们就像编译器标记一样，非常容易设置和集成。然而，它们不允许我们在编译完应用程序后修改标志的值。要做到这一点，我们需要开始使用运行时标志。</p>
+<h2 id="runtime-flags">Runtime flags</h2>
+<p>在运行时添加配置app功能标志的选项可能是一把“双刃剑”。一方面，它可以让我们通过改变特定百分比用户基础上的标记值来执行A/B测试，另一方面，它会使我们的应用程序更难维护和调试——因为它最终使用的代码路径在编译时并不完全确定。</p>
+<p>运行时标志通常从某种形式的后端系统加载，并且可能(取决于应用程序的架构)甚至包括在应用程序接收到的响应，作为登录用户的一部分(否则它通常有一个/feature_flags端点或类似的应用程序在启动查询)。 另外，我们还可以使用调试UI的某种形式在应用程序本身中调整标记。</p>
+<p>无论我们如何加载特性标志的值，我们都希望更新我们的特性标志类型以使用实例属性而不是静态属性。通过这种方式，我们可以加载标记的值，然后将它们转换为一个FeatureFlags实例，然后在需要时将其注入。我们的旗子类型现在看起来像这样:</p>
+<pre><code class="language-swift">struct FeatureFlags {
+    let searchEnabled: Bool
+    let maximumNumberOfFavorites: Int
+    let allowLandscapeMode: Bool
+}
+</code></pre>
+<p>为了能够从序列化格式转换实例，我们还将添加一个接受字典的初始化器。这样我们既可以从JSON后端响应创建我们的特性标志，也可以从本地存储在应用程序中的值(例如从缓存):</p>
+<pre><code class="language-swift">extension FeatureFlags {
+    init(dictionary: [String : Any]) {
+        searchEnabled = dictionary.value(for: &quot;search&quot;, default: false)
+        maximumNumberOfFavorites = dictionary.value(for: &quot;favorites&quot;, default: 10)
+        allowLandscapeMode = dictionary.value(for: &quot;landscape&quot;, default: true)
+    }
+}
+
+private extension Dictionary where Key == String {
+    func value&lt;V&gt;(for key: Key,
+                  default defaultExpression: @autoclosure () -&gt; V) -&gt; V {
+        return (self[key] as? V) ?? defaultExpression()
+    }
+}
+</code></pre>
+<p>上面我们没有使用Codable的原因是我们想要使用默认值(以防我们的后端没有使用给定的标志进行更新)，这可以通过一个简单的字典扩展来实现。 有关上面使用的@autoclosure的更多信息，请参阅“在设计Swift api时使用@autoclosure”。</p>
+<p>现在，我们可以在应用启动或用户登录时加载我们的特性标志(取决于我们是否希望我们的标志是特定于用户的)，并在需要时注入它们，如下所示:</p>
+<pre><code class="language-swift">class FavoritesManager {
+    private let featureFlags: FeatureFlags
+
+    init(featureFlags: FeatureFlags) {
+        self.featureFlags = featureFlags
+    }
+
+    func canUserAddMoreFavorites(_ user: User) -&gt; Bool {
+        let maxCount = featureFlags.maximumNumberOfFavorites
+        return user.favorites.count &lt; maxCount
+    }
+}
+</code></pre>
+<p>我们现在有更多的自由来切换某些特性，或调整那些决定了我们应用程序的部分逻辑的值。我们也可以在应用运行时改变我们的标志(并添加某种形式的观察API来响应变化)，但我个人认为增加这么多复杂性是不值得的。只需加载一次值，然后设置应用程序，这有助于保持事情简单，避免引入棘手的极端情况。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用功能标志是快速迭代应用的关键，特别是当其团队不断壮大，代码基础以更快的速度改变时。通过有条件地启用某些功能或调整它们的行为，我们通常能够更快地将代码整合到主分支中，并继续发行应用。。</p>
+<p>特性标志也会给我们的设置增加一些复杂性，特别是在使用运行时标志时。只有当特定的标记组合开启时，才会出现bug，而测试应用程序的所有潜在代码路径将很快变得更加复杂和耗时。</p>
+<p>如果您以前没有使用过特性标记，我建议从简单的开始(可能使用编译器标记或静态标记)，然后从这里开始使用。与大多数工具一样，它们可能需要您采用您的工作流程，特别是当项目目前没有使用很多自动化测试(这使得使用特性标记的风险更小)的时候。</p>
+<p><a href="https://www.swiftbysundell.com/articles/feature-flags-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/IhpRARz9N/" class="tag">
+                    feature flags
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5VmnTv3Lu/" class="tag">
+                    maintenance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/preventing-views-from-being-model-aware-in-swift/">
+                  <h3 class="post-title">
+                    Preventing views from being model aware in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

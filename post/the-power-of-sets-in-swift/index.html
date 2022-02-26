@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The power of sets in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管Set是在几乎所有编程语言中都可以看到的核心数据结构之一，但有时它会被忽视，因为存储非键对象集合的默认选择往往是使用数组。
+本周，让我们来看看几个不同的例子，看看什么时候使用set可以带来更可预测的性能和更简单的代码，以及如何使用Swi..." />
+    <meta name="keywords" content="sets" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The power of sets in Swift</h2>
+            <div class="post-date">2018-03-04</div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管Set是在几乎所有编程语言中都可以看到的核心数据结构之一，但有时它会被忽视，因为存储非键对象集合的默认选择往往是使用数组。</p>
+<p>本周，让我们来看看几个不同的例子，看看什么时候使用set可以带来更可预测的性能和更简单的代码，以及如何使用Swift的set类型中一些不太为人所知但却非常强大的特性。就让我们一探究竟吧!</p>
+<h2 id="constant-time">Constant time</h2>
+<p>Set的一个关键特征是，它根据 hash value 而不是通过索引(像Array那样)存储成员。换句话说，它牺牲了有保证的成员顺序来获得常量(O(1))的查找时间。 最简单的用例是当你存储一个潜在的无序值的大集合时，就像跟踪用户朋友的所有id:</p>
+<pre><code class="language-swift">struct User {
+    var friendIDs = Set&lt;UUID&gt;()
+}
+</code></pre>
+<p>通过在这里使用集合，而不是数组，我们可以避免在有大量好友的用户中很容易遇到的性能瓶颈。 为了检查一个给定的用户是否与另一个用户是朋友，我们使用contains API——对于一个数组，它可以要求检查每个元素，而不管集合的大小，始终是对集合的快速散列值查找。</p>
+<h2 id="indexing">Indexing</h2>
+<p>因此，当您不关心集合的顺序时，sets 是非常好的，但如果我们需要优化某些代码路径，即使使用有序的集合(如数组)，集合也非常有用。</p>
+<p>假设我们正在构建一个让用户给电影评分的应用程序，我们想要包含一个列表，按顺序显示用户评分过的所有电影。为了做到这一点，我们需要以一种保持顺序的方式存储评级，如下所示:</p>
+<pre><code class="language-swift">class RatingsManager {
+    private typealias Rating = (score: Int, movieID: UUID)
+
+    private var ratings = [Rating]()
+}
+</code></pre>
+<p>然而，我们的应用程序中一个非常常见的操作是检查用户是否给给定的电影评分。我们经常需要在性能关键的代码路径中执行这种查找(比如当滚动表视图时)，所以我们不想依赖O(n)操作，比如遍历ratings数组:</p>
+<pre><code class="language-swift">extension RatingsManager {
+    func containsRating(for movie: Movie) -&gt; Bool {
+        for rating in ratings {
+            if rating.movieID == movie.id {
+                return true
+            }
+        }
+
+        return false
+    }
+}
+</code></pre>
+<p>尽管我们不能使用set作为评级的主存储(因为那会破坏订单)，但我们可以使用一个set作为索引。在设计数据库时，索引是一种非常常见的技术，因为它允许我们在将附加元数据存储为键的基础上快速跟踪某些操作。很酷的一点是，我们可以使用同样的技术来为我们的containsRating API提供恒定的时间复杂性。</p>
+<p>首先，我们将存储在set中已分级的每个电影的ID:</p>
+<pre><code class="language-swift">class RatingsManager {
+    typealias Rating = (score: Int, movieID: UUID)
+
+    private var ratings = [Rating]()
+    private var movieIDs = Set&lt;UUID&gt;()
+}
+</code></pre>
+<p>现在，每当我们插入一个评级时，我们也会在movieIDs集合中存储它所要访问的电影的ID:</p>
+<pre><code class="language-swift">extension RatingsManager {
+    func insertRating(_ score: Int, for movie: Movie) {
+        ratings.append((score, movie.id))
+        movieIDs.insert(movie.id)
+    }
+}
+</code></pre>
+<p>这反过来也让我们能够简化(在复杂性和代码数量方面)我们用于检查电影是否已经被分级的API:</p>
+<pre><code class="language-swift">extension RatingsManager {
+    func containsRating(for movie: Movie) -&gt; Bool {
+        return movieIDs.contains(movie.id)
+    }
+}
+</code></pre>
+<p>通过上面的方法，我们可以说是两全之选——用一个快速、固定时间的API来检查给定值是否是成员的有序数据。👍</p>
+<p>注意:当我们删除一个评级时，我们还需要记住删除索引的电影ID。与往常一样，确保做到这一点的最佳方法是使用单元测试覆盖我们的RatingsManager。😉</p>
+<h2 id="comparing-datasets">Comparing datasets</h2>
+<p>Swift的Set实现也提供了一些非常漂亮和方便的api来比较两个数据集。例如，回到存储用户好友id的示例，假设我们希望能够检查一个给定用户与另一个用户是否有共同的好友。最明显的实现方法可能是使用for循环，如下所示:</p>
+<pre><code class="language-swift">extension User {
+    func hasFriendsInCommon(with otherUser: User) -&gt; Bool {
+        for id in friendIDs {
+            if otherUser.friendIDs.contains(id) {
+                return true
+            }
+        }
+
+        return false
+    }
+}
+</code></pre>
+<p>好消息是，我们可以使用isDisjoint API将上述问题简化为一行代码，它会检查一个给定集合是否与另一个集合共享任何成员，如下所示:</p>
+<pre><code class="language-swift">extension User {
+    func hasFriendsInCommon(with otherUser: User) -&gt; Bool {
+        return !friendIDs.isDisjoint(with: otherUser.friendIDs)
+    }
+}
+</code></pre>
+<p>类似地，我们也可以很容易地检查一个给定用户是否与另一个用户拥有相同的好友，方法是检查该用户的好友列表是否为另一个用户的好友id列表的子集:</p>
+<pre><code class="language-swift">extension User {
+    func hasAllFriendsInCommon(with otherUser: User) -&gt; Bool {
+        return friendIDs.isSubset(of: otherUser.friendIDs)
+    }
+}
+</code></pre>
+<p>最后，我们还可以形成一个交集——两个集合的所有公共成员的集合——来得到两个用户共有的所有朋友的列表，如下所示:</p>
+<pre><code class="language-swift">extension User {
+    func idsOfFriendsInCommon(with otherUser: User) -&gt; Set&lt;UUID&gt; {
+        return friendIDs.intersection(otherUser.friendIDs)
+    }
+}
+</code></pre>
+<p>如您所见，集合基于惟一性存储成员的方式为我们提供了一些非常强大(而且快速!)的功能，我们可以以许多有趣的方式使用这些功能👍。还有一些api，比如超集，联合等等。查看Set的官方文档以获得完整的列表。</p>
+<h2 id="guarding-using-a-set">Guarding using a set</h2>
+<p>让我们看最后一个例子。有时，您希望对给定对象只执行一次特定操作(例如，为了执行任何形式的预加载或准备)，即使该对象后来最终被重用。例如，假设我们有一个协议，它允许我们为加载应用程序的某种形式的内容定义多个操作。它要求每个操作都定义一个只执行一次的prepare()方法，以及一个执行操作的perform()方法，如下所示:</p>
+<pre><code class="language-swift">protocol ContentOperation: AnyObject {
+    /// Prepare/preload the operation. Only executed once.
+    func prepare()
+
+    /// Perform the operation using a content loader.
+    func perform(using loader: ContentLoader,
+                 then handler: @escaping () -&gt; Void)
+}
+</code></pre>
+<p>为了执行一个操作，它会被添加到一个ContentManager中，如下所示:</p>
+<pre><code class="language-swift">class ContentManager {
+    func perform(_ operation: ContentOperation,
+                 then handler: @escaping () -&gt; Void) {
+        operation.perform(using: loader, then: handler)
+    }
+}
+</code></pre>
+<p>那么，我们如何能够轻松地跟踪何时对一个操作调用prepare()方法(假定我们只希望对每个实例调用一次)? 我们将应用与使用集合作为索引以实现快速查找类似的解决方案，只是这次我们要利用这样一个事实:当我们向set中添加新成员时，set总是返回是否实际插入了一个值。</p>
+<p>我们将添加一个set来跟踪所有已经准备好的对象的标识符，然后我们将使用一个guard语句来返回，以防ID没有真正插入，如下所示:</p>
+<pre><code class="language-swift">class ContentManager {
+    private var preparedOperationIDs = Set&lt;ObjectIdentifier&gt;()
+
+    func perform(_ operation: ContentOperation,
+                 then handler: @escaping () -&gt; Void) {
+        prepareIfNeeded(operation)
+        operation.perform(using: loader, then: handler)
+    }
+
+    private func prepareIfNeeded(_ operation: ContentOperation) {
+        let id = ObjectIdentifier(operation)
+
+        guard preparedOperationIDs.insert(id).inserted else {
+            return
+        }
+
+        operation.prepare()
+    }
+}
+</code></pre>
+<p>上面，我们使用每个操作的ObjectIdentifier(这是Swift类的一个给定实例的唯一标识符)来跟踪它。有关这方面的更多信息，请查看“Swift中识别物体”。</p>
+<p>结果是，我们可以很容易地保证每个实例只调用prepare()一次，而不必向ContentOperation协议添加任何形式的状态要求🎉。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>集合、数组、字典和其他类型的数据结构，都有其优点和缺点。它们做出不同的权衡，并针对不同的用例进行优化。因此，虽然数组在很多情况下可能是最好的工具，但有时使用Set代替可以让我们很容易地加快代码的速度，或使某些类型的操作变得非常简单。</p>
+<p>我个人的方法是，每当某一组值的顺序不重要时，我就从一个集合开始作为默认值(而不是总是首先使用数组)。通过这种方式，我可以快速地进行插入、删除和成员测试，而不必担心数据集增长时的性能瓶颈。</p>
+<p>关于集合的另一件很酷的事情是，您还可以打开它们!看看“在Swift中switch语句的力量”，这是一个例子。</p>
+<p><a href="https://www.swiftbysundell.com/articles/the-power-of-sets-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/FSCSop6UE/" class="tag">
+                    sets
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/code-encapsulation-in-swift/">
+                  <h3 class="post-title">
+                    Code encapsulation in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A tip of Option Pattern  | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Option Pattern 使用步骤
+
+针对要扩展model对象定义一个ModelOption protocol
+
+public protocol ModelOption {
+    associatedtype Value
+    //..." />
+    <meta name="keywords" content="option pattern,a tip" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A tip of Option Pattern </h2>
+            <div class="post-date">2021-04-22</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1523540939399-141cbff6a8d7?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8dGlwc3xlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="option-pattern-使用步骤">Option Pattern 使用步骤</h2>
+<ol>
+<li>针对要扩展model对象定义一个ModelOption protocol</li>
+</ol>
+<pre><code class="language-swift">public protocol ModelOption {
+    associatedtype Value
+    /// 默认的选项值
+    static var defaultValue: Value { get }
+}
+</code></pre>
+<ol start="2">
+<li>针对要扩展model对象定义一个泛型字典属性：options，用于存储未来需要的属性选项，并添加对应的下标方法；</li>
+</ol>
+<pre><code class="language-swift">private var options: [ObjectIdentifier: Any] = [ObjectIdentifier: Any]()
+
+/// option的下标方法
+subscript&lt;T: ModelOption&gt;(option type: T.Type) -&gt; T.Value {
+     get { options[ObjectIdentifier(type)] as? T.Value ?? T.defaultValue }
+     set { options[ObjectIdentifier(type)] = newValue }
+ }
+</code></pre>
+<ol start="3">
+<li>在要扩展model的extension或其他类型的extension中添加新加的Option（enum），并让它实现遵守ModelOption协议；</li>
+</ol>
+<pre><code class="language-swift">extension Model {
+    enum Color: ModelOption {
+        case red
+        case blue
+        static var defaultValue: Color = .red
+    }
+}
+
+extension Int: ModelOption {
+     static var defaultValue: Int = 0
+} 
+</code></pre>
+<ol start="4">
+<li>在要扩展model的extension添加新加的”存储“属性</li>
+</ol>
+<pre><code class="language-swift">extension Model {
+     var color: Color {
+         get { self[option: Color.self] }
+         set { self[option: Color.self] = newValue }
+     }
+     
+     var height: Int {
+         get { self[option: Int.self] }
+         set { self[option: Int.self] = newValue }
+     }
+}
+</code></pre>
+<ol start="5">
+<li>使用</li>
+</ol>
+<pre><code class="language-swift">model.color = .red
+model.height = 18
+</code></pre>
+<h2 id="向已有类型添加存储">向已有类型添加”存储“</h2>
+<blockquote>
+<p>在不添加存储属性的前提下，提供了一种向已有类型中以类型安全的方式添加“存储”的手段。</p>
+</blockquote>
+<pre><code class="language-swift">public class TrafficLight {
+
+    public enum State {
+        case stop
+        case proceed
+        case caution
+    }
+
+    public private(set) var state: State = .stop {
+        didSet { onStateChanged?(state) }
+    }
+    
+    public var onStateChanged: ((State) -&gt; Void)?
+}
+</code></pre>
+<h3 id="方式一">方式一 ✅</h3>
+<p>TrafficLight 支持青色的绿灯，一个能想到的最简单的方式，就是在 TrafficLight 里为“绿灯颜色”提供一个选项：</p>
+<pre><code class="language-swift">public class TrafficLight {
+   public enum GreenLightColor {
+       case green
+       case turquoise
+   }
+   public var preferredGreenLightColor: GreenLightColor = .green
+   
+   //...
+}
+</code></pre>
+<p>然后在 ViewController 中使用对应的颜色：</p>
+<pre><code class="language-swift">extension TrafficLight.GreenLightColor {
+    var color: UIColor {
+        switch self {
+        case .green: 
+            return .green
+        case .turquoise: 
+            return UIColor(red: 0.25, green: 0.88, blue: 0.82, alpha: 1.00)
+        }
+    }
+}
+
+light.preferredGreenLightColor = .turquoise
+light.onStateChanged = { [weak self, weak light] state in
+    guard let self = self, let light = light else { return }
+    // ...
+    
+    // case .proceed: color = .green
+    case .proceed: color = light.preferredGreenLightColor.color
+}
+</code></pre>
+<p>这样做当然能够解决问题，但是也会带来一些隐患。首先，需要在 TrafficLight 中添加一个额外的存储属性 preferredGreenLightColor，这使得 TrafficLight 示例所使用的内存开销增加了。在上例中，额外的 GreenLightColor 属性将会为每个实例带来 8 byte 的开销。 如果我们需要同时处理很多 TrafficLight 实例，而其中只有很少数需要 .turquoise 的话，这个开销就非常可惜了。</p>
+<blockquote>
+<p>严格来说，上例的 TrafficLight.GreenLightColor 枚举其实只需要占用 1 byte。但是 64-bit 系统中在内存分配中的最小单位是 8 bytes。<br>
+如果想要添加的属性不是像例子中这样简单的 enum，而是更加复杂的带有多个属性的类型的话，这一开销会更大。</p>
+</blockquote>
+<p>另外，如果我们还要添加其他属性，很容易想到的方法是继续在 TrafficLight 上加入更多的存储属性。<em><strong>这其实是很没有扩展性的方法，我们并不能在 extension 中添加存储属性</strong></em>：</p>
+<h3 id="方式二">方式二 ❌</h3>
+<pre><code class="language-swift">// 无法编译
+extension TrafficLight {
+    enum A {
+        case a
+    }
+    var myOption: A = .a // Extensions must not contain stored properties
+}
+</code></pre>
+<h3 id="option-pattern">Option Pattern</h3>
+<p>可以用 Option Pattern 来解决这个问题。在 TrafficLight 中，我们不去提供专用的 preferredGreenLightColor，而是定义一个泛用的 options 字典，来将需要的选项值放到里面。为了限定能放进字典中的值，新建一个 TrafficLightOption 协议：</p>
+<pre><code class="language-swift">public protocol TrafficLightOption {
+    associatedtype Value
+
+    /// 默认的选项值
+    static var defaultValue: Value { get }
+}
+</code></pre>
+<p>在 TrafficLight 中，加入下面的 options 属性和下标方法：</p>
+<pre><code class="language-swift">public class TrafficLight {
+
+    // ...
+
+    // 1
+    private var options = [ObjectIdentifier: Any]()
+
+    public subscript&lt;T: TrafficLightOption&gt;(option type: T.Type) -&gt; T.Value {
+        get {
+            // 2
+            options[ObjectIdentifier(type)] as? T.Value
+                ?? type.defaultValue
+        }
+        set {
+            options[ObjectIdentifier(type)] = newValue
+        }
+    }
+    
+    // ...    
+}
+</code></pre>
+<ol>
+<li>
+<p>只有满足 Hashable 的类型，才能作为 options 字典的 key。ObjectIdentifier 通过给定的类型或者是 class 实例，可以生成一个唯一代表该类型和实例的值。它非常适合用来当作 options 的 key。</p>
+</li>
+<li>
+<p>通过 key 在 options 中寻找设置的值。如果没有找到的话，返回默认值 type.defaultValue。</p>
+</li>
+</ol>
+<p>现在，对 TrafficLight.GreenLightColor 进行扩展，让它满足 TrafficLightOption。如果 TrafficLight 已经被打包成 framework，我们甚至可以把这部分代码从 TrafficLight 所在的 target 中拿出来：</p>
+<pre><code class="language-swift">extension TrafficLight {
+    public enum GreenLightColor: TrafficLightOption {
+        case green
+        case turquoise
+
+        public static let defaultValue: GreenLightColor = .green
+    }
+}
+</code></pre>
+<p>我们将 defaultValue 声明为了 GreenLightColor 类型，这样TrafficLightOption.Value 的类型也将被编译器推断为 GreenLightColor。</p>
+<p>最后，为这个选项提供 setter 和 getter：</p>
+<pre><code class="language-swift">extension TrafficLight {
+    public var preferredGreenLightColor: TrafficLight.GreenLightColor {
+        get { self[option: GreenLightColor.self] }
+        set { self[option: GreenLightColor.self] = newValue }
+    }
+}
+</code></pre>
+<p>现在，你可以像之前那样，通过直接在 light 上设置 preferredGreenLightColor 来使用这个选项，而且它已经不是 TrafficLight 的存储属性了。只要不进行设置，它便不会带来额外的开销。</p>
+<pre><code class="language-swift">light.preferredGreenLightColor = .turquoise
+</code></pre>
+<p>有了 TrafficLightOption，现在想要为 TrafficLight 添加选项时，就不需要对类型本身的代码进行改动了，我们只需要声明一个满足 TrafficLightOption 的新类型，然后为它实现合适的计算属性就可以了。这大幅增加了原来类型的可扩展性。</p>
+<h2 id="总结">总结</h2>
+<p>Option Pattern 是一种受到 SwiftUI 的启发的模式，它帮助我们在不添加存储属性的前提下，提供了一种向已有类型中以类型安全的方式添加“存储”的手段。</p>
+<p>这种模式非常适合从外界对已有的类型进行功能上的添加，或者是自下而上地对类型的使用方式进行改造。这项技术可以对 Swift 开发和 API 设计的更新产生一定有益的影响。</p>
+<p><a href="https://onevcat.com/2020/10/use-options-pattern/">参考文章</a></p>
+<p><a href="https://gist.github.com/onevcat/40f21b41a6b1ffa06ceb9f3ee0470bf3.js">完整代码</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/X8eDQjBZA/" class="tag">
+                    option pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Sy1zdwW7s/" class="tag">
+                    a tip
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-deep-summary-of-codable/">
+                  <h3 class="post-title">
+                    A deep summary of Codable
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

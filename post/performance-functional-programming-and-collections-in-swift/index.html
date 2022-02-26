@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Performance, functional programming and collections in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Performance, functional programming and collections in Swift
+
+
+1.1. Prefer contains over first(where:) != nil
+1.2. P..." />
+    <meta name="keywords" content="best practices,functional programming,performance" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Performance, functional programming and collections in Swift</h2>
+            <div class="post-date">2021-05-08</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#PerformancefunctionalprogrammingandcollectionsinSwift">Performance, functional programming and collections in Swift</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Prefercontainsoverfirstwhere:nil">Prefer contains over first(where:) != nil</a></li>
+<li>1.2. <a href="#PrefercheckingisEmptyovercomparingcounttozero.">Prefer checking isEmpty over comparing count to zero.</a></li>
+<li>1.3. <a href="#CheckingforanemptyStringwithisEmpty">Checking for an empty String with isEmpty</a></li>
+<li>1.4. <a href="#Getthefirstobjectmatchingacondition">Get the first object matching a condition</a></li>
+<li>1.5. <a href="#Gettingtheminimumormaximumelementinacollection">Getting the minimum or maximum element in a collection</a></li>
+<li>1.6. <a href="#Makingsureallobjectsmatchacondition">Making sure all objects match a condition</a></li>
+<li>1.7. <a href="#UsingSwiftLinttoensurebestpractices">Using SwiftLint to ensure best practices</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameperformancefunctionalprogrammingandcollectionsinswiftaperformance-functional-programming-and-collections-in-swift">1. <a name='PerformancefunctionalprogrammingandcollectionsinSwift'></a>Performance, functional programming and collections in Swift</h2>
+<p>函数式编程通常是用Swift完成的，而且非常容易，很容易就会影响性能。迭代大型集合并执行过滤或映射等操作是常见的，应该明智地使用。</p>
+<p>当这些方法组合在一起时，性能经常会下降，就像过滤器后面跟着第一个。最佳实践列表。</p>
+<h3 id="11-a-nameprefercontainsoverfirstwherenilaprefer-contains-over-firstwhere-nil">1.1. <a name='Prefercontainsoverfirstwhere:nil'></a>Prefer contains over first(where:) != nil</h3>
+<p>验证一个对象是否存在于一个集合中可以通过多种方式来完成。确保使用contains以获得最佳性能。</p>
+<p><strong>Best practice</strong></p>
+<pre><code class="language-swift">let numbers = [0, 1, 2, 3]
+numbers.contains(1)
+</code></pre>
+<p><strong>Bad practice</strong></p>
+<pre><code class="language-swift">let numbers = [0, 1, 2, 3]
+numbers.filter { number in number == 1 }.isEmpty == false
+numbers.first(where: { number in number == 1 }) != nil
+</code></pre>
+<h3 id="12-a-nameprefercheckingisemptyovercomparingcounttozeroaprefer-checking-isempty-over-comparing-count-to-zero">1.2. <a name='PrefercheckingisEmptyovercomparingcounttozero.'></a>Prefer checking isEmpty over comparing count to zero.</h3>
+<p>描述这一原因的最佳方法是引用isEmpty文档。</p>
+<blockquote>
+<p>当您需要检查集合是否为空时，使用isEmpty属性而不是检查count属性是否等于零。对于不符合RandomAccessCollection的集合，访问count属性将遍历集合的元素。</p>
+</blockquote>
+<p><strong>Best practice</strong></p>
+<pre><code class="language-swift">let numbers = []
+numbers.isEmpty
+</code></pre>
+<p><strong>Bad practice</strong></p>
+<pre><code class="language-swift">let numbers = []
+numbers.count == 0
+</code></pre>
+<h3 id="13-a-namecheckingforanemptystringwithisemptyachecking-for-an-empty-string-with-isempty">1.3. <a name='CheckingforanemptyStringwithisEmpty'></a>Checking for an empty String with isEmpty</h3>
+<p>Swift中的字符串可以看作是字符的集合。这意味着上述性能实践也适用于字符串，应该使用isEmpty检查空字符串。</p>
+<p><strong>Best practice</strong></p>
+<pre><code class="language-swift">myString.isEmpty
+</code></pre>
+<p><strong>Bad practice</strong></p>
+<pre><code class="language-swift">myString == &quot;&quot;
+myString.count == 0
+</code></pre>
+<h3 id="14-a-namegetthefirstobjectmatchingaconditionaget-the-first-object-matching-a-condition">1.4. <a name='Getthefirstobjectmatchingacondition'></a>Get the first object matching a condition</h3>
+<p>迭代一个集合以获得匹配给定条件的第一个对象，可以使用filter后跟first来完成，但最佳实践是使用first(where:)代替。</p>
+<p>一旦第一次满足条件，后者就停止在集合上迭代。filter将继续遍历整个集合，即使它可能已经命中了匹配条件的对象。</p>
+<p>显然，对于last(where:)也是一样的。</p>
+<p><strong>Best practice</strong></p>
+<pre><code class="language-swift">let numbers = [3, 7, 4, -2, 9, -6, 10, 1]
+let firstNegative = numbers.first(where: { $0 &lt; 0 })
+</code></pre>
+<p><strong>Bad practice</strong></p>
+<pre><code class="language-swift">let numbers = [3, 7, 4, -2, 9, -6, 10, 1]
+let firstNegative = numbers.filter { $0 &lt; 0 }.first
+</code></pre>
+<h3 id="15-a-namegettingtheminimumormaximumelementinacollectionagetting-the-minimum-or-maximum-element-in-a-collection">1.5. <a name='Gettingtheminimumormaximumelementinacollection'></a>Getting the minimum or maximum element in a collection</h3>
+<p>在对集合进行排序并选择第一个对象之后，可以找到集合中的最小元素。对于最大元素也是如此。但是，这需要先对整个数组进行排序。在这种情况下，使用min()和max()方法是最佳实践。</p>
+<p><strong>Best practice</strong></p>
+<pre><code class="language-swift">let numbers = [0, 4, 2, 8]
+let minNumber = numbers.min()
+let maxNumber = numbers.max()
+</code></pre>
+<p><strong>Bad practice</strong></p>
+<pre><code class="language-swift">let numbers = [0, 4, 2, 8]
+let minNumber = numbers.sorted().first
+let maxNumber = numbers.sorted().last
+</code></pre>
+<h3 id="16-a-namemakingsureallobjectsmatchaconditionamaking-sure-all-objects-match-a-condition">1.6. <a name='Makingsureallobjectsmatchacondition'></a>Making sure all objects match a condition</h3>
+<p>很容易使用filter和isEmpty来验证集合中的所有对象都匹配给定的条件。随着SE-0207在Swift 4.2中引入，我们现在可以使用allSatisfy(_:)来验证集合的每个元素都匹配给定的条件。</p>
+<p><strong>Best practice</strong></p>
+<pre><code class="language-swift">let numbers = [0, 2, 4, 6]
+let allEven = numbers.allSatisfy { $0 % 2 == 0 }
+</code></pre>
+<p><strong>Bad practice</strong></p>
+<pre><code class="language-swift">let numbers = [0, 2, 4, 6]
+let allEven = numbers.filter { $0 % 2 != 0 }.isEmpty
+</code></pre>
+<h3 id="17-a-nameusingswiftlinttoensurebestpracticesausing-swiftlint-to-ensure-best-practices">1.7. <a name='UsingSwiftLinttoensurebestpractices'></a>Using SwiftLint to ensure best practices</h3>
+<p>这些示例中的大多数都是在SwiftLint中实现的，可以帮助您确保使用了这些最佳实践。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/6EdjPhnH9/" class="tag">
+                    best practices
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Jn075RYwWt/" class="tag">
+                    functional programming
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/I0LcoAOtHu/" class="tag">
+                    performance
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/how-and-when-to-use-lazy-collections-in-swift/">
+                  <h3 class="post-title">
+                    How and when to use Lazy Collections in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

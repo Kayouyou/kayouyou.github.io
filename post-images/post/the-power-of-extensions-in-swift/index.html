@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The power of extensions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="扩展使我们能够向现有类型和协议添加新功能，包括那些我们自己没有定义的功能-例如那些作为Swift标准库或苹果各种sdk的一部分发布的，或在我们的项目中包含的任何第三方包。
+然而，Swift扩展的使用方式包括更为先进的概念，即简单地向外部对象..." />
+    <meta name="keywords" content="extensions,generics" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The power of extensions in Swift</h2>
+            <div class="post-date">2020-10-18</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>扩展使我们能够向现有类型和协议添加新功能，包括那些我们自己没有定义的功能-例如那些作为Swift标准库或苹果各种sdk的一部分发布的，或在我们的项目中包含的任何第三方包。</p>
+<p>然而，Swift扩展的使用方式包括更为先进的概念，即简单地向外部对象添加新的属性和方法，这反过来又使它们成为该语言提供的最强大和最通用的特性之一。 本周，让我们探索其中的一些方面，以及它们使我们能够采用的模式和技术。</p>
+<h2 id="existing-types-new-functionality">Existing types, new functionality</h2>
+<p>让我们从基础开始。使用扩展的一种方法是向作为系统一部分发布的各种类型添加新的自定义api，例如在Swift标准库中。举个例子，假设我们正在开发一个应用程序，逻辑上要求我们访问不同数组中的特定元素-所以为了避免总是检查我们要访问的索引是否在给定数组的边界内，我们可以添加以下方法来为我们工作:</p>
+<pre><code class="language-swift">extension Array {
+    func element(at index: Int) -&gt; Element? {
+        guard index &gt;= 0, index &lt; count else {
+            return nil
+        }
+        return self[index]
+    }
+}
+</code></pre>
+<p>这已经非常强大了，因为我们现在可以在代码库中的任何数组上使用上述方法， 但可能更强大的是，我们也可以将上述扩展的目标设为RandomAccessCollection协议。</p>
+<p>由于RandomAccessCollection定义了提供对其元素的随机访问的集合的需求，扩展该协议(而不是具体的数组类型)将允许我们在任何此类集合上使用我们的新方法，包括数组本身:</p>
+<pre><code class="language-swift">extension RandomAccessCollection {
+    func element(at index: Index) -&gt; Element? {
+        guard indices.contains(index) else {
+            return nil
+        }
+
+        return self[index]
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就可以在数组、ArraySlice和Range等类型上调用我们的新方法了，所有这些都只需要一个实现:</p>
+<pre><code class="language-swift">// Extracting an optional element from an Array
+guard let fifthElement = array.element(at: 4) else {
+    return
+}
+
+// Doing the same thing, but using an ArraySlice instead:
+let slice = array[0..&lt;3]
+
+guard let secondElement = slice.element(at: 1) else {
+    return
+}
+
+// We could also use our new method with types like Range:
+guard let thirdValue = range.element(at: 2) else {
+    return
+}
+</code></pre>
+<p>所以，当扩展协议(而不是具体类型)是可能的和实际的时候，它给了我们更多的灵活性，因为我们将能够使用我们添加的方法和属性与更广泛的类型。</p>
+<p>然而，并不是我们最终添加的所有扩展都像上面的扩展一样通用，所以尽管我们可能仍然选择基于协议的方法，我们还可以应用约束使这样的扩展更加具体。</p>
+<p>例如，下面的扩展添加了一个方法，它允许我们计算一个产品序列的总价格，并且通过使用相同的类型约束，我们可以建立一个编译时的保证，该方法只在包含产品值的符合序列的类型上被调用:</p>
+<pre><code class="language-swift">extension Sequence where Element == Product {
+    func totalPrice() -&gt; Int {
+        reduce(0) { price, product in
+            price + product.price
+        }
+    }
+}
+</code></pre>
+<p>上面的API被定义为一个方法，而不是一个计算属性，因为它具有O(n)的时间复杂性。更多细节，请查看“Swift中的计算属性”。</p>
+<p>一件很酷的事情是约束不仅可以引用具体的类型和协议，还可以引用闭包类型- 这让我们可以添加一个方法来调用给定序列中的所有闭包，像这样:</p>
+<pre><code class="language-swift">extension Sequence where Element == () -&gt; Void {
+    func callAll() {
+        forEach { closure in
+            closure()
+        }
+    }
+}
+</code></pre>
+<p>Swift 5.3进一步发挥了上述功能，允许我们现在也对引用其封装类型的单个方法声明应用约束。 这让我们可以创建上述方法的第二个重载，接受与序列中包含的闭包的输入类型匹配的实参:</p>
+<pre><code class="language-swift">extension Sequence {
+    func callAll&lt;T&gt;(with input: T) where Element == (T) -&gt; Void {
+        forEach { closure in
+            closure(input)
+        }
+    }
+}
+</code></pre>
+<p>在希望将相同的值传递给多个不同闭包的情况下，上面的新方法非常有用 - 例如，为了通知所有的观察者，一个可观察对象类型的值被更改了:</p>
+<pre><code class="language-swift">class Observable&lt;Value&gt; {
+    var value: Value {
+        didSet { observations.callAll(with: value) }
+    }
+
+    private var observations = [(Value) -&gt; Void]()
+
+    ...
+}
+</code></pre>
+<p>关于观察者模式的更多信息，请查看由两部分组成的文章“Swift中的观察者”。</p>
+<p>到目前为止，我们所探讨的示例都是一些非必要的便利api——然而，当从战术上部署时，这些类型的api通常可以帮助我们减少代码的冗长和重复性，并随着时间的推移不断使项目变得更容易处理。</p>
+<h2 id="organizing-apis-and-protocol-conformances">Organizing APIs and protocol conformances</h2>
+<p>扩展通常也被用作代码组织工具，这是Swift从它的前辈Objective-C继承来的一种实践。由于Objective-C版本的扩展-类别-支持给每个扩展一个明确的名称，它们经常被用来根据它们提供的功能将一系列api组合在一起。</p>
+<p>在Swift中，我们可以使用同样的方法根据访问级别来构造给定类型的api。 让我们来看看Publish的一个例子，它是一个静态站点生成器，用于构建这个网站，在这个例子中，Section类型使用一系列扩展来形成包含其公共、内部和私有api的组:</p>
+<pre><code class="language-swift">public struct Section&lt;Site: Website&gt;: Location {
+    public let id: Site.SectionID
+    public private(set) var items = [Item&lt;Site&gt;]()
+    ...
+}
+
+public extension Section {
+    func item(at path: Path) -&gt; Item&lt;Site&gt;? {
+        ...
+    }
+    
+    func items(taggedWith tag: Tag) -&gt; [Item&lt;Site&gt;] {
+        ...
+    }
+    
+    ...
+}
+
+internal extension Section {
+    mutating func addItem(_ item: Item&lt;Site&gt;) {
+        ...
+    }
+}
+
+private extension Section {
+    ...
+    
+    mutating func rebuildIndexes() {
+        ...
+    }
+}
+
+</code></pre>
+<p>除了组织方面，上述方法的一个好处是我们不再需要为每个方法或属性指定一个显式的访问级别，因为每个API都会自动继承其外围扩展的访问级别。</p>
+<p>当符合协议时，我们也可以遵循上面的模式，因为我们能够将这样的一致性附加到我们将要定义的任何扩展上。例如，这里我们通过这样的扩展来让一个ListViewController符合UIKit的UITableViewDelegate协议:</p>
+<pre><code class="language-swift">extension ListViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView,
+                   didSelectRowAt indexPath: IndexPath) {
+        let item = items[indexPath.item]
+        showDetailViewController(for: item)
+    }
+    
+    ...
+}
+</code></pre>
+<p>就像我们之前在定义包含自定义方法和属性的扩展时应用约束一样，当扩展给定类型以符合协议时，我们也可以做同样的事情， 这在包装器类型方面特别有用——例如“在Swift中创建通用网络api”中的通用NetworkResponse包装器。</p>
+<p>这里，我们让这个包装类型有条件地符合类似于Equatable和Hashable的协议，只有当它的包装类型也符合这些协议时:</p>
+<pre><code class="language-swift">// The compiler can still automatically generate the code required
+// to conform to protocols like Equatable and Hashable even when
+// adding those conformances through extensions:
+extension NetworkResponse: Equatable where Wrapped: Equatable {}
+extension NetworkResponse: Hashable where Wrapped: Hashable {}
+
+// Most protocols will probably require us to write some form of
+// bridging code ourselves, though. For example, here we make our
+// network response use its wrapped type's description when it's
+// being converted into a string, rather than defining its own:
+extension NetworkResponse: CustomStringConvertible
+    where Wrapped: CustomStringConvertible {
+
+    var description: String {
+        result.description
+    }
+}
+</code></pre>
+<p>因此，当根据各种api的访问级别或功能来组织给定类型时，或者当我们想要使类型符合协议时，扩展也可以证明是一个非常有用的工具，无论是否有约束。</p>
+<h2 id="specializing-generics">Specializing generics</h2>
+<p>最后，让我们看看如何使用扩展专门化具体用例的泛型类型和协议。</p>
+<p>就像我们之前用便利api扩展的Sequence和RandomAccessCollection协议一样，苹果的一些最现代的框架大量使用泛型，以使它们的api既灵活又完全类型安全。例如，Combine的所有各种发布器都使用发布器协议实现，该协议包含定义给定发布器产生的输出以及可能发出的失败错误类型的泛型类型。</p>
+<p>这两种泛型又使我们能够编写包含完全定制的组合操作符的扩展-例如下面的例子，它使任何发布者发出统一的结果值，而不是单独的输出和错误值:</p>
+<pre><code class="language-swift">extension Publisher {
+    func asResult() -&gt; AnyPublisher&lt;Result&lt;Output, Failure&gt;, Never&gt; {
+        self.map(Result.success)
+            .catch { error in
+                Just(.failure(error))
+            }
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>要了解上面使用的Just publisher的更多信息，请查看“使用Combine发布常量值”。</p>
+<p>然后，上面的扩展允许我们编写像下面AsyncValue所使用的那样的组合管道，它将它们的输出直接赋值给一个基于结果的属性——像这样:</p>
+<pre><code class="language-swift">class AsyncValue&lt;Value: Decodable&gt;: ObservableObject {
+    @Published private(set) var result: Result&lt;Value, Error&gt;?
+    private var cancellable: AnyCancellable?
+
+    func load(from url: URL,
+              using session: URLSession = .shared,
+              decoder: JSONDecoder = .init()) {
+              cancellable = session.dataTaskPublisher(for: url)
+                .map(\.data)
+                .decode(type: Value.self, decoder: decoder)
+                .asResult()
+                .sink { [weak self] result in
+                    self?.result = result
+                }
+    }
+}
+</code></pre>
+<p>将上述方法与泛型类型约束相结合，还可以让我们利用Swift强大的类型推断能力，这是SwiftUI在为其各种内置视图定义便利api时大量使用的东西。</p>
+<p>举个例子，假设我们正在开发的一个应用程序包含一个IconView，它从预定义的集合中呈现一个图标。为了方便创建包含这样一个图标的按钮，我们可以编写以下扩展 - 在通用标签类型上使用相同的类型约束，定义了一个给定按钮正在渲染的内容视图的类型:</p>
+<pre><code class="language-swift">extension Button where Label == IconView {
+    init(icon: Icon, action: @escaping () -&gt; Void) {
+        self.init(action: action, label: {
+            IconView(icon: icon)
+        })
+    }
+}
+</code></pre>
+<p>很酷的是，我们现在可以简单地使用上面的API来创建一个按钮实例，并且编译器会自动推断出我们希望使用IconView作为按钮的标签类型，就像这样:</p>
+<pre><code class="language-swift">struct ProductView: View {
+    @ObservedObject var viewModel: ProductViewModel
+
+    var body: some View {
+        VStack {
+            ...
+            Button(icon: .shoppingCart) {
+                viewModel.performPurchase()
+            }
+        }
+    }
+}
+</code></pre>
+<p>上面的模式也在整个Plot中使用，它是HTML DSL，用于定义基于发布的网站的主题。在使用Plot时，每个HTML元素都使用一个泛型节点类型来定义，而泛型节点类型又使用幻像类型来确保每个元素都被放置在一个有效的上下文中。然后，每个内置元素和组件都像上面定义的SwiftUI便利API一样创建——使用受限扩展:</p>
+<pre><code class="language-swift">public extension Node where Context: HTML.BodyContext {
+    static func a(_ nodes: Node&lt;HTML.AnchorContext&gt;...) -&gt; Node {
+        .element(named: &quot;a&quot;, nodes: nodes)
+    }
+    
+    ...
+    
+    static func div(_ nodes: Node&lt;HTML.BodyContext&gt;...) -&gt; Node {
+        .element(named: &quot;div&quot;, nodes: nodes)
+    }
+    
+    ...
+}
+</code></pre>
+<p>与之前基于swiftui的例子类似，编译器可以根据创建节点的静态方法调用自动推断出我们想要创建的节点类型:</p>
+<pre><code class="language-swift">// The type of this value will be Node&lt;HTML.BodyContext&gt;, which
+// the compiler will infer based on our method call:
+let div = Node.div(.a(.href(&quot;https://swiftbysundell.com&quot;)))
+
+</code></pre>
+<p>上述功能的美妙之处在于，它们允许我们以非常高级的、强类型的方式对各种域建模——同时仍然使我们的调用站点尽可能简单，因为我们不总是需要手动指定每个底层泛型类型。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>乍一看，扩展似乎是Swift最简单的特性之一，但一旦我们开始深入研究它们让我们能够采用的各种模式和功能，它们实际上会成为该语言提供的最强大的特性之一。</p>
+<p><a href="https://www.swiftbysundell.com/articles/the-power-of-extensions-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/caKSUYFIR/" class="tag">
+                    extensions
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/publishing-constant-values-using-combine/">
+                  <h3 class="post-title">
+                    Publishing constant values using Combine
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

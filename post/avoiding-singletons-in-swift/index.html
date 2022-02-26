@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Avoiding singletons in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="“我知道单例是不好的，但是……”，这是开发人员在讨论代码时经常说的话。社区中似乎有一种共识，认为单例是“不好的”，但同时，苹果和第三方Swift开发者在应用内部和共享框架中一直使用单例
+本周，让我们来看看使用单例的问题，并探讨一些可以用来避..." />
+    <meta name="keywords" content="singletons,dependency injection,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Avoiding singletons in Swift</h2>
+            <div class="post-date">2017-10-08</div>
+            
+            <div class="post-content" v-pre>
+              <p>“我知道单例是不好的，但是……”，这是开发人员在讨论代码时经常说的话。社区中似乎有一种共识，认为单例是“不好的”，但同时，苹果和第三方Swift开发者在应用内部和共享框架中一直使用单例</p>
+<p>本周，让我们来看看使用单例的问题，并探讨一些可以用来避免这些问题的技巧。让我们开始吧!</p>
+<h2 id="why-are-singletons-so-popular">Why are singletons so popular?</h2>
+<p>首先，让我们先问一下为什么单例如此受欢迎。如果大多数开发者都同意应该避免这些问题，为什么它们还不断出现呢?</p>
+<p>我认为答案有两个部分。首先，我认为在为苹果平台编写应用程序时，单例模式使用如此之多的一个主要原因是苹果自己也经常使用它。 作为第三方开发者，我们经常指望苹果为他们的平台定义“最佳实践”，他们通常使用的模式也会在社区中广泛传播。</p>
+<p>我认为问题的第二部分是便利。单例对象通常可以作为访问某些核心值或对象的捷径，因为它们基本上可以从任何地方访问。看看这个例子，我们想在ProfileViewController中显示当前登录的用户名，以及当一个按钮被点击时注销用户:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private lazy var nameLabel = UILabel()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        nameLabel.text = UserManager.shared.currentUser?.name
+    }
+
+    private func handleLogOutButtonTap() {
+        UserManager.shared.logOut()
+    }
+}
+</code></pre>
+<p>做一些类似上面的事情——在UserManager单例中封装用户和帐户处理功能——确实非常方便(而且非常常见!)。那么使用这种模式到底有什么不好呢?</p>
+<h2 id="whats-so-bad-about-singletons">What's so bad about singletons?</h2>
+<p>在讨论模式和架构等问题时，很容易陷入过于理论化的陷阱。虽然我们的代码在理论上是“正确的”，并遵循所有的最佳实践和原则是很好的，但现实往往会击中我们，我们需要找到某种中间立场。</p>
+<p>那么，单例通常会导致哪些具体问题，为什么要避免呢?我倾向于避免单例的三个主要原因是:</p>
+<p>它们是全局可变共享状态。它们的状态会在整个应用程序中自动共享，当状态发生意外变化时，bug经常会开始发生。</p>
+<p>单例对象和依赖它们的代码之间的关系通常没有很好的定义。由于单例对象是如此方便和容易访问-广泛使用它们通常会导致很难维护“意大利面代码”，没有明确的对象之间的分离。</p>
+<p>管理它们的生命周期可能很棘手。由于单例对象在应用程序的整个生命周期中都是活的，因此管理它们可能非常困难，它们通常不得不依赖于可选项来跟踪值。这也使得依赖单例的代码很难测试，因为你不容易在每个测试用例中从一个“干净的石板”开始。</p>
+<p>在前面的ProfileViewController示例中，我们已经看到了这三个问题的迹象。它依赖于UserManager是很不清楚的，它必须访问currentUser作为可选的因为我们在视图控制器被呈现时无法获得编译时的保证数据确实在那里。 听起来好像bug正在等待发生😬!</p>
+<h2 id="dependency-injection">Dependency injection</h2>
+<p>我们将不再让ProfileViewController以单例方式访问它的依赖项，而是将它们注入到它的初始化器中。这里，我们将当前用户注入为一个非可选的，以及一个可用于执行注销操作的LogOutService:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let user: User
+    private let logOutService: LogOutService
+    private lazy var nameLabel = UILabel()
+
+    init(user: User, logOutService: LogOutService) {
+        self.user = user
+        self.logOutService = logOutService
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        nameLabel.text = user.name
+    }
+
+    private func handleLogOutButtonTap() {
+        logOutService.logOut()
+    }
+}
+</code></pre>
+<p>结果是更加清晰，更容易管理。我们的代码现在可以安全地依赖它的模型，它有一个清晰的API来进行注销。总的来说，将各种单例和管理器重构为清晰分离的服务是在应用程序的核心对象之间创建更清晰关系的好方法。</p>
+<h2 id="services">Services</h2>
+<p>作为一个例子，让我们仔细看看如何实现LogOutService。它还为其底层服务使用了依赖注入，并提供了一个定义清晰的API，用于只做一件事——注销。</p>
+<pre><code class="language-swift">class LogOutService {
+    private let user: User
+    private let networkService: NetworkService
+    private let navigationService: NavigationService
+
+    init(user: User,
+         networkService: NetworkService,
+         navigationService: NavigationService) {
+        self.user = user
+        self.networkService = networkService
+        self.navigationService = navigationService
+    }
+
+    func logOut() {
+        networkService.request(.logout(user)) { [weak self] in
+            self?.navigationService.showLoginScreen()
+        }
+    }
+}
+</code></pre>
+<h2 id="retrofitting">Retrofitting</h2>
+<p>从一个大量使用单例的设置到一个完全利用服务、依赖注入和本地状态的设置是非常棘手和耗时的。它也很难证明花费时间的合理性，有时甚至可能需要一个巨大的重构。</p>
+<p>值得庆幸的是，我们可以应用类似于“用3个简单步骤测试Swift代码使用系统单例”的技术，这将允许我们开始以一种更容易的方式远离单例。 就像在其他很多情况下一样——协议来拯救你!</p>
+<p>我们不需要一次重构所有的单例并创建新的服务类，我们可以简单地将服务定义为协议，像这样:</p>
+<pre><code class="language-swift">protocol LogOutService {
+    func logOut()
+}
+
+protocol NetworkService {
+    func request(_ endpoint: Endpoint, completionHandler: @escaping () -&gt; Void)
+}
+
+protocol NavigationService {
+    func showLoginScreen()
+    func showProfile(for user: User)
+    ...
+}
+</code></pre>
+<p>然后，我们可以很容易地将我们的单例对象“改装”为服务，使它们符合我们的新服务协议。 在许多情况下，我们甚至不需要做任何实现更改，而只需将它们的共享实例作为服务传递。</p>
+<p>同样的技术也可以用于改造我们的应用程序中的其他核心对象，我们可能一直在以“单例式”方式使用，例如使用AppDelegate来导航。</p>
+<pre><code class="language-swift">extension UserManager: LoginService, LogOutService {}
+
+extension AppDelegate: NavigationService {
+    func showLoginScreen() {
+        navigationController.viewControllers = [
+            LoginViewController(
+                loginService: UserManager.shared,
+                navigationService: self
+            )
+        ]
+    }
+
+    func showProfile(for user: User) {
+        let viewController = ProfileViewController(
+            user: user,
+            logOutService: UserManager.shared
+        )
+
+        navigationController.pushViewController(viewController, animated: true)
+    }
+}
+</code></pre>
+<p>现在，我们可以通过使用依赖注入和服务来让我们所有的视图控制器都是“免费的”，而不需要做大量的重构和预先重写🎉! 然后，我们可以开始用服务和其他类型的api逐个替换我们的单例，例如使用“使用Swift协议替换遗留代码”中的技术。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>单例并不是普遍的坏事，但在许多情况下，它们会带来一系列问题，这些问题可以通过在对象之间创建更明确的关系和使用依赖注入来避免。</p>
+<p><a href="https://www.swiftbysundell.com/articles/avoiding-singletons-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/6UQdNl3_x5/" class="tag">
+                    singletons
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SI7Eu5Vqu/" class="tag">
+                    dependency injection
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-generic-type-constraints-in- swift/">
+                  <h3 class="post-title">
+                    Using generic type constraints in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

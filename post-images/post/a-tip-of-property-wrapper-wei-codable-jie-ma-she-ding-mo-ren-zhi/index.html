@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A tip of Property Wrapper - use type constraints transform value to set default value for Codable  | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="使用类型约束传值
+首先添加一个 protocol，用来规定默认值：
+protocol DefaultValue {
+    associatedtype Value: Decodable
+    static var defaultValu..." />
+    <meta name="keywords" content="类型约束传值,a tip,property-wrappers" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A tip of Property Wrapper - use type constraints transform value to set default value for Codable </h2>
+            <div class="post-date">2021-04-23</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1523540939399-141cbff6a8d7?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8dGlwc3xlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="使用类型约束传值">使用类型约束传值</h2>
+<p>首先添加一个 protocol，用来规定默认值：</p>
+<pre><code class="language-swift">protocol DefaultValue {
+    associatedtype Value: Decodable
+    static var defaultValue: Value { get }
+}
+</code></pre>
+<p>然后让 Bool 满足这个默认值：</p>
+<pre><code class="language-swift">extension Bool: DefaultValue {
+    static let defaultValue = false
+}
+</code></pre>
+<p>在这里，DefaultValue.Value 的类型会根据 defaultValue 的类型被自动推断为 Bool。</p>
+<p>接下来，重新定义 Default property wrapper，以及用于解码的初始化方法：</p>
+<pre><code class="language-swift">@propertyWrapper
+struct Default&lt;T: DefaultValue&gt; {
+    var wrappedValue: T.Value
+}
+
+extension Default: Decodable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        wrappedValue = (try? container.decode(T.Value.self)) ?? T.defaultValue
+    }
+}
+</code></pre>
+<p>这样一来，我们就可以用这个新的 Default 修饰 commentEnabled，并对应解码失败的情况了：</p>
+<pre><code class="language-swift">struct Video: Decodable {
+    let id: Int
+    let title: String
+
+    @Default&lt;Bool&gt; var commentEnabled: Bool
+}
+
+// {&quot;id&quot;: 12345, &quot;title&quot;: &quot;My First Video&quot;, &quot;commentEnabled&quot;: 123}
+// Video(
+//   id: 12345,
+//   title: &quot;My First Video&quot;, 
+//   _commentEnabled: Default&lt;Swift.Bool&gt;(wrappedValue: false)
+// )
+</code></pre>
+<p>虽然我们解码得到的是一个 Default<Bool> 的值，但是在使用时，property wrapper 是完全透明的。</p>
+<pre><code class="language-swift">if video.commentEnabled {
+    // 在这里显示 comment UI
+}
+</code></pre>
+<blockquote>
+<p>可能你已经注意到了，在这样的 Video 类型中，我们所使用的 commentEnabled 只是一个 Bool 类型的计算属性。在背后，编译器为我们生成了 _commentEnabled 这个存储属性。也就是说，如果我们手动为 Video 加一个 _commentEnabled 的话，会导致编译错误。<br>
+虽然很多其他语言有这样的习惯，但在 Swift 中，并不建议使用下杠 _ 作为变量的首字母。这可以帮助我们避免与编译器自动生成的代码产生冲突。</p>
+</blockquote>
+<p>我们已经可以解码 &quot;commentEnabled&quot;: 123 这类的意外输入了，但是现在，当 JSON 中 &quot;commentEnabled&quot; key 缺失时，解码依然会发生错误。这是因为我们所使用的解码器默认生成的代码是要求 key 存在的。想要改变这一行为，我们可以为 container 重写对于 Default 类型解码的实现：</p>
+<pre><code class="language-swift">extension KeyedDecodingContainer {
+    func decode&lt;T&gt;(
+        _ type: Default&lt;T&gt;.Type,
+        forKey key: Key
+    ) throws -&gt; Default&lt;T&gt; where T: DefaultValue {
+        try decodeIfPresent(type, forKey: key) ?? Default(wrappedValue: T.defaultValue)
+    }
+}
+</code></pre>
+<p>在键值编码的 container 中遇到要解码为 Default 的情况时，如果 key 不存在，则返回 Default(wrappedValue: T.defaultValue) 这个默认值。</p>
+<p>有了这个，对于 JSON 中 commentEnabled 缺失的情况，也可以正确解码了</p>
+<pre><code class="language-swift">{&quot;id&quot;: 12345, &quot;title&quot;: &quot;My First Video&quot;}
+
+// Video(id: 12345, title: &quot;My First Video&quot;, commentEnabled: false)
+</code></pre>
+<p>相比对于每个类型编写单独的默认值解码代码，这套方式具有很好的扩展性。比如，如果想要为 Video.State 也添加默认行为，只需要让它满足 DefaultValue 即可：</p>
+<pre><code class="language-swift">extension Video.State: DefaultValue {
+    static let defaultValue = Video.State.unknown
+}
+
+struct Video: Decodable {
+    // ...
+    
+    @Default&lt;State&gt; var state: State
+}
+
+// {&quot;id&quot;: 12345, &quot;title&quot;: &quot;My First Video&quot;, &quot;state&quot;: &quot;reserved&quot;}
+// Video(
+//   id: 12345, 
+//   title: &quot;My First Video&quot;, 
+//   _commentEnabled: Default&lt;Swift.Bool&gt;(wrappedValue: false),
+//   _state: Default&lt;Video.State&gt;(wrappedValue: Video.State.unknown)
+// )
+</code></pre>
+<h2 id="整理-default-类型">整理 Default 类型</h2>
+<p>上面的方法还存在一个问题：像 Default<Bool> 这样的修饰，只能将默认值解码到 false。但有时候针对不同情况，我们需要设置不同的默认值。</p>
+<p>DefaultValue 协议其实并没有对类型作出太多规定：<em>只要所提供的默认值 defaultValue 满足 Decodable 协议就行</em>。因此，我们可以让别的类型，甚至是新创建的类型，满足 DefaultValue：</p>
+<pre><code class="language-swift">extension Bool {
+    enum False: DefaultValue {
+        static let defaultValue = false
+    }
+    enum True: DefaultValue {
+        static let defaultValue = true
+    }
+}
+</code></pre>
+<p>这样，我们就可以用这样的类型来定义不同的默认解码值了：</p>
+<pre><code class="language-swift">@Default&lt;Bool.False&gt; var commentEnabled: Bool
+@Default&lt;Bool.True&gt; var publicVideo: Bool
+</code></pre>
+<p>或者为了可读性，更进一步，使用 typealias 给它们一些更好的名字：</p>
+<pre><code class="language-swift">extension Default {
+    typealias True = Default&lt;Bool.True&gt;
+    typealias False = Default&lt;Bool.False&gt;
+}
+
+@Default.False var commentEnabled: Bool
+@Default.True var publicVideo: Bool
+</code></pre>
+<p><a href="https://onevcat.com/2020/11/codable-default/">原文地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/StZlvDrOB/" class="tag">
+                    类型约束传值
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Sy1zdwW7s/" class="tag">
+                    a tip
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/e6qModfHfX/" class="tag">
+                    property-wrappers
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/attributed-strings-with-swiftui/">
+                  <h3 class="post-title">
+                    Attributed Strings with SwiftUI
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

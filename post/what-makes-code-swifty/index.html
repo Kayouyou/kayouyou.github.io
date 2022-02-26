@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>What makes code “Swifty” | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管编程语言是由它们的语法正式定义的，但在实践中使用它们的方式也可以说是由它们当前的约定决定的。毕竟，在语法方面，大多数“受C影响”的语言看起来都非常相似——以至于你可以用几乎让它看起来像JavaScript、c#或C本身的方式来编写Swi..." />
+    <meta name="keywords" content="code structure,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">What makes code “Swifty”</h2>
+            <div class="post-date">2020-02-23</div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管编程语言是由它们的语法正式定义的，但在实践中使用它们的方式也可以说是由它们当前的约定决定的。毕竟，在语法方面，大多数“受C影响”的语言看起来都非常相似——以至于你可以用几乎让它看起来像JavaScript、c#或C本身的方式来编写Swift。</p>
+<p>在Swift社区中，短语“Swift code”通常用来描述遵循当前最流行的约定的代码。 然而，虽然Swift的核心语法自最初引入以来并没有太大的变化，但它的约定已经随着时间发生了巨大的变化。</p>
+<p>例如，许多Swift开发人员认为从Swift 2到Swift 3的转变在语法上是一个巨大的变化，但这些变化中的大部分并不是真正的语法变化——它们是基于一组新的命名约定对标准库API的改变。Add Swift 4’s introduction of key paths and Codable, Swift 5.1’s function builders, property wrappers and opaque return types, 在过去的几年里，越来越多的api和特性被引入——现在已经很清楚了，是什么让代码变得“敏捷”，这是一个不断变化的目标。</p>
+<p>本周，让我们来仔细看看Swift的核心约定集，试图找出一个答案，到底是什么让代码变得“敏捷”?</p>
+<h2 id="aligned-goals">Aligned goals</h2>
+<p>在某种程度上，对上述问题的简单回答可以是“与Swift核心目标保持良好一致的代码”。 毕竟，虽然Swift的各种api、约定和语言特性会随着时间的推移而改变，但它的基本目标基本上是不变的-所以如果我们能够以符合这些目标的方式编写自己的代码，那么我们就有更好的机会让我们的代码在任何给定的快速上下文中感觉自然和清晰。</p>
+<p>那么，这些目标到底是什么呢? Swift官方网站的about页面列出了三个关键字:在减少开发者错误方面是安全的;在执行速度方面是快速的;在表达方面，Swift的目标是尽可能清晰易懂。</p>
+<p>为了让我们自己的代码遵循这些原则，我们需要记住一些不同的东西。</p>
+<h2 id="clarity-through-strong-type-safety">Clarity through strong type safety</h2>
+<p>让我们从第一个关键字—安全开始。 Swift非常强调类型安全的事实是很难忽略的——它的静态类型检查、强大的泛型系统、还有需要做的事情，比如类型擦除，以便编译器能够在编译时，验证代码的结构。</p>
+<p>然而，经常会遇到这样的情况:我们的代码的类型安全性可能会得到改善，但这并不明显——这也可能让它感觉更“快速”，从而变得更容易处理。 例如，这里我们根据笔记所属组的名称存储笔记集合:</p>
+<pre><code class="language-swift">struct NoteCollection {
+    var notesByGroup: [String : [Note]]
+    ...
+}
+</code></pre>
+<p>乍一看，上面的代码似乎完全没问题。但是，在查看上面的声明时，有一个细节并不明显，那就是我们如何处理未分组的值，以及如何处理包含用户最近打开的所有注释的特殊组 -当前通过传递一个空字符串或&quot;recent&quot;来完成，当字典下标时:</p>
+<pre><code class="language-swift">let groupedNotes = collection.notesByGroup[&quot;MyGroup&quot;]
+let ungroupedNotes = collection.notesByGroup[&quot;&quot;]
+let recentNotes = collection.notesByGroup[&quot;recent&quot;]
+</code></pre>
+<p>虽然上面的设计可能有一个完全有效的理由(例如，我们使用的结构可能是我们的笔记在通过网络加载时的组织方式)，这确实导致我们的一些呼叫站点变得相当神秘-这反过来增加了开发者犯错的机会。很容易忘记，空字符串意味着应该检索所有未分组的注释，如果用户将其自定义组之一命名为“recent”会发生什么?</p>
+<p>让我们看看是否可以使上面的代码更类型安全，并在这样做的同时，也使它感觉更“快速”。既然我们的notesByGroup字典有三个不同的用例，让我们用一个自定义enum来替换它基于字符串的键，它将这三个变量建模为不同的用例，如下所示:</p>
+<pre><code class="language-swift">enum Group: Hashable {
+    case none
+    case recent
+    case named(String)
+}
+
+struct NoteCollection {
+    var notesByGroup: [Group : [Note]]
+    ...
+}
+</code></pre>
+<p>上面的变化可能看起来很微妙，但它使我们的调用站点更加清晰，因为我们现在利用类型系统来区分三种不同类型的组——所有这些都不会使我们的API变得更复杂:</p>
+<pre><code class="language-swift">let groupedNotes = collection.notesByGroup[.named(&quot;MyGroup&quot;)]
+let ungroupedNotes = collection.notesByGroup[.none]
+let recentNotes = collection.notesByGroup[.recent]
+</code></pre>
+<p>从类型安全的角度来看，这可能是使代码“Swifty”的本质。虽然有很多方法可以使API变得非常复杂，从而使其更加类型安全，但诀窍是使用Swift的语言特性找到一种方法来添加类型安全，而不使我们的代码更难理解或使用。</p>
+<p>虽然类型安全通常用于防止类型B的值被错误地传递给接受类型a的API，但强类型通常也提供了一种改进代码的语义和逻辑的方法。 在下面的例子中，我们的代码在技术上是类型安全的——因为我们使用Swift的泛型特性来实现一个加载操作，它可以加载任何符合可加载协议的资源:</p>
+<pre><code class="language-swift">class LoadingOperation&lt;Resource: Loadable&gt; {
+    private let resource: Resource
+
+    init(resource: Resource) {
+        self.resource = resource
+
+        if let preloadable = resource as? Preloadable {
+            preloadable.preload()
+        }
+    }
+    
+    ...
+}
+</code></pre>
+<p>然而，我们有条件地转换我们的资源，看它是否也符合Preloadable(如果符合，我们就预加载该资源)，这一事实可能有点奇怪。上面的实现不仅很难理解如何让资源预加载(类型系统不给我们任何暗示我们应该符合Preloadable做到这一点),这也是很不直观的预加载初始化操作的副作用。</p>
+<p>相反，让我们让预加载一个显式的API，只有当操作的资源符合Preloadable时才可用——像这样:</p>
+<pre><code class="language-swift">extension LoadingOperation where Resource: Preloadable {
+    func preload() {
+        resource.preload()
+    }
+}
+</code></pre>
+<p>上面的改变不仅使我们更清楚地知道资源预加载的条件，而且我们现在可以从初始化器中删除类型转换的副作用——大获益匪浅!</p>
+<p>需要注意的是，从安全角度编写“swifty”代码绝对不是尽可能多地使用泛型。相反，它是关于有选择地使用类型系统的各个方面和特性，以使我们的代码更容易理解和使用(并且更不易误用)。</p>
+<h2 id="the-path-to-performance">The path to performance</h2>
+<p>Swift的第二个核心目标是快速，从总体上讲，这是一个比较棘手的问题。 毕竟，编写高性能代码的一个主要部分是度量、微调和再次度量。然而，让我们的代码在性能方面与Swift本身更加一致的一种方法是充分利用标准库所提供的功能——特别是在处理字符串等集合时。</p>
+<p>就像我们在“Swift字符串解析”和“Swift集合切片”中看到的那样，Swift标准库对性能进行了高度优化，并使我们能够以一种高效的方式执行许多常见的集合操作——前提是我们使用了正确的api。</p>
+<p>例如，从字符串中删除一组特定字符的一种常见方法是使用旧的replacingOccurences(of:with:)API, Swift的字符串类型是从它的Objective-C表弟NSString继承而来的。这里，我们使用了一系列对该API的调用，通过删除一组特殊字符来清理字符串:</p>
+<pre><code class="language-swift">let sanitizedString = string
+    .replacingOccurrences(of: &quot;@&quot;, with: &quot;&quot;)
+    .replacingOccurrences(of: &quot;#&quot;, with: &quot;&quot;)
+    .replacingOccurrences(of: &quot;&lt;&quot;, with: &quot;&quot;)
+    .replacingOccurrences(of: &quot;&gt;&quot;, with: &quot;&quot;)
+</code></pre>
+<p>上述实现的问题是，它将导致我们的字符串中4个单独的迭代——这可能不是一个问题，当处理较短的字符串，或在一个不经常碰到的代码路径中执行上述操作时，但当我们需要最大的性能时，它可能成为瓶颈。</p>
+<p>值得庆幸的是，Swift通常不需要我们在性能代码和优雅代码之间做出选择——我们所要做的就是切换到一个更合适的API，一个通过字符串来删除集合中包含的每个字符的API，就像这样:</p>
+<pre><code class="language-swift">let charactersToRemove: Set&lt;Character&gt; = [&quot;@&quot;, &quot;#&quot;, &quot;&lt;&quot;, &quot;&gt;&quot;]
+string.removeAll(where: charactersToRemove.contains)
+</code></pre>
+<p>因此，为了使我们的代码从性能的角度来看更加“Swifty”，有时我们所要做的就是在面对给定任务时探索标准库所能提供的功能-特别是当涉及到集合时，很有可能会有一个优雅、简单的API，它也会给我们提供很棒的性能特征。</p>
+<h2 id="clear-expressive-naming">Clear, expressive naming</h2>
+<p>最后，让我们看看第三个也是最后一个关键字——表达。虽然我们很容易认为表现力纯粹是装饰性的东西，这涉及到挑剔的方法名称，直到它们读起来都是语法完美的英语句子，这最终都是为了让我们的代码清楚地传达它的意思。</p>
+<p>假设我们已经编写了一个当前名为getContent的函数，它为绑定的内容模型加载数据，然后解码它:</p>
+<pre><code class="language-swift">func getContent(name: String) -&gt; Content? {
+    guard let url = Bundle.main.url(
+        forResource: name,
+        withExtension: &quot;json&quot;
+    ) else {
+        return nil
+    }
+
+    guard let data = try? Data(contentsOf: url) else {
+        return nil
+    }
+
+    return try? JSONDecoder().decode(Content.self, from: data)
+}
+</code></pre>
+<p>同样，第一眼看上去，上面的函数似乎非常好。没有明显的错误，它完成了任务。然而，就表现力而言，它绝对可以得到改进。</p>
+<p>首先，它的当前名称——“get content”——并没有真正告诉我们如何检索内容。它将被简单地创建为一个新实例，它将通过网络加载，还是其他什么? 另外，在错误发生的情况下，它只是返回nil，这一事实可能会使调试变得更加困难，以防某些事情开始失败——因为我们不会得到任何指示，说明到底是什么出错了。</p>
+<p>因此，让我们看看我们是否可以改进，首先将我们的函数重命名为loadBundledContent(以明确我们正在从我们的bundle加载内容)。 我们还会给它一个外部参数标签，让它读起来更好，最后，我们会通过抛出它来报告它遇到的任何错误——像这样:</p>
+<pre><code class="language-swift">func loadBundledContent(named name: String) throws -&gt; Content {
+    guard let url = Bundle.main.url(
+        forResource: name,
+        withExtension: &quot;json&quot;
+    ) else {
+        throw Content.Error.missing
+    }
+
+    guard let data = try? Data(contentsOf: url) else {
+        throw Content.Error.missing
+    }
+
+    do {
+        return try JSONDecoder().decode(Content.self, from: data)
+    } catch {
+        throw Content.Error.decodingFailed(error)
+    }
+}
+</code></pre>
+<p>下面是修改前和修改后的调用站点:</p>
+<pre><code class="language-swift">// Before
+let content = getContent(name: &quot;Onboarding&quot;)
+
+// After
+let content = try loadBundledContent(named: &quot;Onboarding&quot;)
+</code></pre>
+<p>虽然不要太在意我们给函数和类型起什么名字是很重要的(毕竟这通常是一个品味和偏好的问题)，如果我们能找到方法来更清楚地传达我们的每个api做什么,那么这是一个重大胜利,因为它不仅使新开发人员更容易熟悉我们的代码库，它还经常使我们的代码更适合长期使用。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在我看来，写“Swifty”代码并不是使用尽可能多的语言特性，也不是通过部署Swift最先进的特性来解决简单的问题，从而使我们的代码变得不必要的复杂-这是关于将我们设计和表达代码及其各种api的方式与Swift的核心原则相一致。</p>
+<p><a href="https://www.swiftbysundell.com/articles/what-makes-code-swifty/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/configuring-swiftui-views/">
+                  <h3 class="post-title">
+                    Configuring SwiftUI views
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

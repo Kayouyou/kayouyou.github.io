@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Static factory methods in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="大多数对象都需要某种形式的设置才能在应用程序中使用。无论它是一个我们想要根据我们的应用程序的品牌视图，我们正在配置的一个视图控制器，或在一个测试当创建存根值 - 我们经常发现需要放置安装代码的地方。
+将这样的设置代码放置在子类中是非常常见的..." />
+    <meta name="keywords" content="design pattern,the factory pattern" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Static factory methods in Swift</h2>
+            <div class="post-date">2018-06-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>大多数对象都需要某种形式的设置才能在应用程序中使用。无论它是一个我们想要根据我们的应用程序的品牌视图，我们正在配置的一个视图控制器，或在一个测试当创建存根值 - 我们经常发现需要放置安装代码的地方。</p>
+<p>将这样的设置代码放置在子类中是非常常见的。只需子类化需要设置的对象，覆盖其初始化器并在那里执行设置——完成! 这当然是一种方法，本周，让我们来看看另一种编写设置代码的方法，它不需要任何形式的子类化——通过使用静态工厂方法。</p>
+<h2 id="views">Views</h2>
+<p>在编写UI代码时，我们必须设置的最常见的对象之一是视图。iOS上的UIKit和Mac上的AppKit都为我们提供了创建具有原生外观和感觉的UI所需的所有基本的、核心的构建块-但我们经常需要定制那些外观，以适应我们的设计和定义布局。</p>
+<p>同样，这也是许多开发人员选择子类化的地方，并创建内置视图类的自定义变体-就像这里的标签，我们将使用渲染标题:</p>
+<pre><code class="language-swift">class TitleLabel: UILabel {
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        font = .boldSystemFont(ofSize: 24)
+        textColor = .darkGray
+        adjustsFontSizeToFitWidth = true
+        minimumScaleFactor = 0.75
+    }
+}
+</code></pre>
+<p>上面的方法并没有什么错，但是它确实创建了更多的类型来跟踪，而且我们还经常为相同类型的视图的轻微变体创建多个子类(如TitleLabel, SubtitleLabel, FeaturedTitleLabel等)。</p>
+<p>虽然子类化是一种重要的语言特性，即使是在面向协议编程的时代，也很容易混淆自定义设置和自定义行为。我们并没有添加任何新的行为到UILabel上面，我们只是设置了一个实例。 所以问题是子类是否真的是这个工作的合适工具?</p>
+<p>让我们尝试使用静态工厂方法来实现同样的目的。 我们要做的是在UILabel上添加一个扩展，使我们能够创建一个与上面的TitleLabel相同设置的新实例，如下所示:</p>
+<pre><code class="language-swift">extension UILabel {
+    static func makeForTitle() -&gt; UILabel {
+        let label = UILabel()
+        label.font = .boldSystemFont(ofSize: 24)
+        label.textColor = .darkGray
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.75
+        return label
+    }
+}
+</code></pre>
+<p>上述方法的美妙之处在于(除了它不依赖于子类化或添加任何新类型之外)，我们清楚地将设置代码与实际逻辑分离开来。 此外，由于扩展可以限定在单个文件中(通过添加private)，我们可以很容易地为需要创建特定视图的部分应用程序设置扩展，只需要一个单一功能:</p>
+<pre><code class="language-swift">// We'll only use this in a single view controller, so we'll scope
+// it as private (for now) as to not add this functionality to
+// UIButton globally in our app.
+private extension UIButton {
+    static func makeForBuying() -&gt; UIButton {
+        let button = UIButton()
+        ...
+        return button
+    }
+}
+</code></pre>
+<p>使用上面的静态工厂方法，我们现在可以让我们的UI代码看起来很漂亮，因为我们需要做的是调用我们的方法来创建我们需要的完全配置的实例:</p>
+<pre><code class="language-swift">class ProductViewController {
+    private lazy var titleLabel = UILabel.makeForTitle()
+    private lazy var buyButton = UIButton.makeForBuying()
+}
+</code></pre>
+<p>如果我们想让我们的api更加简约(Swift在很多方面鼓励使用点语法等特性，以及它如何缩短导入的Objective-C api)，我们甚至可以把我们的方法转换成一个计算属性，像这样:</p>
+<pre><code class="language-swift">extension UILabel {
+    static var title: UILabel {
+        let label = UILabel()
+        ...
+        return label
+    }
+}
+</code></pre>
+<p>这使得调用站点更加简单和干净:</p>
+<pre><code class="language-swift">class ProductViewController {
+    private lazy var titleLabel = UILabel.title
+    private lazy var buyButton = UIButton.buy
+}
+</code></pre>
+<p>当然，如果我们最终向setup api添加参数，我们将需要将它们转换回方法 - 但是用这种方式使用静态计算属性对于更简单的用例来说是一个很好的选择。</p>
+<h2 id="view-controllers">View controllers</h2>
+<p>让我们继续看视图控制器，这是另一种通常使用子类的对象。 虽然我们可能无法完全摆脱视图控制器(或视图)的子类化，有某些类型的视图控制器可以从工厂方法中受益。</p>
+<p>特别是当使用子视图控制器时，我们经常以一组只渲染特定状态的视图控制器结束——而不是在它们里面有很多逻辑。对于那些视图控制器，将它们的设置移动到静态工厂API是一个很好的解决方案。</p>
+<p>在这里，我们使用这种方法来实现一个计算属性，它返回一个加载视图控制器，我们将使用它来呈现一个加载微调器:</p>
+<pre><code class="language-swift">extension UIViewController {
+    static var loading: UIViewController {
+        let viewController = UIViewController()
+
+        let indicator = UIActivityIndicatorView(activityIndicatorStyle: .gray)
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        indicator.startAnimating()
+        viewController.view.addSubview(indicator)
+
+        NSLayoutConstraint.activate([
+            indicator.centerXAnchor.constraint(
+                equalTo: viewController.view.centerXAnchor
+            ),
+            indicator.centerYAnchor.constraint(
+                equalTo: viewController.view.centerYAnchor
+            )
+        ])
+
+        return viewController
+    }
+}
+</code></pre>
+<p>如上所述，我们甚至可以在静态属性或函数中设置内部自动布局约束。在这种情况下，自动布局的声明性性质确实会派上用场 -我们可以简单地预先指定所有的约束，而不必覆盖任何方法或响应任何调用。</p>
+<p>就像用于视图时，工厂方法给了我们非常漂亮和干净的调用站点。特别是如果结合了“在Swift中使用子视图控制器作为插件”的便利API的略微修改版本，现在，当执行异步操作时，我们可以很容易地添加一个预配置的加载视图控制器:</p>
+<pre><code class="language-swift">class ProductListViewController: UIViewController {
+    func loadProducts() {
+        let loadingVC = add(.loading)
+
+        productLoader.loadProducts { [weak self] result in
+            loadingVC.remove()
+            self?.handle(result)
+        }
+    }
+}
+</code></pre>
+<p>对addconvenience API做的唯一修改是让它返回已添加的子视图控制器，使它能够在使用点语法时获得对它的引用。添加@discardableResult也会在新特性未被使用时删除任何警告。</p>
+<h2 id="test-stubs">Test stubs</h2>
+<p>这不仅仅是在我们的主应用程序代码中，我们必须执行大量的设置，我们也经常必须在编写测试时这样做。特别是在测试依赖于特定模型配置的代码时，很容易以充满样板的测试结束——这使得它们更难阅读和调试。</p>
+<p>假设我们的应用程序中有一个用户模型，它包含了一个给定用户拥有的权限， 而且我们的许多测试都是关于基于当前用户的权限来验证我们的逻辑。我们不必在所有测试中使用样板数据手动创建用户值，让我们创建一个静态工厂方法，它基于一组权限返回一个用户存根，如下所示:</p>
+<pre><code class="language-swift">extension User {
+    static func makeStub(permissions: Set&lt;User.Permission&gt;) -&gt; User {
+        return User(
+            name: &quot;TestUser&quot;,
+            age: 30,
+            signUpDate: Date(),
+            permissions: permissions
+        )
+    }
+}
+</code></pre>
+<p>我们现在可以摆脱任何用户设置代码，让我们专注于我们实际测试的内容-就像在这里，我们正在验证用户与deleteFolders权限能够删除一个文件夹:</p>
+<pre><code class="language-swift">class FolderManagerTests: XCTestCase {
+    func testDeletingFolder() throws {
+        // We can now quickly create a user with the required permissions
+        let user = User.makeStub(permissions: [.deleteFolders])
+        let manager = FolderManager(user: user)
+        let folderName = &quot;Test&quot;
+
+        try manager.addFolder(named: folderName)
+        XCTAssertNotNil(manager.folder(named: folderName))
+
+        try manager.deleteFolder(named: folderName)
+        XCTAssertNil(manager.folder(named: folderName))
+    }
+}
+</code></pre>
+<p>随着测试套件的增长，我们开始验证更多涉及用户模型的东西，在创建存根时，我们可能还需要设置额外的属性。有一种简单的方法可以添加对它的支持，而不需要创建其他方法，那就是使用默认实参:</p>
+<pre><code class="language-swift">extension User {
+    static func makeStub(age: Int = 30,
+                         permissions: Set&lt;User.Permission&gt; = []) -&gt; User {
+        return User(
+            name: &quot;TestUser&quot;,
+            age: age,
+            signUpDate: Date(),
+            permissions: permissions
+        )
+    }
+}
+</code></pre>
+<p>我们现在可以自由地提供一个age，一组权限，或者两者都提供 -我们甚至可以用user . makestub()轻松地创建一个空白用户，以备我们测试的不是依赖于任何特定的用户状态。</p>
+<p>通过将上面的工厂方法命名为makeStub，我们也清楚地表明了这段代码仅用于测试，这样它就不会意外地添加到未来的主应用目标中。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用静态工厂方法和属性来执行对象的设置是一种很好的方法，可以将设置代码与实际逻辑清晰地分开， 启用良好的语法特性，并使编写干净的测试代码更容易。</p>
+<p>然子类化仍然是工具箱中的一个重要工具——特别是当我们想要为类型添加逻辑时-去掉只执行配置的子类可以使我们的代码库更容易导航，并减少我们必须维护的类型的数量。使用静态工厂方法和属性的另一种选择是使用实际的工厂对象。如果你想了解更多关于此类对象的信息，以及我通常使用工厂模式的其他方式，请阅读《使用工厂模式避免Swift中的共享状态》、《使用Swift中的工厂注入依赖项》和《使用Swift中的惰性属性》。</p>
+<p><a href="https://www.swiftbysundell.com/articles/static-factory-methods-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4g5XtbTAR/" class="tag">
+                    design pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r9ICJ5fqlq/" class="tag">
+                    the factory pattern
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/writing-self-documenting-swift-code/">
+                  <h3 class="post-title">
+                    Writing self-documenting Swift code
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

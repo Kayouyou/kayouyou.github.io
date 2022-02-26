@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift 进阶: Protocol 初探 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Swift: Protocol
+
+
+1.1. PAT: Protocol with Associated Type
+1.2. Existential &amp; Witness
+
+1.2.1. 什么是 Protocol Witnes..." />
+    <meta name="keywords" content="advanced,pwt,pat,protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift 进阶: Protocol 初探</h2>
+            <div class="post-date">2021-05-23</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Swift:Protocol">Swift: Protocol</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#PAT:ProtocolwithAssociatedType">PAT: Protocol with Associated Type</a></li>
+<li>1.2. <a href="#ExistentialWitness">Existential &amp; Witness</a>
+<ul>
+<li>1.2.1. <a href="#ProtocolWitnessTable">什么是 Protocol Witness Table</a></li>
+</ul>
+</li>
+<li>1.3. <a href="#ProtocolWitnessTable-1">自己实现 Protocol Witness Table</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameswiftprotocolaswift-protocol">1. <a name='Swift:Protocol'></a>Swift: Protocol</h2>
+<h3 id="11-a-namepatprotocolwithassociatedtypeapat-protocol-with-associated-type">1.1. <a name='PAT:ProtocolwithAssociatedType'></a>PAT: Protocol with Associated Type</h3>
+<p>PAT 就是一个有泛型能力的 Protocol，让你的 Protocol 更能被广泛运用，更强大，最常见的就是 Sequence ，我们可以从 source code 找到它定义如下（简化过）</p>
+<pre><code class="language-swift">protocol Sequence {
+    associatedtype Element
+    associatedtype Iterator : IteratorProtocol where Iterator.Element == Element
+
+    func makeIterator() -&gt; Iterator
+}
+</code></pre>
+<p>如此一来，我们就可以做出一群皆吐出 Int 的各种 Iterator ，或者是 String，可以大大地提昇程式码的共用度，可惜的是 PAT 目前有些使用上的困境，在了解这个困境前我们必须先讲一下什麽是 Existential Container 和 Witness Table。</p>
+<h3 id="12-a-nameexistentialwitnessaexistential-witness">1.2. <a name='ExistentialWitness'></a>Existential &amp; Witness</h3>
+<p>在程式码中打出 Protocol 名称时有几种情境，有时我们用它来做为一些约束条件，或者我们直接把它做为一种「型别」。不知道大家有没有想过，<em>Protocol 本身其实不具备实作的实体，但为什麽可以当做一种型别来使用呢</em>？</p>
+<p>这是因为 Swift Compiler 使用了 <em>Existential Container</em> ，下例中两个看似相同的 instance 其实却有完全不同的 memory layout</p>
+<pre><code class="language-swift">protocol MyProcotol {}
+
+struct MyStruct {
+  let x = 1
+  let y = 2
+}
+// What's the difference of following two?
+let existentialContainer: MyProtocol = MyStruct()
+let structInstance = MyStruct()
+
+print(MemoryLayout.size(ofValue: existentialContainer)) // 40
+print(MemoryLayout.size(ofValue: structInstance)) // 16
+</code></pre>
+<p>原因正是因为当你将一个型别明确地 (Explicitly) 指为一个 Protocol 时，我们指的不是一个具体的实体（型别），而是实作了该 Protocol 规范的「所有可能」型别都能套用于此，很明显这是一个 runtime 才能决定的事情，compiler 可能无法在 compile time 知道你送谁进来，于是在这种情况下，我们需要一个万用的中间层（没有中间层解决不了的事啊），所以其实你指定的并不是 Protocol 这个型别，而是该 Protocol 的 Existential Container 。</p>
+<p>一个 Existential Container 结构如下图，长度是 5 个 machine word ，可从前例的 memory layout size 得知</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqri5hetk3j30ew0hi74i.jpg" alt="avatar" loading="lazy"></figure>
+<p>其中 value buffer 记录了实际型别的 properties ，看到这你一定马上想，3 个 word 哪够啊？？？ 事实上是，若超过 3 个 word 来存放的 value type ，会再另外要一块空间，value buffer 裡就只会放一个 pointer 指向这个空间；反之则依序存放，我们可以从下面的范例中探索一下实际的情况</p>
+<pre><code class="language-swift">struct ExistentialContainer {
+    var valueBuffer: (Int, Int, Int)
+    var vwt: UnsafePointer&lt;ValueWitness&gt;
+    var pwt: UnsafePointer&lt;ProtocolWitness&gt;
+}
+
+protocol Fooable {
+    func foo()
+}
+
+struct Concrete: Fooable {
+    let x = 99
+    let y = 2
+    func foo() {
+        print(&quot;foo in concrete&quot;)
+    }
+}
+
+// In main.swift
+var concrete: Fooable = Concrete()
+withUnsafePointer(to: &amp;concrete) { pointer in
+    pointer.withMemoryRebound(to: ExistentialContainer.self, capacity: 1) { wpointer in
+        print(wpointer.pointee.valueBuffer.0) // 99
+        print(wpointer.pointee.valueBuffer.1) // 2
+    }
+}
+</code></pre>
+<p>上例中的 ExistentialContainer struct 和实际上的 memory layout 是一模一样的。而 vwt 区块则 存放一个指向 Value Witness Table 的 pointer，value witness table 记载了 value 的 allocate, copy, destruct 和 deallocate； 至于 pwt 则是指向 Protocol Witness Table 的 pointer，这裡可以找到所有实作了 protocol 裡 method 的实体位置（欲知更多细节，推荐收看 WWDC 2016 的 Understanding Swift Performance）</p>
+<h4 id="121-a-nameprotocolwitnesstablea什么是-protocol-witness-table">1.2.1. <a name='ProtocolWitnessTable'></a>什么是 Protocol Witness Table</h4>
+<p><a href="https://github.com/bestswifter/blog/blob/master/articles/swift-assembly-1-pwt.md">这篇post</a>有一些探索</p>
+<p>我们知道 C 函数调用是静态派发，简单来说可以理解为是用汇编命令 call $address 来实现。这种方式效率最高，但是灵活性不够。</p>
+<p>OC 的方法调用完全是基于动态派发，总是调用 objc_msgSend 实现。这种方式非常灵活，允许各种 Hook 黑科技，但是流程最长，效率最低。</p>
+<p>在 Swift 中，协议方法的调用，使用协议方法表的方式完成，也就是 <strong>Protocol Witness Table</strong>，下文简称 <strong>PWT</strong>。参考下面这段代码：</p>
+<pre><code class="language-swift">protocol Drawable {
+    func draw() -&gt; Int
+}
+
+struct Point: Drawable {
+    var x, y: Int
+    func draw() -&gt; Int {
+        return x + y
+    }
+}
+
+struct Line: Drawable {
+    var length: Int
+    func draw() -&gt; Int {
+        return length
+    }
+}
+
+func foo() -&gt; Int {
+    let p: Drawable = xxx
+    return p.draw()
+}
+</code></pre>
+<blockquote>
+<p>在 foo 函数中，变量 p 并没有明确的类型，只知道它遵守 Drawable 协议，实现了 draw 方法。但是编译时并不能知道，调用的是结构体 Line 还是 Point 的 draw 方法。<br>
+因此，PWT 的实现方式是：每个类都会有一个方法表（通过数组来实现），里面保存了它用于实现协议的函数的地址。只要知道一个类的信息和函数信息，就可以实现函数调用。这个方法表，就是 PWT。</p>
+</blockquote>
+<ul>
+<li>PWT 是为了解决协议方法调用在编译时无法确定地址，而引入的中间层</li>
+<li>每个遵守了协议的类，都会有自己的 PWT。遵守的协议中函数越多，PWT 中存储的函数地址就越多。</li>
+<li>准确来说，PWT 是指针数组，但是第一个指针并不是函数指针，而是 protocol conformance descriptor，从第二个开始才是函数指针。如果有读者知道这个 conformance descriptor 中存储信息的含义，欢迎指教</li>
+<li>对协议方法的调用，首先会调用一个 PWT address + offset 这个函数，这个函数被叫做 protocol witness，它的内部会做一些参数处理，最后再调用真实的函数</li>
+<li>对于实际被调用的来说，只看它的内部实现，无法和其它函数做出区分。但是可以观察它的 caller，如果是一个 protocol witness 就可以说明。</li>
+</ul>
+<p>那，为什麽要讲这个🤔</p>
+<p><strong>因为 compiler 无法为 PAT 生成 Existential Container 啦！！！</strong><br>
+具体原因就是：在 Swift 5 里，存在体只针对那些没有关联类型和 Self 约束的协议。编译器禁止为包含关联类型约束的协议 (或者使用了 Self 的协议，本质上这也是一种关联类型) 生成存在体（Existential Container）。</p>
+<p>若你一时无法意会这句话是什麽意思，请试著写出这样的 code</p>
+<pre><code class="language-swift">let sequences: [Sequence]
+</code></pre>
+<p>写完后你就会得到以下警报</p>
+<blockquote>
+<p>Protocol ‘Sequence’ can only be used as a generic constraint because it has Self or associated type requirements.(“Sequence”Sequence只能作为通用约束使用，因为它有Self或相关的类型需求。)</p>
+</blockquote>
+<p>如果这个例子你无法感同身受的话，请容许我展示另一个例子，在简单的网路请求情境下我常用这个从喵神那学来的 protocol-oriented newtork request architecture （以 RxSwift 呈现）</p>
+<pre><code class="language-swift">import Foundation
+import RxSwift
+
+// Requests 
+enum HTTPMethod: String {
+    case POST, GET
+}
+
+// Define what a request is
+protocol Request {
+    var path: String { get }
+    var method: HTTPMethod { get }
+    var param: [String: Any] { get }
+
+    associatedtype ResponseObject: Decodable
+}
+
+// Define what shoud have to send a request
+protocol RequestSender {
+    var base: String { get }
+    func send&lt;T: Request&gt;(_ r: T) -&gt; Observable&lt;T.ResponseObject?&gt;
+}
+
+// An object who can send out Request
+struct URLSessionRequestSender: RequestSender {
+    var base = &quot;http://www.dummy.api&quot;
+    func send&lt;T: Request&gt;(_ r: T) -&gt; Observable&lt;T.ResponseObject?&gt; {
+        let url = URL(string: base.appending(r.path))!
+        var request = URLRequest(url: url)
+        request.httpMethod = r.method.rawValue
+
+        if let body = try? JSONSerialization.data(withJSONObject: r.param, options: .prettyPrinted) {
+            request.httpBody = body
+        }
+
+        return Observable.create { subscriber in
+            let task =  URLSession.shared.dataTask(with: request) { data, res, error in
+                if let data = data, let object = try? JSONDecoder().decode(T.ResponseObject.self, from: data) {
+                    subscriber.onNext(object)
+                } else {
+                    subscriber.onError(error!)
+                }
+            }
+            task.resume()
+            return Disposables.create()
+        }
+    }
+}
+
+// An object
+struct User: Decodable {
+    let id: String
+    let name: String
+    let gender: String
+}
+
+// A real request
+struct GetUserRequest: Request {
+    typealias ResponseObject = User
+    let id: String
+    var path: String {
+        return &quot;/users/\(id)&quot;
+    
+    var param: [String : Any]
+    let method: HTTPMethod = .GET
+
+    init(id: String, param: [String: Any] = [:]) {
+        self.id = id
+        self.param = param
+    }
+}
+
+// usage example
+func example() {
+    let request = GetUserRequest(id: &quot;a12345&quot;, param: [&quot;foo&quot;: &quot;bar&quot;])
+    _ = URLSessionRequestSender().send(request)
+        .subscribe(onNext: { user in
+            if let user = user {
+                print(&quot;user is : \(user.name)&quot;)
+            } else {
+                print(&quot;got nothing&quot;)
+            }
+        })
+}
+</code></pre>
+<p>上例优雅地利用 associatedtype 来把 Request 相关的元素都集中在一个资料结构裡，让我们可以用一个 sender （也可以替换成不同实作）来送出各种不同的 request 而且 return type 都是在 compile time 就能够得知的，the power of generic and protocol！</p>
+<p>然而，当你开始开心地玩下去，发现你想要实作一个 queue 可以让多个不同的 request 可以依序送出，或者有相依关係，因此你写出了这样的 code:</p>
+<pre><code class="language-swift">var requestQueue: [Request]
+</code></pre>
+<blockquote>
+<p>Protocol ‘Request’ can only be used as a generic constraint because it has Self or associated type requirements.( “请求”协议只能作为通用约束使用，因为它有Self或相关的类型需求。)</p>
+</blockquote>
+<p>好吧，收捨破碎的心， code 还是要写完不然会没工作，遇到这个状况该怎麽办呢？先讲终极结论，这个问题应该就在不久后的将来就会被解决，Swift 总有一天会支援 let request: Request&lt;ResponseObject: User&gt; 的写法（或者可能是 some Request，可以参考SE-0244）。但在那天到来前，Swift 社群有很多 workaround 的讨论以绕开这个问题，type erasure 的技巧如 AnyIterator、Any XXX 等都可以，不过都还很麻烦而且一定要再引入另一个 container。直到最近我看到一个让我🤯🤯🤯的天才想法：</p>
+<blockquote>
+<p>Why don’t you write Protocol Witness Table by yourself？( 你为什么不自己写协议见证表呢?)</p>
+</blockquote>
+<p>一口气解开了 PAT 的问题，更打开了一个实体只能有一种 Protocol 实作的限制，根本神之思维啊啊！！！</p>
+<h3 id="13-a-nameprotocolwitnesstable-1a自己实现-protocol-witness-table">1.3. <a name='ProtocolWitnessTable-1'></a>自己实现 Protocol Witness Table</h3>
+<p>刚才提到了一个破天荒的想法，自己实做一个 Protocol Witness Table，所以我们先来深入点看看 Protocol Witness Table，首先是 compiler 在 SIL 阶段做了什麽事（官方文件），首先文件裡提到</p>
+<blockquote>
+<p>A witness table is emitted for every declared explicit conformance.</p>
+</blockquote>
+<p>所以每当我们当声明一个型别遵守(confrom to)某个 Protocol 时就会生成一个 witness table，而这个 witness table 会用「型别：Protocol」这组合生成一个独特的 id 来当 key 保存著，文件裡共定义五种遵守 protocol 的可能性，我们只看最一般的一般性遵守</p>
+<pre><code class="language-swift">protocol-conformance ::= normal-protocol-conformance
+</code></pre>
+<p>因为每个型别只能遵守一个 protocol 一次（重点重点！），所以可以保证这样的配对是 1:1，而且也只有这个一般的遵守方式会直接与 witness table 关联，其它比较複杂的情况多半是间接或多个 table 之间的关联。至于一个 witness table 会由 4 个 entry 组成以描述所有相关资讯，我们只在意最重要的一个 method entry：</p>
+<pre><code class="language-swift">sil-witness-entry ::= 'method' sil-decl-ref ':' sil-function-name
+</code></pre>
+<p>这裡很单纯，前者是 protocol 所定义的介面，后者是真实的 method 实作，只是把它们连结起来而已，如这裡太抽象我们可以看一下图和程式码，就拿 WWDC 2016 Session 416 的范例来说：</p>
+<pre><code class="language-swift">protocol Drawable {
+    func draw()
+}
+
+struct Point: Drawable {
+    var x: Int
+    var y: Int
+    
+    func draw() {
+        print(&quot;Draw a point at (\(x), \(y))&quot;)
+    }
+}
+
+// Main
+let point: Drawable = Point(x: 1, y: 1)
+point.draw()
+</code></pre>
+<p>我们这裡的变数 point 会是个 Existential Container，因为我们宣告它的型别是个 protocol，结合前述所说，container 和 protocol witness table 长得像这样（大家还记得第二集讲到 container 的模样吗？）</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqrjpggv7aj30m80bu0t3.jpg" alt="avatar" loading="lazy"></figure>
+<p>如果用程式码表示，这个 point 的 container 与 Point: Drawable 的 witness table 会像这样：</p>
+<pre><code class="language-swift">struct ExistentialContainer {
+    var valueBuffer: (Int, Int, Int)
+    var vwt: UnsafePointer&lt;ValueWitness&gt;
+    var pwt: UnsafePointer&lt;ProtocolWitness&gt;
+}
+
+struct ProtocolWitness {
+    var descriptor: ProtocolConformanceDescriptor
+    var draw: FunctionRef
+}
+</code></pre>
+<p>怀疑论者至此如果还有怀疑，可以试著在前面的 point.draw() 打个中断点，执行程式并停在该处，在 lldb 裡读一下 register ，可以看到</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqrjsjxc4vj31no0ic0wp.jpg" alt="avatar" loading="lazy"></figure>
+<p>其中 0x000000010fb21978 是 protocol witness table，我们检查一下裡面的内容</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqrjuuiz02j30vu03a3z0.jpg" alt="avatar" loading="lazy"></figure>
+<p>第一个是指向 descriptor ，第二个就是指向我们 draw() 在 point 的实作，我们将第二个的位址反组译一下，可以看到它的确就是 Point 对 Drawable 裡 draw() 的实作（在我程式裡是第 19 行没错）</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqrju7zjaqj320a0dq0vk.jpg" alt="avatar" loading="lazy"></figure>
+<p>探究至此，想必大家都已经有很具体的认知了，那我们想想，这样的设计可能会有什麽问题？</p>
+<p>除了前集提到的 PAT 不能生成 container 外，有时这 1对1 的关係（一型别只能遵守一个 protocol 一次）让我们不能以最大效益共用程式码，比如前面提到 Request，如果我们想要生成不同回传型别的 Request ，就要宣告不同的 concrete type ，比如 UserRequest，ListsRequest等，其实大同小异，这样就要宣告一个新型别好像有点浪费？</p>
+<p>从前面 Point 和 Drawable 的例子来看，如果我们希望 Point 有不同的画法呢？比如空心点、实心点或者虚线点，这样势必要三种型别才能达成啊，不管是纯遵守 protocol 或者使用继承 ！不过方才我们也看到 witness table 在 SIL 的结构，看起来不难搞，其实就是 draw 要保存一个实作的位址嘛！在 Swift 裡 function 可是 “first-class citizen”，也就是 function 可以当作变数来运用，这提供了一个大好的契机，我们可以把 Drawable witness table 的 draw property 改写一下</p>
+<pre><code class="language-swift">var draw: FunctionRef -&gt; var draw: (Shape) -&gt; ()
+</code></pre>
+<p>整個例子就可以改寫成</p>
+<pre><code class="language-swift">// From:
+protocol Drawable {
+    func draw()
+}
+
+// To:
+struct Drawing&lt;Shape&gt; {
+    var draw: (Shape) -&gt; ()
+}
+
+// 用來畫實心點
+let solidPointDrawer = Drawing&lt;CGPoint&gt; { point in
+    print(&quot;draw solid point: (\(point.x), \(point.y))&quot;)
+}
+
+// 用來畫空心點
+let hollowPointDrawer = Drawing&lt;CGPoint&gt; { point in
+    print(&quot;draw hollow point: (\(point.x), \(point.y))&quot;)
+}                      
+
+let point = CGPoint(x: 1, y: 1)
+
+solidPointDrawer.draw(point) // 畫實心點
+hollowPointDrawer.draw(point) // 畫空心點
+</code></pre>
+<p>是不是突然就有走入新世界的感觉了呢？打铁要趁热，我们继续把上次的 network rqeust 范例一起用这种方式重新改写（因为要传入 handler 且它是个 closure，如果要写得优雅点需要用 curry 的方式消参数，怕失焦就先借用 RxSwift 该程式码优雅点）</p>
+<pre><code class="language-swift">import Foundation
+import RxSwift
+
+// MARK: Model
+struct User: Decodable {
+    let id: Int
+    let name: String
+}
+
+let usersDecode: (Data) -&gt; [User]? = { data in
+    return try? JSONDecoder().decode([User].self, from: data)
+}
+
+// MARK: Request related
+enum HTTPMethod: String {
+    case GET
+    case POST
+}
+
+struct Request&lt;Response: Decodable&gt; {
+    var endpoint: String
+    var method: HTTPMethod
+    var param: [String: Any]?
+    let decode: (Data) -&gt; Response?
+}
+
+struct RequestSender {
+    let base = &quot;https://foo.bar&quot;
+    private let sendingRequst: (URLRequest) -&gt; Observable&lt;Data&gt; // To abstract your network framework
+    init(_ sendingRequst: @escaping(URLRequest) -&gt; Observable&lt;Data&gt;) {
+        self.sendingRequst = sendingRequst
+    }
+
+    func send&lt;Response: Decodable&gt;(_ r: Request&lt;Response&gt;) -&gt; Observable&lt;Response?&gt; {
+        let url = URL(string: base + r.endpoint)!
+        var request = URLRequest(url: url)
+        request.httpMethod = r.method.rawValue
+        if let param = r.param, let body = try? JSONSerialization.data(withJSONObject: param, options: .prettyPrinted) {
+            request.httpBody = body
+        }
+
+        return sendingRequst(request).map(r.decode)
+    }
+}
+
+// MARK: Main
+// Instance of requests and request sender
+let getUsersRequest = Request(endpoint: &quot;/users&quot;, method: .GET, param: nil, decode: usersDecode)
+
+// You can use any other network framework such as Alamofire
+let urlSessionRequestSender = RequestSender { request in
+    return Observable&lt;Data&gt;.create { subscriber in
+        let task = URLSession.shared.dataTask(with: request) { data, res, error in
+            if let data = data {
+                subscriber.onNext(data)
+            } else {
+                subscriber.onError(error!)
+            }
+        }
+        task.resume()
+        return Disposables.create()
+    }
+}
+
+// Actually do request (get users)
+_ = urlSessionRequestSender.send(getUsersRequest).subscribe(onNext: { users in
+    guard let users = users else {
+        return
+    }
+    print(users)
+})
+</code></pre>
+<p>RequestSender 的部分就写个意思意思（但真的会动），大家可以再自己优化，主要的重点还是在 Request 这个泛型 struct 裡，利用它的泛型资讯再让 RequestSender 可以处理各种 return type 的 request。</p>
+<p><a href="https://www.fewbutripe.com/talks/#">相关talk</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/TDh4b4Zil/" class="tag">
+                    advanced
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EsLtslOpr/" class="tag">
+                    pwt
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Kvxtc31eQB/" class="tag">
+                    pat
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/debugging-swift-code-with-lldb/">
+                  <h3 class="post-title">
+                    Debugging Swift code with LLDB
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Making Swift code extensible through plugins | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="当编写共享的抽象、库和其他类型的代码时，这些代码将被多个开发人员或系统的不同部分使用， 决定代码功能的确切范围通常是相当棘手的。
+如果功能集非常狭窄，代码可能无法完成我们所需要的内容，如果功能集太多，就会有很大的风险，使其变得庞大、混乱和难..." />
+    <meta name="keywords" content="plugins,architecture,composition" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Making Swift code extensible through plugins</h2>
+            <div class="post-date">2019-12-01</div>
+            
+            <div class="post-content" v-pre>
+              <p>当编写共享的抽象、库和其他类型的代码时，这些代码将被多个开发人员或系统的不同部分使用， 决定代码功能的确切范围通常是相当棘手的。</p>
+<p>如果功能集非常狭窄，代码可能无法完成我们所需要的内容，如果功能集太多，就会有很大的风险，使其变得庞大、混乱和难以维护 -试图涉足太多领域，承担太多责任。</p>
+<p>本周，让我们继续探索今年早些时候已经介绍过的可配置类型的主题——通过查看如何建立一个基于插件的架构来帮助我们保持一个库或功能片段尽可能地窄和小，同时仍然能够扩展它并为更具体的用例定制它。</p>
+<h2 id="starting-out-simple">Starting out simple</h2>
+<p>有一点是肯定的，那就是我们所写的大部分代码在理想情况下都应该从尽可能简单的开始。 从一开始就把事情做得太通用和灵活，往往会导致过于复杂的实现，以及可能永远不会在实践中使用的api。</p>
+<p>假设我们已经开始构建一个ImageLoader类用于通过网络加载图像，为了遵循不把事情弄得太复杂的哲学， 我们只是简单地将我们的新类作为一个相对较薄的包装器来包装现有的网络协议——像这样:</p>
+<pre><code class="language-swift">class ImageLoader {
+    typealias Handler = (Result&lt;UIImage, Error&gt;) -&gt; Void
+
+    private let networking: Networking
+
+    init(networking: Networking) {
+        self.networking = networking
+    }
+
+    func loadImage(from url: URL,
+                   then handler: @escaping Handler) {
+        let request = Request(url: url, method: .get)
+
+        networking.perform(request) { result in
+            switch result {
+            case .success(let data):
+                guard let image = UIImage(data: data) else {
+                    handler(.failure(ImageError.invalidData))
+                    return
+                }
+
+                handler(.success(image))
+            case .failure(let error):
+                handler(.failure(error))
+            }
+        }
+    }
+}
+</code></pre>
+<p>上面的实现可能很简单，但只要我们的需求也保持简单，它可能就足够了。然而，随着我们项目的发展，这种情况可能会改变。我们也可能决定与其他开发人员共享上面的类，或者在不同的应用程序之间共享，这可能导致它的需求变得越来越复杂。</p>
+<p>例如，一些用例可能需要对某些请求进行身份验证，或者我们可能希望在用户的网络连接丢失时添加对显示占位符图像的支持，等等。</p>
+<p>当然，我们可以决定让我们的ImageLoader承担所有这些新的责任(并因此使它的范围和复杂性增加)-让我们来看看如何让外部代码注入到它里面，以及这些代码如何以一种非常灵活的方式实现这些特性。</p>
+<h2 id="plugins">Plugins</h2>
+<p>顾名思义，插件是一段可以插入另一种类型或系统以修改其功能的代码。然插件可以有许多不同的形状和形式，让我们再次从简单的开始，在这种情况下，插件就是一个函数——接受一个给定类型的值作为输入，并返回它的新版本作为输出:</p>
+<pre><code class="language-swift">typealias Plugin&lt;T&gt; = (T) -&gt; T
+</code></pre>
+<p>有了这个简单的类型别名，我们就可以开始定义许多不同类型的插件和修饰符了。 例如，我们如何建立一个插件函数来为传入的任何图像添加水印:</p>
+<pre><code class="language-swift">let watermarkingPlugin: Plugin&lt;UIImage&gt; = { image in
+    let renderer = UIGraphicsImageRenderer(size: image.size)
+
+    return renderer.image { context in
+        context.draw(image)
+        context.drawWatermark(forImageSize: image.size)
+    }
+}
+</code></pre>
+<p>然而，能够定义插件是不够的——我们还需要一种方法让插件能够与它们所支持的类型进行实际的交互。为了实现这一点，让我们从实现一个简单的集合类型开始，它将让我们跟踪所有为特定值和用例添加的插件，并将它们应用到给定值:</p>
+<pre><code class="language-swift">struct PluginCollection&lt;Value&gt; {
+    private var plugins = [Plugin&lt;Value&gt;]()
+
+    mutating func add(_ plugin: @escaping Plugin&lt;Value&gt;) {
+        plugins.append(plugin)
+    }
+
+    func apply(to value: Value) -&gt; Value {
+        plugins.reduce(value) { value, plugin in
+            plugin(value)
+        }
+    }
+}
+</code></pre>
+<p>我们保持底层插件数组私有的原因是我们不想让任何外部代码自由地修改它。使用上述设置，唯一允许的变异类型是向集合中添加新的插件。</p>
+<p>有了上面的基础设施，让我们开始启用之前的ImageLoader插件。我们要做的第一件事是定义两个PluginCollection属性——一个用于在我们开始执行请求之前被调用的插件，一个用于那些希望修改加载图像结果的插件:</p>
+<pre><code class="language-swift">class ImageLoader {
+    ...
+    var preProcessingPlugins = PluginCollection&lt;Request&gt;()
+    var postProcessingPlugins = PluginCollection&lt;Result&lt;UIImage, Error&gt;&gt;()
+    ...
+}
+</code></pre>
+<p>接下来，让我们调用每一组插件作为图像加载过程的一部分。因为我们的预处理插件集合将能够在每个请求发送之前修改它，让我们在初始化请求值时调用它——像这样:</p>
+<pre><code class="language-swift">let request = preProcessingPlugins.apply(
+    to: Request(url: url, method: .get)
+)
+</code></pre>
+<p>在另一端，我们的postProcessingPlugins集合应该在请求加载完成后被调用——使每个插件都能对加载的图像执行后处理(或产生的错误)。使用变量遮挡，我们将把传递到图像加载函数中的处理程序包装起来，以便注入我们的插件逻辑:</p>
+<pre><code class="language-swift">let handler: Handler = { [postProcessingPlugins] result in
+    handler(postProcessingPlugins.apply(to: result))
+}
+</code></pre>
+<p>如果我们现在用上面的两段代码更新ImageLoader，我们的loadImage方法将会像这样:</p>
+<pre><code class="language-swift">class ImageLoader {
+    ...
+    func loadImage(from url: URL,
+                   then handler: @escaping Handler) {
+        let request = preProcessingPlugins.apply(
+            to: Request(url: url, method: .get)
+        )
+
+        let handler: Handler = { [postProcessingPlugins] result in
+            handler(postProcessingPlugins.apply(to: result))
+        }
+
+        networking.perform(request) { result in
+            switch result {
+            case .success(let data):
+                guard let image = UIImage(data: data) else {
+                    handler(.failure(ImageError.invalidData))
+                    return
+                }
+
+                handler(.success(image))
+            case .failure(let error):
+                handler(.failure(error))
+            }
+        }
+    }
+}
+</code></pre>
+<p>从全局来看，我们对ImageLoader所做的修改非常小，但它们仍然提供了大量新的灵活性和强大的功能。 例如，除了我们前面提到的水印插件外，我们还可以使用新的插件系统在用户登录后对每个请求进行有条件的认证:</p>
+<pre><code class="language-swift">imageLoader.preProcessingPlugins.add { [loginController] request in
+    // Don't authenticate external API calls
+    guard request.url.isInternalAPIURL else {
+        return request
+    }
+
+    guard let accessToken = loginController.session?.accessToken else {
+        return request
+    }
+
+    return request.addingHeader(
+        named: &quot;Authorization&quot;,
+        value: &quot;Bearer \(accessToken)&quot;
+    )
+}
+</code></pre>
+<p>说到后处理，我们现在可以很容易地注入一个占位符图像，以防止请求因离线错误而失败:</p>
+<pre><code class="language-swift">imageLoader.postProcessingPlugins.add { result in
+    switch result {
+    case .success:
+        return result
+    case .failure(let error) where error.isOfflineError:
+        return .success(.makePlaceholder())
+    case .failure:
+        return result
+    }
+}
+</code></pre>
+<p>上面我们使用了Swift强大的模式匹配功能来匹配由于应用离线而导致的所有失败和错误。</p>
+<p>将上述功能作为插件来构建，而不是在ImageLoader内部实现，其好处是我们的系统整体上变得更加模块化和灵活。我们的图像加载器不需要知道任何关于访问令牌的信息，但仍然可以支持经过身份验证的请求，而且我们可以继续定义各种新的插件来做各种预处理和后处理——所有这些都使用非常简单的、基于闭包的抽象。</p>
+<h2 id="multiple-flavors-of-the-same-pattern">Multiple flavors of the same pattern</h2>
+<p>就像大多数模式和技术一样，有多种方法可以实现插件风格的架构——以及部署这种架构的多种不同规模。然而，无论选择哪种抽象，以及我们最终在何种程度上使用这样的插件系统，目标都是一样的——实现功能的解耦，并注入特定的覆盖，而不是要求一个单一类型覆盖所有可能的用例。</p>
+<p>让我们来看看两个来自开源世界的例子，首先是基于动画的核心游戏引擎Imagine engine——它使用插件来支持以完全解耦的方式定义各种游戏组件和逻辑。 由于这些插件需要多个api，它们被建模为协议，而不是闭包类型:</p>
+<pre><code class="language-swift">public protocol Plugin: AnyObject {
+    associatedtype Object: AnyObject
+
+    func activate(for object: Object, in game: Game)
+    func deactivate()
+}
+</code></pre>
+<p>就像我们之前的ImageLoader插件系统一样，上面的协议允许使用各种插件来修改游戏引擎的各种对象。 例如，下面是如何实现一个插件，让场景中的摄像机跟随任何演员的运动——比如一个玩家或一个敌人:</p>
+<pre><code class="language-swift">class FollowActorPlugin: Plugin {
+    private let actor: Actor
+
+    init(actor: Actor) {
+        self.actor = actor
+    }
+
+    func activate(for camera: Camera, in game: Game) {
+        actor.events.moved.addObserver(camera) { camera, actor in
+            camera.position = actor.position
+        }
+    }
+}
+</code></pre>
+<p>上面的代码也显示了观察者模式的作用，这在由两部分组成的文章“Swift中的观察者”中有所涉及。</p>
+<p>最后，让我们来看看第三种“风格”的插件，它可以在Markdown解析器墨水中找到，它允许将Markdown格式的字符串转换为HTML。 当使用这个库时，可以使用类似插件的修饰符类型来实现Markdown解析过程中插入的各种修饰符 -例如为了在一篇文章的每个代码块的顶部添加一个标题:</p>
+<pre><code class="language-swift">let modifier = Modifier(target: .codeBlocks) { html, markdown in
+    return &quot;&lt;h3&gt;Sample code:&lt;/h3&gt;&quot; + html
+}
+</code></pre>
+<p>有趣的元事实:墨水被用来生成你现在正在阅读的这篇文章。</p>
+<p>作为Imagine Engine中面向协议的方法和我们在本文中构建的更简单的基于闭包的方法之间的一种混合，nk的修饰符类型使用了一个目标枚举来允许库决定在哪个上下文中执行每个插件闭包，如下所示:</p>
+<pre><code class="language-swift">public struct Modifier {
+    public typealias Input = (html: String, markdown: Substring)
+    public typealias Closure = (Input) -&gt; String
+
+    public var target: Target
+    public var closure: Closure
+
+    public init(target: Target, closure: @escaping Closure) {
+        self.target = target
+        self.closure = closure
+    }
+}
+</code></pre>
+<p>上面的每一个例子都使它们的库能够专注于它们的核心任务集，而不是必须为各种功能包含显式的api-这反过来使这些库的用户可以更自由地自定义他们的行为，并实现新的功能，而不需要对库本身做任何修改。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>如果部署在合适的环境中，插件架构会非常强大——它可以让我们为外部用户和内部实现打开新的功能。 为库或类型添加插件支持不仅可以充当一个“逃生通道”，让用户自己实现缺失的api和特性，而且还可以帮助防止项目在范围和复杂性方面过度增长。</p>
+<p>然而，插件并不总是合适的，它们也有自己的一套权衡。 使用大量插件的方法的一个风险是整个系统可能变得过于分散——可能会使某些问题更难调试，或者使获取系统概览更加耗时。这些权衡是否值得，将一如既往地取决于我们想要建立的系统类型。</p>
+<p><a href="https://www.swiftbysundell.com/articles/making-swift-code-extensible-through-plugins/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/jMMrY-Ro4/" class="tag">
+                    plugins
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VT6NEUoHdJ/" class="tag">
+                    composition
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/lightweight-api-design-in-swift/">
+                  <h3 class="post-title">
+                    Lightweight API design in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

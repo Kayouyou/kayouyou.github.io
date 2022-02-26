@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Dependency injection using factories in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="依赖注入是提高代码可测试性的必要工具。与其让对象创建它们自己的依赖项或作为单例访问它们，它的思想是，一个对象为了完成它的工作所需要的一切都应该从外部传入。这既使它更容易看到一个给定对象有哪些确切的依赖项，也使测试变得简单得多——因为依赖项可..." />
+    <meta name="keywords" content="dependency injection,the factory pattern" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Dependency injection using factories in Swift</h2>
+            <div class="post-date">2017-11-05</div>
+            
+            <div class="post-content" v-pre>
+              <p>依赖注入是提高代码可测试性的必要工具。与其让对象创建它们自己的依赖项或作为单例访问它们，它的思想是，一个对象为了完成它的工作所需要的一切都应该从外部传入。这既使它更容易看到一个给定对象有哪些确切的依赖项，也使测试变得简单得多——因为依赖项可以通过模拟来捕获和验证状态和值。</p>
+<p>然而，尽管依赖注入很有用，但当在项目中广泛使用时，它也可能成为一个相当大的痛点。 随着给定对象的依赖项数量的增长，初始化它可能会变得相当繁琐。让代码变得可测试是件好事，但如果它需要像这样的初始化器成本，那就太糟糕了:</p>
+<pre><code class="language-swift">class UserManager {
+    init(dataLoader: DataLoader, database: Database, cache: Cache,
+         keychain: Keychain, tokenManager: TokenManager) {
+        ...
+    }
+}
+</code></pre>
+<p>本周，让我们来看看一种依赖注入技术，它使我们能够实现可测试性，而不必强迫我们编写此类大规模初始化程序或复杂的依赖管理代码。</p>
+<h2 id="passing-dependencies-around">Passing dependencies around</h2>
+<p>当使用依赖注入时，我们经常会出现如上所述的情况，主要原因是我们需要传递依赖以便以后使用它们。例如，假设我们正在构建一个消息应用程序，我们有一个视图控制器来显示所有用户的消息:</p>
+<pre><code class="language-swift">class MessageListViewController: UITableViewController {
+    private let loader: MessageLoader
+
+    init(loader: MessageLoader) {
+        self.loader = loader
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        loader.load { [weak self] messages in
+            self?.reloadTableView(with: messages)
+        }
+    }
+}
+</code></pre>
+<p>正如你在上面看到的，我们依赖注入一个MessageLoader到我们的MessageListViewController，然后它用它来加载它的数据。这并不太糟糕，因为我们只有一个依赖项。然而，我们的列表视图可能不是一个死胡同，这在某种程度上将要求我们实现导航到另一个视图控制器。</p>
+<p>假设我们想让用户在点击messages列表中的一个单元格时能够导航到一个新视图。对于新视图，我们创建了一个MessageViewController，它既让用户完整地查看消息，也让用户回复消息。为了启用应答特性，我们实现了一个MessageSender类，我们在创建新视图控制器时将它注入到它中，像这样</p>
+<pre><code class="language-swift">override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    let message = messages[indexPath.row]
+    let viewController = MessageViewController(message: message, sender: sender)
+    navigationController?.pushViewController(viewController, animated: true)
+}
+</code></pre>
+<p>问题来了。因为MessageViewController需要一个MessageSender的实例，我们还需要让MessageListViewController知道这个类。一种方法是把sender也添加到列表视图控制器的初始化器中:</p>
+<pre><code class="language-swift">class MessageListViewController: UITableViewController {
+    init(loader: MessageLoader, sender: MessageSender) {
+        ...
+    }
+}
+</code></pre>
+<p>虽然上面的工作，它开始把我们引向另一个大规模的初始化器，并使MessageListViewController有点难以使用(也相当令人困惑，为什么列表需要知道发送者在第一个地方?🤔)。</p>
+<p>另一个可能的解决方案(在这种情况下非常常见)是使MessageSender成为一个单例。这样我们就可以轻松地从任何地方访问它，并通过使用它的共享实例将它注入到MessageViewController中:</p>
+<pre><code class="language-swift">let viewController = MessageViewController(
+    message: message,
+    sender: MessageSender.shared
+)
+</code></pre>
+<p>然而，就像我们在“Swift中避免单例”中看到的那样，单例方法也有一些明显的缺点，可能会导致我们陷入一种难以理解的架构和不清楚的依赖关系的情况。</p>
+<h2 id="factories-to-the-rescue">Factories to the rescue</h2>
+<p>如果我们可以跳过上面的所有这些，并使MessageListViewController完全不知道MessageSender，以及所有其他任何后续视图控制器可能需要的依赖，这不是很好吗?</p>
+<p>如果两者都超级方便(甚至比引入单例时更方便)——而且非常干净——如果我们可以有某种形式的工厂，我们可以简单地要求为给定的消息创建一个MessageViewController，像这样:</p>
+<pre><code class="language-swift">let viewController = factory.makeMessageViewController(for: message)
+</code></pre>
+<p>就像我们在“使用工厂模式避免Swift中的共享状态”中看到的那样，我真正喜欢工厂的一点是，它们使您能够完全解耦对象的使用和创建。这使得许多对象与它们的依赖项之间具有非常松散的耦合关系，这在您想要重构或更改内容的情况下确实很有帮助。</p>
+<p><em>So how can we make the above happen?</em></p>
+<p>我们首先为我们的工厂定义一个协议，这将使我们能够轻松地创建任何我们在应用中需要的视图控制器，而不需要真正了解它的依赖项或初始化器:</p>
+<pre><code class="language-swift">protocol ViewControllerFactory {
+    func makeMessageListViewController() -&gt; MessageListViewController
+    func makeMessageViewController(for message: Message) -&gt; MessageViewController
+}
+</code></pre>
+<p>但我们不会就此止步。我们还会创建额外的工厂协议来创建视图控制器的依赖项，就像这个让我们为列表视图控制器创建一个MessageLoader:</p>
+<pre><code class="language-swift">protocol MessageLoaderFactory {
+    func makeMessageLoader() -&gt; MessageLoader
+}
+</code></pre>
+<h2 id="a-single-dependency">A single dependency</h2>
+<p>一旦我们建立了我们的工厂协议，我们可以回到MessageListViewController并重构它，而不是取它依赖的实例-它现在只是取一个工厂:</p>
+<pre><code class="language-swift">class MessageListViewController: UITableViewController {
+    // Here we use protocol composition to create a Factory type that includes
+    // all the factory protocols that this view controller needs.
+    typealias Factory = MessageLoaderFactory &amp; ViewControllerFactory
+
+    private let factory: Factory
+    // We can now lazily create our MessageLoader using the injected factory.
+    private lazy var loader = factory.makeMessageLoader()
+
+    init(factory: Factory) {
+        self.factory = factory
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>通过上面的操作，我们现在完成了两件事:首先，我们将依赖列表减少为一个工厂，并且我们已经不再需要MessageListViewController来感知MessageViewController的依赖🎉</p>
+<h2 id="a-case-for-a-container">A case for a container</h2>
+<p>现在是时候实施我们的工厂协议了。要做到这一点，我们首先定义一个DependencyContainer，它将包含我们应用程序的所有核心实用对象，这些对象通常直接作为依赖项注入。这包括以前的MessageSender，也包括更低级的逻辑类，如我们可能使用的任何NetworkManager。</p>
+<pre><code class="language-swift">class DependencyContainer {
+    private lazy var messageSender = MessageSender(networkManager: networkManager)
+    private lazy var networkManager = NetworkManager(urlSession: .shared)
+}
+</code></pre>
+<p>正如您在上面看到的，我们使用延迟属性是为了在初始化对象时能够引用同一个类的其他属性。这是设置依赖关系图的一种非常方便和好的方法，因为您可以利用编译器来帮助您避免诸如循环依赖关系之类的问题。</p>
+<p>最后，我们将使我们的新依赖容器符合我们的工厂协议，这将使我们能够将它作为一个工厂注入到我们的各种视图控制器和其他对象:</p>
+<pre><code class="language-swift">extension DependencyContainer: ViewControllerFactory {
+    func makeMessageListViewController() -&gt; MessageListViewController {
+        return MessageListViewController(factory: self)
+    }
+
+    func makeMessageViewController(for message: Message) -&gt; MessageViewController {
+        return MessageViewController(message: message, sender: messageSender)
+    }
+}
+
+extension DependencyContainer: MessageLoaderFactory {
+    func makeMessageLoader() -&gt; MessageLoader {
+        return MessageLoader(networkManager: networkManager)
+    }
+}
+</code></pre>
+<h2 id="distributed-ownership">Distributed ownership</h2>
+<p>现在是解决这个难题的最后一步了——我们实际上在哪里存储我们的依赖容器，谁应该拥有它，它应该在哪里设置? 这里有一件很酷的事情——因为我们将把依赖容器注入为我们的对象所需的工厂的实现，而且因为这些对象将持有对其工厂的强引用——我们没有必要将容器存储在其他任何地方。</p>
+<p>例如，如果MessageListViewController是我们应用程序的初始视图控制器，我们可以简单地创建一个DependencyContainer实例并将它传入:</p>
+<pre><code class="language-swift">let container = DependencyContainer()
+let listViewController = container.makeMessageListViewController()
+
+window.rootViewController = UINavigationController(
+    rootViewController: listViewController
+)
+</code></pre>
+<p>不需要在任何地方保留任何全局变量，也不需要在应用委托中使用可选属性👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用工厂协议和容器来设置依赖项注入是避免传递多个依赖项和创建复杂初始化器的好方法。虽然它不是银弹，但它可以让依赖注入的使用变得更容易——这将让你更清楚地了解对象的实际依赖关系，同时也使测试变得更简单。</p>
+<p>由于我们已经将所有工厂定义为协议，我们可以通过实现任何给定工厂协议的特定于测试的版本，轻松地在测试中模拟它们。我将在以后的博文中写更多关于mock以及如何在测试中充分利用依赖注入的内容。</p>
+<p><a href="https://www.swiftbysundell.com/articles/dependency-injection-using-factories-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SI7Eu5Vqu/" class="tag">
+                    dependency injection
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r9ICJ5fqlq/" class="tag">
+                    the factory pattern
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-tokens-to-handle-async-swift-code/">
+                  <h3 class="post-title">
+                    Using tokens to handle async Swift code
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

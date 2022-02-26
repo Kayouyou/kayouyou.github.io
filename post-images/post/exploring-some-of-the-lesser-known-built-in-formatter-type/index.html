@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Exploring some of the lesser-known, built-in Formatter type | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="生成各种值的格式化字符串表示通常非常棘手，特别是如果我们想让这些字符串完全适应用户的语言、区域设置和其他系统范围的首选项。
+值得庆幸的是，苹果在每个平台上都提供了一套完整的本地化格式化程序，我们已经了解了其中最常用的DateFormatte..." />
+    <meta name="keywords" content="foundation,data transformation,localization" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Exploring some of the lesser-known, built-in Formatter type</h2>
+            <div class="post-date">2021-04-02</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>生成各种值的格式化字符串表示通常非常棘手，特别是如果我们想让这些字符串完全适应用户的语言、区域设置和其他系统范围的首选项。</p>
+<p>值得庆幸的是，苹果在每个平台上都提供了一套完整的本地化格式化程序，我们已经了解了其中最常用的DateFormatter和NumberFormatter -在本文中，让我们来研究一些不太为人所知的Formatter子类，以及它们在某些情况下如何被证明是非常有用的。</p>
+<h2 id="names-of-people">Names of people</h2>
+<p>系统内建的所有格式化程序类型都有一个共同点，那就是它们都在执行比最初看起来复杂得多的任务。</p>
+<p>以用户名或一般人的名字为例。假设我们正在开发一个应用程序，它使用一个在用户数据模型中定义的fullName属性来存储每个用户的全名——像这样:</p>
+<pre><code class="language-swift">struct User {
+    var fullName: String
+    ...
+}
+</code></pre>
+<p>然后，假设我们现在正在做这样的假设:如果我们将一个给定用户的全名字符串分割成以空格分隔的组件，那么第一个组件将永远是用户的“名字”——然后我们在应用的UI中使用它作为用户的“显示名”:</p>
+<pre><code class="language-swift">extension User {
+    func displayName() -&gt; String {
+        String(fullName.split(separator: &quot; &quot;)[0])
+    }
+}
+</code></pre>
+<p>以上是一个非常常见的错误。不仅名字的各个组成部分的首选顺序在世界各地不同的语言、国家和文化之间有所不同 - 名字通常还可以包含更多的组件，而不仅仅是“first name”和“last name”，这是我们的代码目前没有考虑到的。</p>
+<p>例如，如果用户输入“Dr。全名是“约翰·苹果籽”吗?然后，该用户的显示名当前将计算为“Dr.”。不是很好。</p>
+<p>幸运的是，我们在苹果的朋友已经解决了这个问题。输入PersonNameComponentsFormatter，它将处理正确解析和格式化人名所涉及的所有复杂性。下面是我们如何更新displayName方法来使用那个格式化器:</p>
+<pre><code class="language-swift">extension User {
+    func displayName() -&gt; String {
+        let formatter = PersonNameComponentsFormatter()
+        let components = formatter.personNameComponents(from: fullName)
+        return components?.givenName ?? name
+    }
+}
+</code></pre>
+<p>不仅上述新版本所产生的结果在与用户名或地区无关时更加正确，但是，我们代码的意图现在也可以说清楚得多了。</p>
+<p>PersonNameComponentsFormatter还允许我们将一组名称组件转换为完全本地化的名称，这在处理已经被分割成独立组件的用户名时是非常有用的-像这样:</p>
+<pre><code class="language-swift">struct User {
+    var firstName: String
+    var lastName: String
+    ...
+}
+
+extension User {
+    func fullName() -&gt; String {
+        let formatter = PersonNameComponentsFormatter()
+
+        var components = PersonNameComponents()
+        components.givenName = firstName
+        components.familyName = lastName
+
+        return formatter.string(from: components)
+    }
+}
+</code></pre>
+<p>我们将所有的name计算代码实现为方法，而不是计算属性的原因是为了清楚地表明我们的逻辑需要一些处理，因为它不只是返回一个可以在O(1)时间内计算的值。</p>
+<h2 id="addresses">Addresses</h2>
+<p>接下来，让我们看一看作为联系人框架的一部分提供的格式化程序类型——CNPostalAddressFormatter，它提供了一种将地址格式化为本地化字符串的简单方法。</p>
+<p>就像名字一样，地址的格式化方式在不同的国家之间有很大的不同，而我们自己处理所有这些复杂的事情将是相当难以应付的。</p>
+<p>举个例子，假设我们正在开发一款购物应用，它包含以下ShippingAddress类型:</p>
+<pre><code class="language-swift">struct ShippingAddress {
+    var street: String
+    var postalCode: String
+    var city: String
+    var country: String
+}
+</code></pre>
+<p>如果我们现在希望生成这样一个地址的格式化字符串表示(例如，向用户显示给定产品将运往哪个地址)，然后我们所要做的就是把我们的送货地址数据转换成一个CNPostalAddress实例(这可以使用它的可变对等物CNMutablePostalAddress来完成)，然后让CNPostalAddressFormatter把那个实例转换成一个字符串-像这样:</p>
+<pre><code class="language-swift">import Contacts
+
+extension ShippingAddress {
+    func formattedString() -&gt; String {
+        let formatter = CNPostalAddressFormatter()
+
+        let address = CNMutablePostalAddress()
+        address.street = street
+        address.postalCode = postalCode
+        address.city = city
+        address.country = country
+
+        return formatter.string(from: address)
+    }
+}
+</code></pre>
+<p>当然，如果我们正在处理使用Contacts框架本身检索的地址，那么这些已经用CNPostalAddress实例表示了， 因此，只有在使用自定义存储地址的方式时，才需要进行上述类型转换。</p>
+<h2 id="relative-time">Relative time</h2>
+<p>尽管标准的DateFormatter类型是众所周知的，并且在各种应用程序中都经常使用，它还有一个不太为人所知的“亲戚”，称为RelativeDateTimeFormatter，可用于生成描述两个日期之间的相对时间间隔的本地化字符串。</p>
+<p>例如，下面是我们如何使用专门的格式化程序来计算一个字符串，该字符串告诉用户在给定事件开始前还剩下多少时间:</p>
+<pre><code class="language-swift">struct Event {
+    var title: String
+    var startDate: Date
+    ...
+}
+
+extension Event {
+    func relativeTimeString() -&gt; String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.dateTimeStyle = .named
+        formatter.formattingContext = .beginningOfSentence
+        return formatter.localizedString(for: startDate, relativeTo: Date())
+    }
+}
+</code></pre>
+<p>真正酷的是，通过指定我们想要使用named日期时间样式(就像我们上面所做的那样)，像“明天”和“昨天”这样的词将被用来描述具有特定名称的时间间隔。</p>
+<h2 id="lists">Lists</h2>
+<p>最后，让我们快速浏览一下ListFormatter，它可能不像我们到目前为止研究过的其他一些格式化程序那么复杂，但是在某些情况下它仍然是有用的。</p>
+<p>从本质上讲，ListFormatter使我们能够将字符串数组连接到一个单一的、本地化的类列表字符串。 使用它很简单，只要将我们想要连接的字符串数组传递给它的静态localizedString方法，然后它会根据用户的区域设置和语言设置返回一个格式化字符串:</p>
+<pre><code class="language-swift">// In English:
+
+let ingredientsList = ListFormatter.localizedString(
+    byJoining: [&quot;Apples&quot;, &quot;Sugar&quot;, &quot;Flour&quot;, &quot;Butter&quot;]
+)
+
+print(ingredientsList) // &quot;Apples, Sugar, Flour, and Butter&quot;
+
+// In Swedish:
+
+let ingredientsList = ListFormatter.localizedString(
+    byJoining: [&quot;Äpplen&quot;, &quot;Socker&quot;, &quot;Mjöl&quot;, &quot;Smör&quot;]
+)
+
+print(ingredientsList) // &quot;Äpplen, Socker, Mjöl och Smör&quot;
+
+</code></pre>
+<p><em>请注意，英语和瑞典语的版本不仅在语言上不同，而且在逗号的使用上也不同。这些细节可能看起来微不足道，但确实能让应用感觉更彻底地本地化——再一次，我们不需要编写任何自定义代码来解释这些差异——这些都由系统来处理。</em></p>
+<h2 id="conclusion">Conclusion</h2>
+<p>很明显，苹果致力于高质量的本地化并不局限于他们自己的应用和系统功能-他们的各种平台sdk也附带了大量的api、工具和功能，我们可以利用这些来提升我们自己的应用的本地化。我们所要做的就是在处理依赖于语言环境的值时使用正确的api——比如名称、数字、地址和日期。</p>
+<p><a href="https://www.swiftbysundell.com/articles/exploring-some-of-the-lesser-known-formatter-types/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWHkY3onB/" class="tag">
+                    foundation
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/XJfPSb1BFK/" class="tag">
+                    data transformation
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EVnUJ6QNSn/" class="tag">
+                    localization
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-combines-futures-and-subjects/">
+                  <h3 class="post-title">
+                    Using Combine’s futures and subjects
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

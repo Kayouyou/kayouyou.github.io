@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Type erasure using closures in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift比许多其他语言更安全、更不容易出错的原因之一是它的高级类型系统(从某种程度上说，是不可饶恕的)。它是一种语言特性，有时会让人印象深刻，并使您的工作效率大大提高，但有时又会让人感到非常沮丧。
+今天，我想强调在Swift中处理泛型时可..." />
+    <meta name="keywords" content="type erasure,closures,generics" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Type erasure using closures in Swift</h2>
+            <div class="post-date">2017-02-24</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift比许多其他语言更安全、更不容易出错的原因之一是它的高级类型系统(从某种程度上说，是不可饶恕的)。它是一种语言特性，有时会让人印象深刻，并使您的工作效率大大提高，但有时又会让人感到非常沮丧。</p>
+<p>今天，我想强调在Swift中处理泛型时可能出现的一种情况，以及我通常如何使用基于闭包的类型擦除技术来解决它。</p>
+<p>假设我们想要编写一个类，允许我们通过网络加载模型。因为我们不想在我们的应用程序中为每个模型复制这个类，所以我们选择让它成为一个通用类，像这样:</p>
+<pre><code class="language-swift">class ModelLoader&lt;T: Unboxable &amp; Requestable&gt; {
+    func load(completionHandler: (Result&lt;T&gt;) -&gt; Void) {
+        networkService.loadData(from: T.requestURL) { data in
+            do {
+                try completionHandler(.success(unbox(data: data)))
+            } catch {
+                let error = ModelLoadingError.unboxingFailed(error)
+                completionHandler(.error(error))
+            }
+        }
+    }
+}
+</code></pre>
+<p>到目前为止，一切都很好，我们现在有了一个ModelLoader，它能够加载任何模型，只要它是Unboxable，并且能够给我们一个requestURL。但是，我们也想让使用这个模型加载器的代码易于测试，所以我们将它的API提取到协议中:</p>
+<pre><code class="language-swift">protocol ModelLoading {
+    associatedtype Model
+
+    func load(completionHandler: (Result&lt;Model&gt;) -&gt; Void)
+}
+</code></pre>
+<p>这一点，再加上依赖注入，使我们能够在测试中轻松地模拟我们的模型加载API。 但它有一点复杂，在那无论什么时候我们想要使用这个API，我们现在必须将其称为协议ModelLoading，它具有关联的类型需求。这意味着仅仅引用ModelLoading是不够的，因为如果没有更多的信息，编译器就不能推断出它的关联类型。所以试着这样做:</p>
+<pre><code class="language-swift">class ViewController: UIViewController {
+    init(modelLoader: ModelLoading) {
+        ...
+    }
+}
+</code></pre>
+<p>will give us this error:</p>
+<pre><code class="language-swift">Protocol 'ModelLoading' can only be used as a generic constraint because it as Self or associated type requirements
+</code></pre>
+<p>但是不用担心，我们可以通过使用一个通用的约束来轻松地消除这个错误，强制符合ModelLoading的具体类型将由API用户指定，并且它将加载我们期望的模型类型。是这样的:</p>
+<pre><code class="language-swift">class ViewController: UIViewController {
+    init&lt;T: ModelLoading&gt;(modelLoader: T) where T.Model == MyModel {
+        ...
+    }
+}
+</code></pre>
+<p>这是可行的，但因为我们还希望在视图控制器中有一个模型加载器的引用，所以我们需要能够指定该属性的类型。 T只在初始化器的上下文中是已知的，所以我们不能用类型T定义属性，除非我们让视图控制器类本身成为泛型 -这将很快使我们陷入到处都是泛型类的兔子洞中。</p>
+<p>相反，让我们使用类型擦除，使我们能够保存对T的某种引用，而不实际使用它的类型。 这可以通过创建一个类型擦除的类型来实现，例如一个包装类，如下所示:</p>
+<pre><code class="language-swift">class AnyModelLoader&lt;T&gt;: ModelLoading {
+    typealias CompletionHandler = (Result&lt;T&gt;) -&gt; Void
+
+    private let loadingClosure: (CompletionHandler) -&gt; Void
+
+    init&lt;L: ModelLoading&gt;(loader: L) where L.Model == T {
+        loadingClosure = loader.load
+    }
+
+    func load(completionHandler: CompletionHandler) {
+        loadingClosure(completionHandler)
+    }
+}
+</code></pre>
+<p>以上是一种类型擦除技术，它在Swift标准库中也非常常用，例如在AnySequence类型中。基本上，您可以将具有关联值需求的协议包装到泛型类型中，然后您就可以使用该泛型，而不必一直使使用它的所有内容也都是泛型的。</p>
+<p>我们现在可以更新我们的视图控制器，使用AnyModelLoader:</p>
+<pre><code class="language-swift">class ViewController: UIViewController {
+    private let modelLoader: AnyModelLoader&lt;MyModel&gt;
+
+    init&lt;T: ModelLoading&gt;(modelLoader: T) where T.Model == MyModel {
+        self.modelLoader = AnyModelLoader(loader: modelLoader)
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>现在，我们有了一个面向协议的API，具有简单的可模拟性，它仍然可以在非泛型类中使用，这要感谢类型擦除🎉</p>
+<p>现在是奖金环节。上面的技术工作得非常好，但是它确实涉及了一个额外的步骤，给我们的代码增加了一些复杂性。但实际上，我们可以直接在视图控制器中做基于闭包的类型擦除 -不必引入AnyModelLoader类。然后，我们的视图控制器就会变成这样:</p>
+<pre><code class="language-swift">class ViewController: UIViewController {
+    private let loadModel: ((Result&lt;MyModel&gt;) -&gt; Void) -&gt; Void
+
+    init&lt;T: ModelLoading&gt;(modelLoader: T) where T.Model == MyModel {
+        loadModel = modelLoader.load
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>与我们的类型删除类AnyModelLoader一样，我们可以将load函数的实现作为一个闭包引用，然后在视图控制器中保存对它的引用。现在，当我们想要加载一个模型时，我们只需调用loadModel，就像我们对其他任何函数或闭包一样:</p>
+<pre><code class="language-swift">override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+
+    loadModel { result in
+        switch result {
+        case .success(let model):
+            render(model)
+        case .error(let error):
+            render(error)
+        }
+    }
+}
+</code></pre>
+<p>就是这样!希望您在处理Swift代码中的泛型和协议时，会发现上述技术有用</p>
+<p><a href="https://www.swiftbysundell.com/articles/type-erasure-using-closures-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/3mcbew_6V/" class="tag">
+                    type erasure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/WHIN6Hnog/" class="tag">
+                    closures
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+              </div>
+            
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

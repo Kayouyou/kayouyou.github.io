@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>50道iOS面试问答 - 6 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+50道iOS面试问答 - 6
+
+1- Why it is better to use higher-order functions? (为什么使用高阶函数更好?)
+2- Explain Mediator Design Pattern (..." />
+    <meta name="keywords" content="interview" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">50道iOS面试问答 - 6</h2>
+            <div class="post-date">2021-05-26</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gqvvpg1jkrj31900u0wl3.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#50%E9%81%93ios%E9%9D%A2%E8%AF%95%E9%97%AE%E7%AD%94---6">50道iOS面试问答 - 6</a>
+<ul>
+<li><a href="#1--why-it-is-better-to-use-higher-order-functions-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E9%AB%98%E9%98%B6%E5%87%BD%E6%95%B0%E6%9B%B4%E5%A5%BD">1- Why it is better to use higher-order functions? (为什么使用高阶函数更好?)</a></li>
+<li><a href="#2--explain-mediator-design-pattern-%E8%A7%A3%E9%87%8Amediator%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F">2- Explain Mediator Design Pattern (解释Mediator设计模式)</a></li>
+<li><a href="#3--what-is-result-bundle">3- What is Result Bundle?</a></li>
+<li><a href="#4--explain-nslinguistictagger">4- Explain NSLinguisticTagger</a></li>
+<li><a href="#5--explain-xcuidevice">5- Explain XCUIDevice</a></li>
+<li><a href="#6--explain-uikit-dynamics">6- Explain UIKit Dynamics</a></li>
+<li><a href="#7--what-is-the-difference-between-uikit-and-swiftui-">7- What is the difference between UIKit and SwiftUI ?</a></li>
+<li><a href="#8--explain-implicit-expression-%E8%A7%A3%E9%87%8A%E9%9A%90%E5%BC%8F%E8%A1%A8%E8%BE%BE%E5%BC%8F">8- Explain Implicit Expression (解释隐式表达式)</a></li>
+<li><a href="#9--explain-subscripts">9- Explain subscripts</a></li>
+<li><a href="#10--what-is-the-difference-between-customstringconvertible-and-customdebugstringconvertible">10- What is the difference between CustomStringConvertible and CustomDebugStringConvertible?</a></li>
+<li><a href="#11--what-are-bundles">11- What are bundles?</a></li>
+<li><a href="#12--explain-app-store-connect-api">12- Explain App Store Connect API</a></li>
+<li><a href="#13--what-are-b-trees">13- What are B-Trees?</a></li>
+<li><a href="#14--explain-tokenization">14- Explain tokenization</a></li>
+<li><a href="#15--explain-swift-asserts">15- Explain Swift asserts</a></li>
+<li><a href="#16--explain-uicollectionviewflowlayout">16- Explain UICollectionViewFlowLayout</a></li>
+<li><a href="#17--explain-the-difference-between-a-while-loop-and-repeat-while">17- Explain the difference between a while loop and repeat while</a></li>
+<li><a href="#18--explain-customstringconvertible-and-its-difference-from-customdebugstringconvertible">18- Explain CustomStringConvertible and its difference from CustomDebugStringConvertible</a></li>
+<li><a href="#19--explain-thread-sanitizer">19- Explain Thread Sanitizer</a></li>
+<li><a href="#20--explain-bridging-headers-in-ios-project">20- Explain Bridging Headers in iOS project</a></li>
+<li><a href="#21--why-would-we-use-multiple-projects-in-the-workspace">21- Why would we use multiple projects in the workspace?</a></li>
+<li><a href="#22--explain-the-openclosed-principle">22- Explain the Open/Closed Principle</a></li>
+<li><a href="#23--what-does-agile-process-do">23- What does agile process do?</a></li>
+<li><a href="#24--why-is-everything-in-a-do-catch-block">24- Why is everything in a do-catch block?</a></li>
+<li><a href="#25--why-is-the-background-mode-important">25- Why is the background mode important?</a></li>
+<li><a href="#26--explain-the-difference-between-print-and-readline">26- Explain the difference between print() and readLine()</a></li>
+<li><a href="#27--explain-enumerated">27- Explain enumerated()</a></li>
+<li><a href="#28--explain-nscache">28- Explain NSCache</a></li>
+<li><a href="#29--explain-abs-function">29- Explain abs() function</a></li>
+<li><a href="#30--explain-textkit">30- Explain TextKit</a></li>
+<li><a href="#31--what-is-the-difference-between-try-and-try-">31- What is the difference between try? and try! ?</a></li>
+<li><a href="#32--what-is-the-difference-between-the-cocoa-touch-class-and-the-normal-swift-class">32- What is the difference between the cocoa touch class and the normal swift class?</a></li>
+<li><a href="#33--explain-optionset">33- Explain OptionSet</a></li>
+<li><a href="#34--explain-the-unified-logging-system">34- Explain the unified logging system</a></li>
+<li><a href="#35--explain-address-sanitizer">35- Explain Address Sanitizer</a></li>
+<li><a href="#36--explain-the-single-responsibility-principle">36- Explain the Single Responsibility Principle</a></li>
+<li><a href="#37--explain-app-thinning">37- Explain App thinning</a></li>
+<li><a href="#38--what-is-the-difference-between-setup-and-teardown-in-xctestcase-">38- What is the difference between setUp() and tearDown() in XCTestCase ?</a></li>
+<li><a href="#39--explain-asset-catalogs">39- Explain Asset Catalogs</a></li>
+<li><a href="#40--explain-dispatch-barriers">40- Explain Dispatch Barriers</a></li>
+<li><a href="#41--what-can-breakpoint-do">41- What can breakpoint do?</a></li>
+<li><a href="#42--explain-opaque-return-types">42- Explain Opaque Return Types</a></li>
+<li><a href="#43--explain-autoclosures">43- Explain Autoclosures</a></li>
+<li><a href="#44--explain-uiscene-life-cycle">44- Explain UIScene Life Cycle</a></li>
+<li><a href="#45--explain-hashable-type">45- Explain Hashable type</a></li>
+<li><a href="#46--explain-dynamic-var-usage">46- Explain Dynamic Var usage</a></li>
+<li><a href="#47--explain-uiviewrepresentable-requirements">47- Explain UIViewRepresentable requirements</a></li>
+<li><a href="#48--explain-dynamic-member-lookup">48- Explain Dynamic Member Lookup</a></li>
+<li><a href="#49--explain-result-type">49- Explain Result Type</a></li>
+<li><a href="#50--explain-scene-delegate">50- Explain Scene Delegate</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="50道ios面试问答-6">50道iOS面试问答 - 6</h2>
+<!-- ![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gqvvpg1jkrj31900u0wl3.jpg) -->
+<h3 id="1-why-it-is-better-to-use-higher-order-functions-为什么使用高阶函数更好">1- Why it is better to use higher-order functions? (为什么使用高阶函数更好?)</h3>
+<p>以另一个函数作为参数或返回一个函数的函数称为高阶函数。Swift将这些函数定义为CollectionType。</p>
+<p>最基本的高阶函数是filter。</p>
+<h3 id="2-explain-mediator-design-pattern-解释mediator设计模式">2- Explain Mediator Design Pattern (解释Mediator设计模式)</h3>
+<p>中介对象以隐藏和不受约束的方式封装交互策略。被中介操作的对象并不知道它的存在。它静静地坐在幕后，在他们不允许或不知情的情况下强加自己的政策。<br>
+如果您想了解关于此模式的更多信息，我建议您检查<a href="https://www.vadimbulavin.com/mediator-pattern-case-study/">中介模式案例研究</a>。</p>
+<h3 id="3-what-is-result-bundle">3- What is Result Bundle?</h3>
+<p>根据苹果的说法，Result Bundle是一个由Xcode生成的包含结构数据的文件，用来描述运行你的测试的构建。它包含构建日志、测试报告、代码覆盖报告和测试附件。</p>
+<h3 id="4-explain-nslinguistictagger">4- Explain NSLinguisticTagger</h3>
+<p>NSLinguisticTagger是一个用于自然语言处理的API，它允许我们标记文本，检测语言，并确定词性。 NSLinguisticTagger能够识别单词，并告诉我们这是哪种单词。</p>
+<h3 id="5-explain-xcuidevice">5- Explain XCUIDevice</h3>
+<p>XCUIDevice模拟物理按钮和设备方向，用于在iphone和ipad上进行架构测试。</p>
+<h3 id="6-explain-uikit-dynamics">6- Explain UIKit Dynamics</h3>
+<p>UIKit Dynamics是一个受2D物理启发的动画系统，带有高级API，允许我们在动画和视图交互中模拟物理体验。</p>
+<h3 id="7-what-is-the-difference-between-uikit-and-swiftui">7- What is the difference between UIKit and SwiftUI ?</h3>
+<p>UIKit是一个必要的事件驱动框架，用于构建iOS平台的用户界面。 SwiftUI是一个用于构建用户界面的声明性框架，用于为苹果平台构建用户界面。</p>
+<h3 id="8-explain-implicit-expression-解释隐式表达式">8- Explain Implicit Expression (解释隐式表达式)</h3>
+<p>隐式表达式众所周知是隐式成员表达式，它是访问类型成员的一种方式。</p>
+<h3 id="9-explain-subscripts">9- Explain subscripts</h3>
+<p>下标类似于方法。类、结构和枚举可以定义下标，下标是访问集合、列表或序列的成员元素的快捷方式。</p>
+<h3 id="10-what-is-the-difference-between-customstringconvertible-and-customdebugstringconvertible">10- What is the difference between CustomStringConvertible and CustomDebugStringConvertible?</h3>
+<p>如果值是一个String，返回该值。如果值为CustomStringConvertible或CustomDebugStringConvertible，则返回String(reflecting:)</p>
+<h3 id="11-what-are-bundles">11- What are bundles?</h3>
+<p>bundle是iOS表示可执行代码和存储在驱动器上的其他资源的方式。 最重要的是，bundles负责加载应用使用的本地化字符串。</p>
+<h3 id="12-explain-app-store-connect-api">12- Explain App Store Connect API</h3>
+<p>App Store Connect API是在2018年全球开发者大会上宣布的。App Store Connect API是标准的RESTful API。API使用JSON Web令牌进行身份验证，可以从所有平台访问。</p>
+<p>我们可以自动管理证书、配置文件、管理设备ID和绑定ID、用户、角色、TestFlight和公共链接。</p>
+<h3 id="13-what-are-b-trees">13- What are B-Trees?</h3>
+<p>b -树是一种搜索树，它提供了具有优良性能特征的有序键值存储。 原则上，每个节点维护自己元素的排序数组和其子元素的另一个数组。</p>
+<h3 id="14-explain-tokenization">14- Explain tokenization</h3>
+<p>标记字符串表示使用分隔符分割字符串</p>
+<h3 id="15-explain-swift-asserts">15- Explain Swift asserts</h3>
+<p>如果我们需要检查代码中的某些条件，我们可以使用assert。 断言是一个简洁的调试工具。 断言用于为开发人员检查错误。Standart Swift库中有5个断言函数。</p>
+<ol>
+<li>assert() &gt; 通过assert函数，我可以检查代码的要求条件，即使它工作正确。</li>
+<li>assertionFailure() &gt; 给我们一个关于项目优化的提示。在调试中，模式app会终止，但在发布中，模式app不会终止。行为是未定义的。</li>
+<li>precondition() &gt; 这个函数比assert()更重要。如不符合条件，APP将终止。</li>
+<li>preconditionFailure() &gt; 致命错误.</li>
+<li>fatalError() &gt; 强制我们的应用崩溃。调用此函数后，将不再继续执行。</li>
+</ol>
+<h3 id="16-explain-uicollectionviewflowlayout">16- Explain UICollectionViewFlowLayout</h3>
+<p>UICollectionViewFlowLayout自动尝试放入尽可能多的项目，它可以在一行之前，它包装到下一个。如果我们改变项目大小，我们可以得到多个列。</p>
+<p>I highly recommend watching <a href="https://developer.apple.com/videos/play/wwdc2018/225/">A Tour of UICollectionView</a></p>
+<h3 id="17-explain-the-difference-between-a-while-loop-and-repeat-while">17- Explain the difference between a while loop and repeat while</h3>
+<p>while循环检查循环代码之前的条件，而repeat while循环检查循环代码之后的条件。如果我们想每次都检查条件是否为真，就必须使用for in循环。</p>
+<h3 id="18-explain-customstringconvertible-and-its-difference-from-customdebugstringconvertible">18- Explain CustomStringConvertible and its difference from CustomDebugStringConvertible</h3>
+<p>我们可以使用实现customstringconvertible协议的对象的自定义字符串描述，并添加名为description的新计算属性</p>
+<p>CustomDebugStringConvertible提供了关于对象的附加信息，用于调试目的。</p>
+<h3 id="19-explain-thread-sanitizer">19- Explain Thread Sanitizer</h3>
+<p>当多个线程试图以非原子方式访问同一内存区域，并且其中一个线程中至少有一个写操作时，启用Thread sanializer允许我们调试数据竞争。</p>
+<p>Thread Sanitizer只支持64位的macOS和64位的iOS和tvOS模拟器。不支持watchOS。</p>
+<h3 id="20-explain-bridging-headers-in-ios-project">20- Explain Bridging Headers in iOS project</h3>
+<p>桥接header允许我们在Swift文件中包含Objective-C文件。</p>
+<h3 id="21-why-would-we-use-multiple-projects-in-the-workspace">21- Why would we use multiple projects in the workspace?</h3>
+<p>模块化的框架和项目构建。我们可以将这些模块添加到我们的工作区中。另一个工作区成员(比如框架)可以使用其他模块。其目标是避免代码重复，并使我们能够使用来自其他工作区模块的代码。</p>
+<h3 id="22-explain-the-openclosed-principle">22- Explain the Open/Closed Principle</h3>
+<p>这个由Bertrand Meyer提出的原则可以简单地解释如下:它意味着开发程序，并在程序中添加新的行为。 根据OCP的程序应该开放开发。组成程序的模块应该能够扩展，但不应修改。 如果我们遵循开/闭原则，我们的类和接口将更具可扩展性。</p>
+<h3 id="23-what-does-agile-process-do">23- What does agile process do?</h3>
+<p>敏捷流程只考虑客户指定的需求，转换成用户故事，并按客户的优先级排序。 简而言之，敏捷过程不考虑未来。</p>
+<h3 id="24-why-is-everything-in-a-do-catch-block">24- Why is everything in a do-catch block?</h3>
+<p>在Swift中，错误在do-catch块中抛出和处理。 这允许我们自定义错误处理，并根据错误执行特定的操作。 有了“do-catch”声明，我们就可以使用了。这允许我们检查有意义的错误。</p>
+<h3 id="25-why-is-the-background-mode-important">25- Why is the background mode important?</h3>
+<p>因为我们可以在后台模式中获取数据，允许我们的应用程序显示最新的信息。</p>
+<h3 id="26-explain-the-difference-between-print-and-readline">26- Explain the difference between print() and readLine()</h3>
+<p>我们对标准输出使用print()语句。 它后面跟着一个默认换行结束符。 但有时我们需要读取一行用户输入的标准输入(StdIn)。这意味着，我们可以使用readLine()。  另外，readLine()在调用它时返回一个可选的字符串。</p>
+<h3 id="27-explain-enumerated">27- Explain enumerated()</h3>
+<p>根据Apple的说法，如果需要每个元素的索引及其值，可以使用enumerativ()方法遍历数组。</p>
+<h3 id="28-explain-nscache">28- Explain NSCache</h3>
+<p>NSCache是一个NSDictionary，当我们的应用收到内存警告时，它会自动清除自己。NSCache是线程安全的。</p>
+<h3 id="29-explain-abs-function">29- Explain abs() function</h3>
+<p>您可以使用abs()函数来计算一个值与另一个值之间的正差。</p>
+<h3 id="30-explain-textkit">30- Explain TextKit</h3>
+<p>根据Apple的说法，TextKit提供了许多类来控制文本的布局，比如NSTextStorage、NSLayoutManager和NSTextContainer。此外，NSAttributedString对象在整个TextKit中被广泛使用。</p>
+<h3 id="31-what-is-the-difference-between-try-and-try">31- What is the difference between try? and try! ?</h3>
+<p>try? 允许我们忽略我们的错误变成nil。 我们使用try! 我们的函数永远不会遇到错误。</p>
+<h3 id="32-what-is-the-difference-between-the-cocoa-touch-class-and-the-normal-swift-class">32- What is the difference between the cocoa touch class and the normal swift class?</h3>
+<p>如果我们选择Swift File，下一个屏幕将显示你的文件名并选择保存位置。 当我们从这里点击“创建”，我们只是得到一个空的(ish) Swift文件与我们选择的名称。 它们不提供不同类型的类。它们只是提供不同的文件模板。</p>
+<h3 id="33-explain-optionset">33- Explain OptionSet</h3>
+<p>选项集类似于枚举，但OptionSet的设计是一次工作多个。 我们可以说enum是排他状态，OptionSet是包含状态。对于创建OptionSet，有一个要求是整数类型的属性rawValue和一个初始化器。 OptionSet不是集合。</p>
+<h3 id="34-explain-the-unified-logging-system">34- Explain the unified logging system</h3>
+<p>统一日志系统是一种新的日志机制，取代了print, NSLog是苹果推荐的日志方式。 统一日志的目的提高了我们应用程序的隐私性。我们使用操作系统框架，我们需要跟踪活动和日志操作来诊断我们的应用程序中的问题。</p>
+<h3 id="35-explain-address-sanitizer">35- Explain Address Sanitizer</h3>
+<p>地址杀毒器监视内存损坏和缓冲区溢出。 它既适用于模拟器，也适用于重新编译后的设备。我们也可以使用编译器优化级别None [-O0]或最多Fast [-O1]。<br>
+我们可以在运行单元和UI测试时启用它。</p>
+<h3 id="36-explain-the-single-responsibility-principle">36- Explain the Single Responsibility Principle</h3>
+<p>它是一种软件开发原则，使我们能够很容易地理解对象和对象函数。它在SOLID原则中排名第一。根据这一原则，它必须是方法或类的唯一任务。 如果我们说的是方法，那么在一个方法中加载的函数不应该超过一个。</p>
+<h3 id="37-explain-app-thinning">37- Explain App thinning</h3>
+<p>应用程序细化是切片、位代码和按需资源(odr)的组合。这种组合会自动检测用户的设备型号，并且只允许特定设备的相关下载。</p>
+<ul>
+<li>
+<p>当用户需要资源时，使用app时，从苹果服务器后台按需下载资源(图像、数据)。 所有下载内容使用标签。</p>
+</li>
+<li>
+<p><strong>Bitcode</strong>为最新的编译器编译应用程序，并为特定的架构优化它。</p>
+</li>
+<li>
+<p>根据苹果的说法，“<strong>Slicing</strong>”是针对不同目标设备创建和交付应用包变体的过程。</p>
+</li>
+</ul>
+<p>当用户使用完资源后，它会自动从内存中清除。</p>
+<h3 id="38-what-is-the-difference-between-setup-and-teardown-in-xctestcase">38- What is the difference between setUp() and tearDown() in XCTestCase ?</h3>
+<p>我们使用这两种方法进行分配。在执行测试方法之前调用setUp方法。 在执行所有测试方法后，调用tearDown方法来清除我们在数据中所做的任何更改。</p>
+<h3 id="39-explain-asset-catalogs">39- Explain Asset Catalogs</h3>
+<p>我们使用资产目录来存储图像，如图标或图像。从iOS 11开始，我们可以在资产目录中存储命名的颜色。 资产目录的另一个鲜为人知的特性是，我们可以存储任意的数据资产。 在iOS 13中，我们可以定义暗模式图标和图像。</p>
+<h3 id="40-explain-dispatch-barriers">40- Explain Dispatch Barriers</h3>
+<p>Dispatch barriers 是一组充当串行队列样式对象的函数。它创建了异步执行，并帮助我们将线程不安全的对象变成线程安全的对象。 Dispatch barriers 保证了在使用并发性进行读取时不发生写操作，在进行写入时也不发生读操作。</p>
+<h3 id="41-what-can-breakpoint-do">41- What can breakpoint do?</h3>
+<ul>
+<li>通过双击断点并打开编辑器，可以在断点处添加我们忘记的代码行。</li>
+<li>我们可以改变app的状态。p是另一个LLDB命令来查看当前对象的调试表示。</li>
+<li>我们可以在控制台中使用po命令来打印调试描述并查看当前值。</li>
+<li>我们可以改变值来测试我们的代码，而不需要编译并返回您的代码。</li>
+</ul>
+<h3 id="42-explain-opaque-return-types">42- Explain Opaque Return Types</h3>
+<p>我有一个使用协议的类。当我用一个函数返回这个类时，它将返回一个错误。 因为Swift编译器不知道这些类是什么。 当添加<strong>some</strong>到错误函数的返回类、结构或协议时没有问题</p>
+<h3 id="43-explain-autoclosures">43- Explain Autoclosures</h3>
+<p>@autoclosure在表达式周围创建一个自动闭包。当我们编写一个表达式时，@autoclosure会自动封装到一个闭包中。</p>
+<h3 id="44-explain-uiscene-life-cycle">44- Explain UIScene Life Cycle</h3>
+<p>Unattached<br>
+场景开始于独立状态。如果一个请求来自用户，它将进入前台状态。 如果一个请求来自系统，它将留在后台。</p>
+<p>Suspended<br>
+这个场景没有任何作用。</p>
+<p>Background<br>
+场景不会出现在用户面前。从后台来看，状态可以是未绑定的，可以是挂起的，也可以是移动到前台的。</p>
+<p>Foreground<br>
+场景呈现给用户。</p>
+<h3 id="45-explain-hashable-type">45- Explain Hashable type</h3>
+<p>如果将该类型设置为可哈希类型，如结构体或枚举，则可以传递自己的对象。 因为在Swift中，enum是自动哈希的。这将提供一个唯一的标识符。我强烈推荐观看WWDC 2019的UI Data Sources session。</p>
+<h3 id="46-explain-dynamic-var-usage">46- Explain Dynamic Var usage</h3>
+<p>我使用KVO来逐个触发事件。strong var 无法检测此触发器。 当将dynamic放在变量的开头时，可以检测到此触发器</p>
+<h3 id="47-explain-uiviewrepresentable-requirements">47- Explain UIViewRepresentable requirements</h3>
+<p>UIViewRepresentable协议有两个我们需要添加的需求:一个makeUIView(context:)方法和一个updateUIView(_:context:)一个用来配置视图并响应任何变化的方法。</p>
+<h3 id="48-explain-dynamic-member-lookup">48- Explain Dynamic Member Lookup</h3>
+<p>类型声明的DynamicMemberLookup属性。 子类可以访问父类的动态成员查找功能</p>
+<h3 id="49-explain-result-type">49- Explain Result Type</h3>
+<p>Result类型实现为具有两种情况的枚举:成功回调和失败回调。Result还有其他四个方法:map()、flatMap()、mapError()和flatMapError()。 每一种方法都赋予了您转换成功或错误的能力。</p>
+<h3 id="50-explain-scene-delegate">50- Explain Scene Delegate</h3>
+<p>有了scene委托，iOS应用程序可以有多个场景，这让我们可以在iOS和iPadOS上构建多窗口应用程序。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1UYNOQrST/" class="tag">
+                    interview
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/50-dao-ios-mian-shi-wen-da-5/">
+                  <h3 class="post-title">
+                    50道iOS面试问答 - 5
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

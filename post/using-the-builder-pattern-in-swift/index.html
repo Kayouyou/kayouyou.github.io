@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using the builder pattern in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="与编程中的许多抽象和模式一样，构建器模式的目标是减少保持可变状态的需要——从而产生更简单、通常更可预测的对象。通过使对象成为无状态的，它们通常更容易测试和调试——因为它们的逻辑只由“纯”的输入和输出组成。
+虽然builder模式在Java等..." />
+    <meta name="keywords" content="design pattern,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using the builder pattern in Swift</h2>
+            <div class="post-date">2018-04-08</div>
+            
+            <div class="post-content" v-pre>
+              <p>与编程中的许多抽象和模式一样，构建器模式的目标是减少保持可变状态的需要——从而产生更简单、通常更可预测的对象。通过使对象成为无状态的，它们通常更容易测试和调试——因为它们的逻辑只由“纯”的输入和输出组成。</p>
+<p>虽然builder模式在Java等语言中很常见，但在苹果平台上工作时，它却不是你经常遇到的东西(至少不是作为显式的builder对象)。本周，让我们来看看构建器模式是如何工作的，它的目标是解决什么问题，以及如何在Swift的各种情况下使用它。</p>
+<h2 id="building-objects">Building objects</h2>
+<p>构建器模式背后的核心思想是，设置对象的过程由专用的构建器类型执行，而不是由对象本身执行。举个例子，假设我们想要设置一个带有标题、副标题和图像的ArticleView。一种常见的方法是公开用于渲染内容的子视图，并在其上设置属性，如下所示:</p>
+<pre><code class="language-swift">let view = ArticleView()
+view.titleLabel.text = article.title
+view.subtitleLabel.text = article.subtitle
+view.imageView.image = article.image
+</code></pre>
+<p>现在让我们尝试使用构建器模式。与访问ArticleView的子视图不同，我们将使用ArticleViewBuilder通过一系列链接的方法调用来设置所有需要的属性， 然后我们将通过调用build()来创建一个实例来结束——像这样:</p>
+<pre><code class="language-swift">let view = ArticleViewBuilder()
+    .withTitle(article.title)
+    .withSubtitle(article.subtitle)
+    .withImage(article.image)
+    .build()
+
+</code></pre>
+<p>正如您在上面看到的，一个常见的实践是让构建器从每个方法调用中返回自己，这样就可以很容易地将设置命令链接起来，而不必引入额外的局部变量。</p>
+<h2 id="separated-mutability">Separated mutability</h2>
+<p>虽然构建器模式确实引入了额外的代码(因为我们现在还必须创建一个构建器类型)，但它有两个主要优点。</p>
+<p>第一个;它让我们关闭了许多公共的、可变的api，否则我们必须保持这些api可供配置使用。在上面的ArticleView例子中引入了一个构建器之后，我们现在可以将titleLabel, subtitleLabel和imageView设置为私有的(因为所有的配置都是通过ArticleViewBuilder完成的) -留给我们一个更简单的视图，不需要对内容的变化做出反应。</p>
+<p>第二个;它防止可变状态被意外共享。从历史上看，苹果在设计框架时使用可变和不可变对象对。 例如，在处理带属性字符串时，我们使用NSAttributedString来处理不可变值，使用NSMutableAttributedString来处理可变值。虽然这主要是因为Objective-C缺少类似Swift的值类型(因为NSAttributedString还没有Swift的等价值)，但这仍然会在Swift代码中造成bug。</p>
+<p>例如，假设我们正在构建一个应用程序，让用户通过在屏幕上绘图来输入字母，并且我们使用一个NSMutableAttributedString来跟踪用户输入的全部文本。然后，当点击“Save”按钮时，我们将带有属性的字符串保存到数据库中，如下所示:</p>
+<pre><code class="language-swift">class TextDrawingViewController: UIViewController {
+    private let text: NSMutableAttributedString
+
+    private func appendCharacter(_ character: Character) {
+        let string = NSAttributedString(
+            string: String(character),
+            attributes: textAttributes
+        )
+
+        text.append(string)
+    }
+
+    private func handleSaveButtonTap() {
+        // Our database accepts an 'NSAttributedString', but since 
+        // 'NSMutableAttributedString' inherits from its immutable
+        // counterpart, we're able to pass 'text' directly here.
+        database.save(text) {
+            ...
+        }
+    }
+}
+</code></pre>
+<p>注意上面我们是如何将一个NSMutableAttributedString传递给一个接受NSAttributedString的API的，因为前者是后者的子类。虽然这看起来是无害的，但它是棘手bug的常见来源，因为可变状态最终会在TextDrawingViewController和我们的数据库之间共享。 如果用户在数据库忙于保存时输入另一个字符，我们可能会进入一个未定义的状态(或崩溃)，因为数据库在处理传递的文本时不希望它发生变化。</p>
+<p>如果我们转而使用生成器模式，则不可能意外地将可变对象作为不可变对象传递——因为它们将是不同的、不相关的类型。 为此，让我们引入一个简单的AttributedStringBuilder，我们可以使用它来添加字符:</p>
+<pre><code class="language-swift">class AttributedStringBuilder {
+    typealias Attributes = [NSAttributedStringKey : Any]
+
+    private let string = NSMutableAttributedString(string: &quot;&quot;)
+
+    // We follow the convention of returning the builder object
+    // itself from any configuration methods, and by adding the
+    // @discardableResult attribute we won't get warnings if we
+    // don't end up doing any chaining.
+    @discardableResult
+    func append(_ character: Character,
+                attributes: Attributes) -&gt; AttributedStringBuilder {
+        let addedString = NSAttributedString(
+            string: String(character),
+            attributes: attributes
+        )
+
+        string.append(addedString)
+
+        return self
+    }
+
+    func build() -&gt; NSAttributedString {
+        return NSAttributedString(attributedString: string)
+    }
+}
+
+</code></pre>
+<p>上面的步骤都准备好了，现在让我们更新我们的视图控制器，让它使用我们的新构建器，而不是直接使用NSMutableAttributedString:</p>
+<pre><code class="language-swift">class TextDrawingViewController: UIViewController {
+    private let textBuilder = AttributedStringBuilder()
+
+    private func appendCharacter(_ character: Character) {
+        textBuilder.append(character, attributes: textAttributes)
+    }
+
+    private func handleSaveButtonTap() {
+        let text = textBuilder.build()
+
+        database.save(text) {
+            ...
+        }
+    }
+}
+</code></pre>
+<p>现在，我们已经消除了意外共享可变状态的风险，因为我们必须在构建器上调用build()来创建一个实际的带属性字符串，该字符串可以传递给数据库👍。</p>
+<h2 id="hiding-complexity">Hiding complexity</h2>
+<p>为了为复杂的任务提供简单的API，构建器模式也非常有用。上面，我们使用了一个简单的数据库API，它允许我们使用一个方法调用来保存NSAttributedString，但是很多应用程序需要更强大和复杂的数据库特性。让我们来看看如何使用构建器模式来隐藏实现细节，从而使我们的数据库API更加强大，同时仍然保持易用性。</p>
+<p>下一个版本的数据库引入了诸如Query<Record>和QueryOperation<Record>这样的类型，它们在内部用于过滤、匹配和限制我们感兴趣的记录。 但是，我们不向API用户公开所有这些细节，而是创建一个QueryBuilder，让我们可以逐步构造一个查询:</p>
+<pre><code class="language-swift">class QueryBuilder&lt;Record&gt; {
+    // By using a builder, we're able to hide the QueryOperation type completely,
+    // while also isolating mutability.
+    private var operations = [QueryOperation&lt;Record&gt;]()
+
+    @discardableResult
+    func matchRecords(with string: String) -&gt; QueryBuilder&lt;Record&gt; {
+        operations.append(.match(string))
+        return self
+    }
+
+    @discardableResult
+    func limitNumberOfResults(to count: Int) -&gt; QueryBuilder&lt;Record&gt; {
+        operations.append(.addLimit(count))
+        return self
+    }
+
+    @discardableResult
+    func filterByKeyPath&lt;T: Equatable&gt;(_ keyPath: KeyPath&lt;Record, T&gt;,
+                                       value: T) -&gt; QueryBuilder&lt;Record&gt; {
+        operations.append(.filter { record in
+            return record[keyPath: keyPath] == value
+        })
+
+        return self
+    }
+
+    func build() -&gt; Query&lt;Record&gt; {
+        return Query(operations: operations)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以用一种更简单的声明式方式编写更复杂的数据库代码。下面是我们如何使用我们的新API来查找用户添加到收藏夹中的所有文章记录:</p>
+<pre><code class="language-swift">func findFavorites(matching string: String) -&gt; [Article] {
+    let query = QueryBuilder&lt;Article&gt;()
+        .matchRecords(with: searchString)
+        .limitNumberOfResults(to: 10)
+        .filterByKeyPath(\.isFavorite, value: true)
+        .build()
+
+    return database.records(matching: query)
+}
+</code></pre>
+<p>请注意我们是如何使用Swift上面强大的关键路径特性来提供一种简单但类型安全的基于属性值过滤记录的方法的。我们将在下一篇文章中深入探讨关键路径。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然structs和值类型已经删除了Swift中builder模式的很多用例，但它仍然是我们工具箱中的一个很好的工具，用于某些情况下——当使用值类型是不实用或不可能的(比如在处理Objective-C api时)。 在创建公共api和框架时，构建器模式也非常方便，因为它可以方便地进行定制，而不需要引入可变性或公开实现细节。</p>
+<p>我在介绍中提到过，苹果在其框架和sdk中并没有太多使用builder模式。虽然(据我所知)它们确实没有使用显式的Builder对象，但某些api的某些方面确实遵循了这种约定。以URLComponents和datecomponent为例，它们都可以被看作是URL和Date的构建器对等物(它们都不像许多其他Foundation对象那样具有可变的对等物)。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-the-builder-pattern-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4g5XtbTAR/" class="tag">
+                    design pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/conditional-conformances-in-swift/">
+                  <h3 class="post-title">
+                    Conditional conformances in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

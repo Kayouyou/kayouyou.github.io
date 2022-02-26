@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Modelling state in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在构建应用程序和设计系统时，最困难的事情之一是决定如何建模和处理状态。 代码管理状态也是bug的一个常见来源，当我们的应用的某些部分可能会出现我们没有预料到的状态。
+本周，让我们来看看一些技术，这些技术可以使编写处理和响应状态变化的代码变得..." />
+    <meta name="keywords" content="state management,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Modelling state in Swift</h2>
+            <div class="post-date">2017-07-02</div>
+            
+            <div class="post-content" v-pre>
+              <p>在构建应用程序和设计系统时，最困难的事情之一是决定如何建模和处理状态。 代码管理状态也是bug的一个常见来源，当我们的应用的某些部分可能会出现我们没有预料到的状态。</p>
+<p>本周，让我们来看看一些技术，这些技术可以使编写处理和响应状态变化的代码变得更容易——使它更健壮，更不容易出错。 在这篇文章中，我不会详细介绍特定的框架或更大的、应用程序范围内的架构变化(比如RxSwift、ReSwift或使用一个受ELM启发的架构)(我将把这个问题留到下一周讨论)-相反，我想专注于小的技巧，技巧和模式，我已经发现真正有用的。</p>
+<h2 id="a-single-source-of-truth">A single source of truth</h2>
+<p>在为各种状态建模时，最好记住一个核心原则，那就是尽量坚持“单一的真相来源”。一个简单的方法是，您永远不需要检查多个条件来确定您所处的状态。让我们看一个例子。</p>
+<p>假设我们正在制作一款游戏，其中的敌人拥有一定的命值，并带有一个旗帜来决定他们是否在游戏中。 我们可以在敌人类上使用两个属性进行建模，如下所示:</p>
+<pre><code class="language-swift">class Enemy {
+    var health = 10
+    var isInPlay = false
+}
+</code></pre>
+<p>虽然上面的说法是直来直去的，但它可以很容易地把我们置于一种有多种真相来源的境地。让我们假设只要敌人的生命值达到0，它就应该退出游戏。所以在我们代码的某个地方，我们有一些逻辑来处理它:</p>
+<pre><code class="language-swift">func enemyDidTakeDamage() {
+    if enemy.health &lt;= 0 {
+        enemy.isInPlay = false
+    }
+}
+</code></pre>
+<p>当我们引入新的代码路径而忘记执行上述检查时，就会出现问题。例如，我们可能会给予玩家一种特殊的攻击，将所有敌人的生命值立即设置为0:</p>
+<pre><code class="language-swift">func performSpecialAttack() {
+    for enemy in allEnemies {
+        enemy.health = 0
+    }
+}
+</code></pre>
+<p>如你所见，我们更新了所有敌人的生命值，但是我们忘记更新isInPlay了。这很可能会导致bug和我们最终处于未定义状态的情况。</p>
+<p>在这种情况下，可能会通过添加多个检查来解决问题，如下所示:</p>
+<pre><code class="language-swift">if enemy.isInPlay &amp;&amp; enemy.health &gt; 0 {
+    // Enemy is *really* in play
+} else {
+    // Enemy is *really* defeated
+}
+</code></pre>
+<p>虽然上面的方法可以作为一个临时的“创口贴”解决方案，但当我们添加更多的条件和更复杂的状态时，它将很快导致代码难以阅读，并且很容易被破坏。如果你仔细想想，做上面的事情有点像不信任我们自己的api，因为我们必须编写如此防御性的代码😕</p>
+<p>解决这个问题的一种方法，并确保我们有一个单一的真相来源，是自动更新敌人类的isInPlay属性，使用健康属性的didSet:</p>
+<pre><code class="language-swift">class Enemy {
+    var health = 10 {
+        didSet { putOutOfPlayIfNeeded() }
+    }
+
+    // Important to only allow mutations of this property from within this class
+    private(set) var isInPlay = true
+
+    private func putOutOfPlayIfNeeded() {
+        guard health &lt;= 0 else {
+            return
+        }
+
+        isInPlay = false
+        remove()
+    }
+}
+</code></pre>
+<p>这样我们现在只需要担心更新敌人的命值，并且我们确信isInPlay属性将始终保持同步👍</p>
+<h2 id="making-states-exclusive">Making states exclusive</h2>
+<p>上面的敌人例子非常简单，所以让我们看看另一个例子，在这个例子中，我们要处理更复杂的状态，每个状态都有相关的值，我们需要相应地渲染和做出反应。</p>
+<p>假设我们正在构建一个视频播放器，它将允许我们从特定的URL下载和观看视频。为视频建模，我们可以使用一个结构体，像这样:</p>
+<pre><code class="language-swift">struct Video {
+    let url: URL
+    var downloadTask: Task?
+    var file: File?
+    var isPlaying = false
+    var progress: Double = 0
+}
+</code></pre>
+<p>上面的方法的问题是，我们最终会有很多可选的选项，并且我们不能通过阅读我们的模型代码来真正地知道视频可以处于什么状态。我们通常还不得不编写复杂的处理程序，其中包括一些不应该被输入的代码路径:</p>
+<pre><code class="language-swift">if let downloadTask = video.downloadTask {
+    // Handle download
+} else if let file = video.file {
+    // Perform playback
+} else {
+    // Uhm... what to do here? 🤔
+}
+</code></pre>
+<p>我解决这个问题的方法是使用枚举来定义非常清晰的排他状态，像这样:</p>
+<pre><code class="language-swift">struct Video {
+    enum State {
+        case willDownload(from: URL)
+        case downloading(task: Task)
+        case playing(file: File, progress: Double)
+        case paused(file: File, progress: Double)
+    }
+
+    var state: State
+}
+</code></pre>
+<p>正如您在上面看到的，我们去掉了所有的可选选项，所有与状态相关的值现在都合并到它们将要用于的状态中。 我们可以通过引入另一个级别的状态来进一步消除一些重复:</p>
+<pre><code class="language-swift">extension Video {
+    struct PlaybackState {
+        let file: File
+        var progress: Double
+    }
+}
+</code></pre>
+<p>我们可以在播放和暂停的情况下使用:</p>
+<pre><code class="language-swift">case playing(PlaybackState)
+case paused(PlaybackState)
+</code></pre>
+<h2 id="rendering-reactively">Rendering reactively</h2>
+<p>然而，如果你开始像上面那样建模你的状态，但继续写命令式状态处理代码(使用多个if/else语句，像上面那样)，事情将变得相当丑陋。 因为我们需要的所有信息都“隐藏”在不同的情况下，我们需要做大量的switch或if case let语句来“取出它”。</p>
+<p>我们需要将状态枚举与响应性状态处理代码结合起来。 举个例子，让我们看看如何编写代码来更新视频播放器视图控制器中的动作按钮:</p>
+<pre><code class="language-swift">class VideoPlayerViewController: UIViewController {
+    var video: Video {
+        // Every time the video changes, we re-render
+        didSet { render() }
+    }
+
+    fileprivate lazy var actionButton = UIButton()
+
+    private func render() {
+        renderActionButton()
+    }
+
+    private func renderActionButton() {
+        let actionButtonImage = resolveActionButtonImage()
+        actionButton.setImage(actionButtonImage, for: .normal)
+    }
+
+    private func resolveActionButtonImage() -&gt; UIImage {
+        // The image for the action button is declaratively resolved
+        // directly from the video state
+        switch video.state {
+            // We can easily discard associated values that we don't need
+            // by simply omitting them
+            case .willDownload:
+                return .wait
+            case .downloading:
+                return .cancel
+            case .playing:
+                return .pause
+            case .paused:  
+                return .play
+        } 
+    }
+}
+</code></pre>
+<p>现在，每当我们的视频状态改变时，我们的UI就会自动更新。我们有一个单一的真理来源，没有未定义的状态🎉然后，我们可以扩展渲染方法，当我们的状态改变时，自动执行所有的UI更新:</p>
+<pre><code class="language-swift">func render() {
+    renderActionButton()
+    renderVideoSurface()
+    renderNavigationBarButtonItems()
+    ...
+}
+</code></pre>
+<h2 id="handling-state-changes">Handling state changes</h2>
+<p>渲染是一回事，但通常我们还需要在状态改变时触发某种形式的逻辑。我们可能想要转换到另一个状态，或者开始一个操作。 好的方面是，我们可以使用与渲染完全相同的模式来执行这样的逻辑。</p>
+<p>让我们写一个handleStateChange方法，它也会从视频属性的didSet中被调用，它会根据我们当前所处的状态运行各种逻辑:</p>
+<pre><code class="language-swift">private extension VideoPlayerViewController {
+    func handleStateChange() {
+        switch video.state {
+        case .willDownload(let url):
+            // Start a download task and enter the 'downloading' state
+            let task = Task.download(url: url)
+            task.start()
+            video.state = .downloading(task: task)
+        case .downloading(let task):
+            // If the download task finished, start playback
+            switch task.state {
+            case .inProgress:
+                break
+            case .finished(let file):
+                let playbackState = Video.PlaybackState(file: file, progress: 0)
+                video.state = .playing(playbackState)
+            }
+        case .playing:
+            player.play()
+        case .paused:
+            player.pause()
+        }
+    }
+}
+</code></pre>
+<h2 id="extracting-information">Extracting information</h2>
+<p>到目前为止，我们一直使用switch语句来执行所有的渲染和状态处理。 有一个很好的理由——它“迫使”我们考虑所有的状态和所有的情况，并为每一种情况写适当的逻辑。如果引入了我们没有处理的新状态，它还允许我们利用编译器来给出错误。</p>
+<p>然而，有时您需要做一些只影响特定状态的非常具体的事情。 假设我们想要确保我们取消任何正在进行的下载任务，如果我们的视图控制器离开屏幕:</p>
+<pre><code class="language-swift">extension VideoPlayerViewController {
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+
+        // Ideally, we'd like an API like this, that let's us cancel any ongoing
+        // download task without having to write a huge switch statement
+        video.downloadTask?.cancel()
+    }
+}
+</code></pre>
+<p>能够访问如上所述的某些属性是非常好的，并且可以帮助我们摆脱大量的样板文件，如果我们选择总是使用switch语句进行状态处理，我们将不得不编写这些样板文件。</p>
+<p>所以，让我们实现它吧!要做到这一点，我们只需在视频上创建一个扩展，使用Swift的guard case让模式匹配语法提取任何正在进行的下载任务:</p>
+<pre><code class="language-swift">extension Video {
+    var downloadTask: Task? {
+        guard case let .downloading(task) = state else {
+            return nil  
+        }
+
+        return task
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然在状态处理方面没有什么灵丹妙药，但以一种消除模糊性和强制执行明确定义的状态的方式对状态建模，通常会导致更健壮的代码。</p>
+<p>拥有单一的真相来源，并以一种被动的方式处理状态变化，通常也会让你写出更容易阅读和推理的代码， 而且也更容易扩展和重构(只要添加或删除一个case，编译器就会告诉您需要更新哪些代码)。</p>
+<p>我在这篇文章中提到的解决方案和技巧肯定是有权衡的，它们确实需要你编写更多的样板代码，有时，实现状态枚举的Equatable可能会有点棘手(我们将在以后的文章中通过代码生成和脚本查看如何使其变得更容易)。</p>
+<p><a href="https://www.swiftbysundell.com/articles/modelling-state-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EWN51MbzW/" class="tag">
+                    state management
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-spritekit-to-create-animations-in-swift/">
+                  <h3 class="post-title">
+                    Using SpriteKit to create animations in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Pure functions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="纯函数是核心编程概念之一，或多或少可以应用于任何支持某种形式的函数或子例程的语言。
+当一个函数不产生任何副作用并且不依赖于任何外部状态时，它就被认为是纯函数。 其核心思想是，一个纯函数总是会为给定的一组输入产生相同的输出——无论何时以及调用..." />
+    <meta name="keywords" content="functional programming,functions" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Pure functions in Swift</h2>
+            <div class="post-date">2019-05-05</div>
+            
+            <div class="post-content" v-pre>
+              <p>纯函数是核心编程概念之一，或多或少可以应用于任何支持某种形式的函数或子例程的语言。</p>
+<p>当一个函数不产生任何副作用并且不依赖于任何外部状态时，它就被认为是纯函数。 其核心思想是，一个纯函数总是会为给定的一组输入产生相同的输出——无论何时以及调用了多少次。</p>
+<p>虽然上面的听起来像是一个主要的理论概念，但纯函数确实有可能给我们带来一些非常真实、实际的好处——从增加重用性和可测试性，到更可预测的代码。本周，让我们来看看如何在Swift中使用纯函数——以及我们如何以一种非常好的方式应用它们来解决实际问题。</p>
+<h2 id="purifying-functions">Purifying functions</h2>
+<p>让我们先看一个函数的例子，这个函数有可能变成纯函数，但还不能满足不产生任何副作用的要求-因为它改变了它被调用的值:</p>
+<pre><code class="language-swift">extension String {
+    mutating func addSuffixIfNeeded(_ suffix: String) {
+        guard !hasSuffix(suffix) else {
+            return
+        }
+        append(suffix)
+    }
+}
+</code></pre>
+<p>上面的函数发生变异的事实似乎不是什么大问题——但是由于String是一种值类型，我们只能在可变值上调用它，这通常会导致经典的“var mutate assign”-dance:</p>
+<pre><code class="language-swift">var fileName = contentName
+fileName.addSuffixIfNeeded(&quot;.md&quot;)
+try save(content, inFileNamed: fileName)
+</code></pre>
+<p>让我们来净化我们的函数——通过使它返回一个新的字符串值，而不是改变它被调用的那个值——像这样:</p>
+<pre><code class="language-swift">extension String {
+    func addingSuffixIfNeeded(_ suffix: String) -&gt; String {
+        guard !hasSuffix(suffix) else {
+            return self
+        }
+
+        return appending(suffix)
+    }
+}
+</code></pre>
+<p>上面的变化可能看起来非常微妙，但它都可以减少我们需要在代码中保持的可变状态的数量 - 也可以导致更清晰的调用站点，例如这个更新版本的代码:</p>
+<pre><code class="language-swift">let fileName = contentName.addingSuffixIfNeeded(&quot;.md&quot;)
+try save(content, inFileNamed: fileName)
+</code></pre>
+<p>另一个可能阻止一个函数被认为是纯函数的原因是它依赖于某种形式的外部可变状态。例如，假设我们正在为应用程序构建一个登录屏幕，并且我们希望在用户多次登录失败的情况下显示不同的错误消息。包含该逻辑的函数目前看起来是这样的:</p>
+<pre><code class="language-swift">extension LoginController {
+    func makeFailureHelpText() -&gt; String {
+        guard numberOfAttempts &lt; 3 else {
+            return &quot;Still can't log you in. Forgot your password?&quot;
+        }
+
+        return &quot;Invalid username/password. Please try again.&quot;
+    }
+}
+</code></pre>
+<p>因为上面的函数依赖于视图控制器的numberOfAttempts属性——它是函数本身的外部属性-我们不能认为它是纯粹的，因为当它所依赖的属性发生突变时，它可能会产生不同的结果。</p>
+<p>解决这个问题的一种方法是将函数所依赖的状态参数化——将其转换为一个纯函数，从Int到String - 或者，换句话说，从尝试帮助文本的次数来看:</p>
+<pre><code class="language-swift">extension LoginController {
+    func makeFailureHelpText(numberOfAttempts: Int) -&gt; String {
+        guard numberOfAttempts &lt; 3 else {
+            return &quot;Still can't log you in. Forgot your password?&quot;
+        }
+
+        return &quot;Invalid username/password. Please try again.&quot;
+    }
+}
+</code></pre>
+<p>纯函数的一个主要好处是它们通常很容易测试——因为我们可以简单地验证它们为任何给定的输入产生正确的输出。例如，通过传递不同的numberOfAttempts值，我们可以很容易地测试上面的函数:</p>
+<pre><code class="language-swift">class LoginControllerTests: XCTestCase {
+    func testHelpTextForFailedLogin() {
+        let controller = LoginController()
+
+        XCTAssertEqual(
+            controller.makeFailureHelpText(numberOfAttempts: 0),
+            &quot;Invalid username/password. Please try again.&quot;
+        )
+
+        XCTAssertEqual(
+            controller.makeFailureHelpText(numberOfAttempts: 3),
+            &quot;Still can't log you in. Forgot your password?&quot;
+        )
+    }
+}
+</code></pre>
+<p>纯函数几乎总是更容易组合、结构和并行化——因为它们不影响或依赖于它们之外的任何东西(既不作为输入传入，也不作为输出产生)。在以后的文章中，我们将更详细地研究函数组合和并行化。</p>
+<h2 id="enforcing-purity">Enforcing purity</h2>
+<p>虽然纯函数有很多好处，但在日常编码过程中，有时要知道给定的函数是否真的纯是一件有点棘手的事情 - 因为我们在开发应用程序和产品时编写的大部分代码都依赖于许多不同的状态。</p>
+<p>然而，至少要保证一定程度的“纯度”，一种方法是围绕值类型来构造逻辑。 因为一个值不能改变它自己，或者它的任何属性，除了改变函数之外——它给了我们一个更强的保证，我们的逻辑确实是纯粹的。</p>
+<p>例如，下面是我们如何设置计算购买一个产品数组的总价格的逻辑——使用一个只包含let属性(反过来也是值类型)的结构体和一个非突变方法:</p>
+<pre><code class="language-swift">struct PriceCalculator {
+    let shippingCosts: ShippingCostDirectory
+    let currency: Currency
+
+    func calculateTotalPrice(for products: [Product],
+                             shippingTo region: Region) -&gt; Cost {
+        let productCost: Cost = products.reduce(0) { cost, product in
+            return cost + product.price
+        }
+
+        let shippingCost = shippingCosts.shippingCost(
+            forRegion: region
+        )
+
+        let totalCost = productCost + shippingCost
+
+        return totalCost.convert(to: currency)
+    }
+}
+</code></pre>
+<p>上述方法的好处是，意外引入可变状态变得更加困难——因为这样做时，我们需要将上述calculateTotalPrice函数转换为一个可变的函数 - 这是我们可以通过工具或点对点代码审查来实现的。</p>
+<h2 id="purifying-refactors">Purifying refactors</h2>
+<p>虽然纯函数在使用高度人为设计或孤立的例子时通常看起来很棒，但问题是我们如何方便地将它们放入应用程序的真实代码库中?  大多数应用程序代码并没有100%的整齐划分，而且大多数逻辑最终会改变某种形式的状态</p>
+<p>让我们看另一个例子，在这个例子中，我们在文章阅读应用的ReaderViewController中处理点击下一个按钮。根据视图控制器的当前状态，我们要么在用户的读取队列中显示下一篇文章，显示一组促销活动，或取消当前流——使用如下逻辑:</p>
+<pre><code class="language-swift">private extension ReaderViewController {
+    @objc func nextButtonTapped() {
+        guard !articles.isEmpty else {
+            return didFinishArticles()
+        }
+
+        let vc = ArticleViewController()
+        vc.article = articles.removeFirst()
+        present(vc)
+    }
+
+    func didFinishArticles() {
+        guard !promotions.isEmpty else {
+            return dismiss()
+        }
+
+        let vc = PromotionViewController()
+        vc.promotions = promotions
+        vc.delegate = self
+        present(vc)
+    }
+}
+</code></pre>
+<p>上面的代码无论如何都不是“糟糕的代码”——它很容易阅读，甚至被分成两个不同的函数，以便更容易地获得逻辑的概述。但是由于上面的nextbuttontapping函数不是纯函数，所以很难测试(特别是考虑到它依赖于我们必须公开的许多私有状态)。</p>
+<p>类似于上面的逻辑也是导致“海量视图控制器”问题的一个常见原因——当视图控制器最终自己做了太多的决定，导致复杂的逻辑与表示和布局代码交织在一起。</p>
+<p>让我们将上面的逻辑提取为一个纯逻辑类型——只有这个类型包含我们的按钮的逻辑。通过这种方式，我们可以将逻辑建模为一个从状态到结果的纯函数——并使用一个静态函数，结合值类型，以确保我们的逻辑是并保持纯的:</p>
+<pre><code class="language-swift">struct ReaderNextButtonLogic {
+    enum Outcome {
+        case present(UIViewController, remainingArticles: [Article])
+        case dismiss
+    }
+
+    static func outcome(
+        forArticles articles: [Article],
+        promotions: [Promotion],
+        promotionDelegate: PromotionDelegate?
+    ) -&gt; Outcome {
+        guard !articles.isEmpty else {
+            guard !promotions.isEmpty else {
+                return .dismiss
+            }
+
+            let vc = PromotionViewController()
+            vc.promotions = promotions
+            vc.delegate = promotionDelegate
+            return .present(vc, remainingArticles: [])
+        }
+
+        var remainingArticles = articles
+
+        let vc = ArticleViewController()
+        vc.article = remainingArticles.removeFirst()
+        return .present(vc, remainingArticles: remainingArticles)
+    }
+}
+</code></pre>
+<p>上面的代码真正重要的是，它做了我们的视图控制器以前做的所有事情来处理点击事件-除了改变任何形式的状态(如修改articles属性，或呈现子视图控制器)。在确定按钮点击的结果之后，这仍然是我们让视图控制器自己做的事情:</p>
+<pre><code class="language-swift">private extension ReaderViewController {
+    @objc func nextButtonTapped() {
+        let outcome = ReaderNextButtonLogic.outcome(
+            forArticles: articles,
+            promotions: promotions,
+            promotionDelegate: self
+        )
+
+        switch outcome {
+        case .present(let vc, let remainingArticles):
+            articles = remainingArticles
+            present(vc)
+        case .dismiss:
+            dismiss()
+        }
+    }
+}
+</code></pre>
+<p>虽然上面的重构让我们最终得到了更多的代码(如果我们只看行数的话)，但它也给了我们更多可预测和解耦的代码，这些代码现在是完全可测试的。例如，现在我们可以很容易地测试当点击下一个按钮时，在阅读队列中还有文章时，是否产生了正确的结果:</p>
+<pre><code class="language-swift">class ReaderNextButtonLogicTests: XCTestCase {
+    func testNextArticleOutcome() {
+        let articles = [Article.stub(), Article.stub()]
+
+        let outcome = ReaderNextButtonLogic.outcome(
+            forArticles: articles,
+            promotions: [],
+            promotionDelegate: nil
+        )
+
+        guard case .present(let vc, let remaining) = outcome else {
+            return XCTFail(&quot;Invalid outcome: \(outcome)&quot;)
+        }
+
+        XCTAssertTrue(vc is ArticleViewController)
+        XCTAssertEqual(remaining, [articles[1]])
+    }
+}
+</code></pre>
+<p>虽然还有其他方法可以像上面那样封装逻辑——例如使用逻辑控制器或视图模型——只需将我们的逻辑移动到专用的纯函数，我们能够让我们的代码变得可测试，而不需要做任何重大的改变——比如改变我们的架构，或者引入像依赖注入这样的技术。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>您不必是函数式编程的狂热爱好者，也可以欣赏纯函数的优雅和实际好处。在写整个应用程序只包含纯函数通常是极其困难——至少使用苹果当前的框架——如果我们能够将核心逻辑转换为尽可能多地使用纯函数，我们通常会得到更健壮、更容易测试的代码。</p>
+<p><a href="https://www.swiftbysundell.com/articles/pure-functions-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Jn075RYwWt/" class="tag">
+                    functional programming
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L76CX3exv/" class="tag">
+                    functions
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/structuring-model-data-in-swift/">
+                  <h3 class="post-title">
+                    Structuring model data in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

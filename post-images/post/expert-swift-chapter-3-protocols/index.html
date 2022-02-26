@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Expert Swift - Chapter 3: Protocols | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Expert Swift Chapter 3: Protocols
+
+Getting started with protocols
+
+Hiding information
+Encoding semantics
+Protocol synt..." />
+    <meta name="keywords" content="expert swift,protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Expert Swift - Chapter 3: Protocols</h2>
+            <div class="post-date">2021-08-24</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gtsal8rt6mj61900u0dr302.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#expert-swift-chapter-3-protocols">Expert Swift Chapter 3: Protocols</a>
+<ul>
+<li><a href="#getting-started-with-protocols">Getting started with protocols</a>
+<ul>
+<li><a href="#hiding-information">Hiding information</a></li>
+<li><a href="#encoding-semantics">Encoding semantics</a></li>
+<li><a href="#protocol-syntax">Protocol syntax</a></li>
+<li><a href="#implementing-protocols">Implementing protocols</a></li>
+<li><a href="#extending-protocols">Extending protocols</a></li>
+</ul>
+</li>
+<li><a href="#behind-the-scenes-of-protocols">Behind the scenes of protocols</a>
+<ul>
+<li><a href="#static-and-dynamic-dispatch">Static and dynamic dispatch</a></li>
+<li><a href="#dispatch-in-protocols">Dispatch in protocols</a></li>
+<li><a href="#dealing-with-extensions">Dealing with extensions</a></li>
+</ul>
+</li>
+<li><a href="#protocols-and-the-type-system">Protocols and the type system</a>
+<ul>
+<li><a href="#existentials">Existentials</a></li>
+<li><a href="#using-protocols-as-types">Using protocols as types</a></li>
+</ul>
+</li>
+<li><a href="#synthesized-protocol-conformance">Synthesized protocol conformance</a></li>
+<li><a href="#protocol-oriented-programming">Protocol-oriented programming</a>
+<ul>
+<li><a href="#adding-a-networker-class">Adding a ‘Networker’ class</a></li>
+<li><a href="#downloading-images">Downloading images</a></li>
+<li><a href="#getting-fancy-with-extensions">Getting fancy with extensions</a></li>
+<li><a href="#using-dependency-inversion-to-test-your-code">Using dependency inversion to test your code</a></li>
+<li><a href="#testing-your-view-model">Testing your view model</a></li>
+<li><a href="#delegating-work">Delegating work</a>
+<ul>
+<li><a href="#adding-a-delegate-protocol">Adding a delegate protocol</a></li>
+<li><a href="#weak-references">weak references</a></li>
+<li><a href="#using-the-delegate">Using the delegate</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#key-points">Key points</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="expert-swift-chapter-3-protocols">Expert Swift Chapter 3: Protocols</h1>
+<p>如果你以前用过Swift，你可能用过协议。协议和面向协议的编程被植入<strong>Swift</strong>的DNA中，很难想象如果没有它的协议所拥有的所有力量，Swift会变成什么样子。因为它们是Swift不可分割的一部分，所以这一章的重点是解释协议是如何工作的，以及如何在代码中利用它们来生成干净、持久和易于重构的api。</p>
+<p>作为一名<strong>Swift</strong>开发人员，您可能已经知道协议的基础知识。不过，简要回顾一下协议的基础知识以及一些很少使用的特性是一个好主意。一旦您想起协议可以做的所有事情，您将了解它们在幕后是如何工作的。您还将了解使用协议的常见模式，以及需要记住的一些有用的陷阱和边缘情况。</p>
+<p>您将通过构建一个小型的<strong>RESTful</strong>网络库来实现这一点，然后您将使用该库创建一个显示<strong>raywenderlich.com</strong>文章的应用程序。在您动手之前，您将首先简要回顾一下<strong>Swift</strong>的协议。</p>
+<h2 id="getting-started-with-protocols">Getting started with protocols</h2>
+<p>要理解协议为什么重要，请后退一步，看看静态类型语言是如何工作的。看看下面这行代码:</p>
+<pre><code class="language-swift">counter.increment(by: 10)
+</code></pre>
+<p>假设<em>counter</em>是一个名为<strong>counter</strong>的类的对象，并且您正在调用一个名为<strong>increment(by:)<strong>的实例方法。这个实例方法可能存在于类中，也可能不存在—可能您忘记了编写它。在像</strong>Objective-C</strong>这样的更动态的语言中，编译器将愉快地运行代码，而不会发生任何事情。一些动态语言，如<strong>JavaScript</strong>，将运行代码，但会显示一个错误，说明<em>increment</em>不存在。<strong>Swift</strong>是一种静态类型语言，它首先会检查类中是否存在<strong>increment(by:)</strong>，如果不存在，甚至不会运行您的代码。虽然有时候编译器似乎在抱怨，但实际上它可以使您避免犯愚蠢的错误。</p>
+<p>编译器知道该方法是否存在，因为它知道<strong>counter</strong>的类型是counter，然后它可以查询counter类以找到匹配的自增方法。但是在某些情况下，编译器和您都不确定要使用哪种类型。如果你想定义一个函数来增加不同种类的计数器——不仅仅是你自己的计数器，还包括<strong>DoubleCounter</strong>, <strong>UserCounter</strong>等等，该怎么办?</p>
+<p>考虑以下方法:</p>
+<pre><code class="language-swift">func incrementCounters(counters: [?]) {
+  for counter in counters {
+    counter.increment(by: 1)
+  }
+}
+</code></pre>
+<p>计数器的类型应该是什么? 将它限制为[Counter]是没有意义的，因为您希望其他类型也能工作。你可以尝试使用[Any]，但是你会得到一个错误——Swift不能知道Any的实例是否有**increment(by:)**方法。您需要的是一种方法来告诉编译器“<strong>我想要任何具有increment(by:)方法的类型</strong>”。这就是协议的作用所在。</p>
+<p>协议可以如下所示:</p>
+<pre><code class="language-swift">protocol Incrementable {
+  func increment(by: Int)
+}
+</code></pre>
+<p><strong>通过定义带有方法需求的协议，您可以将协议作为类型使用，并说</strong>“<strong>此方法接收任何实现Incrementable的内容</strong>”。</p>
+<pre><code class="language-swift">func incrementCounters(counters: [Incrementable]) {
+  for counter in counters {
+    counter.increment(by: 1)
+  }
+}
+</code></pre>
+<p>当您编写协议的具体实现时，Swift将验证您是否声明了<strong>increment(by:)<strong>方法。知道了这一点，Swift编译器就可以保证函数对</strong>Incrementable</strong>的所有实例都能工作。</p>
+<h3 id="hiding-information">Hiding information</h3>
+<p><strong>协议是类型系统的一个工具，通过隐藏关于类型的信息，允许您将多个类型作为相同的超类型使用。</strong> 例如，对于边为a和b的正方形，<strong>a == b</strong>为真。 你也知道正方形是矩形。通过放松<strong>a == b</strong>的要求，您可以将一个正方形视为一个矩形，并定义一个计算面积的单一方法。这样，您就不需要编写两个实现。</p>
+<p>同样，协议隐藏类或结构的所有其他成员，但由协议公开的成员除外。这允许您在同一个地方使用多个类型。</p>
+<p>另一种看待协议的方式是将其视为接口(事实上，许多语言都这样称呼它们)。厨房电器、电脑和手机充电器是完全不同的，但它们都把同一个接口转向墙上的插座:插头。插座只知道设备需要电源并且有插头。以同样的方式，如果您在Swift中建模不同的设备，您可以创建一个<strong>Pluggable</strong>协议，公开一个**plug(into:)**方法，允许Socket与所有可能的设备一起工作。</p>
+<h3 id="encoding-semantics">Encoding semantics</h3>
+<p>到目前为止，您已经了解了类型如何符合协议如果它实现了所需的方法和协议。在Swift中，协议还有另一个重要方面:语义。 在编程中，有些东西不能在函数签名中编码。例如，您可能想要对某些数组进行排序。为了支持不同的排序算法，您可以实现一个<strong>Sorter</strong>协议，该协议带有对数组进行排序的方法。</p>
+<p>然而，你的应用程序有大量的数据，你的算法需要非常快，所以你可能想要限制排序器的实现，期望达到时间复杂化度为O(n)或更快。也许你还需要排序算法是稳定的。一个稳定的算法使重复元素在排序后保持相同的顺序。这些都是你不能让编译器帮你检查的例子。相反，您必须在类型名称和文档中添加这些要求，因此您将协议名称更改为<strong>StableEfficientSorter</strong>。</p>
+<p>如果协议仅仅是方法需求，那么编写真正的泛型函数将会非常困难，因为实现细节可能会完全改变代码的工作方式。协议也被用来描述语义需求。这正是Swift没有自动遵循协议类型的原因。在编写代码时，必须考虑哪些语义需求对协议是重要的，并清楚地记录它们。</p>
+<h3 id="protocol-syntax">Protocol syntax</h3>
+<p>现在您已经理解了协议的语义，现在应该简要回顾一下协议语法。</p>
+<blockquote>
+<p>Note: 对于本章的这一部分，你不需要打字。 但如果你想这样做，首先创建一个新的空<strong>playground</strong>，导入UIKit和SwiftUI。 或者，你可以在<strong>final/Protocols.playground</strong>下找到本节使用的代码。</p>
+</blockquote>
+<p>下面是一个简单的枚举和协议:</p>
+<pre><code class="language-swift">enum Language {
+  case english, german, croatian
+}
+
+protocol Localizable {
+  static var supportedLanguages: [Language] { get }
+}
+</code></pre>
+<p>该协议有一个必需的成员，<strong>supportedLanguages</strong>。在本例中，这是一个需要有getter的变量(而不是函数)。 协议不需要setter，这意味着计算变量或使用**private(set)**访问修饰符声明的变量也将满足要求。它也被标记为static，这意味着一致性变量也需要是static。</p>
+<p>接下来，看看另一个协议。</p>
+<pre><code class="language-swift">protocol ImmutableLocalizable: Localizable {
+  func changed(to language: Language) -&gt; Self
+}
+</code></pre>
+<p>这个协议继承了前面提到的那个协议。协议中的继承类似于类:协议的所有需求都传递给它的子协议。这意味着<strong>ImmutableLocalizable</strong>协议有两个必需的成员:<strong>supportedLanguages</strong>和<strong>changed(to:)</strong>。 与<strong>supportedLanguages</strong>不同，<strong>changed(to:)<strong>是一个函数，必须声明为返回当前类型Self。例如，如果你在一个叫做</strong>FeedView</strong>的类中声明这个函数，<strong>Self</strong>将会是FeedView的值。</p>
+<p>接下来，看看另一个继承自Localizable的协议:</p>
+<pre><code class="language-swift">protocol MutableLocalizable: Localizable {
+  mutating func change(to language: Language)
+}
+</code></pre>
+<p>这个协议与上一个协议非常相似，但是您会注意到一个新的关键字:<strong>mutating</strong>。 你可能很熟悉这个关键字，因为当方法的主体改变了结构体的属性时，你必须在结构体的方法中使用它。在协议中，意思是一样的。结构体需要通过改变它来实现这个方法，但是类不需要。类在默认情况下已经是可变的，所以不需要额外的关键字。</p>
+<h3 id="implementing-protocols">Implementing protocols</h3>
+<p>现在已经声明了三个协议，现在可以在几个类型中实现它们了。如果您习惯了其他编程语言，您可能会惊讶地听到，在Swift中，每种类型都可以实现协议。这包括结构体、类甚至枚举!</p>
+<p>首先声明一个名为Text的结构体，它将实现你的协议之一:</p>
+<pre><code class="language-swift">struct Text: ImmutableLocalizable {
+  static let supportedLanguages: [Language] = [.english, .croatian]
+  
+  var content = &quot;Help&quot;
+  
+  func changed(to language: Language) -&gt; Self {
+    let newContent: String
+    switch language {
+    case .english: newContent = &quot;Help&quot;
+    case .german: newContent = &quot;Hilfe&quot;
+    case .croatian: newContent = &quot;Pomoć&quot;
+    }
+    return Text(content: newContent)
+  }
+}
+</code></pre>
+<p>Text结构实现了<strong>ImmutableLocalizable</strong>协议。这意味着它需要实现<strong>ImmutableLocalizable</strong>和<strong>Localizable</strong>属性的所有成员，因为一个是从另一个继承来的。</p>
+<p>你也可以使用扩展使类型符合协议:</p>
+<pre><code class="language-swift">extension UILabel: MutableLocalizable {
+  static let supportedLanguages: [Language] = [.english, .german]
+    
+  func change(to language: Language) {
+    switch language {
+    case .english: text = &quot;Help&quot;
+    case .german: text = &quot;Hilfe&quot;
+    case .croatian: text = &quot;Pomoć&quot;
+    }
+  }
+}
+</code></pre>
+<p>您将经常看到用于使类型符合协议的扩展。 这样做可以让你将你控制之外的类型，比如SwiftUI或UIKit中的类型，符合你的协议。它还提供了一种很好的结构化你的文件的方法，使所有与协议相关的内容都在扩展名中，使您更容易地概述文件。</p>
+<h3 id="extending-protocols">Extending protocols</h3>
+<p>不是所有的协议成员都是必要的。你可以通过扩展协议本身来提供协议成员的默认实现:</p>
+<pre><code class="language-swift">extension Localizable {
+  static var supportedLanguages: [Language] {
+    return [.english]
+  }
+}
+</code></pre>
+<blockquote>
+<p>Note:  对于这样的扩展协议，需要考虑一些注意事项。在本章的后面，您将确切地了解这个扩展是如何工作的，以及一些需要警惕的边缘情况。</p>
+</blockquote>
+<p>在这里，您使用默认的<strong>supportedLanguages</strong>实现来扩展<strong>Localizable</strong>。符合Localizable的每种类型现在都可以访问该实现，所以它们不必定义自己的实现。</p>
+<pre><code class="language-swift">struct Image: Localizable {
+  // no need to add `supportedLanguages` here
+}
+</code></pre>
+<p>到目前为止，您已经使用了代码中的任何类型都可以实现的协议。<em>你可以限制你的协议只被类遵守。你可以通过继承AnyObject协议来做到这一点</em>——每个类都隐式遵守这个协议。</p>
+<pre><code class="language-swift">protocol UIKitLocalizable: AnyObject, Localizable {
+  func change(to language: Language)
+}
+</code></pre>
+<p>注意，尽管该协议具有与MutableLocalizable相同的要求，但是突变关键字不见了。 因为这个协议只能由类实现，所以没有理由指定某些东西正在发生变化:在类中，默认情况下所有东西都是可变的。</p>
+<p>谈到限制协议的一致性，您还可以将协议限制为特定类的子类。</p>
+<pre><code class="language-swift">protocol LocalizableViewController where Self: UIViewController {
+  func showLocalizedAlert(text: String)
+}
+</code></pre>
+<p>在这里，你的协议只能被UIViewController或它的子类使用。</p>
+<p>协议是抽象的。但这并不意味着您不能按照要求将一致性限制为您需要的类型。</p>
+<p>现在您已经有了一大堆类型和协议，您可以充分利用它们了。例如，您可以定义一个单独的函数来处理所有<strong>MutableLocalizable</strong>类型。</p>
+<pre><code class="language-swift">func localize(
+  _ localizables: inout [MutableLocalizable], 
+  to language: Language
+) {
+  for var localizable in localizables {
+    localizable.change(to: language)
+  }
+}
+</code></pre>
+<p>注意，您使用了MutableLocalizable数组，可以用任何类型的组合填充，只要它们都实现了MutableLocalizable。</p>
+<p>协议有巨大的力量。但是，在您长期致力于大型代码库之前，很难看出它们到底有多有用。 协议提供的所有内容都可以通过其他方式进行近似，如使用继承、泛型、函数重载或复制粘贴代码。所有这些方法所缺乏的是明确的意图和语义，以及协议保证的安全性和易于重构。</p>
+<p>既然您已经掌握了基本知识，现在就该了解一些协议的细节了。</p>
+<h2 id="behind-the-scenes-of-protocols">Behind the scenes of protocols</h2>
+<p>了解协议的表面层次就足以在世界上使用它们。 但是，要真正理解协议的边缘情况和性能问题，需要更深入地了解Swift的内部工作原理。</p>
+<h3 id="static-and-dynamic-dispatch">Static and dynamic dispatch</h3>
+<p>更具体地说，您需要理解调用函数时会发生什么。函数看起来就像编译器的魔法:你在一个地方声明它们，然后代码以某种方式从另一个地方执行。然而，它并没有你想象的那么神奇。实际情况是，在运行时，当Swift找到一个函数名时，它跳转到该函数的地址并开始执行代码。但是跳转到函数的地址并不总是那么简单。</p>
+<p>有两种主要的存储和调用函数的机制:静态分派和动态分派。静态分派相当简单:当您确信某个函数永远不会改变时，就会发生这种情况。 静态分派用于在结构体中声明的全局函数和方法以及<strong>final</strong>类上声明的方法。</p>
+<p>在这些情况下，不需要担心函数重写，因此从某种意义上说，编译器可以硬编码函数的地址，并在函数被引用时跳转到该地址。</p>
+<blockquote>
+<p>Note:  除了方法分派之外，Swift还广泛使用了一种称为内联的技术。 内联在编译时将函数调用替换为该函数的完整体。 这是调用函数的最快方法，但它仅在静态分派和特定条件下可用。</p>
+</blockquote>
+<p>当您添加讨厌的继承和协议时，事情会变得更复杂一些。在非final类实例上调用的方法可以声明在多个可能的位置。它可以在类、它的任何父类、扩展甚至协议扩展中声明。这意味着编译器不能提前知道函数的确切地址。相反，它使用了称为<strong>见证表（ witness table）</strong>(有时也称为v-table或虚表)的东西。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtly2lukk7j60q60bgwfd02.jpg" alt="avatar" loading="lazy"></figure>
+<p>当编译器遍历代码时，它将为每个类创建一个表。<strong>这个表将有两列:一列表示表中的偏移量，另一列表示在该偏移量处的函数。</strong>  类中的每个函数都存储在表中，表存储在工作内存中。子类将获得其父表的副本，然后替换它想要覆盖的方法的行。既然已经构建了见证表，Swift就可以在运行时使用这个表了。当它遇到一个方法调用时，Swift知道表中的哪个偏移量对应于该方法。</p>
+<p>这允许动态更改同名方法的实现，允许继承、多态性甚至协议等特性。但这些功能是有代价的。<strong>从表行调用函数会为每次函数调用增加一个常量开销</strong>。 它还防止内联和其他编译器优化，从而使动态分派比静态分派慢。</p>
+<h3 id="dispatch-in-protocols">Dispatch in protocols</h3>
+<p>整个调度故事很有趣，但您可能想知道这与协议有什么关系。我提到过，继承通过要求动态分派而使编译器的生命周期复杂化。协议也支持继承。除此之外，多个类和结构可以遵循相同的协议并实现相同的方法。它们可以用同样的方法来使用，就像本章前面的例子一样。如果你使用协议作为实例的类型，Swift无法提前知道Localizable实例是UILabel还是Text。所以它需要动态分派方法。</p>
+<p>分派协议方法类似于类的工作方式。<strong>每个实现协议的类型都有自己的协议见证表（protocol witness table）</strong>。 这个表又有两列，一列是函数，另一列是函数的偏移量。 协议的每个成员(声明为协议要求的方法和变量)在表中都有自己的行。然后将该表与实现协议的每个实例存储在一起。 然后，Swift可以在运行时在协议见证表中查找正确的函数并调用它。如果您正在使用一个类实例，Swift可以在类和协议见证表中查找该函数，动态地找到正确的实现。</p>
+<h3 id="dealing-with-extensions">Dealing with extensions</h3>
+<p>到目前为止，一切顺利。但有一个特性在考虑调度时可能会让你头晕目眩:扩展。当您在协议上定义扩展以实现默认方法时，该扩展存储在协议的表中还是实现实例的表中? 如果为不属于协议需求一部分的方法添加协议扩展会怎样? 理解静态和动态调度将帮助您回答这些问题。</p>
+<p>首先，您将处理扩展协议以提供默认方法实现。 设置一个协议，让它有一个扩展，为它的一个方法提供默认实现:</p>
+<pre><code class="language-swift">protocol Greetable {
+  func greet() -&gt; String
+}
+
+extension Greetable {
+  func greet() -&gt; String {
+    return &quot;Hello&quot;
+  }
+}
+</code></pre>
+<p>接下来，创建一个实现协议的结构:</p>
+<pre><code class="language-swift">struct GermanGreeter: Greetable {
+}
+</code></pre>
+<p>然后，创建一个新结构的实例，并调用它的协议方法:</p>
+<pre><code class="language-swift">let greeter = GermanGreeter()
+print(greeter.greet())
+</code></pre>
+<p>正如预期的那样，由于<strong>GermanGreeter</strong>没有实现自己的问候方法，上面的行打印出“<em>Hello</em>”。其工作方式是，将默认的<strong>greet</strong>实现复制到符合协议的每种类型，并添加到它们的协议见证表中。<strong>注意，协议本身没有表。只有具体类型可以。</strong></p>
+<p>你的问候显然是错的。通过在<strong>GermanGreeter</strong>内部实现方法将其翻译为德语:</p>
+<pre><code class="language-swift">func greet() -&gt; String {
+  return &quot;Hallo&quot;
+}
+</code></pre>
+<p>一个字母就能把它变成德语。 如果你再运行一次代码，它会打印&quot; Hallo &quot;。 这是因为您的新实现替换了协议见证表中的扩展方法。 重写类中的方法时也会发生同样的事情。</p>
+<p>到目前为止，一切正常，对吧? 现在，试着创造一些意想不到的东西。在协议扩展中添加一个新方法:</p>
+<pre><code class="language-swift">func leave() -&gt; String {
+  return &quot;Bye&quot;
+}
+</code></pre>
+<p>这个函数存在于协议扩展中，但它没有声明为协议的需求。 但是，每个实现协议的类型仍然可以访问该方法。通过调用这个新方法来验证:</p>
+<pre><code class="language-swift">print(greeter.leave())
+</code></pre>
+<p>正如预期的那样，输出“Goodbye”。在德语问候语中添加一种新方法来再次翻译这句话:</p>
+<pre><code class="language-swift">func leave() -&gt; String {
+  return &quot;Tschüss&quot;
+}
+</code></pre>
+<p>如果你再次运行代码，它会像之前一样工作:  调用新方法，输出为“<strong>Tschüss</strong>”。 但是，如果您更改了greeter的声明以使用协议:</p>
+<pre><code class="language-swift">let greeter: Greetable = GermanGreeter()
+</code></pre>
+<p>greet现在仍然输出“<strong>Hallo</strong>”，而leave现在在英语中已经输出“<strong>Goodbye!?</strong>”</p>
+<p>Swift似乎完全绕过了您在结构中声明的函数，并从协议扩展调用该函数。虽然这是出乎意料的，但它发生的原因很清楚。 第一个提示是，被调用的函数取决于变量声明的类型。 这意味着多态不起作用。 在前面，我提到动态分派支持多态性，因此必须使用静态分派来调用<strong>leave</strong>。</p>
+<p>实际上，<strong>扩展方法完全依赖于静态分派</strong>。调用leave不涉及表——Swift会对变量的类型静态地调用它。 greet可以正常工作，因为通过将它添加到协议需求中，您可以强制Swift为该方法创建一个协议见证表条目，从而启用动态分派。</p>
+<p>这一点很重要，因为在Swift中向协议添加扩展方法是很常见的。这是向结构和类添加额外的可重用功能的好方法。<strong>但是要始终记住，如果您想要覆盖扩展方法，您需要将它作为协议需求添加。</strong> 否则，你可能会得到意想不到的结果。</p>
+<h2 id="protocols-and-the-type-system">Protocols and the type system</h2>
+<p>当你有一个好的类型系统支持协议时，协议才会真正发光，Swift就是一个很好的例子。在本节中，您将了解什么是协议类型，以及如何最有效地利用它们。</p>
+<h3 id="existentials">Existentials</h3>
+<p>之前，你定义了一个变量作为协议:</p>
+<pre><code class="language-swift">let greeter: Greetable = GermanGreeter()
+</code></pre>
+<p>这段代码可能并不奇怪:您一直在定义变量。然而，在这里使用<strong>Greetable</strong>和使用像<strong>Int</strong>这样的具体类型之间有很大的区别。<strong>Greetable</strong>，尽管它看起来和做起来都像普通类型，但它被称为<strong>存在类型(existential type)</strong>。尽管名称听起来很奇特，但它并不是一个复杂的概念:您可以将存在类型看作是真实的具体类型的占位符。 编译器可以将它们解释为“<strong>存在某种符合此协议的类型(There exists some type that conforms to this protocol.)</strong>”。存在类型允许您无需考虑就将协议用作方法参数、数组元素、变量和其他数据结构的类型。</p>
+<h3 id="using-protocols-as-types">Using protocols as types</h3>
+<p>您已经看到了一些使用协议作为类型的例子，例如:</p>
+<pre><code class="language-swift">func greet(with greeter: Greeter) -&gt; Void
+let englishGreeter: Greeter = EnglishGreeter()
+let allGreeters: [Greeter] = [englishGreeter]
+</code></pre>
+<p>还有许多不太为人所知但很有用的方法可以使用协议。例如，你可以使用*&amp;*操作符将多个类型组合成单个类型:</p>
+<pre><code class="language-swift">func localizedGreet(with greeter: Greeter &amp; Localizable)
+</code></pre>
+<p>上面的greeter参数必须是既符合greeter又符合Localizable的类型。 你可以用协议组合一个结构类型(<strong>Date &amp; Codable</strong>)，用协议组合一个类类型(<strong>UITableViewCell &amp; Selectable</strong>)，或者像上面那样组合多个协议。 您还可以将任意多的协议串在一起。它不仅限于两个成员。</p>
+<p>但是，只能使用这些组合类型(也称为非票面类型- non-nominal types)作为变量的类型。例如，你不能在Greeter &amp; Localizable上定义扩展。不过，你可以用其他方式做到这一点。</p>
+<p>例如，你可以定义一个同样符合协议的类的所有子类的扩展:</p>
+<pre><code class="language-swift">extension UITableViewDelegate where Self: UIViewController {
+  func showAlertForSelectedCell(at index: IndexPath) {
+    // ...
+  }
+}
+</code></pre>
+<p>在这里，所有符合<strong>UITableViewDelegate</strong>的<strong>UIViewControllers</strong>自动获得<strong>showAlertForSelectedCell</strong>的实现。</p>
+<p>您还可以深入挖掘泛型类型，以扩展其泛型参数符合协议的泛型类型:</p>
+<pre><code class="language-swift">extension Array where Element: Greetable {
+  var allGreetings: String {
+    self.map { $0.greet() }.joined()
+  }
+}
+</code></pre>
+<p>你可以更进一步，为泛型类型(其泛型参数符合协议)的协议添加一致性:</p>
+<pre><code class="language-swift">extension Array: Localizable where Element: Localizable {
+  static var supportedLanguages: [Language] {
+    Element.supportedLanguages
+  }
+}
+</code></pre>
+<p>上面的扩展使得所有数组都是可本地化的，只要它们的Element类型也是可本地化的。这正是Swift使<strong>Codable</strong>项数组也符合<strong>Codable</strong>，<strong>Equatable</strong>项数组符合<strong>Equatable</strong>的方式，等等。</p>
+<p>当你在下一章学习Swift中的泛型时，你会发现更多关于这类扩展的信息。</p>
+<h2 id="synthesized-protocol-conformance">Synthesized protocol conformance</h2>
+<p>如果你使用过Swift一段时间，也许你会注意到有一些协议，比如<strong>cadeable</strong>，只要你遵守它们，就能神奇地工作。当Swift为您生成一个综合协议实现时，就会发生这种情况。<em>Swift</em>为<strong>Equatable, Hashable, Comparable</strong>和两种可编码协议:<strong>Encodable和Decodable</strong>自动做了此类工作。</p>
+<p>每种协议都有其局限性。通常，只有当您的所有属性也符合该协议时，Swift才能生成与该协议的一致性。 例如，在Hashable的情况下，您的所有属性都需要是<strong>Hashable</strong>，以便Swift合成所需的方法。</p>
+<pre><code class="language-swift">struct User: Hashable {
+  let name: String
+  let email: String
+  let id: UUID
+}
+</code></pre>
+<p>如果你添加的属性本身不是Hashable, Swift会抱怨，你需要添加你的实现。</p>
+<h2 id="protocol-oriented-programming">Protocol-oriented programming</h2>
+<p>足够的理论!现在是时候动手使用协议来构建一个类似<strong>Alamofire</strong>的易于使用的网络库了。在本章的这一部分，您将使用协议使API变得漂亮而简洁。在下一章中，您将继续编写库，但引入泛型使其更易于使用。</p>
+<p>首先打开本章材料中提供的启动项目。如果您构建并运行该项目，您将看到一个硬编码的文章列表。你将改变这个应用程序，使它从raywenderlich.com API下载文章，建立自己的小学习平台!应用程序已经在视图组中包含了必要的UI。它还包括一个<strong>ArticlesViewModel.swift</strong>文件，您可以修改该文件以从API加载实际数据。你要下载的模型在<strong>Article.swift</strong>里面:所有的解码代码都已经为你写好了。</p>
+<p>在本节结束时，您将看到一个屏幕，它从raywenderlich.com API获取文章列表及其图像。您还将使用依赖注入和测试来验证您的代码是否有效。</p>
+<p>现在您已经熟悉了这个项目，您将通过定义一个表示网络请求的协议来开始工作。 创建一个名为Request.swift的新Swift文件。给文件添加一个enum:</p>
+<pre><code class="language-swift">enum HTTPMethod: String {
+  case get = &quot;GET&quot;
+  case post = &quot;POST&quot;
+  case put = &quot;PUT&quot;
+  case patch = &quot;PATCH&quot;
+  case delete = &quot;DELETE&quot;
+}
+</code></pre>
+<p>根据REST协议，当您发出请求时，您需要告诉服务器您希望为请求使用哪个HTTP REST方法。在这里，您定义了一个方便的enum，它将使选择正确的方法变得更容易。</p>
+<p>接下来，在文件底部添加一个协议:</p>
+<pre><code class="language-swift">protocol Request {
+  var url: URL { get }
+  var method: HTTPMethod { get }
+}
+</code></pre>
+<p>该协议是HTTP REST请求的抽象表示。它包括请求的URL以及前面定义的方法。您还可以进一步向请求添加另一个属性，以表示要发送到服务器的URL参数或数据。但现在，你要保持简单。</p>
+<p>现在，您可以创建第一个Request实现了。您将创建一个结构体，该结构体包含获取文章列表的请求。创建一个名为<strong>ArticleRequest.swift</strong>的新文件，并将以下结构体添加到该文件中:</p>
+<pre><code class="language-swift">struct ArticleRequest: Request {
+  var url: URL {
+    let baseURL = &quot;https://api.raywenderlich.com/api&quot;
+    let path = &quot;/contents?filter[content_types][]=article&quot;
+    return URL(string: baseURL + path)!
+  }
+
+  var method: HTTPMethod { .get }
+}
+</code></pre>
+<p>您可以通过实现请求协议所需的两个成员来遵守请求协议。对于URL，您将返回适当的<strong>raywenderlich.com API</strong>端点。因为您只是在获取一个列表，所以正确的方法是使用<strong>GET</strong>。</p>
+<h3 id="adding-a-networker-class">Adding a ‘Networker’ class</h3>
+<p>现在，你有一个请求，但你没有办法对请求做任何事情。您可以通过添加一个负责初始化请求实现的<strong>Networker</strong>类来解决这个问题。</p>
+<pre><code class="language-swift">import Combine
+
+class Networker {
+  func fetch(_ request: Request) -&gt; AnyPublisher&lt;Data, URLError&gt; {
+    var urlRequest = URLRequest(url: request.url)
+    urlRequest.httpMethod = request.method.rawValue
+
+    return URLSession.shared
+      .dataTaskPublisher(for: urlRequest)
+      .compactMap { $0.data }
+      .eraseToAnyPublisher()
+  }
+}
+</code></pre>
+<p>首先，您将导入<strong>Combine</strong>，因为您将使用它更容易管理网络请求的异步性质。定义一个名为<strong>Networker</strong>的类，它只有一个方法:<strong>fetch(_😃</strong>。此方法接收<strong>Request</strong>协议的实现。然后它根据请求创建一个<strong>URLRequest</strong>，并使用<strong>URLSession</strong>获取请求。<br>
+<strong>fetch(_😃<strong>不是返回请求的数据，而是以</strong>AnyPublisher&lt;data, URLError&gt;<strong>的形式返回该数据的</strong>publisher</strong></p>
+<p>现在您已经拥有了获取文章的所有组件。剩下的就是把这些碎片组装起来。打开<strong>ArticlesViewModel.swift</strong>并在类的顶部添加一个新属性:</p>
+<pre><code class="language-swift">var networker = Networker()
+</code></pre>
+<p>视图模型的**fetchArticles()**一出现就被视图调用，它应该从API加载文章。将其内容替换为以下代码:</p>
+<pre><code class="language-swift">let request = ArticleRequest()
+let decoder = JSONDecoder()
+networker.fetch(request)
+  .decode(type: Articles.self, decoder: decoder)
+  .map { $0.data.map { $0.article } }
+  .replaceError(with: [])
+  .receive(on: DispatchQueue.main)
+  .assign(to: \.articles, on: self)
+  .store(in: &amp;cancellables)
+</code></pre>
+<p>首先，创建文章请求和JSON解码器。接下来，调用*fetch(<em>😃*来发起请求。您在这里编写了一个相当大的方法链，但它相当易读。*fetch(</em>😃*会给你一个<strong>Publisher of Data</strong>，你将其解码为<strong>Articles</strong>，这是一个helper结构体，用于匹配API的JSON结构。然后将您的<strong>Articles</strong>实例在map中转换为<strong>Article</strong>数组。用空数组替换任何错误后，切换到主线程。最后，将收到的结果分配给<strong>articles</strong>属性。由于属性被标记为@Published，视图将自动更新自己。</p>
+<p>唷!解释很多。 好消息是，您现在可以构建并运行您的项目，以查看从<strong>raywenderlich.com</strong>获取的文章列表!  如果您没有看到任何内容，请在下载数据时等待几秒钟。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtm4bxasamj60ie0z6dkb02.jpg" alt="avatar" loading="lazy"></figure>
+<p>您应该会在屏幕上看到一堆文章。你可能注意到标题和描述都在，但所有的图片都不见了。你不需要像夏洛克(Sherlock)那样找出原因:你从来没有编写过下载图像的代码。是时候解决这个问题了。</p>
+<h3 id="downloading-images">Downloading images</h3>
+<p>为了获取文章，您创建了一个新的<strong>Request</strong>实现。当然，要下载图像，您也要做同样的事情。创建一个新的<em>Swift</em>文件<strong>ImageRequest.swift</strong>。在文件中添加以下结构:</p>
+<pre><code class="language-swift">struct ImageRequest: Request {
+  let url: URL
+  var method: HTTPMethod { .get }
+}
+</code></pre>
+<p>与在文章请求中硬编码URL不同，这次您将在初始化器中收到一个URL。这将使该结构体能够加载互联网上的任何图像。</p>
+<p>接下来，返回<strong>ArticlesViewModel.swift</strong>来发起您的新请求。列表中的每一行在出现时都会调用<strong>fetchImage(for:)</strong>。在fetchImage(for)中添加以下代码:</p>
+<pre><code class="language-swift">guard article.downloadedImage == nil,
+  let articleIndex = articles.firstIndex(where: { $0.id == article.id })
+else {
+  return
+}
+</code></pre>
+<p>因为每次在屏幕上出现一行时都会调用这个函数，所以从滚动速度和节省用户带宽的角度考虑，一定要记住性能。您可以通过缓存结果来实现这一点。下载图像后，将其存储在<strong>Article</strong>对象中。在下载图像之前，首先检查您的文章是否已经下载了图像。这将节省您一遍又一遍的下载相同的图像当用户滚动时。</p>
+<p>仍然在**fetchImage(for:)**中，继续使用以下代码下载图像:</p>
+<pre><code class="language-swift">let request = ImageRequest(url: article.image)
+networker.fetch(request)
+  .map(UIImage.init)
+  .replaceError(with: nil)
+  .receive(on: DispatchQueue.main)
+  .sink { [weak self] image in
+    self?.articles[articleIndex].downloadedImage = image
+  }
+  .store(in: &amp;cancellables)
+</code></pre>
+<p>这段代码与您在fetchArticles中编写的代码类似。这一次，不是解码JSON，而是将数据转换为<strong>UIImage</strong>，并将任何错误替换为nil图像。然后将图像存储在文章对象中。</p>
+<p>再次构建并运行项目。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtm4bxasamj60ie0z6dkb02.jpg" alt="avatar" loading="lazy"></figure>
+<p>你有图片!是时候拍拍自己的背，喘口气了，但你才刚刚开始。使用协议可以获得更多的功能。</p>
+<h3 id="getting-fancy-with-extensions">Getting fancy with extensions</h3>
+<p>您要做的第一个更改是通过定义一个为您处理解码的协议来减少视图模型中的解码代码。创建一个名为<strong>urlsessiondecodeable.Swift</strong>的新Swift文件。然后，在文件中添加一个新协议:</p>
+<pre><code class="language-swift">protocol URLSessionDecodable {
+  init(from output: Data) throws
+}
+</code></pre>
+<p>该协议包含可以从<strong>URLSessions</strong>的输出初始化的所有结构，比如您的<strong>Article</strong>。</p>
+<p>但是，实际上您不会解码单个<strong>Article</strong>对象。你解码一组文章。这就是为什么要<strong>Array<Article></strong>，而不是让<strong>Article</strong>符合您的新协议。</p>
+<p>打开<strong>Article.swift</strong>并在文件底部添加一个扩展名:</p>
+<pre><code class="language-swift">extension Array: URLSessionDecodable where Element == Article {
+  init(from output: Data) throws {
+    let decoder = JSONDecoder()
+    let articlesCollection = try decoder.decode(Articles.self, from: output)
+    let articles = articlesCollection.data.map { $0.article }
+    self.init(articles)
+  }
+}
+</code></pre>
+<p>这是你能得到的与Swift扩展的最接近的黑魔法。你应该这样读第一行:“<strong>当数组的元素是Article时，扩展数组以符合urlsessiondecodeable</strong>。” 在前面，当Element符合协议时，您看到了一个类似的扩展。当讨论的不是一致性而是具体类型时，需要使用 == 操作符来表示该元素 <strong>is</strong> 该类型，而不是该类型的任何子类型。</p>
+<p>在扩展内部，通过将数据解码为<strong>Articles</strong>来实现协议，然后通过调用不同的array初始化器将其转换为Article的数组。</p>
+<p>现在，您可以通过缩短<strong>ArticlesViewModel.swift</strong>中的大方法链来利用解码。将<strong>fetchArticles</strong>的代码体改为:</p>
+<pre><code class="language-swift">let request = ArticleRequest()
+networker.fetch(request)
+  .tryMap([Article].init)
+  .replaceError(with: [])
+  .receive(on: DispatchQueue.main)
+  .assign(to: \.articles, on: self)
+  .store(in: &amp;cancellables)
+</code></pre>
+<p>当其他人阅读您的代码时，这个新方法应该不会让人感到惊讶。构建并运行项目，以确保一切仍然正常。</p>
+<h3 id="using-dependency-inversion-to-test-your-code">Using dependency inversion to test your code</h3>
+<p>现在您已经有了一个可以工作的网络库，但这并不意味着您已经完成了工作! 为了验证您的库能够工作，并且在重构之后能够继续工作，最好测试您的代码。这个启动项目已经包含了一个测试套件和一个名为<strong>ArticleViewModelTests.swift</strong>的测试文件。 顾名思义，您将添加一个方法来测试您的视图模型。</p>
+<p>但是，在这样做之前，您首先需要使视图模型可测试。可测试类意味着该类与任何可能影响测试结果的外部依赖项解耦。就像实验室里真正的科学家一样，你需要去除所有可能影响结果的外部变量。在你的例子中，外部变量是互联网。</p>
+<p>在测试中，您不希望连接到真实服务器。您的测试验证代码是否工作正常。如果服务器宕机或您的机器没有稳定的互联网连接，测试仍然会成功，因为问题不在您的代码。</p>
+<p>要将视图模型与Internet分离，需要添加一种方法来注入不同的网络工作者，该网络工作者返回硬编码的数据。这通常称为模拟对象。</p>
+<p>首先返回<strong>network .swift</strong>并添加一个新协议:</p>
+<pre><code class="language-swift">protocol Networking {
+  func fetch(_ request: Request) -&gt; AnyPublisher&lt;Data, URLError&gt;
+}
+</code></pre>
+<p>接下来，您将修改<strong>ArticlesViewModel.swift</strong>。首先，将networker的声明改为:</p>
+<pre><code class="language-swift">private var networker: Networking
+</code></pre>
+<p>然后，向类添加一个初始化式:</p>
+<pre><code class="language-swift">init(networker: Networking) {
+  self.networker = networker
+}
+</code></pre>
+<p>您的视图模型现在不再创建一个<strong>networkworker</strong>本身，而是在它的初始化式中接收一个<strong>Networking</strong>实例。这被称为依赖注入:它允许类的消费者将依赖注入到类中。任何使用视图模型的人现在都可以创建自己特定的Networking实现，并将其提供给视图模型，包括您的测试套件。</p>
+<p>依赖项注入和依赖项反转是使类与依赖项解耦并使其可测试的关键原则。</p>
+<p>您还需要修改<strong>ArticlesView.swift</strong>，以便将一个网络传递给它的视图模型。将viewModel的声明改为:</p>
+<pre><code class="language-swift">@ObservedObject private var viewModel = ArticlesViewModel(
+  networker: Networker())
+</code></pre>
+<p>现在，您已经将视图模型与任何外部依赖项完全解耦。此时，项目应该不会出现任何错误。</p>
+<h3 id="testing-your-view-model">Testing your view model</h3>
+<p>既然视图模型是可测试的，就可以开始测试它了! 打开<strong>ArticlesViewModelTests.swift</strong>。 您还记得前面提到的模拟对象吗? 您现在就可以创建一个。将下面的类添加到文件的顶部，在import语句下面:</p>
+<pre><code class="language-swift">class MockNetworker: Networking {
+  func fetch(_ request: Request) -&gt; AnyPublisher&lt;Data, URLError&gt; {
+    let outputData: Data
+  }
+}
+</code></pre>
+<p>这个模拟网络将实现<strong>Networking</strong>协议，但为每个请求返回硬编码的值。 继续执行<strong>fetch(_😃</strong>，添加以下代码:</p>
+<pre><code class="language-swift">switch request {
+case is ArticleRequest:
+  let article = Article(
+    name: &quot;Article Name&quot;,
+    description: &quot;Article Description&quot;,
+    image: URL(string: &quot;https://image.com&quot;)!,
+    id: &quot;Article ID&quot;,
+    downloadedImage: nil)
+  let articleData = ArticleData(article: article)
+  let articles = Articles(data: [articleData])
+  outputData = try! JSONEncoder().encode(articles)
+default:
+  outputData = Data()
+}
+</code></pre>
+<p>如果传入请求是一个<strong>ArticleRequest</strong>，您将创建一个假的文章(有时称为存根)并将其编码为JSON数据。</p>
+<p>用以下代码完成该方法:</p>
+<pre><code class="language-swift">return Just&lt;Data&gt;(outputData)
+  .setFailureType(to: URLError.self)
+  .eraseToAnyPublisher()
+</code></pre>
+<p>在这里，您创建了编码数据的发布者，并从方法返回它。</p>
+<p>有了模拟网络，您就可以使用它来创建将要测试的视图模型实例。在<strong>setUpWithError</strong>的末尾添加这一行:</p>
+<pre><code class="language-swift">viewModel = ArticlesViewModel(networker: MockNetworker())
+</code></pre>
+<p>在运行测试之前，您将创建一个新的视图模型实例并注入<strong>stub</strong> 网络。</p>
+<p>现在，您可以开始编写测试了。已经有一个名为<strong>testarticlesarefetchedcorrect</strong>的方法。 顾名思义，该方法将验证您的视图模型获取文章并正确解码它们。将以下几行添加到方法中:</p>
+<pre><code class="language-swift">XCTAssert(viewModel.articles.isEmpty)
+let expectation = XCTestExpectation(description: &quot;Article received&quot;)
+</code></pre>
+<p>您将以检查<strong>articles</strong>数组最初是否为空来开始您的测试。然后，您将设置一个<strong>xctestexpect</strong>。期望用于测试异步代码。期望将保持测试进行，直到期望被满足或计时器耗尽。</p>
+<p>继续写方法:</p>
+<pre><code class="language-swift">viewModel.$articles.sink { articles in
+  guard !articles.isEmpty else {
+    return
+  }
+  XCTAssertEqual(articles[0].id, &quot;Article ID&quot;)
+  expectation.fulfill()
+}
+.store(in: &amp;cancellables)
+</code></pre>
+<p>这是测试的主要部分。在这里，您可以订阅对articles数组的更改，并一直等到它不是空的。然后获取数组的第一个元素，并验证ID是否与<strong>MockNetworker</strong>中的ID匹配。<br>
+如果是这样，您就知道视图模型正确地解码了文章。你也满足了你的期望，告诉测试它可以停止等待。</p>
+<p>最后，用以下两行代码完成测试:</p>
+<pre><code class="language-swift">viewModel.fetchArticles()
+wait(for: [expectation], timeout: 0.1)
+</code></pre>
+<p>您可以调用<strong>fetchArticles</strong>方法来启动获取和解码过程。您还告诉XCTest等待0.1秒，直到您的期望得到满足。</p>
+<p>使用Command-U运行测试套件。</p>
+<h3 id="delegating-work">Delegating work</h3>
+<p>如果你在Swift和iOS中工作过一段时间，我相信你至少实现过一个委托属性。苹果的api和大量的社区库都使用了委托来完成各种任务:</p>
+<ul>
+<li>将功能转移到不同的对象，将一项工作委托给其他人</li>
+<li>通知另一个对象状态变化和生命周期事件，例如UITableViewDelegate的<strong>tableView(_:didSelectRowAt:)</strong></li>
+<li>请求委托提供信息，如UIScrollViewDelegate的<strong>viewForZooming(in:)</strong></li>
+<li>添加钩子和方法来影响对象的默认行为</li>
+</ul>
+<p>在设计api时，特别是当你有一个执行大量复杂工作的复杂对象时，添加委托是确保你的类足够灵活，以在未来的各种上下文中使用的好方法。</p>
+<h4 id="adding-a-delegate-protocol">Adding a delegate protocol</h4>
+<p>您将向<strong>networker</strong>类添加一个委托协议。</p>
+<p>打开<strong>network.swift</strong>，并在类的顶部添加以下协议:</p>
+<pre><code class="language-swift">protocol NetworkingDelegate: AnyObject {
+  func headers(for networking: Networking) -&gt; [String: String]
+
+  func networking(
+    _ networking: Networking,
+    transformPublisher: AnyPublisher&lt;Data, URLError&gt;
+  ) -&gt; AnyPublisher&lt;Data, URLError&gt;
+}
+</code></pre>
+<p><strong>Delegates</strong>是普通的老式Swift协议。但是在创建委托属性时，请记住两个额外的约定。你定义的NetworkingDelegate是从AnyObject继承。正如本章前面提到的，这限制了协议，因此只有类才能遵循它。因为委托通常用于影响类实例的行为，所以委托也是类也是有意义的</p>
+<p>您可能还注意到有些奇怪的函数签名。根据苹果api的约定，委托方法有你应该遵循的特定签名。返回值的方法以它们返回的值命名，它们接收源对象(在本例中是Networking实例)作为它们的第一个参数。按照此约定，定义一个方法，该方法返回Networking将用于其所有请求的HTTP头。</p>
+<p>另一方面，执行副作用的方法是以delegate的源对象(<strong>networking</strong>)命名的。第一个参数通常是源对象，而第二个参数可以让您更清楚地了解委托做什么。在本例中，您定义了一个函数，该函数可以在<strong>Networking</strong>实例将URLSession返回给它的使用者之前，对URLSession发布者执行额外的处理。</p>
+<p>接下来，在协议下面添加以下扩展:</p>
+<pre><code class="language-swift">extension NetworkingDelegate {
+  func headers(for networking: Networking) -&gt; [String: String] {
+    [:]
+  }
+
+  func networking(
+    _ networking: Networking,
+    transformPublisher publisher: AnyPublisher&lt;Data, URLError&gt;
+  ) -&gt; AnyPublisher&lt;Data, URLError&gt; {
+    publisher
+  }
+}
+</code></pre>
+<p>通过在扩展中实现协议方法，您可以为每个符合协议的类提供默认实现。 这确保了如果他们不想提供实现，他们就不需要实现。</p>
+<p>接下来，在<strong>Networking</strong>内部将委托作为可设置的属性要求公开:</p>
+<pre><code class="language-swift">var delegate: NetworkingDelegate? { get set }
+</code></pre>
+<p>在您的代码中有两种<strong>Networking</strong>的实现。第一个是在您刚刚定义的协议<strong>Networker</strong>的正下方。向类中添加<strong>delegate</strong>属性:</p>
+<pre><code class="language-swift">weak var delegate: NetworkingDelegate?
+</code></pre>
+<p>第二个实现在<strong>ArticlesViewModelTests.swift</strong>中。向<strong>MockNetworker</strong>添加相同的行。</p>
+<h4 id="weak-references">weak references</h4>
+<p>您会注意到这个变量被标记为<strong>weak</strong>。 默认情况下，Swift总是在对象之间保持强引用。强引用保证了委托在<strong>Networking</strong>实例使用它时不会<strong>de-initialized</strong>。弱引用没有这样的保证:即使<strong>Networking</strong>保留了对委托的引用，委托照样可被释放。在委托的情况下，您几乎总是希望使用后一种行为。</p>
+<p>原因是为了避免循环引用。考虑以下示例:您的<strong>ArticlesViewModel</strong>拥有一个<strong>Networker</strong>实例。它还将自己设置为<strong>Networker</strong>的委托，这意味着<strong>Networker</strong>现在有一个对视图模型的引用。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gts9x033osj60q007wt9302.jpg" alt="avatar" loading="lazy"></figure>
+<p>现在，两个类都具有对彼此的强引用。<strong>Networker</strong>不会被释放，除非<strong>ArticlesViewModel</strong>被释放，反之亦然。这意味着，即使你将视图模型(或网络)设置为nil，它仍然会挂在内存中。这就是为什么必须将其中一个引用设置为弱引用。在这种情况下，就<strong>Swift</strong>的内存管理而言，两个对象之间只有一个引用。 因此，删除一个对象将触发另一个对象的删除，从而完全释放内存。</p>
+<h4 id="using-the-delegate">Using the delegate</h4>
+<p>接下来，回到<strong>network .swift</strong>。现在<strong>Networker</strong>可以访问委托了，现在可以使用它了。在<strong>fetch(_😃<strong>中，在</strong>return</strong>之前添加以下行:</p>
+<pre><code class="language-swift">urlRequest.allHTTPHeaderFields = delegate?.headers(for: self)
+</code></pre>
+<p>确保请求委托将<strong>header</strong>添加到<strong>URLRequest</strong>中。接下来，将函数的其余部分替换为以下内容:</p>
+<pre><code class="language-swift">let publisher = URLSession.shared
+  .dataTaskPublisher(for: urlRequest)
+  .compactMap { $0.data }
+  .eraseToAnyPublisher()
+
+if let delegate = delegate {
+  return delegate.networking(self, transformPublisher: publisher)
+} else {
+  return publisher
+}
+</code></pre>
+<p>不是直接返回发布者，而是将其存储在一个变量中。创建发布者之后，如果存在委托，则调用委托方法来转换发布者。如果没有，你可以直接返回发布者。</p>
+<p>现在是时候实现委托协议了。打开<strong>ArticlesViewModel.swift</strong>，并在文件底部添加一个扩展名:</p>
+<pre><code class="language-swift">extension ArticlesViewModel: NetworkingDelegate {
+  func headers(for networking: Networking) -&gt; [String: String] {
+    return [&quot;Content-Type&quot;: &quot;application/vnd.api+json; charset=utf-8&quot;]
+  }
+}
+</code></pre>
+<p>让视图模型成为委托。您还可以实现<strong>header (for:)<strong>方法，在该方法中返回API所期望的有效</strong>Content-Type</strong>头。</p>
+<p>接下来，在扩展中添加另一个方法:</p>
+<pre><code class="language-swift">func networking(
+  _ networking: Networking,
+  transformPublisher publisher: AnyPublisher&lt;Data, URLError&gt;
+) -&gt; AnyPublisher&lt;Data, URLError&gt; {
+  publisher.receive(on: DispatchQueue.main).eraseToAnyPublisher()
+}
+</code></pre>
+<p>一开始可能看起来很奇怪，但这里有许多使用它的方法之一。在本例中，因为视图模型总是更新@Published值，而且这些更新必须发生在主线程上，所以您要确保将networkworker中的每个发布者转换为使用主线程。这种方法还可以用于日志记录、解码、重路由请求和一堆其他任务。最好的委托方法是灵活的，因为您不能总是预测未来的需求。</p>
+<p>让视图模型成为委托还有最后一步。在**init(networker:)**的底部添加一行代码:</p>
+<pre><code class="language-swift">self.networker.delegate = self
+</code></pre>
+<p>这将视图模型设置为网络工作者的委托。现在你在委托中转换了每个发布者，你可以删除<strong>fetchArticles</strong>和**fetchImage(for:)**中的两个.receive(on: DispatchQueue.main)行。</p>
+<p>最后一次运行项目，确保一切都能像以前一样工作。</p>
+<h2 id="key-points">Key points</h2>
+<ul>
+<li>协议允许您从具体类型中抽象出信息，允许您在同一位置使用更多类型。</li>
+<li>您可以使用扩展扩展现有类型以符合协议，甚至限制特定子类型的一致性。</li>
+<li>协议使用动态分派来实现函数调用，但协议扩展中定义的方法没有声明为协议必要方法。</li>
+<li>Swift将为<strong>Equatable, Hashable, Comparable</strong>和两种可编码协议，<strong>Encodable和Decodable</strong> 自动生成协议一致性。</li>
+<li>依赖倒置是一种通过使用协议类型而不是具体实现来声明依赖项，从而使代码更加灵活的技术。</li>
+<li>使用依赖倒置和依赖注入可以使代码更可测试。</li>
+<li>将委托添加到复杂的类中，以赋予它们更多的灵活性。这样做时，请记住强引用循环，并使用弱引用来避免它们。</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fhJM3gN7U/" class="tag">
+                    expert swift
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/unwrap-or-throw-exploring-solutions-in-swift/">
+                  <h3 class="post-title">
+                    Unwrap or throw: Exploring solutions in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

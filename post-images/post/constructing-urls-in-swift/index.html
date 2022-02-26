@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Constructing URLs in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="大多数现代应用都需要某种形式的网络——这意味着使用不同形状和形式的url。 然而，构造url(特别是基于用户输入的动态url)并不总是那么简单，如果我们不小心的话，可能会导致大量的错误和问题。
+本周，让我们来看看在Swift中处理URL的各..." />
+    <meta name="keywords" content="networking,foundation" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Constructing URLs in Swift</h2>
+            <div class="post-date">2018-10-07</div>
+            
+            <div class="post-content" v-pre>
+              <p>大多数现代应用都需要某种形式的网络——这意味着使用不同形状和形式的url。 然而，构造url(特别是基于用户输入的动态url)并不总是那么简单，如果我们不小心的话，可能会导致大量的错误和问题。</p>
+<p>本周，让我们来看看在Swift中处理URL的各种技术，如何使我们的URL构建代码更加健壮，以及不同类型的URL如何保证不同的方法。让我们开始吧!</p>
+<h2 id="strings">Strings</h2>
+<p>查看url的一种常见方式是，它们本质上是字符串。虽然在某些方面这可能是正确的，但是与许多其他类型的字符串相比，url在其格式和可以包含的字符方面有更严格的限制。</p>
+<p>当使用简单的字符串连接来构造url时，这些限制会很快导致问题， 如下所示，我们使用搜索查询创建一个URL来请求GitHub搜索API:</p>
+<pre><code class="language-swift">func findRepositories(matching query: String) {
+    let api = &quot;https://api.github.com&quot;
+    let endpoint = &quot;/search/repositories?q=\(query)&quot;
+    let url = URL(string: api + endpoint)
+    ...
+}
+</code></pre>
+<p>虽然上面的方法可能适用于更简单的url，但在使用这种方法时很容易遇到两种问题:</p>
+<p>随着参数数量的增加，我们很快就会以非常混乱的代码结束，很难阅读，因为我们所做的只是使用连接和插值来添加字符串。</p>
+<p>由于query是一个普通字符串，它可以包含任何可能导致无效URL的特殊字符和表情符号。当然，我们可以使用addingPercentEncoding API对查询进行编码，但最好让系统为我们处理这个问题。</p>
+<p>值得庆幸的是，Foundation提供了一种类型来解决上述两个问题——输入URLComponents。</p>
+<h2 id="components">Components</h2>
+<p>虽然url背后可能是字符串，但它们的结构要比简单的字符集合复杂得多——因为它们有必须遵守的良好定义的格式。 因此，与其将它们作为连接的字符串来处理，不如将它们作为单个组件的总和来处理，这通常更合适，特别是当动态组件的数量增加时。</p>
+<p>例如，假设我们想要添加对GitHub的sort参数的支持，它允许我们以不同的方式对搜索结果进行排序。 要对可用的排序选项建模，我们可以为它们创建一个枚举——像这样:</p>
+<pre><code class="language-swift">enum Sorting: String {
+    case numberOfStars = &quot;stars&quot;
+    case numberOfForks = &quot;forks&quot;
+    case recency = &quot;updated&quot;
+}
+</code></pre>
+<p>现在，让我们将findrepository函数从之前改为使用URLComponents，而不是通过操作字符串来构造它的URL。 结果是多了几行代码，但可读性得到了极大的提高，我们现在可以很容易地在URL中添加多个查询项——包括我们新的排序选项——以一种非常结构化的方式:</p>
+<pre><code class="language-swift">func findRepositories(matching query: String,
+                      sortedBy sorting: Sorting) {
+    var components = URLComponents()
+    components.scheme = &quot;https&quot;
+    components.host = &quot;api.github.com&quot;
+    components.path = &quot;/search/repositories&quot;
+    components.queryItems = [
+        URLQueryItem(name: &quot;q&quot;, value: query),
+        URLQueryItem(name: &quot;sort&quot;, value: sorting.rawValue)
+    ]
+
+    // Getting a URL from our components is as simple as
+    // accessing the 'url' property.
+    let url = components.url
+    ...
+}
+</code></pre>
+<p>URLComponents不仅允许我们以一种漂亮和干净的方式构造url，它还自动为我们编码参数。通过将这类任务“外包”给系统，我们的代码库不再需要知道与url相关的所有细节，这通常会使事情更具有前瞻性。</p>
+<p>URLComponents也是使用构建器模式的内置类型的一个很好的例子。构建器的强大之处在于，我们获得了用于构建复杂值的专用API，就像上面构造URL那样。 更多建设者模式-检查“使用建设者模式在Swift”。</p>
+<h2 id="endpoints">Endpoints</h2>
+<p>我们的应用程序不只是需要请求一个单一的端点，而且重新键入构造URL所需的所有URLComponents代码可能会变得相当重复。让我们看看我们是否可以将我们的实现一般化，以支持任何类型的GitHub端点的请求。</p>
+<p>首先，让我们定义一个结构来表示端点。我们期望在端点之间改变的唯一事情是我们请求的路径，以及我们想要附加的queryItems参数-给我们一个这样的结构:</p>
+<pre><code class="language-swift">struct Endpoint {
+    let path: String
+    let queryItems: [URLQueryItem]
+}
+</code></pre>
+<p>使用扩展的强大功能，我们现在可以很容易地为公共端点定义静态工厂方法，例如我们之前使用的搜索方法:</p>
+<pre><code class="language-swift">extension Endpoint {
+    static func search(matching query: String,
+                       sortedBy sorting: Sorting = .recency) -&gt; Endpoint {
+        return Endpoint(
+            path: &quot;/search/repositories&quot;,
+            queryItems: [
+                URLQueryItem(name: &quot;q&quot;, value: query),
+                URLQueryItem(name: &quot;sort&quot;, value: sorting.rawValue)
+            ]
+        )
+    }
+}
+</code></pre>
+<p>最后，我们可以使用URLComponents定义另一个扩展，它使用任意给定端点的path和queryItems来轻松地为其创建URL:</p>
+<pre><code class="language-swift">extension Endpoint {
+    // We still have to keep 'url' as an optional, since we're
+    // dealing with dynamic components that could be invalid.
+    var url: URL? {
+        var components = URLComponents()
+        components.scheme = &quot;https&quot;
+        components.host = &quot;api.github.com&quot;
+        components.path = path
+        components.queryItems = queryItems
+
+        return components.url
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以轻松地在代码库中传递端点，而不必直接处理url。 例如，我们可以创建一个数据加载器类型，让我们传递一个端点来加载数据，如下所示:</p>
+<pre><code class="language-swift">class DataLoader {
+    func request(_ endpoint: Endpoint,
+                 then handler: @escaping (Result&lt;Data&gt;) -&gt; Void) {
+        guard let url = endpoint.url else {
+            return handler(.failure(Error.invalidURL))
+        }
+
+        let task = urlSession.dataTask(with: url) {
+            data, _, error in
+
+            let result = data.map(Result.success) ??
+                        .failure(Error.network(error))
+
+            handler(result)
+        }
+
+        task.resume()
+    }
+}
+</code></pre>
+<p>有了上面的这些，我们现在得到了一个非常好的用于加载数据的语法，因为当可以推断类型时，我们可以使用点语法调用静态工厂方法:</p>
+<pre><code class="language-swift">dataLoader.request(.search(matching: query)) { result in
+    ...
+}
+</code></pre>
+<p>很甜!🎉通过引入简单的抽象，并在底层使用URLComponents，我们可以快速地对URL处理代码进行重大改进——尤其是与我们最初使用的基于字符串的方法相比。</p>
+<h2 id="static-urls">Static URLs</h2>
+<p>到目前为止，我们一直在处理基于用户输入或其他只有在运行时才知道的数据动态构造的url。然而，并不是所有的URL都必须是动态的，很多时候，当我们执行对分析或配置端点的请求时——完整的URL在编译时就知道了</p>
+<p>正如我们在处理动态url时所看到的，即使在使用专用类型(如URLComponents)时，我们也必须使用大量可选参数。我们不能保证所有的动态组件都是有效的，所以为了避免崩溃和不可预测的行为，我们不得不添加代码路径来处理无效url的nil情况。</p>
+<p>然而，静态url却不是这样。对于静态URL，我们要么在代码中正确定义了URL，要么代码实际上是不正确的。对于这种类型的url，在我们的代码库中处理所有的可选项有点不必要，所以让我们看看如何添加一种单独的方法来构造这些url——使用Swift的StaticString类型。</p>
+<p>StaticString是不太知名的主字符串类型的“亲戚”。两者之间的主要区别是StaticString不能是任何动态表达式的结果——比如字符串插值或连接——整个字符串需要定义为内联文字。在内部，Swift使用这个类型来收集断言和先决条件的文件名，但是我们也可以使用这个类型来为完全静态的URL创建一个URL初始化器，像这样:</p>
+<pre><code class="language-swift">extension URL {
+    init(staticString string: StaticString) {
+        guard let url = URL(string: &quot;\(string)&quot;) else {
+            preconditionFailure(&quot;Invalid static URL string: \(string)&quot;)
+        }
+
+        self = url
+    }
+}
+</code></pre>
+<p>一开始，做上面的事情似乎与Swift的运行时安全理念相违背，但是我们想在这里造成崩溃而不是处理可选项是有充分理由的。</p>
+<p>就像我们在“Swift中选择正确的失败方式”中看到的那样，对于任何给定情况，什么样的错误处理是合适的，这在很大程度上取决于错误是由程序员错误还是执行错误引起的。 因为定义无效的静态URL绝对是程序员的错误，所以使用preconditionFailure最有可能解决这个问题。有了这样的处理，我们就能清楚地知道哪里出了问题，而且由于我们现在使用的是针对静态url的专用API，我们甚至可以添加linting和静态检查来让事情更加安全。</p>
+<p>有了上面的内容，我们现在可以使用静态字符串文本轻松地定义非可选url:</p>
+<pre><code class="language-swift">let url = URL(staticString: &quot;https://myapp.com/faq.html&quot;)
+</code></pre>
+<p>更少的可选选项，意味着需要维护和测试的代码路径更少，这通常是件好事👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>一开始，处理url似乎是一个微不足道的问题，但是一旦我们开始考虑边界情况和用户输入，事情就会变得非常复杂。通过利用URLComponents之类的api，我们可以将正确处理url所需的大部分逻辑卸给系统——并且通过为端点之类的东西定义特定于领域的类型，我们可以极大地改进在代码库中使用url的人机工程学。</p>
+<p><a href="https://www.swiftbysundell.com/articles/constructing-urls-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EV0rk5a8R1/" class="tag">
+                    networking
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWHkY3onB/" class="tag">
+                    foundation
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/different-flavors-of-view-models-in-swift/">
+                  <h3 class="post-title">
+                    Different flavors of view models in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

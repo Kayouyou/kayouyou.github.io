@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Creating custom SwiftUI container views | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管SwiftUI提供了大量的内置容器视图，比如VStack、HStack和List，但是有时候我们也需要定义自己的定制容器。
+例如，假设我们正在开发一个应用程序，它有一个类似旋转木马的组件，它可以让我们的用户在一个水平的项目列表中滚动. ..." />
+    <meta name="keywords" content="protocols,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Creating custom SwiftUI container views</h2>
+            <div class="post-date">2020-11-12</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管SwiftUI提供了大量的内置容器视图，比如VStack、HStack和List，但是有时候我们也需要定义自己的定制容器。</p>
+<p>例如，假设我们正在开发一个应用程序，它有一个类似旋转木马的组件，它可以让我们的用户在一个水平的项目列表中滚动. 该组件目前是这样实现的:</p>
+<pre><code class="language-swift">struct Carousel&lt;Content: View&gt;: View {
+    var content: () -&gt; Content
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            HStack(content: content).padding()
+        }
+    }
+}
+</code></pre>
+<p>这是一个很好的开始，但是与SwiftUI的内置容器相比，我们当前的实现有一个很大的限制——我们目前只能将一个内容视图传递给它。</p>
+<p>只要我们使用ForEach(因为它会在我们的carousel的内容闭包中给我们一个单一的返回值)，这可能会工作得很好，但如果我们尝试做以下操作，那么我们会得到一个编译器错误:</p>
+<pre><code class="language-swift">struct OnboardingCarousel: View {
+    var body: some View {
+        Carousel {
+            WelcomeCard()
+            GettingStartedCard()
+            ExploreCard()
+        }
+    }
+}
+</code></pre>
+<p>这有点遗憾，因为上面的方法是声明Carousel实例的一种非常自然的方法，因为它完全模仿了使用内置容器(如HStack和VStack)的方式。</p>
+<p>尽管我们可以通过将所有的子视图包装在一个组中来解决上述问题(这将再次在我们的闭包中给我们一个单独的返回值)，但是在每个调用站点都必须这样做将非常不方便。不过值得庆幸的是，有一个更好的方法——那就是用SwiftUI的ViewBuilder属性来注释我们的内容闭包，就像这样:</p>
+<pre><code class="language-swift">struct Carousel&lt;Content: View&gt;: View {
+    var content: () -&gt; Content
+
+    init(@ViewBuilder content: @escaping () -&gt; Content) {
+    self.content = content
+}
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            HStack(content: content).padding()
+        }
+    }
+}
+</code></pre>
+<p>在闭包中添加ViewBuilder属性可以充分利用SwiftUI DSL的强大功能，这意味着我们现在可以完全按照我们最初的意图来定义OnboardingCarousel了——非常好!</p>
+<p>然而，如果我们的代码库包含多种容器视图，那么总是必须重复上面的初始化器声明可能会有点重复，特别是由于所需的语法相当复杂。</p>
+<p>我们来看看能不能用一些面向协议的编程来改进。如果我们假设我们的每个容器视图都将使用与上面的Carousel视图相同的模式(因为它有一个通用的内容类型，并接受一个内容闭包)，那么我们可以使用以下协议来建模这些功能:</p>
+<pre><code class="language-swift">protocol ContainerView: View {
+    associatedtype Content
+    init(content: @escaping () -&gt; Content)
+}
+</code></pre>
+<p>我们让我们的新协议扩展了SwiftUI的View协议，以继承它的所有需求。要了解有关该技术的更多信息，请查看“Swift中的专门化协议”。</p>
+<p>接下来，让我们用一个方便的初始化器来扩展新的ContainerView协议，它添加了之前必须手动添加的ViewBuilder属性——像这样:</p>
+<pre><code class="language-swift">extension ContainerView {
+    init(@ViewBuilder _ content: @escaping () -&gt; Content) {
+        self.init(content: content)
+    }
+}
+</code></pre>
+<p>note：注意我们是如何在方便初始化器的参数标签前面添加下划线的。这是为了避免在一致性类型没有声明我们需要的初始化式时陷入无限循环，因为现在这两个初始化式将有不同的签名。</p>
+<p>如果我们现在让我们所有的自定义容器视图符合ContainerView，而不是直接使用View，那么我们就可以像最初那样简单地声明我们的内容闭包，同时仍然获得完整的ViewBuilder功能:</p>
+<pre><code class="language-swift">struct Carousel&lt;Content: View&gt;: ContainerView {
+    var content: () -&gt; Content
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            HStack(content: content).padding()
+        }
+    }
+}
+</code></pre>
+<p>我们的OnboardingCarousel现在的工作方式与以前完全相同，只是现在我们让定义Carousel和我们现在或将来想要构建的任何其他容器视图变得更容易了。</p>
+<p>不过，值得注意的是，这个特定的实现只支持不接受任何额外参数的容器视图，尽管我们总是可以添加支持，如果那是我们最终需要的东西。</p>
+<p><a href="https://www.swiftbysundell.com/tips/creating-custom-swiftui-container-views/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swiftui-and-uikit-interoperability-part-1/">
+                  <h3 class="post-title">
+                    SwiftUI and UIKit interoperability - Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

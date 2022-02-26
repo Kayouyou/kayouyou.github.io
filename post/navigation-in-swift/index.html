@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Navigation in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="每个应用程序不只是由单一的UI组成，都需要某种形式的导航——使用户能够在不同的屏幕之间移动，显示信息或对事件作出反应。
+无论你是使用导航控制器、模态视图控制器还是某种形式的自定义范式——有一种很好的方式来执行导航， 用一种不会让你陷入困境的..." />
+    <meta name="keywords" content="navigation,the coordinator pattern,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Navigation in Swift</h2>
+            <div class="post-date">2018-02-18</div>
+            
+            <div class="post-content" v-pre>
+              <p>每个应用程序不只是由单一的UI组成，都需要某种形式的导航——使用户能够在不同的屏幕之间移动，显示信息或对事件作出反应。</p>
+<p>无论你是使用导航控制器、模态视图控制器还是某种形式的自定义范式——有一种很好的方式来执行导航， 用一种不会让你陷入困境的方式，可能是非常棘手的。</p>
+<p>本周，让我们来看看在Swift应用程序中处理导航的几个不同选项，这次的重点是iOS。</p>
+<h2 id="the-pushing-problem">The pushing problem</h2>
+<p>在iOS上执行导航的一种标准方法是使用UINavigationController，每个视图控制器都可以弹出或推送其他视图控制器，像这样:</p>
+<pre><code class="language-swift">class ImageListViewController: UITableViewController {
+    override func tableView(_ tableView: UITableView,
+                            didSelectRowAt indexPath: IndexPath) {
+        let image = images[indexPath.row]
+        let detailVC = ImageDetailViewController(image: image)
+        navigationController?.pushViewController(detailVC, animated: true)
+    }
+}
+
+</code></pre>
+<p>虽然上述方法完全可行(特别是对于更简单的应用程序)，但随着应用程序的增长，处理起来会变得相当棘手-  如果你想要能够从多个地方导航到同一个视图控制器，或者你想从应用外部实现深层链接。</p>
+<h2 id="a-case-for-coordinators">A case for Coordinators</h2>
+<p>一种让导航更灵活(并且避免要求视图控制器互相了解)的方法是使用协调模式，正如Soroush Khanlou在2015年NSSpain演讲中推广的那样。这个想法是你引入一个中间/父对象来协调多个视图控制器。</p>
+<p>例如，假设我们正在构建一个onboarding流程，用户通过一系列屏幕了解我们应用的一些关键概念。我们可以使用一个协调器来处理这个问题，而不是让每个视图控制器把下一个推送到它的navigationController上。</p>
+<p>首先，我们将介绍一个委托协议，我们的onboarding视图控制器可以使用它来通知它们的所有者，当一个应该带用户到下一个屏幕的按钮被点击时:</p>
+<pre><code class="language-swift">protocol OnboardingViewControllerDelegate: AnyObject {
+    func onboardingViewControllerNextButtonTapped(
+        _ viewController: OnboardingViewController
+    )
+}
+
+class OnboardingViewController: UIViewController {
+    weak var delegate: OnboardingViewControllerDelegate?
+
+    private func handleNextButtonTap() {
+        delegate?.onboardingViewControllerNextButtonTapped(self)
+    }
+}
+</code></pre>
+<p>然后，我们可以引入一个coordinator类，它作为所有onboarding视图控制器的委托，并使用导航控制器管理它们之间的导航:</p>
+<pre><code class="language-swift">class OnboardingCoordinator: OnboardingViewControllerDelegate {
+    weak var delegate: OnboardingCoordinatorDelegate?
+
+    private let navigationController: UINavigationController
+    private var nextPageIndex = 0
+
+    // MARK: - Initializer
+
+    init(navigationController: UINavigationController) {
+        self.navigationController = navigationController
+    }
+
+    // MARK: - API
+
+    func activate() {
+        goToNextPageOrFinish()
+    }
+
+    // MARK: - OnboardingViewControllerDelegate
+
+    func onboardingViewControllerNextButtonTapped(
+        _ viewController: OnboardingViewController) {
+        goToNextPageOrFinish()
+    }
+
+    // MARK: - Private
+
+    private func goToNextPageOrFinish() {
+        // We use an enum to store all content for a given onboarding page
+        guard let page = OnboardingPage(rawValue: nextPageIndex) else {
+            delegate?.onboardingCoordinatorDidFinish(self)
+            return
+        }
+
+        let nextVC = OnboardingViewController(page: page)
+        nextVC.delegate = self
+        navigationController.pushViewController(nextVC, animated: true)
+
+        nextPageIndex += 1
+    }
+}
+</code></pre>
+<p>使用协调器的一个很大的好处是导航逻辑可以完全从视图控制器本身中移除，这给了你更多的灵活性，并使视图控制器能够专注于他们做得最好的事情——管理视图👍。</p>
+<p>上面需要注意的一点是OnboardingCoordinator有自己的委托。我们可以使用它来让我们的AppDelegate通过保留它并成为它的delegate来管理协调器，或者我们可以组合多层的协调器来构建我们应用程序的大部分导航流。例如，我们可以有一个AppCoordinator，它反过来管理OnboardingCoordinator和导航层次结构中相同级别的任何其他coordinator。很强大的东西!</p>
+<h2 id="where-to-navigator">Where to, Navigator?</h2>
+<p>另一种非常有用的方法是引入专用导航类型(特别是在构建具有大量屏幕和多个目的地的应用程序时)。</p>
+<p>要做到这一点，我们可以首先创建一个导航器协议，该协议有一个关联类型，用于导航到哪种目的地:</p>
+<pre><code class="language-swift">protocol Navigator {
+    associatedtype Destination
+
+    func navigate(to destination: Destination)
+}
+</code></pre>
+<p>使用上面的协议，我们可以实现多个导航器，每个导航器在应用程序的给定范围内执行导航——就像在用户登录之前:</p>
+<pre><code class="language-swift">class LoginNavigator: Navigator {
+    // Here we define a set of supported destinations using an
+    // enum, and we can also use associated values to add support
+    // for passing arguments from one screen to another.
+    enum Destination {
+        case loginCompleted(user: User)
+        case forgotPassword
+        case signup
+    }
+
+    // In most cases it's totally safe to make this a strong
+    // reference, but in some situations it could end up
+    // causing a retain cycle, so better be safe than sorry :)
+    private weak var navigationController: UINavigationController?
+
+    // MARK: - Initializer
+
+    init(navigationController: UINavigationController) {
+        self.navigationController = navigationController
+    }
+
+    // MARK: - Navigator
+
+    func navigate(to destination: Destination) {
+        let viewController = makeViewController(for: destination)
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    // MARK: - Private
+
+    private func makeViewController(for destination: Destination) -&gt; UIViewController {
+        switch destination {
+        case .loginCompleted(let user):
+            return WelcomeViewController(user: user)
+        case .forgotPassword:
+            return PasswordResetViewController()
+        case .signup:
+            return SignUpViewController()
+        }
+    }
+}
+</code></pre>
+<p>使用导航器，导航到一个新的视图控制器就像调用导航器一样简单。导航(到:destination)，我们不需要多层次的委托来实现它。我们所需要的是让每个视图控制器都保持一个对导航器的引用，该导航器支持所有想要的目标，就像这样:</p>
+<pre><code class="language-swift">class LoginViewController: UIViewController {
+    private let navigator: LoginNavigator
+
+    init(navigator: LoginNavigator) {
+        self.navigator = navigator
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    private func handleLoginButtonTap() {
+        performLogin { [weak self] result in
+            switch result {
+            case .success(let user):
+                self?.navigator.navigate(to: .loginCompleted(user: user))
+            case .failure(let error):
+                self?.show(error)
+            }
+        }
+    }
+
+    private func handleForgotPasswordButtonTap() {
+        navigator.navigate(to: .forgotPassword)
+    }
+
+    private func handleSignUpButtonTap() {
+        navigator.navigate(to: .signup)
+    }
+}
+</code></pre>
+<p>我们还可以再进一步,把导航器与工厂模式(比如我们看了看在使用工厂迅速“依赖注入”),为了能够轻松地将视图控制器的创建从导航器本身移开，让我们有一个更加解耦的设置:</p>
+<pre><code class="language-swift">class LoginNavigator: Navigator {
+    private weak var navigationController: UINavigationController?
+    private let viewControllerFactory: LoginViewControllerFactory
+
+    init(navigationController: UINavigationController,
+         viewControllerFactory: LoginViewControllerFactory) {
+        self.navigationController = navigationController
+        self.viewControllerFactory = viewControllerFactory
+    }
+
+    func navigate(to destination: Destination) {
+        let viewController = makeViewController(for: destination)
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    private func makeViewController(for destination: Destination) -&gt; UIViewController {
+        switch destination {
+        case .loginCompleted(let user):
+            return viewControllerFactory.makeWelcomeViewController(forUser: user)
+        case .forgotPassword:
+            return viewControllerFactory.makePasswordResetViewController()
+        case .signup:
+            return viewControllerFactory.makeSignUpViewController()
+        }
+    }
+}
+
+</code></pre>
+<p>当使用类似上面的东西时，我们也有一个很好的机会注入其他类型的导航器到我们的视图控制器，而不让它们知道彼此。例如，我们可能想要将welcomennavigator注入WelcomeViewController中，这可以在工厂中完成，而不是要求LoginNavigator知道它👍。</p>
+<h2 id="urls-and-deep-linking">URLs and deep linking</h2>
+<p>对于许多类型的应用程序，我们不仅想让它易于导航在我们自己的应用程序，但也使其他应用程序和网站深入链接到我们的。在iOS上，一种常见的方法是定义一个URL方案，其他应用可以使用它直接链接到我们的应用的特定屏幕或功能。</p>
+<p>使用协调器和导航器对象中的任何一个(或者两者都使用)，实现URL和深度链接支持就会变得容易得多，因为我们有专门的导航位置，可以将URL处理逻辑注入其中。在即将发布的一篇博文中，我们将进一步研究基于url的导航。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>将导航逻辑从视图控制器中移到专用对象中，如协调器或导航器，可以让在多个视图控制器之间移动变得简单得多。我喜欢协调器和导航器的地方在于它们都是高度可组合的，这使得我们可以很容易地将导航逻辑分解成多个范围和对象，而不是依赖于某种形式的中心路由。</p>
+<p>另一个好处是，这两种技术都让我们删除了非可选的可选选项，比如当我们的导航逻辑依赖于视图控制器的navigationController引用时。通常，这将导致更可预测和不受未来影响的代码。</p>
+<p><a href="https://www.swiftbysundell.com/articles/navigation-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SwmovAfTW/" class="tag">
+                    navigation
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8_kyrn9m78/" class="tag">
+                    the coordinator pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/custom-operators-in-swift/">
+                  <h3 class="post-title">
+                    Custom operators in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

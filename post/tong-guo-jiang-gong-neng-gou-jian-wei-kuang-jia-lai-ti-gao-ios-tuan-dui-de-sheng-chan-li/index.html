@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>通过将功能构建为框架来提高iOS团队的生产力 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+通过将功能构建为框架来提高iOS团队的生产力
+
+
+1.1. The problem
+1.2. How to solve it
+1.3. What are the advantages of this?
+1.4. Create a n..." />
+    <meta name="keywords" content="framework,modular" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">通过将功能构建为框架来提高iOS团队的生产力</h2>
+            <div class="post-date">2021-05-16</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gqk4g8v87jj31jk0nwwfx.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#iOS">通过将功能构建为框架来提高iOS团队的生产力</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Theproblem">The problem</a></li>
+<li>1.2. <a href="#Howtosolveit">How to solve it</a></li>
+<li>1.3. <a href="#Whataretheadvantagesofthis">What are the advantages of this?</a></li>
+<li>1.4. <a href="#Createanewappworkspace">Create a new app workspace</a></li>
+<li>1.5. <a href="#Exposingfunctionalityfromyourframework">Exposing functionality from your framework</a></li>
+<li>1.6. <a href="#Addingtheframeworktotheappmodule">Adding the framework to the app module</a></li>
+<li>1.7. <a href="#Integratingtheframeworkintoyourcode">Integrating the framework into your code</a></li>
+<li>1.8. <a href="#Wanttodomore">Want to do more?</a></li>
+<li>1.9. <a href="#FurtherResources">Further Resources</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameiosa通过将功能构建为框架来提高ios团队的生产力">1. <a name='iOS'></a>通过将功能构建为框架来提高iOS团队的生产力</h2>
+<p>向现有的大型代码库中添加功能是许多工程师在编程生涯中将面临的挑战。如果一款iOS应用已经存在了好几年，那么它很可能已经有许多开发者为其贡献了许多功能，并最终发行了许多版本。通常，结果可能是一个非常大的代码库，具有不同程度的模块化、很长的构建时间和不是很干净的代码。</p>
+<p>在Scout24上的iOS应用程序就处于这样的状态，我想和你们分享我们是如何显著地改善我们的开发环境以及它带来的好处。</p>
+<h3 id="11-a-nametheproblemathe-problem">1.1. <a name='Theproblem'></a>The problem</h3>
+<p>如果你曾经在一个大型项目中使用Swift进行开发，那么你可能对构建整个应用模块所花费的时间非常熟悉，即使是在进行了一些小改变之后。 关于如何提高整个持续时间有大量的资源。</p>
+<p>Swift有很多很棒的语言特性，但是这些特性是以更长的编译时间为代价的。即使只做了一个小小的改变，你也可能要等上几分钟才能看到结果。这真的很让人分心，而且效率很低!编写代码时，时间和注意力是你最宝贵的资源。</p>
+<h3 id="12-a-namehowtosolveitahow-to-solve-it">1.2. <a name='Howtosolveit'></a>How to solve it</h3>
+<p>解决长构建时间的答案很简单:让编译器构建更少的代码!听起来很合理，但是我们怎样才能做到呢?答案是使用iOS框架将我们的代码分割成更小、更离散的功能块。</p>
+<p>在本例中，我们将从主应用模块开始，并添加一个包含一些UI功能的框架，这些功能构成了我们将集成到应用中的特性。</p>
+<h3 id="13-a-namewhataretheadvantagesofthisawhat-are-the-advantages-of-this">1.3. <a name='Whataretheadvantagesofthis'></a>What are the advantages of this?</h3>
+<p>对于这样一个小例子来说，这似乎不明显，但以这种方式开发的优势是巨大的。当你必须将功能构建到一个有很多遗留组件的大型应用中时，它们就特别大了</p>
+<p>通过将功能构建为高度独立于主应用模块的独立模块，您可以更专注于想要创建的特性。你会注意到，你被迫以一种只对应用模块公开必要内容的方式来组织你的代码，代码往往更加干净和深思熟虑，它不太可能发展成意大利面条一样的混乱，因为这样做更困难。</p>
+<p>将特性构建为框架的一个关键步骤是创建一个“wrapper app”，就像我们在本教程中所做的那样，将您创建的功能最小程度地集成到一个小应用程序中。 这个应用程序不需要为你的主应用程序模块构建所有其他必要的依赖项，所以你的构建时间会非常快。</p>
+<h3 id="14-a-namecreateanewappworkspaceacreate-a-new-app-workspace">1.4. <a name='Createanewappworkspace'></a>Create a new app workspace</h3>
+<p>你需要为你的应用和你的特性所在的框架创建一个工作区。 在Xcode中点击File -&gt; New -&gt; Workspace。创建一个要保存Workspace的新文件夹。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4gd0yvtj30n90cf3yy.jpg" alt="avatar" loading="lazy"></figure>
+<p>保存之后，我们现在有了一个空白的工作区。现在在Xcode中点击File -&gt; New -&gt; Project并选择“single view app”。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4gfs220j30kh0eujs8.jpg" alt="avatar" loading="lazy"></figure>
+<p>将你的项目命名为“SimpleCounterApp”，并确保选择“Swift”作为应用语言。它是这样命名的，因为它只包含app模块。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4gidvb0j30jz0eg0t8.jpg" alt="avatar" loading="lazy"></figure>
+<p>At the next step, select the folder where the SimpleCounter.xcworkspace is saved. Under “Add to” select the SimpleCounter workspace. SimpleCounter.xcworkspace has to be opened in Xcode to show this option.</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4gl8zctj30c807i3yl.jpg" alt="avatar" loading="lazy"></figure>
+<p>Create the project and notice now we’ve got a project that looks pretty boring.</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4gptzfzj30ck06z0sz.jpg" alt="avatar" loading="lazy"></figure>
+<p>Let’s get to making a framework! We will integrate our feature into the main app in a later step, so there’s no need to do anything now with it.</p>
+<p>Click File -&gt; New -&gt; Project again and this time, select “Cocoa Touch Framework” as the template.</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4gnxsmej30js0e7q3q.jpg" alt="avatar" loading="lazy"></figure>
+<p>Name the framework SimpleCounterFeature and click next. On the next screen, select the folder where the .xcworkspace file is saved so that the framework and app are in the same root directory. Then, under “Add to”, again select the SimpleCounter workspace. Under “Group” select the root workspace node.</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4gsyi5kj30ak038jrb.jpg" alt="avatar" loading="lazy"></figure>
+<p>This will add the framework to the workspace, rather than the app module. Save the project. You should now have a workspace that looks like this</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4gvu9g4j307f08saa4.jpg" alt="avatar" loading="lazy"></figure>
+<p>In the schemes list, you should also have two schemes, one for the framework and one for the app.</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4qmltpsj308a03e748.jpg" alt="avatar" loading="lazy"></figure>
+<p>Because this framework template is totally bare-bones, it doesn’t come with any dependencies linked with it. So we need to add the basics, starting with UIKit.</p>
+<p>Navigate to the project settings for the framework and select Build Phases. Under Link Binary with Libraries, click the + button and link the UIKit and Foundation frameworks. Your build phases screen should look like this:</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4sllblaj30kr0bdgm7.jpg" alt="avatar" loading="lazy"></figure>
+<p>Now, let’s add a simple view controller with a nib to the framework. Click File -&gt; New -&gt; File and select “Swift File”. Click “Next”.</p>
+<p>Name the file CounterViewController and add the file to the group SimpleCounterFeature. This will not be selected by default.</p>
+<figure data-type="image" tabindex="11"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4tbw4hdj30cr0bjgm1.jpg" alt="avatar" loading="lazy"></figure>
+<p>Now you have a file that is part of the SimpleCounterFeature framework target. Do the same thing again with a nib file (“View” template in the “New File” dialog), making sure to add it to the SimpleCounterFeature group.</p>
+<h3 id="15-a-nameexposingfunctionalityfromyourframeworkaexposing-functionality-from-your-framework">1.5. <a name='Exposingfunctionalityfromyourframework'></a>Exposing functionality from your framework</h3>
+<p>当你写代码想要从你的框架公开给app模块时，重要的是要记住你给你的接口的访问级别。在为应用模块编写Swift代码时，我们通常并不关心public, open or internal访问级别。 这是因为所有的代码都位于同一个模块中，使得区别不那么重要。在模块中，internal是成员属性和方法的默认访问级别，这意味着默认情况下，它们在整个模块中都可用。</p>
+<p>开发框架时，情况就不同了。因为您编写的代码将被打包成一个单独的二进制文件，供其作用域之外的模块使用，因此访问级别更相关。</p>
+<p>如果希望向外部公开任何内容，无论是结构、协议、类还是任何属性或方法，都需要指定公共访问级别。如果不这样做，该实体对导入它的模块将不可见。 The <a href="https://docs.swift.org/swift-book/LanguageGuide/AccessControl.html">Swift docs have a great explanation about access control</a> that you may read a bit differently having completed this tutorial.</p>
+<p>例如，在我们的CounterViewController类中，如果我们想要在框架模块之外使用它，我们需要公开类为公共类:</p>
+<p>成员IBOutlet属性在模块外部不可见，因为它们被标记为内部属性。</p>
+<p>我不会详细介绍如何连接nib到视图控制器，或如何添加计数器的其余功能，因为这里没有什么特别的。 如果您感兴趣，可以查看示例项目，看看它是如何完成的。在界面构建器中，我只创建了一个按钮和一个标签，并将它们连接到iboutlet，并添加了一些简单的功能。</p>
+<h3 id="16-a-nameaddingtheframeworktotheappmoduleaadding-the-framework-to-the-app-module">1.6. <a name='Addingtheframeworktotheappmodule'></a>Adding the framework to the app module</h3>
+<p>现在转到app模块的项目设置的General部分。在Embedded Binaries下，点击+按钮并添加<em>SimpleCounterFeature.framework</em>。</p>
+<figure data-type="image" tabindex="12"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4xnq078j30ce0d7wer.jpg" alt="avatar" loading="lazy"></figure>
+<p>这将框架添加到应用模块的嵌入式二进制文件中，并将其链接起来。将框架添加到嵌入式二进制文件中是必要的，因为你的SimpleCounterFeature框架不像UIKit那样适用于iOS，这意味着它需要在构建时复制到应用包中</p>
+<p>现在构建SimpleCounterApp scheme。如果成功构建，就可以开始集成框架了!</p>
+<h3 id="17-a-nameintegratingtheframeworkintoyourcodeaintegrating-the-framework-into-your-code">1.7. <a name='Integratingtheframeworkintoyourcode'></a>Integrating the framework into your code</h3>
+<p>在我们将视图控制器集成到你的app模块之前，我们首先需要做一些清理工作。首先删除Main。删除应用模块项目页面的General选项卡中的Main Interface条目。</p>
+<figure data-type="image" tabindex="13"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4yjne5xj30ih0g6wfa.jpg" alt="avatar" loading="lazy"></figure>
+<p>你也可以在主app模块中删除ViewController.swift文件。你不会用这个。</p>
+<p>在AppDelegate.swift文件中，导入SimpleCounterFeature框架并创建一个UIWindow，根视图控制器为CounterViewController。</p>
+<p>现在，构建你的应用。它应该成功构建并以CounterViewController为根启动。你已经做到了!</p>
+<figure data-type="image" tabindex="14"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqk4z3554uj30880howeg.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="18-a-namewanttodomoreawant-to-do-more">1.8. <a name='Wanttodomore'></a>Want to do more?</h3>
+<p>我们遗漏了开发人员在他们的代码库中几乎总是需要的东西:第三方依赖。我写了一篇教程，介绍如何将它们集成到您的框架中，并在下一篇文章中提供一个更复杂的代码示例。</p>
+<h3 id="19-a-namefurtherresourcesafurther-resources">1.9. <a name='FurtherResources'></a>Further Resources</h3>
+<ul>
+<li>Example code: https://github.com/akfreas/SimpleCounter</li>
+<li>Apple Docs on Access Control: https://docs.swift.org/swift-book/LanguageGuide/AccessControl.html</li>
+<li>How to use CocoaPods with your internal iOS frameworks: https://medium.com/@akfreas/how-to-use-cocoapods-with-your-internal-ios-frameworks-192aa472f64b</li>
+</ul>
+<p>Thanks for reading!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/BCLm_HeSI/" class="tag">
+                    framework
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/GAkD_BWre/" class="tag">
+                    modular
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-6-swift-extensions-i-use-in-every-ios-project/">
+                  <h3 class="post-title">
+                    The 6 Swift Extensions I Use in Every iOS Project
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

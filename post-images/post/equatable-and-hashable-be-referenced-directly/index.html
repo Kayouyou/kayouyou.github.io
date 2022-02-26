@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Equatable and Hashable, be referenced directly? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Equatable and Hashable, be referenced directly?
+如果你已经做了一段时间的Swift开发，你很有可能会遇到下面的编译器错误:
+Protocol 'Equatable' can only be u..." />
+    <meta name="keywords" content="Q&A,generics,protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Equatable and Hashable, be referenced directly?</h2>
+            <div class="post-date">2021-05-25</div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="equatable-and-hashable-be-referenced-directly">Equatable and Hashable, be referenced directly?</h2>
+<p>如果你已经做了一段时间的Swift开发，你很有可能会遇到下面的编译器错误:</p>
+<pre><code class="language-swift">Protocol 'Equatable' can only be used as a generic constraint because it has
+Self or associated type requirements.
+</code></pre>
+<p>当我们试图直接引用一个泛型协议时就会发生这种情况——也就是说，一个协议要么有关联的类型，要么要求一致性类型(指的是Self)是已知的。例如，内置的Equatable协议在其声明中使用Self，就像这样:</p>
+<pre><code class="language-swift">protocol Equatable {
+    static func ==(lhs: Self, rhs: Self) -&gt; Bool
+}
+</code></pre>
+<p>这是因为相等检查只能在两个已知是完全相同类型的值之间执行-所以类似下面的函数不能工作，因为传递给它的两个参数可以是符合Equatable的任何类型:</p>
+<pre><code class="language-swift">func valueDidChange(from old: Equatable, to new: Equatable) {
+    guard old != new else {
+        return
+    }
+    
+    ...
+}
+</code></pre>
+<p>另一方面，下面的方法是有效的——因为我们现在使用Equatable作为泛型类型T的约束，<em>这给了我们一个编译时保证，两个参数将是完全相同的类型</em>:</p>
+<pre><code class="language-swift">func valueDidChange&lt;T: Equatable&gt;(from old: T, to new: T) {
+    guard old != new else {
+        return
+    }
+    
+    ...
+}
+</code></pre>
+<p>因此，当在协议中使用Self时，编译器需要确切地知道我们在每个给定上下文中引用的类型。为了实现这一点，我们可以直接使用符合标准的具体类型(例如使用Int或String代替Equatable)，或者使用协议作为通用约束(如上所述)。</p>
+<p>对于有关联类型的协议也是如此，因为就像Self一样，被引用的实际类型不会被知道，除非我们提供一些额外的上下文。 例如，这里我们定义了一个Loadable协议，它允许我们通过load()方法加载关联的Target类型:</p>
+<pre><code class="language-swift">protocol Loadable {
+    associatedtype Target
+    func load() -&gt; Target
+}
+</code></pre>
+<p>Target引用的确切类型取决于我们调用load()的符合类型，所以像下面这样的东西不会起作用——<em>因为编译器不能知道加载的是什么类型</em>:</p>
+<pre><code class="language-swift">func loadTarget(from loadable: Loadable) {
+    let target = loadable.load()
+    ...
+}
+</code></pre>
+<p>就像以前一样，我们可以通过使用泛型类型约束来解决上面的问题，让编译器知道每个调用站点正在使用的确切的Loadable实现:</p>
+<pre><code class="language-swift">func loadTarget&lt;T: Loadable&gt;(from loadable: T) {
+    let target = loadable.load()
+    ...
+}
+</code></pre>
+<p>现在，无论何时我们调用上述loadTarget函数，<strong>编译器将能够根据传递到函数中的Loadable类型推断T引用的类型。例如，这里编译器可以推断T表示StringLoader，而正在加载的Target是一个String值</strong>:</p>
+<pre><code class="language-swift">struct StringLoader: Loadable {
+    func load() -&gt; String {
+        ...
+    }
+}
+
+let loader = StringLoader()
+loadTarget(from: loader)
+</code></pre>
+<p>在处理泛型协议时，还有许多其他技术非常有用——包括<a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/different-flavors-of-type-erasure-in-swift/">类型擦除</a>、使用更高级的约束等等。请随意探索泛型和协议的类别页面以了解更多内容。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Ei6A0dFu0G/" class="tag">
+                    Q&amp;A
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/shi-yong-bi-bao-shi-zong-shi-xu-yao-shi-yong-weak-selfma/">
+                  <h3 class="post-title">
+                    使用闭包时总是需要使用[weak self]吗
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

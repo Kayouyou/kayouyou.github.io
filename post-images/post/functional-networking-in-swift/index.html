@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Functional networking in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="当涉及到应用程序开发时，网络是一个特别有趣的话题。一方面，这是大多数应用程序都需要的东西——另一方面，这是一件非常棘手的事情，尤其是当我们希望生成的代码既易于阅读、编写，又易于测试的时候。
+因此，网络是社区中备受争议的领域之一，也是许多不同..." />
+    <meta name="keywords" content="networking,functional programming" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Functional networking in Swift</h2>
+            <div class="post-date">2019-01-06</div>
+            
+            <div class="post-content" v-pre>
+              <p>当涉及到应用程序开发时，网络是一个特别有趣的话题。一方面，这是大多数应用程序都需要的东西——另一方面，这是一件非常棘手的事情，尤其是当我们希望生成的代码既易于阅读、编写，又易于测试的时候。</p>
+<p>因此，网络是社区中备受争议的领域之一，也是许多不同的第三方框架致力于简化的领域之一，这并不奇怪。</p>
+<p>本周，让我们来看看如何利用苹果内置的URLSession API来编写网络代码 -但是使用了future和promise，以及一些函数式编程概念来增强它，最终得到一个非常有趣(并且高度可测试)的结果。就让我们一探究竟吧!</p>
+<h2 id="futures-promises">Futures &amp; Promises</h2>
+<p>当谈到Swift中的异步编程时，Futures和Promise似乎正在成为越来越流行的抽象概念， 而且出于充分的理由——不必传递多个闭包(或构建一个巨大的闭包金字塔)，Futures和Promise提供了一种使用专用对象对异步结果建模的轻量级方法 -可以从函数返回，链接，转换和观察。</p>
+<p>下面是我们如何扩展URLSession来支持Futures和Promise——同时借用“构造Swift中的url”中的端点类型:</p>
+<pre><code class="language-swift">extension URLSession {
+    func request(_ endpoint: Endpoint) -&gt; Future&lt;Data&gt; {
+        // Start by constructing a Promise, that will later be
+        // returned as a Future    
+        let promise = Promise&lt;Data&gt;()
+
+        // Immediately reject the promise in case the passed
+        // endpoint can't be converted into a valid URL
+        guard let url = endpoint.url else {
+            promise.reject(with: Endpoint.Error.invalidURL)
+            return promise
+        }
+
+        let task = dataTask(with: url) { data, _, error in
+            // Reject or resolve the promise, depending on the result
+            if let error = error {
+                promise.reject(with: error)
+            } else {
+                promise.resolve(with: data ?? Data())
+            }
+        }
+
+        task.resume()
+
+        return promise
+    }
+}
+</code></pre>
+<p>future &amp; Promises的一大优点是，它允许我们通过实际调用类型上的方法来轻松转换异步结果，而不必使用嵌套的闭包。 因此，为了使上述网络API的结果易于解码，我们可以简单地在Future上添加一个值类型为Data的扩展——像这样:</p>
+<pre><code class="language-swift">extension Future where Value == Data {
+    func decoded&lt;T: Decodable&gt;() -&gt; Future&lt;T&gt; {
+        return decoded(as: T.self, using: JSONDecoder())
+    }
+}
+</code></pre>
+<p>结合上述两个api，我们现在可以使用Futures和Promise的力量来执行网络调用， 同时依赖Swift的类型推断将下载的数据解码为正确的类型。例如，如果我们的应用程序处理产品，我们现在可以像这样实现我们的产品加载代码:</p>
+<pre><code class="language-swift">class ProductLoader {
+    private let urlSession: URLSession
+
+    init(urlSession: URLSession = .shared) {
+        self.urlSession = urlSession
+    }
+
+    func loadProduct(withID id: Product.ID) -&gt; Future&lt;Product&gt; {
+        let endpoint = Endpoint.product(withID: id)
+        return urlSession.request(endpoint).decoded()
+    }
+}
+</code></pre>
+<p>上面我们使用一个标准的依赖注入,通过注入URLSession我们希望在初始化时使用的一个实例ProductLoader(我们也使用.shared作为一个默认的参数使我们的API很容易使用,同时还能给我们所需要的灵活性等测试)。</p>
+<h2 id="a-simple-signature">A simple signature</h2>
+<p>当需要更复杂的加载逻辑时，使用类型来加载模型(就像我们在上面使用ProductLoader所做的那样)是一个很好的解决方案-当我们想要做的只是执行单个网络调用并解码结果时，它可能会感觉有点沉重。</p>
+<p>仔细想想，上面的产品加载代码实际上可以表示为一个函数，它接受一个产品ID并返回一个future:</p>
+<pre><code class="language-swift">typealias ProductLoading = (Product.ID) -&gt; Future&lt;Product&gt;
+</code></pre>
+<p>如果我们的网络代码能像这样，不是很酷吗?不需要实例化任何类或其他类型就可以轻松调用的简单函数? 让我们来看看我们是否可以按照我们的方式工作，使用一系列步骤，包括在我们的网络代码中引入一些函数式编程概念。</p>
+<p>函数式编程的很大一部分是通过函数的角度来推理程序的逻辑——通过匹配可以通过输入和输出连接在一起的函数。以这种方式研究我们的网络代码，让我们首先回到最初添加到URLSession的请求方法，并看看它的签名:</p>
+<pre><code class="language-swift">extension URLSession {
+    func request(_ endpoint: Endpoint) -&gt; Future&lt;Data&gt; {
+        ...
+    }
+}
+</code></pre>
+<p>不管在方法内部发生了什么，在外部世界-这是这个函数看起来像:</p>
+<pre><code class="language-swift">typealias Networking = (Endpoint) -&gt; Future&lt;Data&gt;
+</code></pre>
+<p>如果我们可以简单地将我们的网络代码定义为一个从端点到Future<Data>的函数，那将会非常强大。对于初学者来说，不需要让ProductLoader保持对当前URLSession的引用，我们可以简单地让它接受任何匹配网络签名的函数——像这样:</p>
+<pre><code class="language-swift">class ProductLoader {
+    private let networking: Networking
+
+    init(networking: @escaping Networking = URLSession.shared.request) {
+        self.networking = networking
+    }
+
+    func loadProduct(withID id: Product.ID) -&gt; Future&lt;Product&gt; {
+        let endpoint = Endpoint.product(withID: id)
+        return networking(endpoint).decoded()
+    }
+}
+</code></pre>
+<p>我们再次使用默认参数(这一次通过传递请求函数本身)，使我们的API更易于使用。</p>
+<p>上面的改变已经是一个巨大的胜利，因为我们从本质上移除了ProductLoader以前对URLSession的硬依赖-这既使测试更容易，也有助于我们的代码不受未来的影响(如果我们希望在未来采用另一个网络框架，我们所要做的就是改变默认参数)。</p>
+<p>但是我们才刚刚开始😉。</p>
+<h2 id="combining-functions-and-values">Combining functions and values</h2>
+<p>Swift第一类函数功能的强大之处在于，它允许我们像传递闭包一样传递函数——或者传递任何其他值。就像我们前面传递ursession .share .request作为参数一样，我们也可以对其他函数做同样的事情。</p>
+<p>例如，假设我们想创建一个更专业的网络版本，它只能用于加载单个产品 - 但将使我们这样做，而不需要提供任何产品ID在呼叫地点。这就要求我们将网络功能与产品ID相结合，形成一个全新的功能。</p>
+<p>为了能够在一般情况下轻松地做到这一点，让我们首先创建一个combine函数，它接受一个值并将其内联到给定的函数中 -产生一个不需要任何参数就可以调用的新函数，像这样:</p>
+<pre><code class="language-swift">// This turns an (A) -&gt; B function into a () -&gt; B function,
+// by using a constant value for A.
+func combine&lt;A, B&gt;(_ value: A,
+                   with closure: @escaping (A) -&gt; B) -&gt; () -&gt; B {
+    return { closure(value) }
+}
+</code></pre>
+<p>在函数式编程世界中，上述技术被称为部分应用程序，并且在某些语言(如c++)中也被实现为bind。在我们的案例中，它现在让我们能够做的是将我们的产品端点与我们的网络功能结合起来，形成一个可以直接调用的专门版本:</p>
+<pre><code class="language-swift">func loadProduct(withID id: Product.ID) -&gt; Future&lt;Product&gt; {
+    let endpoint = Endpoint.product(withID: id)
+    let networking = combine(endpoint, with: self.networking)
+
+    // Our new networking function can now be called without
+    // having to supply a product ID at the call site.
+    return networking().decoded()
+}
+</code></pre>
+<p>单独来看，上面的更改可能看起来不那么令人印象深刻——毕竟我们实际上已经添加了更多代码来做同样的事情🤔。但是让我们继续拉这个线，看看我们会在哪里结束。</p>
+<h2 id="a-functional-chain">A functional chain</h2>
+<p>函数式编程中的另一个重要概念是函数组合——即多个函数可以组合成一个新的函数。</p>
+<p>类似于如何使用像子视图控制器这样的技术，使我们能够从多个更小的构建块来组合我们的UI-使用函数组合使我们能够将逻辑的各个部分隔离在小函数中， 同时仍能使它们在呼叫地点作为一个单元使用。</p>
+<p>组合函数的一种方法是简单地将两个函数链接在一起。第一个函数(通常称为内部函数)的输出直接作为参数传递给第二个(或外部)函数。为了实现这种组合，让我们创建另一个助手函数——类似于combine——让我们这样做:</p>
+<pre><code class="language-swift">// This turns an (A) -&gt; B and a (B) -&gt; C function into a
+// (A) -&gt; C function, by chaining them together.
+func chain&lt;A, B, C&gt;(_ inner: @escaping (A) -&gt; B,
+                    to outer: @escaping (B) -&gt; C) -&gt; (A) -&gt; C {
+    return { outer(inner($0)) }
+}
+</code></pre>
+<p>使用上面的chain函数，我们现在可以获得静态Endpoint.product方法，并将其与我们的网络功能相结合，从而产生另一个专用版本，该版本只能使用产品ID调用 - 因为我们的链会把ID转换成一个端点，然后反过来把这个端点传递给我们的网络功能:</p>
+<pre><code class="language-swift">func loadProduct(withID id: Product.ID) -&gt; Future&lt;Product&gt; {
+    let networking = chain(Endpoint.product, to: self.networking)
+    return networking(id).decoded()
+}
+</code></pre>
+<p>再次强调，也许单独来讲并不是非常有用——但是现在我们已经开始取得一些进展了!😀</p>
+<h2 id="currying">Currying</h2>
+<p>我们将在网络代码中引入的最后一个函数编程概念是curry -当一个函数调用的结果是另一个函数时，然后直接调用。在Swift中，curry实际上比它最初看起来更常见——事实上，所有实例方法实际上都是通过在底层curry静态方法来实现的。</p>
+<p>例如，假设我们有一个Letter类，它有一个open方法:</p>
+<pre><code class="language-swift">class Letter {
+    func open() {
+        ...
+    }
+}
+</code></pre>
+<p>调用上述方法的“正常”方法是这样做的:</p>
+<pre><code class="language-swift">let letter = Letter()
+letter.open()
+</code></pre>
+<p>但是同样正确的方法是使用currying——通过调用open方法的静态等效函数 ，传入我们希望获得一个函数的实例，然后在它返回时直接调用它——像这样:</p>
+<pre><code class="language-swift">let letter = Letter()
+Letter.open(letter)()
+</code></pre>
+<p>这似乎不是特别有用，但是使用上面的技术实际上使我们能够在不事先知道实例的情况下组合实例方法——这非常酷。</p>
+<p>让我们首先创建另一个链的重载，使我们能够传递一个curry过的函数作为第二个参数。由于这些函数返回另一个函数作为其结果，我们的新重载如下所示:</p>
+<pre><code class="language-swift">// This turns an (A) -&gt; B and a (B) -&gt; () -&gt; C function into a
+// (A) -&gt; C function, by chaining them together.
+func chain&lt;A, B, C&gt;(
+    _ inner: @escaping (A) -&gt; B,
+    to outer: @escaping (B) -&gt; () -&gt; C
+) -&gt; (A) -&gt; C {
+    // Similar to our previous version of chain, we pass the result
+    // of the inner function into the outer one — but since that
+    // now returns another function, we'll also call that one.
+    return { outer(inner($0))() }
+}
+</code></pre>
+<p>现在，我们也可以将实例方法链接起来，而不必首先知道它们将应用于哪个实例 - 我们可以很容易地将未来扩展中的解码方法添加到我们的链中， 这样就产生了一个函数，它包含了使用给定ID加载产品所需的所有内容:</p>
+<pre><code class="language-swift">func loadProduct(withID id: Product.ID) -&gt; Future&lt;Product&gt; {
+    let networking = chain(Endpoint.product, to: self.networking)
+    return chain(networking, to: Future.decoded)(id)
+}
+</code></pre>
+<p>拥有上述两种类型的链接是非常强大的——它让我们以全新的方式来处理函数——尤其是当我们开始将到目前为止所做的所有事情放在一起时。</p>
+<h2 id="a-functional-composition">A functional composition</h2>
+<p>乍一看，像我们目前所做的那样使用函数概念似乎只是一个纯粹的理论练习，没有多少实用价值 - 当这些概念单独使用时，这可能是对的，但一旦它们结合起来，我们就能做一些真正强大的事情。</p>
+<p>首先，最初的想法是将产品的代码加载到单个函数中，现在只需要使用两个链重载，将需要的单个函数组合成一个可以直接使用的函数—不需要任何ProductLoader类型:</p>
+<pre><code class="language-swift">extension URLSession {
+    var productNetworking: (Product.ID) -&gt; Future&lt;Product&gt; {
+        let networking = chain(Endpoint.product, to: request)
+        return chain(networking, to: Future.decoded)
+    }
+}
+</code></pre>
+<p>这反过来又使我们能够从我们代码库的很大一部分中完全消除对网络的意识 -因为为了加载模型或执行另一种网络绑定操作， 我们现在只需要一个匹配所需签名的函数——我们不需要依赖任何具体类型。</p>
+<p>例如，以下是ProductViewController如何将其底层网络完全抽象出来-并接受一个返回Future<Product>的函数:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    typealias Loading = () -&gt; Future&lt;Product&gt;
+
+    private let loading: Loading
+
+    init(loading: @escaping Loading) {
+        self.loading = loading
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // To load the view controller's product, we now
+        // simply have to call the injected closure, and
+        // observe the returned future.
+        loading().observe { [weak self] result in
+            switch result {
+            case .value(let product):
+                self?.render(product)
+            case .error(let error):
+                self?.handle(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>当遵循上述方法时，构造视图控制器也变得超级简单-因为我们所要做的就是使用我们的combine函数来创建正确的加载函数，通过将我们的请求所基于的数据与底层网络功能相结合:</p>
+<pre><code class="language-swift">func makeProductViewController(forID id: Product.ID) -&gt; UIViewController {
+    let networking = combine(id, with: URLSession.shared.productNetworking)
+    return ProductViewController(loading: networking)
+}
+</code></pre>
+<p>最后——也许是最好的一点——使用功能性方法进行联网的测试代码变得微不足道。因为我们的视图控制器(和其他依赖于网络调用的代码)不再依赖于我们实际的网络代码，在编写测试时，我们所要做的就是传入函数，返回我们测试所基于的值:</p>
+<pre><code class="language-swift">let viewController = ProductViewController {
+    let product = Product(id: 7, name: &quot;iPad Pro&quot;)
+    return Promise(value: product)
+}
+</code></pre>
+<p>我们不仅减少了需要维护的类型的数量，还启用了不需要任何协议或额外基础设施的可测试性-由于我们所做的一切都是组合函数-我们的代码应该保持高度可重用性。很酷!😎</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>函数式编程仍然是我和Swift社区的许多其他人非常感兴趣的一个领域。虽然本文的解决方案有很多方法可以进一步使用-例如，在函数组合和转发应用中使用常见的操作符 -使用函数式编程概念作为灵感，然后实现我们自己的“风格”，就可以在苹果sdk的面向对象世界和“纯”函数式编程世界之间提供一个伟大的中间地带。</p>
+<p>我确信我们将在以后的文章中继续探讨函数式编程。 与大多数事情一样，重要的是为任何给定的项目找到各种概念之间的正确平衡——并仔细考虑将哪些概念引入代码库。但是对于网络来说，许多功能概念被证明是非常适合的，特别是因为我们经常处理纯粹的数据转换。</p>
+<p><a href="https://www.swiftbysundell.com/articles/functional-networking-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EV0rk5a8R1/" class="tag">
+                    networking
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Jn075RYwWt/" class="tag">
+                    functional programming
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/slot-based-ui-development-in-swift/">
+                  <h3 class="post-title">
+                    Slot-based UI development in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

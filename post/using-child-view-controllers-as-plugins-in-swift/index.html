@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using child view controllers as plugins in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="当为苹果平台构建应用程序时，一个非常常见的问题是在哪里放置许多不同视图控制器使用的通用功能。一方面，我们希望尽可能地避免代码重复，另一方面，我们希望有一个良好的关注点分离，以避免可怕的Massive视图控制器。
+这种常见功能的一个例子是处理..." />
+    <meta name="keywords" content="view controllers,architecture,composition" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using child view controllers as plugins in Swift</h2>
+            <div class="post-date">2017-11-19</div>
+            
+            <div class="post-content" v-pre>
+              <p>当为苹果平台构建应用程序时，一个非常常见的问题是在哪里放置许多不同视图控制器使用的通用功能。一方面，我们希望尽可能地避免代码重复，另一方面，我们希望有一个良好的关注点分离，以避免可怕的Massive视图控制器。<br>
+这种常见功能的一个例子是处理加载和错误状态。应用程序中的大多数视图控制器在某些时候需要异步加载数据——这个操作可能需要一些时间，也有可能失败。为了让我们的用户知道正在发生什么，我们通常希望在加载时显示某种形式的活动指示器和一个错误视图，以防操作失败。<br>
+那么，这种功能应该放在哪里呢?🤔一个非常常见的解决方案是创建一个BaseViewController，我们所有的其他视图控制器都从它继承:</p>
+<pre><code class="language-swift">class BaseViewController: UIViewController {
+    func showActivityIndicator() {
+        ...
+    }
+
+    func hideActivityIndicator() {
+        ...
+    }
+
+    func handle(_ error: Error) {
+        ...
+    }
+}
+</code></pre>
+<p>虽然做上面的事情看起来很好——因为它非常方便——但它通常也会导致一些棘手的架构问题。对于BaseViewController来说，它很容易成为所有功能的集合，这通常会使它很难维护。<br>
+BaseViewController方法的另一个问题是，它锁定了我们所有的视图控制器从单一类继承。这通常不是一个好的情况，因为它使您在为给定类的超类选择最合适的类时缺乏灵活性。例如，如果我们想实现一个基于UITableView的视图控制器，从UITableViewController继承可能是一个更好的选择。<br>
+BaseViewController方法的另一个问题是，它锁定了我们所有的视图控制器从单一类继承。这通常不是一个好的情况，因为它使您在为给定类的超类选择最合适的类时缺乏灵活性。例如，如果我们想实现一个基于UITableView的视图控制器，从UITableViewController继承可能是一个更好的选择。<br>
+本周，让我们来看看如何使用子视图控制器作为“插件”，使我们能够轻松地混合和匹配常见的功能，而不必求助于单一的基类。</p>
+<h2 id="child-view-controllers">Child view controllers</h2>
+<p>子视图控制器从ios5开始就存在了，但仍然是一个经常被忽视的功能。这是一个简单的概念，就像你可以用子视图和父视图构建UIView层次结构一样，你可以用视图控制器做完全相同的事情<br>
+我喜欢使用子视图控制器的原因是，它们可以访问与父视图控制器完全相同的事件(如viewDidLoad, viewWillAppear等)，而不必成为它的子类。它们还可以负责自己的内部布局，并执行自己的控制器逻辑。这使我们能够像一套模块化插件一样构造代码，可以根据需要添加和删除。<br>
+例如，我们可以实现一个子视图控制器，当我们想要在加载数据时显示一个活动指示器时，我们可以添加它:</p>
+<pre><code class="language-swift">class LoadingViewController: UIViewController {
+    private lazy var activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .gray)
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(activityIndicator)
+
+        NSLayoutConstraint.activate([
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // We use a 0.5 second delay to not show an activity indicator
+        // in case our data loads very quickly.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.activityIndicator.startAnimating()
+        }
+    }
+}
+</code></pre>
+<p>上述方法的主要好处是，与使用BaseViewController不同，我们的应用程序中任何需要显示加载指示器的视图控制器都可以简单地添加LoadingViewController作为子控制器。它还允许我们在一个地方包含用于显示加载指示器的所有逻辑，而不是将其与完全不相关的功能放在一起。👍</p>
+<h2 id="adding-and-removing-a-child-view-controller">Adding and removing a child view controller</h2>
+<p>我们如何使用新的LoadingViewController呢?UIViewController有一个API，让我们添加子视图控制器，叫addChildViewController，但事情并不像调用那个方法😅那么简单。</p>
+<pre><code class="language-swift">In order to add a child view controller, we need to do the following:
+// Move the child view controller's view to the parent's view
+parent.view.addSubview(child.view)
+
+// Add the view controller as a child
+parent.addChild(child)
+
+// Notify the child that it was moved to a parent
+child.didMove(toParent: parent)
+
+
+Then, to remove a child view controller, we also need to perform 3 different steps:
+// Notify the child that it's about to be moved away from its parent
+child.willMove(toParent: nil)
+
+// Remove the child
+child.removeFromParent()
+
+// Remove the child view controller's view from its parent
+child.view.removeFromSuperview()
+</code></pre>
+<p>如果你想在你的应用中开始大量使用子视图控制器，每次都做上面的事情会很快变得乏味。因为它符合我对抽象的3个要求——它是重复的，无聊的和容易出错的——让我们抽象它吧!😀<br>
+让我们在UIViewController上做一个扩展，使处理子视图控制器变得更简单:</p>
+<pre><code class="language-swift">extension UIViewController {
+    func add(_ child: UIViewController) {
+        addChild(child)
+        view.addSubview(child.view)
+        child.didMove(toParent: self)
+    }
+
+    func remove() {
+        // Just to be safe, we check that this view controller
+        // is actually added to a parent before removing it.
+        guard parent != nil else {
+            return
+        }
+
+        willMove(toParent: nil)
+        view.removeFromSuperview()
+        removeFromParent()
+    }
+}
+</code></pre>
+<p>我们现在可以简单地调用add()和remove()来管理我们的应用中的子视图控制器👌</p>
+<h2 id="using-a-child-view-controller">Using a child view controller</h2>
+<p>很酷的是，由于UIKit同时处理布局，并将所有标准的UIViewController事件发送给我们的子视图控制器，我们只需要添加和删除它。下面我们就可以非常容易地在ListViewController中添加对显示和隐藏加载指示器的支持:</p>
+<pre><code class="language-swift">class ListViewController: UITableViewController {
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadItems()
+    }
+
+    private func loadItems() {
+        let loadingViewController = LoadingViewController()
+        add(loadingViewController)
+
+        dataLoader.loadItems { [weak self] result in
+            loadingViewController.remove()
+            self?.handle(result)
+        }
+    }
+}
+</code></pre>
+<p>很好! 最好的部分是，我们所有的视图控制器现在都能利用这个功能，不管它们从继承了什么超类。</p>
+<h2 id="error-handling">Error handling</h2>
+<p>现在我们有了一个视图控制器，我们可以插入它来加载状态，让我们对错误状态做同样的事情。类似于我们之前创建LoadingViewController的方式，我们可以创建一个显示错误消息的ErrorViewController。假设我们还在UI中包含了一个Reload按钮，那么我们将包含一个API来设置一个reloadHandler闭包，每当点击Reload按钮时，这个闭包就会被调用:</p>
+<pre><code class="language-swift">class ErrorViewController: UIViewController {
+    var reloadHandler: () -&gt; Void = {}
+}
+</code></pre>
+<p>就像我们可以简单地把LoadingViewController添加为子视图一样，我们现在可以做同样的事情来显示一个错误视图:</p>
+<pre><code class="language-swift">private extension ListViewController {
+    func handle(_ error: Error) {
+        let errorViewController = ErrorViewController()
+
+        errorViewController.reloadHandler = { [weak self] in
+            self?.loadItems()
+        }
+
+        add(errorViewController)
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>将代码结构为模块化的插件，而不是过于依赖子类化，可以使代码更容易扩展和维护。几乎所有的代码库都需要适应和改变SDK的新特性或新版本，而将共同的功能作为独立的子视图控制器结构可以帮助尽可能地简化这一过程。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-child-view-controllers-as-plugins-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/PG4tMePHd/" class="tag">
+                    view controllers
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VT6NEUoHdJ/" class="tag">
+                    composition
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/dependency-injection-using-factories-in-swift/">
+                  <h3 class="post-title">
+                    Dependency injection using factories in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

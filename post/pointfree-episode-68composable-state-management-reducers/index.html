@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 68:Composable State Management: Reducers | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Recap: our app so far
+
+
+
+
+A better way to model global state
+
+
+
+
+Functional state management
+
+
+
+
+Er..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 68:Composable State Management: Reducers</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Recap:ourappsofar">Recap: our app so far</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Abetterwaytomodelglobalstate">A better way to model global state</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Functionalstatemanagement">Functional state management</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Ergonomics:capturingreducerinstore">Ergonomics: capturing reducer in store</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Ergonomics:in-outreducers">Ergonomics: in-out reducers</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Movingmoremutationsintothestore">Moving more mutations into the store</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#Tillnexttime">Till next time</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 68:Composable State Management: Reducers -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>在过去的几周里，我们探索了应用程序架构的问题空间，并试图揭示使其如此复杂的根源。在这个过程中，我们最终构建了一个中等复杂的应用程序，尽管它有点像一个玩具样例，但它强调了我们在构建应用程序时遇到的所有痛点。特别地，我们看到:</p>
+<ul>
+<li>我们希望能够有复杂的应用状态，可以在多个屏幕上共享，这样，某个状态的变化可以立即反映到其他屏幕上。</li>
+<li>我们希望能够以一致的方式改变状态，这样对于代码库的新手来说，数据是如何在应用程序中流动的就很明显了。</li>
+<li>我们希望能够用简单、可组合的单元构建大型、复杂的应用程序。理想情况下，我们能够完全独立地构建组件，甚至可能在其自己的模块中，然后将该组件插入到更大的应用程序中。</li>
+<li>我们想要一种定义良好的机制来执行副作用并将其结果反馈给应用程序。</li>
+<li>最后，我们希望我们的架构是可测试的。理想情况下，我们应该能够用很少的设置来编写测试，允许我们描述用户在应用程序中所做的一系列操作，然后在这些操作执行后断言应用程序的状态。</li>
+</ul>
+<p>这些都是需要解决的重要问题，因为它们允许我们扩展代码库，以处理许多功能和许多开发人员在同一个应用程序上工作。不幸的是，SwiftUI并没有完全解决这些问题。它为我们提供了许多自己解决它的工具，但它取决于我们采取额外的努力。</p>
+<p>所以今天我们就开始这样做。我们将介绍解决这些问题的应用程序体系结构。它的固执己见和SwiftUI差不多。它准确地告诉我们应该如何对应用程序状态建模，告诉我们如何将突变应用到该状态，告诉我们如何执行副作用等等。如果我们遵循这些处方，一些真正惊人的好处将开始出现。当然，最重要的是，这个体系结构完全是受到函数式编程的启发!我们将从简单的函数和函数组合中获得灵感，从而理解如何解决所有这些问题。</p>
+<p>当然，我们并不是说这个体系结构是一种灵丹妙药，可以解决您所有的问题，而且肯定会有一些时候，您正在处理的问题似乎根本不适合这个框架。然而，我们仍然觉得这些想法值得探索，而且如果你从正确的角度看待问题，可以用这种架构解决许多问题，这也会令人惊讶。</p>
+<h2 id="2-a-namerecapourappsofararecap-our-app-so-far">2. <a name='Recap:ourappsofar'></a>Recap: our app so far</h2>
+<p>让我们快速回顾一下上节课的内容。我们有标准的计数app，但有一些附加功能。</p>
+<ul>
+<li>首先，我们可以深入到计数屏幕，点击+和-按钮来增加和减少计数器。</li>
+<li>我们可以询问当前计数器值是否为素数，如果是，我们可以在收藏列表中添加或删除素数。</li>
+<li>我们还可以求第n个质数，其中n是当前计数器的值。按下这个按钮实际上会触发一个API请求，并在得到响应时显示一个警报。</li>
+<li>然后我们可以进入收藏界面查看所有的收藏，但我们也可以删除任何不再是我们收藏的数字，这些更改会在应用程序的各个屏幕上传播。</li>
+</ul>
+<p>让我们快速浏览一下代码。</p>
+<p>我们有根<strong>AppState</strong>，它保存了应用程序中的所有状态。</p>
+<pre><code class="language-swift">class AppState: ObservableObject {
+  @Published var count = 0
+  @Published var favoritePrimes: [Int] = []
+  @Published var loggedInUser: User?
+  @Published var activityFeed: [Activity] = []
+
+  struct Activity {
+    let timestamp: Date
+    let type: ActivityType
+
+    enum ActivityType {
+      case addedFavoritePrime(Int)
+      case removedFavoritePrime(Int)
+    }
+  }
+
+  struct User {
+    let id: Int
+    let name: String
+    let bio: String
+  }
+}
+</code></pre>
+<p>然后我们有<strong>CounterView</strong>，它符合SwiftUI的<strong>View</strong>协议，对应计数器屏幕。</p>
+<pre><code class="language-swift">struct CounterView: View {
+  @ObservedObject var state: AppState
+  @State var isPrimeModalShown = false
+  @State var alertNthPrime: PrimeAlert?
+  @State var isNthPrimeButtonDisabled = false
+
+  var body: some View {
+    VStack {
+      HStack {
+        Button(&quot;-&quot;) { self.state.count -= 1 }
+        Text(&quot;\(self.state.count)&quot;)
+        Button(&quot;+&quot;) { self.state.count += 1 }
+      }
+      Button(&quot;Is this prime?&quot;) { self.isPrimeModalShown = true }
+      Button(
+        &quot;What is the \(ordinal(self.state.count)) prime?&quot;,
+        action: self.nthPrimeButtonAction
+      )
+      .disabled(self.isNthPrimeButtonDisabled)
+    }
+    .font(.title)
+    .navigationBarTitle(&quot;Counter demo&quot;)
+    .sheet(isPresented: self.$isPrimeModalShown) {
+      IsPrimeModalView(state: self.state)
+    }
+    .alert(item: self.$alertNthPrime) { alert in
+      Alert(
+        title: Text(&quot;The \(ordinal(self.state.count)) prime is \(alert.prime)&quot;),
+        dismissButton: .default(Text(&quot;Ok&quot;))
+      )
+    }
+  }
+
+  func nthPrimeButtonAction() {
+    self.isNthPrimeButtonDisabled = true
+    nthPrime(self.state.count) { prime in
+      self.alertNthPrime = prime.map(PrimeAlert.init(prime:))
+      self.isNthPrimeButtonDisabled = false
+    }
+  }
+}
+</code></pre>
+<p>我们还有<strong>IsPrimeModalView</strong>，它对应于模态视图，您可以在其中从您的收藏中添加或删除素数。</p>
+<pre><code class="language-swift">struct IsPrimeModalView: View {
+  @ObservedObject var state: AppState
+
+  var body: some View {
+    VStack {
+      if isPrime(self.state.count) {
+        Text(&quot;\(self.state.count) is prime 🎉&quot;)
+        if self.state.favoritePrimes.contains(self.state.count) {
+          Button(&quot;Remove from favorite primes&quot;) {
+            self.state.favoritePrimes.removeAll(where: { $0 == self.state.count })
+            self.state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(self.state.count)))
+          }
+        } else {
+          Button(&quot;Save to favorite primes&quot;) {
+            self.state.favoritePrimes.append(self.state.count)
+            self.state.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(self.state.count)))
+
+          }
+        }
+      } else {
+        Text(&quot;\(self.state.count) is not prime :(&quot;)
+      }
+    }
+  }
+}
+</code></pre>
+<p>之后是<strong>FavoritePrimesView</strong>，这是一个收藏素数列表，你可以在任何时候删除收藏。</p>
+<pre><code class="language-swift">struct FavoritePrimesView: View {
+  @ObservedObject var state: AppState
+
+  var body: some View {
+    List {
+      ForEach(self.state.favoritePrimes, id: \.self) { prime in
+        Text(&quot;\(prime)&quot;)
+      }
+      .onDelete { indexSet in
+        for index in indexSet {
+          let prime = self.state.favoritePrimes[index]
+          self.state.favoritePrimes.remove(at: index)
+          self.state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(prime)))
+        }
+      }
+    }
+    .navigationBarTitle(&quot;Favorite Primes&quot;)
+  }
+}
+</code></pre>
+<p>最后我们有<strong>ContentView</strong>，它是一个根视图，将整个应用程序放在一起。</p>
+<pre><code class="language-swift">struct ContentView: View {
+  @ObservedObject var state: AppState
+
+  var body: some View {
+    NavigationView {
+      List {
+        NavigationLink(
+          &quot;Counter demo&quot;,
+          destination: CounterView(state: self.state)
+        )
+        NavigationLink(
+          &quot;Favorite primes&quot;,
+          destination: FavoritePrimesView(state: self.state)
+        )
+      }
+      .navigationBarTitle(&quot;State management&quot;)
+    }
+  }
+}
+</code></pre>
+<p>在<strong>playground</strong>的最后，我们做了一些工作让它在实时视图中渲染。</p>
+<pre><code class="language-swift">import PlaygroundSupport
+PlaygroundPage.current.liveView = UIHostingController(
+  rootView: ContentView(state: AppState())
+)
+</code></pre>
+<p>整个应用程序只有大约140行代码，而且非常简单明了! <strong>SwiftUI</strong>正在为我们做一些不可思议的事情。然而，这并不意味着它没有一些小问题需要我们解决。</p>
+<ul>
+<li>
+<p>首先，我们的<strong>view</strong>中充斥着突变，这可能会模糊数据如何输入到我们的应用程序中。有些突变隐藏在<strong>helper</strong>方法中(这只是一个间接层，但您可以想象更多)，而其他操作在视图中包含多个突变和大量代码。</p>
+</li>
+<li>
+<p>我们也想要一种方法来分解视图，这样他们就不必接受整个应用状态。通常我们会有一个视图，只需要应用状态的很小一部分，我们想要一个非常简单的方式来完成它。</p>
+</li>
+<li>
+<p>因为所有这些突变都被捆绑在<strong>SwiftUI</strong>视图中，没有更好的方法来测试它们，苹果也没有给我们提供如何测试的指导。</p>
+</li>
+</ul>
+<p>这是目前为止的应用程序。它非常简单，但它确实解决了我们在构建大型应用程序时需要解决的许多问题。</p>
+<p>让我们着手解决这些问题。</p>
+<h2 id="3-a-nameabetterwaytomodelglobalstateaa-better-way-to-model-global-state">3. <a name='Abetterwaytomodelglobalstate'></a>A better way to model global state</h2>
+<p>我们将从一个需要解决的更简单的问题开始:一个更好的建模全局状态的方法。</p>
+<p>早些时候当我们使用beta版本第一次构建这个应用程序,我们采用了<strong>BindableObject</strong>协议,这要求我们使用一个类,而不是一个值类型,声明一个发布者，它需要在任何时间状态改变时进行ping,然后手动进入每个字段的<strong>didSet</strong>，以ping那个发布者。</p>
+<p>当你使用早期测试版时，生活就会来得很快! 苹果已经弃用了这些api，取而代之的是更新、更时髦的api。我们已经更新了代码以使用这些更新的api，事情看起来好多了。</p>
+<pre><code class="language-swift">class AppState: ObservableObject {
+  @Published var count = 0
+  @Published var favoritePrimes: [Int] = []
+  @Published var activityFeed: [Activity] = []
+  @Published var loggedInUser: User? = nil
+
+  struct Activity {
+    let type: ActivityType
+    let timestamp = Date()
+
+    enum ActivityType {
+      case addedFavoritePrime(Int)
+      case removedFavoritePrime(Int)
+    }
+  }
+
+  struct User {
+    let id: Int
+    let name: String
+    let bio: String
+  }
+}
+</code></pre>
+<p>我们会注意到:</p>
+<ul>
+<li>SwiftUI的<strong>BindableObject</strong>协议已经被<strong>Combine</strong>的<strong>ObservableObject</strong>协议所取代。</li>
+<li>当状态更新时，我们不再需要声明一个发布者来获取信息:<strong>ObservableObject</strong>会自动为我们合成一个<strong>objectWillChange</strong>发布者。</li>
+<li>我们也不再需要手动ping发布者:任何带有@<strong>Published</strong>包装的属性都会在更新之前自动ping发布者。</li>
+</ul>
+<p>很高兴苹果已经消除了早期测试版带来的许多迷雾，但仍有一些改进的空间:</p>
+<ul>
+<li>我们的模型层与Combine框架紧密耦合:它符合来自<strong>Combine</strong>的协议，并且每个属性都由一个<strong>Combine publisher</strong>包装。这就引入了一个依赖关系，当我们在SwiftUI视图之外与模型层交互时，我们可能并不关心这个依赖关系。事实上，这种依赖可能会阻止我们与无法导入<strong>Combine</strong>的代码共享该模型，比如<strong>Linux</strong>上的服务器端<strong>Swift</strong>。</li>
+<li>即使事情比以前少了很多干扰，我们仍然有使用@<strong>Published</strong>包装每个属性的干扰。</li>
+<li>如果我们忘记用@<strong>Published</strong>包装属性，<strong>SwiftUI</strong>将不会收到它的更改通知。</li>
+<li><strong>ObservableObject和BindableObject</strong>一样，仍然要求我们使用类而不是值类型。 值类型是很好的状态容器:它们为我们提供了对可变性的细粒度控制和保证。</li>
+</ul>
+<p>将应用状态从<strong>Combine</strong>中解耦并从值语义中获益的一种方法是将<strong>AppState</strong>转换为一个结构体，然后围绕它创建一个非常轻量的<strong>ObservableObject</strong>包装器。</p>
+<p>将我们的状态转换为结构体非常简单:</p>
+<pre><code class="language-swift">struct AppState {
+  var count = 0
+  var favoritePrimes: [Int] = []
+  var activityFeed: [Activity] = []
+  var loggedInUser: User? = nil
+
+  struct Activity {
+    let type: ActivityType
+    let timestamp = Date()
+
+    enum ActivityType {
+      case addedFavoritePrime(Int)
+      case removedFavoritePrime(Int)
+    }
+  }
+
+  struct User {
+    let id: Int
+    let name: String
+    let bio: String
+  }
+}
+</code></pre>
+<p>现在这更简单了! 我们能够摆脱所有那些@<strong>Published</strong>注解，不再需要遵循<strong>ObservableObject</strong>。</p>
+<p>为了恢复这个<strong>ObservableObject</strong>一致性，我们必须将这个结构体包装在一个类中。我们将其命名为<strong>Store</strong>:</p>
+<pre><code class="language-swift">final class Store: ObservableObject {
+  @Published var value: AppState
+
+  init(initialValue: AppState) {
+    self.value = value
+  }
+}
+</code></pre>
+<p>现在我们有一些编译器错误需要修复，但在修复之前，我们可以看到这个类过于具体。 Store所要做的就是包装一个值类型，为它的观察者提供一个钩子。 它不需要知道任何关于<strong>AppState</strong>的信息。所以，让我们快速地将它的泛型设置为它包装的值:</p>
+<pre><code class="language-swift">final class Store&lt;Value&gt;: ObservableObject {
+  @Published var value: Value
+
+  init(initialValue: Value) {
+    self.value = value
+  }
+}
+</code></pre>
+<p>Now if we form something like:</p>
+<pre><code class="language-swift">Store&lt;AppState&gt;
+</code></pre>
+<p>我们将获得一个可观察对象，一旦<strong>AppState</strong>发生任何变化，它就会通知发生了变化。我们已经有效地将所有的状态位合并到一个值中。</p>
+<p>这很好，但现在我们有一堆破代码。我们可以很容易地通过一些搜索和替换来修复这段代码。首先我们替换这个:</p>
+<pre><code class="language-swift">@ObservedObject var state: AppState
+</code></pre>
+<p>With this:</p>
+<pre><code class="language-swift">@ObservedObject var store: Store&lt;AppState&gt;
+</code></pre>
+<p>每个视图现在都将对应用状态存储进行操作，这样任何应用状态的变化都会被正确地通知到SwiftUI视图。</p>
+<p>接下来，我们需要替换所有的引用:</p>
+<pre><code class="language-swift">self.state -&gt; self.store.value
+</code></pre>
+<p>这将确保所有视图都正确地从商店的状态读取并对商店的状态应用更改。</p>
+<p>我们也有一些这样的地方:</p>
+<pre><code class="language-swift">(state: self.store.value) -&gt; (store: self.store)
+</code></pre>
+<p>最后，当我们创建根内容视图时，我们必须传递一个<strong>store</strong>而不是<strong>app state</strong>:</p>
+<pre><code class="language-swift">rootView: ContentView(store: Store(value: AppState()))
+</code></pre>
+<h2 id="4-a-namefunctionalstatemanagementafunctional-state-management">4. <a name='Functionalstatemanagement'></a>Functional state management</h2>
+<p>我们现在已经从<strong>Combine和SwiftUI</strong>框架中解耦了应用状态，并在值类型中捕获它，而不是在类中。我们还可以随意添加新的状态，而不需要任何额外的工作。这已经是一个很大的胜利了</p>
+<p>让我们来解决另一个问题，这个问题比上一个稍微复杂一些:我们如何处理状态突变，以便有一种单一、一致的方式来执行突变。目前，对于我们如何对我们的state进行突变，真的没有任何规律或理由。我们看到，在各种操作处理程序和事件回调中添加突变是相当容易的，但这样做了几次之后，就不清楚数据是如何在应用程序中流动的。我们希望有一种单一的、一致的方式来描述和执行应用程序中的变化，这样无论你在哪个文件中，你都可以很容易地看到你的应用程序是如何随着各种用户操作而发展的。</p>
+<p>所以让我们试着提炼状态突变的本质，并提出一个描述，我们可能会编码到一个实际的程序中。状态突变是指获取当前状态和发生的事件(如用户点击按钮)，并使用这两部分信息来派生一个全新的状态。例如，我们的状态<strong>count</strong>为0，然后一个用户操作显示用户点击了“+”按钮，因此我们应该生成一个新的状态<strong>count</strong>为1。这听起来像个函数!</p>
+<p>唯一的问题是“用户动作”事件现在定义不清。目前，“用户动作”只是指那些在SwiftUI中执行的动作闭包中的一个。我们需要将这个概念转换为合适的数据类型，以便我们能够对其进行实际操作。因此，我们不是直接在视图中进行更改，而是创建一个数据类型来描述它们。</p>
+<p>因为用户可以执行许多类型的操作，而一个操作可以是这些类型中的任何一种，所以枚举可能是合适的:</p>
+<pre><code class="language-swift">enum CounterAction {
+  case decrTapped
+  case incrTapped
+}
+</code></pre>
+<p>现在，我们可以创建一个函数，它接受当前的状态片段，并将其组合成一个动作，以获得更新的状态。它可能看起来像这样:</p>
+<pre><code class="language-swift">func counterReducer(state: AppState, action: CounterAction) -&gt; AppState {
+  switch action {
+  case .decrTapped:
+    return AppState(
+      count: state.count - 1,
+      favoritePrimes: state.favoritePrimes,
+      loggedInUser: state.loggedInUser,
+      activityFeed: state.activityFeed
+    )
+  case .incrTapped:
+    return AppState(
+      count: state.count + 1,
+      favoritePrimes: state.favoritePrimes,
+      loggedInUser: state.loggedInUser,
+      activityFeed: state.activityFeed
+    )
+  }
+}
+</code></pre>
+<p>对于这么简单的事情来说，这是相当冗长的，因为我们必须为我们想要做的每个突变创建所有新的状态值。我们可以通过复制我们的状态来修复冗长的问题，但代价是使用一些样板文件:</p>
+<pre><code class="language-swift">func counterReducer(state: AppState, action: CounterAction) -&gt; AppState {
+  var copy = state
+  switch action {
+  case .decrTapped:
+    copy.count -= 1
+  case .incrTapped:
+    copy.count += 1
+  }
+  return copy
+}
+</code></pre>
+<p>它肯定更短，但每一个<strong>reducer</strong>都要做这个复制舞。 如果我们不小心把拷贝和状态弄混了，我们就会遇到一些非常微妙的错误。但是，我们现在就开始吧，我们一会儿会讲到这个问题。</p>
+<p>还有，为什么我们叫它<strong>counterReducer</strong>? 好像是个奇怪的名字。这个名字的灵感来自于数组上<strong>reduce</strong>函数的签名，例如:</p>
+<pre><code class="language-swift">[1, 2, 3].reduce(
+  &lt;#initialResult: Result#&gt;,
+  &lt;#nextPartialResult: (Result, Int) throws -&gt; Result#&gt;
+)
+</code></pre>
+<p><strong>Result</strong>值就像我们的状态，当我们将越来越多的整数合并到它时，这个值就会累积。所以我们输入到数组<strong>reduce</strong>中的累加器函数的签名与<strong>counterReducer</strong>的签名非常相似。这就是为什么我们这样命名这个函数。</p>
+<p>但是，我们怎么用这个呢? 我们可以创建一些状态来玩，然后应用几次<strong>counterReducer</strong>函数，看看它是如何变化的:</p>
+<pre><code class="language-swift">let state = AppState()
+counterReducer(value: value, action: .incrTapped)
+print(state)
+// AppState(count: 0, favoritePrimes: [], loggedInUser: nil, activityFeed: [])
+</code></pre>
+<p>状态没有改变，因为<strong>counterReducer</strong>返回一个全新的app状态，所以我们真正想打印的是函数返回的值。</p>
+<pre><code class="language-swift">print(counterReducer(value: value, action: .incrTapped))
+// AppState(count: 1, favoritePrimes: [], loggedInUser: nil, activityFeed: [])
+</code></pre>
+<p>现在我们看到计数增加了。如果我们想减少计数，我们不能这样做:</p>
+<pre><code class="language-swift">print(counterReducer(value: value, action: .decrTapped))
+</code></pre>
+<p>由于每次通过<strong>counterReducer</strong>都会创建一个全新的状态，我们可以看到以后的应用程序不会改变以前的状态。为了获得这种行为，我们需要像这样嵌套:</p>
+<pre><code class="language-swift">print(
+  counterReducer(
+    value: counterReducer(
+      value: value,
+      action: .incrTapped
+    ),
+    action:.decrTapped
+  )
+)
+</code></pre>
+<p>我们看到这种嵌套的原因是<strong>counterReducer</strong>函数一次只代表一个突变，它将您从一个状态带到下一个状态。它没有能力随着时间的推移将多个突变积累成应用状态的一个巨大突变。我们需要另一种机制。但是它应该住在哪里呢?</p>
+<p>我们已经有了这个<strong>Store</strong>类来保存应用程序的当前状态，这是我们想要改变的状态以便应用程序中的所有视图在发生变化时都能得到通知。因此，我们可以从做一些愚蠢的事情开始，将存储状态的直接突变替换为首先调用<strong>reducer</strong>的东西，然后将新状态填充到存储中。如减量按钮:</p>
+<pre><code class="language-swift">Button(&quot;-&quot;) {
+  self.store.value = counterReducer(state: self.store.value, action: .decrTapped)
+//  self.store.state.count -= 1
+}
+</code></pre>
+<p>在增量按钮中:</p>
+<pre><code class="language-swift">Button(&quot;+&quot;) {
+  self.store.value = counterReducer(state: self.store.value, action: .incrTapped)
+//  self.store.state.count += 1
+}
+</code></pre>
+<p>And everything compiles and works as it did before.</p>
+<p>这要冗长得多，但至少有一个好处。我们不是直接改变按钮动作闭合内部的状态，而是将相应的动作值发送给reducer，让<strong>reducer</strong>做所有必要的变化。这就是用户操作的说明性的含义:我们描述用户所做的事情，而不是执行那些由用户操作导致的混乱的、循序渐进的变化。现在突变很简单，但是你可以想象<strong>reducer</strong>需要做很多工作，我们现在在<strong>reducer</strong>中进行了工作。</p>
+<h2 id="5-a-nameergonomicscapturingreducerinstoreaergonomics-capturing-reducer-in-store">5. <a name='Ergonomics:capturingreducerinstore'></a>Ergonomics: capturing reducer in store</h2>
+<p>然而，这显然不是我们想要的使用<strong>reducer</strong>和<strong>store</strong>的方式。每次直接调用<strong>reducer</strong>并使用<strong>reducer</strong>的输出重新分配<strong>store</strong>的态将会有大量的样板文件。 似乎我们可以将这个样板代码移到<strong>store</strong>中，这样我们只需要做一次，然后视图中的call-sites就会很好，很整齐。</p>
+<p>想象一下，如果我们通过调用一个简单的方法告诉<strong>store</strong>已经调用了一个用户操作，然后<strong>store</strong>负责运行<strong>reducer</strong>。下面是一些伪代码，演示如何减少我们的计数:</p>
+<pre><code class="language-swift">Button(&quot;-&quot;) { self.store.send(.decrTapped) }
+</code></pre>
+<ul>
+<li></li>
+</ul>
+<pre><code class="language-swift">Button(&quot;+&quot;) { self.store.send(.incrTapped) }
+</code></pre>
+<p>我们设想要发送这个方法的名称，因为它模仿了<strong>Combine</strong>框架用于向发布者发送数据的命名。</p>
+<p>然后<strong>store</strong>可以使用这个动作在<strong>store</strong>的当前状态上运行<strong>reducer</strong>，它可以重新分配状态，这样我们就能得到所有视图更新。<strong>store</strong>开始封装越来越多的应用程序的运行时行为。</p>
+<p>我们怎么做呢?</p>
+<p>首先，由于我们的<strong>store</strong>现在必须知道应用程序的状态以及可以改变状态的操作类型，我们必须为我们识别的操作类型引入一个新的泛型:</p>
+<pre><code class="language-swift">final class Store&lt;Value, Action&gt;: ObservableObject {
+  …
+  func send(_ action: Action) {
+
+  }
+}
+</code></pre>
+<p>现在，在这个<strong>send</strong>方法中，我们想用我们的当前状态调用<strong>reducer</strong>，然后用<strong>reducer</strong>产生的新状态替换当前状态。然而，我们没有<strong>reducer</strong>，所以听起来我们的<strong>store</strong>需要保留<strong>reducer</strong>:</p>
+<pre><code class="language-swift">class Store&lt;Value, Action&gt;: ObservableObject {
+  let reducer: (Value, Action) -&gt; Value
+  …
+  init(initialValue: Value, reducer: @escaping (Value, Action) -&gt; Value) {
+    self.value = value
+    self.reducer = reducer
+  }
+}
+</code></pre>
+<p>现在我们可以实现<strong>send</strong>方法了:</p>
+<pre><code class="language-swift">func send(_ action: Action) {
+  self.value = self.reducer(self.value, action)
+}
+</code></pre>
+<p>通过这些改变，我们需要修复一些编译器错误。我们需要更新对<strong>Store</strong>的引用，以包含额外的泛型:</p>
+<pre><code class="language-swift">@ObservedObject var store: Store&lt;AppState, CounterAction&gt;
+</code></pre>
+<p>现在我们需要用一个<strong>reducer</strong>来初始化我们的<strong>store</strong>，让我们这样做:</p>
+<pre><code class="language-swift">ContentView(store: Store(state: AppState(), reducer: counterReducer))
+</code></pre>
+<p>现在一切都重新编译了，一切都和以前一样。唯一的区别是，我们将少量的状态突变隔离到我们的<strong>reducer</strong>中，并且我们通过调用<strong>store</strong>上的<strong>send</strong>方法强制自己执行这些突变。我们不被允许在任何地方进行任何我们想要的突变，我们必须把它打包成一个<strong>action</strong>，然后送去<strong>reducer</strong>。很快，我们甚至可以将<strong>Store</strong>的<strong>value</strong>属性设置为私有!这意味着除非通过<strong>reducer</strong>，否则不可能改变应用程序的状态。</p>
+<h2 id="6-a-nameergonomicsin-outreducersaergonomics-in-out-reducers">6. <a name='Ergonomics:in-outreducers'></a>Ergonomics: in-out reducers</h2>
+<p>现在，我们可以继续从我们的<strong>view</strong>中提取更多的突变，并将它们塞进我们的<strong>action</strong>和<strong>reducer</strong>中，但我们还可以对我们的设置做出另一个改进。现在，关于我们定义<strong>reducer</strong>的方式，有两个烦人的地方。首先，我们将在每个<strong>reducer</strong>中有一些样板，我们创建状态的副本，对副本进行突变，然后返回副本。这个样板文件很容易出错，而且很麻烦。第二，复制过程不会非常高效如果我们有一个大的应用状态。每次用户执行一个操作并运行<strong>reducer</strong>时，都要复制完整的应用状态，这是无法很好地扩展的。</p>
+<p>幸运的是，我们可以使用一个技巧，将这个看似低效的函数转换为一个等效的更高效的函数。事实上，我们在Point-Free的第二集讨论了这个技巧，我们讨论了副作用和Swift的<strong>inout</strong>功能。简而言之，形式的功能之间是等价的:</p>
+<pre><code class="language-swift">// (A) -&gt; A  ----&gt; (inout A) -&gt; Void
+</code></pre>
+<p>你可以把你对<strong>inout A</strong>做的任何突变看作是函数的隐藏输出，因此它的行为就像(<strong>A) - &gt;A</strong>函数。</p>
+<p>当你的函数有多个输入或输出时，他的技巧也有效。例如</p>
+<pre><code class="language-swift">// (A, B) -&gt; (A, C)  ----&gt; // (inout A, B) -&gt; C
+</code></pre>
+<p>通常，如果类型参数在函数箭头的两边恰好出现一次，则可以将其从右侧移除，但代价是在左侧引入<strong>inout</strong>参数。</p>
+<p>所以让我们把这个想法应用到<strong>reducer</strong>签名上:</p>
+<pre><code class="language-swift">// (Value, Action) -&gt; Value  -----&gt; // (inout Value, Action) -&gt; Void
+</code></pre>
+<p>这种形式的<strong>reducer</strong>和之前的表现是一样的，只是效率更高一点。 事实上，Swift标准库有一个精确的这个签名的<strong>reduce</strong>重载。最初是由我们的老朋友Chris Eidhof提出的，后来在《Swift 3》中被引入:</p>
+<pre><code class="language-swift">[1, 2, 3].reduce(
+  into: &lt;#Result#&gt;,
+  &lt;#updateAccumulatingResult: (inout Result, Int) throws -&gt; ()#&gt;
+)
+</code></pre>
+<p>这正是我们想要的<strong>reducer</strong>。让我们从改变它的签名开始:</p>
+<pre><code class="language-swift">func counterReducer(value: inout AppState, action: CounterAction) {
+</code></pre>
+<p>然后，我们将通过执行突变而不是复制和返回新值来修复编译错误:</p>
+<pre><code class="language-swift">func counterReducer(value: inout AppState, action: CounterAction) {
+  switch action {
+  case .decrTapped:
+    value.count -= 1
+  case .incrTapped:
+    value.count += 1
+  }
+}
+</code></pre>
+<p>我们可以像使用其他<strong>reducer</strong>一样使用这种<strong>reducer</strong>:</p>
+<pre><code class="language-swift">var state = AppState()
+counterReducer(value: &amp;state, action: .incrTapped)
+counterReducer(value: &amp;state, action: .decrTapped)
+</code></pre>
+<p>现在很容易关注每个<strong>action</strong>中发生了什么变化，而且我们还获得了更高效率的额外好处。但是我们有一些编译错误需要修复。</p>
+<p>首先，让我们修复<strong>reducer</strong>在仓库的签名:</p>
+<pre><code class="language-swift">class Store&lt;Value, Action&gt;: ObservableObject {
+  let reducer: (inout Value, Action) -&gt; Void
+</code></pre>
+<p>初始化器需要更新:</p>
+<pre><code class="language-swift">init(initialValue: Value, reducer: @escaping (inout Value, Action) -&gt; Void) {
+  self.value = value
+  self.reducer = reducer
+}
+</code></pre>
+<p><strong>send</strong>方法现在简化为:</p>
+<pre><code class="language-swift">func send(_ action: Action) {
+  self.reducer(&amp;self.value, action)
+}
+</code></pre>
+<p>我们的应用程序现在编译，工作完全像以前一样，我们的代码变得更符合人体工程学，甚至性能更优。听起来是个双赢的局面。</p>
+<h2 id="7-a-namemovingmoremutationsintothestoreamoving-more-mutations-into-the-store">7. <a name='Movingmoremutationsintothestore'></a>Moving more mutations into the store</h2>
+<p>但是，我们现在仍然生活在两个世界。通过这个漂亮的新接口，我们的一些状态正在发生变化，它向我们的<strong>store</strong>发送动作，并让它通过我们的<strong>reducer</strong>处理变化逻辑，而我们的一些状态仍然在我们的视图中直接内联地发生变化。让我们解决这个问题。</p>
+<p><strong>IsPrimeModalView</strong>在按钮操作中直接发生了以下变化:</p>
+<pre><code class="language-swift">Button(&quot;Remove from favorite primes&quot;) {
+  self.store.value.favoritePrimes.removeAll(where: { $0 == self.store.value.count })
+  self.store.value.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(self.store.value.count)))
+}
+…
+Button(&quot;Save to favorite primes&quot;) {
+  self.store.value.favoritePrimes.append(self.store.value.count)
+  self.store.value.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(self.store.value.count)))
+}
+</code></pre>
+<p>这些突变负责向我们的收藏质数列表添加或删除当前计数器值，以及将该事件添加到用户在应用程序中所做的事情的活动feed中，尽管我们实际上还没有构建出那个屏幕。</p>
+<p>让我们像处理增量突变和递减突变一样处理这些突变。我们将添加新的案例到我们的动作枚举中:</p>
+<pre><code class="language-swift">enum CounterAction {
+  …
+  case saveFavoritePrimeTapped
+  case removeFavoritePrimeTapped
+}
+</code></pre>
+<p>这在我们的<strong>reducer</strong>中创建了一个编译错误，因为我们现在有新的情况需要处理:</p>
+<pre><code class="language-swift">func counterReducer(value: AppState, action: CounterAction) -&gt; AppState {
+  switch action {
+  …
+  case .saveFavoritePrimeTapped:
+    fatalError()
+  case .removeFavoritePrimeTapped:
+    fatalError()
+  }
+}
+</code></pre>
+<p>现在我们可以很容易地填入这些空白，但在此之前，让我们先解决一个奇怪的问题。为什么我们要把模态的逻辑塞进所谓的<strong>counterReducer和CounterAction</strong>中? 就像我们有一个叫做<strong>AppState</strong>的东西，我们可能应该有一个叫做<strong>AppAction</strong>的东西来保存应用的所有动作。</p>
+<p>我们创建一个主<strong>AppAction</strong>枚举，它将保存每个屏幕的所有动作:</p>
+<pre><code class="language-swift">enum AppAction {
+  case decrTapped
+  case incrTapped
+  case saveFavoritePrimeTapped
+  case removeFavoritePrimeTapped
+}
+</code></pre>
+<p>但我们现在失去了一些模块化。 我们将计数动作和模态动作捆绑在一起。将每一组操作保存在它们自己的枚举中可能会更好，<strong>AppAction</strong>只是在其中嵌套每个子操作。</p>
+<pre><code class="language-swift">enum CounterAction {
+  case decrTapped
+  case incrTapped
+}
+enum PrimeModalAction {
+  case saveFavoritePrimeTapped
+  case removeFavoritePrimeTapped
+}
+enum AppAction {
+  case counter(CounterAction)
+  case primeModal(PrimeModalAction)
+}
+</code></pre>
+<p>然后我们的<strong>reducer</strong>可以是一个<strong>appReducer</strong>，通过对每个嵌套操作进行切换来处理这个完整的操作集:</p>
+<pre><code class="language-swift">func appReducer(value: inout AppState, action: AppAction) -&gt; Void {
+  switch action {
+  case .counter(.decrTapped):
+    value.count -= 1
+  case .counter(.incrTapped):
+    value.count += 1
+  case .primeModal(.saveFavoritePrimeTapped):
+    fatalError()
+  case .primeModal(.removeFavoritePrimeTapped):
+    fatalError()
+  }
+}
+</code></pre>
+<p>我们仍然需要填补这些空白，但让我们首先修复一些编译器错误。当向商店发送计数器屏幕的动作时，我们必须将动作包装在新的应用动作案例中:</p>
+<pre><code class="language-swift">Button(&quot;-&quot;) { self.store.send(.counter(.decrTapped)) }
+Text(&quot;\(self.store.value.count)&quot;)
+Button(&quot;+&quot;) { self.store.send(.counter(.incrTapped)) }
+</code></pre>
+<p>现在，事情正在编译，我们可以开始将我们的突变逻辑移出视图，进入<strong>reducer</strong>:</p>
+<pre><code class="language-swift">case .primeModal(.saveFavoritePrimeTapped):
+  value.favoritePrimes.append(value.count)
+  value.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(value.count)))
+
+case .primeModal(.removeFavoritePrimeTapped):
+  value.favoritePrimes.removeAll(where: { $0 == value.count })
+  value.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(value.count)))
+</code></pre>
+<p>然后我们的按钮动作可以简单地将相应的动作发送到<strong>store</strong>:</p>
+<pre><code class="language-swift">Button(&quot;Remove from favorite primes&quot;) {
+  self.store.send(.primeModal(.removeFavoritePrimeTapped))
+}
+…
+Button(&quot;Save to favorite primes&quot;) {
+  self.store.send(.primeModal(.saveFavoritePrimeTapped))
+}
+</code></pre>
+<p>一切都像以前一样在编译和工作。除了需要重新命名和移动一些内容之外，我们很容易将突变内容提取到我们的<strong>store</strong>中。</p>
+<p>还有一种变异很容易提取出来。在<strong>FavoritePrimesView</strong>中，我们在<strong>onDelete</strong>处理程序中执行以下操作:</p>
+<pre><code class="language-swift">.onDelete { indexSet in
+  for index in indexSet {
+    self.store.value.favoritePrimes.remove(at: index)
+    self.store.value.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(prime)))
+  }
+}
+</code></pre>
+<p>让我们遵循前面两组突变所使用的模式。这是一个新的屏幕，所以让我们屏幕一个新的enum并添加一个case到AppAction:</p>
+<pre><code class="language-swift">enum FavoritePrimesAction {
+  case deleteFavoritePrimes(IndexSet)
+}
+enum AppAction {
+  …
+  case favoritePrimes(FavoritePrimesAction)
+}
+</code></pre>
+<p>我们立即在<strong>reducer</strong>中得到一个编译器错误，所以让我们解决这个问题:</p>
+<pre><code class="language-swift">func appReducer(value: inout AppState, action: AppAction) -&gt; Void {
+  switch action {
+  …
+  case let .favoritePrimes(.deleteFavoritePrimes(indexSet)):
+    for index in indexSet {
+      let prime = value.favoritePrimes[index]
+      value.favoritePrimes.remove(at: index)
+      value.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(prime)))
+    }
+  }
+}
+</code></pre>
+<p>最后，我们在视图中使用内联突变，并将其替换为简单地将操作发送到<strong>store</strong>的代码:</p>
+<pre><code class="language-swift">.onDelete { indexSet in
+  self.store.send(.favoritePrimes(.removeFavoritePrimes(at: indexSet)))
+}
+</code></pre>
+<p>现在，我们已经将所有的内联突变从按钮操作转移到我们的<strong>reducer</strong>中，一切仍然像以前一样工作。</p>
+<p>虽然我们已经将很多突变转移到<strong>reducer</strong>中，从而清理了我们的view，但仍然有一些突变在view中发生。</p>
+<p>这些是我们决定不需要在应用程序的全局级别上跟踪的所有局部突变。回想一下，SwiftUI中的本地状态是用@<strong>State</strong>建模的，而<strong>CounterView</strong>有3个本地状态实例:</p>
+<pre><code class="language-swift">@State var isPrimeModalShown = false
+@State var alertNthPrime: Int?
+@State var isNthPrimeButtonDisabled = false
+</code></pre>
+<p>有一些地方这些值是突变的，它是完全在我们的<strong>reducer</strong>权限之外做的。这是不幸的，因为将我们所有的突变统一到一个内聚的包中是很好的，但是处理<strong>alert和modal</strong>有点复杂，所以我们将在了解了<strong>reducers</strong>的基础知识后解决这个问题。</p>
+<h2 id="8-a-nametillnexttimeatill-next-time">8. <a name='Tillnexttime'></a>Till next time</h2>
+<p>我们现在已经有了一个非常基本的架构版本。我们有一个<strong>store</strong>类，它是状态类型的泛型，表示应用程序的完整状态，它是操作类型的泛型，表示应用程序中可能发生的所有用户操作。</p>
+<ul>
+<li><strong>store</strong>类包装了一个状态值，这只是一个简单的值类型，这允许我们一次性地挂钩到观察者，以便我们可以在状态即将发生变化时通知SwiftUI。</li>
+<li><strong>store</strong>类还保留了一个<strong>reducer</strong>，它是我们应用程序的大脑。 它描述了如何获取应用程序的当前状态和来自用户的传入操作，并生成应用程序的全新状态，然后将其呈现并显示给用户。</li>
+</ul>
+<p>这个小小的工作已经解决了我们在本集开始时提到的5个问题中的2个。</p>
+<p>但是，尽管这一切都很酷，我们还可以走得更远。让我们来解决在<strong>appReducer</strong>中开始发展的问题。现在它看起来相当庞大:一个巨大的<strong>reducer</strong>处理3个不同屏幕的突变。这似乎不是特别具有可扩展性。如果我们有24个屏幕我们真的需要一个开关语句来切换24个不同屏幕的每个动作吗? That’s not going to work.</p>
+<p>我们需要研究将<strong>reducer</strong>合成成更大的<strong>reducer</strong>的方法。如何将一个大的<strong>reducer</strong>分解成许多小的只做一件特定事情的<strong>reducer</strong>然后将它们粘在一起形成我们的主<strong>reducer</strong>?</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-67-swiftui-and-state-management-part-3/">
+                  <h3 class="post-title">
+                    PointFree Episode 67: SwiftUI and State Management: Part 3
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

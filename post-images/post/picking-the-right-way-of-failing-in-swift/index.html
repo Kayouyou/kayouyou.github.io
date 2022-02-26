@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Picking the right way of failing in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift的一个主要关注点是编译时的安全性——使我们作为开发人员能够轻松地专注于编写更可预测、更不易发生运行时错误的代码。 然而，有时候事情会因为各种原因而失败——所以这周，让我们看看我们可以如何恰当地处理这样的失败，以及我们可以使用什么工..." />
+    <meta name="keywords" content="assertions,errors" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Picking the right way of failing in Swift</h2>
+            <div class="post-date">2017-04-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift的一个主要关注点是编译时的安全性——使我们作为开发人员能够轻松地专注于编写更可预测、更不易发生运行时错误的代码。 然而，有时候事情会因为各种原因而失败——所以这周，让我们看看我们可以如何恰当地处理这样的失败，以及我们可以使用什么工具来这样做。</p>
+<p>几周前，我们在“处理Swift中非可选的可选选项”中查看了如何处理非可选的可选选项。在那篇文章中，我介绍了将preconditionFailure()与guard结合使用的情况，而不是强制展开，并介绍了微框架需求，该需求为这样做提供了一个方便的API。</p>
+<p>自从那篇文章发表后，很多人都在问preconditionFailure()和assert()之间有什么区别，以及它与Swift的抛出能力有什么关系。因此，在这篇文章中，让我们仔细看看所有这些语言特性，以及何时使用它们。</p>
+<h2 id="lets-start-with-a-list">Let’s start with a list</h2>
+<p>以下是所有(据我所知)你可以处理Swift错误的方法:</p>
+<p>Return nil or an error enum case. 最简单的错误处理形式是简单地从遇到错误的函数返回nil(或者如果您使用Result enum作为返回类型，则返回.error情况)。虽然这在许多情况下确实很有用，但过度使用它来处理所有错误会很快导致api使用起来很麻烦，而且还可能隐藏错误逻辑。<br>
+Throwing an error (using throw MyError) 它要求调用者使用do, try, catch模式来处理潜在的错误。或者，可以使用try?在呼叫点。<br>
+Using assert() and assertionFailure() to verify that a certain condition is true.  默认情况下，这会在调试构建中导致致命错误，而在发布构建中会被忽略。因此，不能保证如果断言被触发，执行会停止，这有点像一个严重的运行时警告。<br>
+Using precondition() and preconditionFailure() instead of asserts.  关键的区别是这些总是被执行的，即使是在发布版本中。这意味着，如果不满足条件，就保证不会继续执行。<br>
+Calling fatalError()你可能在xcode生成的init(coder:)实现中看到过 当子类化符合nscoding的系统类时，比如UIViewController。直接调用这个函数会终止进程。<br>
+Calling exit()  which exists your process with a code。这在命令行工具和脚本中非常有用，当你想退出全局作用域时(例如在main.swift中)。</p>
+<h2 id="recoverable-vs-non-recoverable">Recoverable vs non-recoverable</h2>
+<p>在选择正确的失败方式时，要考虑的关键问题是确定所发生的错误是否可以恢复。</p>
+<p>例如，假设我们正在调用服务器，并收到了一个错误响应。这是必然会发生的事情，无论我们的程序员有多么优秀，我们的服务器基础设施有多么健壮。因此，将这些类型的错误视为致命的和不可恢复的通常是一个错误。 相反，我们想要的是恢复并可能向用户显示某种形式的错误屏幕。</p>
+<p>那么，在这种情况下，如何选择一种合适的失败方式呢? 如果我们看一下上面的列表，我们可以把它分成可恢复技术和不可恢复技术，就像这样:</p>
+<pre><code class="language-swift">Recoverable
+Returning nil or an error enum case
+Throwing an error
+Non-recoverable
+Using assert()
+Using precondition()
+Calling fatalError()
+Calling exit()
+</code></pre>
+<p>在这种情况下，因为我们正在处理一个异步任务，返回nil或一个错误枚举可能是最好的选择，像这样:</p>
+<pre><code class="language-swift">class DataLoader {
+    enum Result {
+        case success(Data)
+        case failure(Error?)
+    }
+
+    func loadData(from url: URL,
+                  completionHandler: @escaping (Result) -&gt; Void) {
+        let task = urlSession.dataTask(with: url) { data, _, error in
+            guard let data = data else {
+                completionHandler(.failure(error))
+                return
+            }
+            completionHandler(.success(data))
+        }
+        task.resume()
+    }
+}
+</code></pre>
+<p>对于同步API，抛出是一个很好的选择——因为它“强迫”我们的API用户以适当的方式处理错误:</p>
+<pre><code class="language-swift">class StringFormatter {
+    enum Error: Swift.Error {
+        case emptyString
+    }
+
+    func format(_ string: String) throws -&gt; String {
+        guard !string.isEmpty else {
+            throw Error.emptyString
+        }
+
+        return string.replacingOccurences(of: &quot;\n&quot;, with: &quot; &quot;)
+    }
+}
+</code></pre>
+<p>然而，有时错误是不可恢复的。 例如，假设我们需要在应用程序启动时加载一个配置文件。 如果那个配置文件丢失了，它会把我们的应用置于未定义状态  -所以在这种情况下崩溃比继续执行程序要好。 因此，使用一种更强的、不可恢复的失败方式更合适。</p>
+<p>在这种情况下，我们使用preconditionFailure()来停止执行，以防配置文件丢失:</p>
+<pre><code class="language-swift">guard let config = FileLoader().loadFile(named: &quot;Config.json&quot;) else {
+    preconditionFailure(&quot;Failed to load config file&quot;)
+}
+</code></pre>
+<h2 id="programmer-errors-vs-execution-errors">Programmer errors vs execution errors</h2>
+<p>另一个重要的区别是错误是由错误的逻辑或错误的配置引起的，还是应该将错误视为应用程序流的合法部分。 基本上是程序员造成的错误还是外部因素造成的。</p>
+<p>在防止程序员错误时，您几乎总是希望使用不可恢复技术。这样，你就不必在应用程序的所有特殊环境下编写代码，而一套良好的测试将确保尽早发现这些类型的错误。</p>
+<p>例如，假设我们正在构建一个视图，在使用它之前需要将视图模型绑定到它。 视图模型在我们的代码中是可选的，但我们不想每次使用它时都必须unwrap它。</p>
+<p>然而，如果视图模型不知为何丢失了，我们并不一定希望在生产环境中使应用程序崩溃，在调试中得到一个关于它的错误就足够了。这是一个使用assert的例子:</p>
+<pre><code class="language-swift">class DetailView: UIView {
+    struct ViewModel {
+        var title: String
+        var subtitle: String
+        var action: String
+    }
+
+    var viewModel: ViewModel?
+
+    override func didMoveToSuperview() {
+        super.didMoveToSuperview()
+
+        guard let viewModel = viewModel else {
+            assertionFailure(&quot;No view model assigned to DetailView&quot;)
+            return
+        }
+
+        titleLabel.text = viewModel.title
+        subtitleLabel.text = viewModel.subtitle
+        actionButton.setTitle(viewModel.action, for: .normal)
+    }
+}
+</code></pre>
+<p>注意，我们必须在上面的guard语句中返回，因为assertionFailure()将在发布构建中静默失败。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>我希望这篇文章有助于澄清Swift中各种错误处理技术之间的区别。我的建议是，不仅要坚持一种技巧，还要根据情况选择最合适的一种。一般来说，我还建议，如果可能的话，总是尝试从错误中恢复，除非错误应该被视为致命的，否则不要破坏用户体验。</p>
+<p>另外，请记住print(error)不是错误处理😉</p>
+<p><a href="https://www.swiftbysundell.com/articles/picking-the-right-way-of-failing-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/teJ4v5xim/" class="tag">
+                    assertions
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/wQerok9iv/" class="tag">
+                    errors
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/handling-non-optional-optionals-in-swift/">
+                  <h3 class="post-title">
+                    Handling non-optional optionals in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

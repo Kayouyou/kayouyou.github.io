@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using static protocol APIs to create conforming instances | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift 5.5新增功能:现在可以定义协议api，让我们使用Swift非常方便的“点语法”来创建符合要求的实例，这反过来可以使某些协议更像枚举，同时仍然保留协议给我们的所有灵活性。
+例如，当应用一个样式到SwiftUI列表时，我们目前(在..." />
+    <meta name="keywords" content="static,protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using static protocol APIs to create conforming instances</h2>
+            <div class="post-date">2021-08-26</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift 5.5新增功能:现在可以定义协议api，让我们使用Swift非常方便的“<strong>点语法</strong>”来创建符合要求的实例，这反过来可以使某些协议更像枚举，同时仍然保留协议给我们的所有灵活性。</p>
+<p>例如，当应用一个样式到SwiftUI列表时，我们目前(在Swift 5.4中)必须拼出该样式类型的整个名称-像这样:</p>
+<pre><code class="language-swift">struct ItemList: View {
+    var items: [Item]
+
+    var body: some View {
+        List(items) { item in
+            ...
+        }
+        .listStyle(InsetGroupedListStyle())
+    }
+}
+</code></pre>
+<p>但是现在，我们可以通过输入.<strong>insetGrouped</strong>来引用上面的样式，这对许多Swift开发人员来说应该更直观，因为这是我们通常在其他类型的配置api中使用的语法类型:</p>
+<pre><code class="language-swift">struct ItemList: View {
+    var items: [Item]
+
+    var body: some View {
+        List(items) { item in
+            ...
+        }
+        .listStyle(.insetGrouped)
+    }
+}
+</code></pre>
+<blockquote>
+<p>好消息是，上述新的API风格甚至完全向后兼容苹果操作系统的早期版本(只要我们使用Xcode 13来构建我们的应用)。</p>
+</blockquote>
+<p>那么，我们如何在自己的代码中使用这个新特性呢? 举个例子，让我们假设一个我们正在开发的应用程序包含如下的ImageLoader API，它被建模为一个协议，然后有独立的实现来加载内部或外部图像:</p>
+<pre><code class="language-swift">protocol ImageLoader {
+    func loadImage(from url: URL) async throws -&gt; Image
+}
+
+class ExternalImageLoader: ImageLoader {
+    ...
+
+    func loadImage(from url: URL) async throws -&gt; Image {
+        // Load the image from an external server.
+        ...
+    }
+}
+
+class AuthenticatedImageLoader: ImageLoader {
+    private let token: AccessToken
+    ...
+
+    func loadImage(from url: URL) async throws -&gt; Image {
+        // Load the image from our app's own server, using
+        // the loader's access token.
+        ...
+    }
+}
+</code></pre>
+<p>为了能够使用点语法引用上述两个<strong>ImageLoader</strong>实现，我们所要做的就是为每一个定义一个受类型约束的扩展——它反过来包含一个静态API来创建该类型的实例:</p>
+<pre><code class="language-swift">extension ImageLoader where Self == ExternalImageLoader {
+    static var external: Self { Self() }
+}
+
+extension ImageLoader where Self == AuthenticatedImageLoader {
+    static func authenticated(with token: AccessToken) -&gt; Self {
+        Self(token: token)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以很容易地引用.<strong>external或.authenticated</strong>，这取决于我们要创建的图像加载器的类型:</p>
+<pre><code class="language-swift">let searchListVC = ItemListViewController(
+    dataSource: makeSearchListDataSource(),
+    imageLoader: .external
+)
+
+let friendsListVC = ItemListViewController(
+    dataSource: makeFriendsListDataSource(),
+    imageLoader: .authenticated(with: user.accessToken)
+)
+</code></pre>
+<p>虽然上述技术要求更多的代码比当使用enum(或结构体与静态api),它让我们保留使用协议的主要好处,比如能够实现独立功能使用独立的类型,同时还使我们调用网站简单得多。</p>
+<p>就我个人而言，我认为这个新的语言特性在处理具有有限实现集的协议时特别有用——比如SwiftUI的各种样式协议，以及上面的ImageLoader示例。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/7ePSlLtHC/" class="tag">
+                    static
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/expert-swift-chapter-4-generics/">
+                  <h3 class="post-title">
+                    Expert Swift Chapter 4 : Generics
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

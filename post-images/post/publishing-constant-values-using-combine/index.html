@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Publishing constant values using Combine | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管在构建高度动态的数据管道以发布随时间推移的值流时，Combine绝对是最有用的，但有时我们可能还想使用它来发出常量值。
+举个例子，假设我们正在开发一个应用程序，它包含一个ImageLoader类，用于通过网络下载远程图像。为了做到这一点..." />
+    <meta name="keywords" content="combine" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Publishing constant values using Combine</h2>
+            <div class="post-date">2020-10-15</div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管在构建高度动态的数据管道以发布随时间推移的值流时，Combine绝对是最有用的，但有时我们可能还想使用它来发出常量值。</p>
+<p>举个例子，假设我们正在开发一个应用程序，它包含一个ImageLoader类，用于通过网络下载远程图像。为了做到这一点，我们使用Foundation的URLSession API的Combine版本，以及一系列的操作符来将下载的数据解码为UIImage实例-像这样:</p>
+<pre><code class="language-swift">class ImageLoader {
+    private let urlSession: URLSession
+
+    init(urlSession: URLSession = .shared) {
+        self.urlSession = urlSession
+    }
+    func publisher(for url: URL) -&gt; AnyPublisher&lt;UIImage, Error&gt; {
+        urlSession.dataTaskPublisher(for: url)
+            .map(\.data)
+            .tryMap { data in
+                guard let image = UIImage(data: data) else {
+                    throw URLError(.badServerResponse, userInfo: [
+                        NSURLErrorFailingURLErrorKey: url
+                    ])
+                }
+
+                return image
+            }
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>注意我们是如何跳转到合并管道末尾的主队列的，因为使用ImageLoader下载的图像很可能是使用UIImageView或SwiftUI图像来渲染的，这两个都是只支持主队列的api。</p>
+<p>现在，假设我们想要在上面的ImageLoader中添加本地的内存缓存，例如使用另一个基础类NSCache:</p>
+<pre><code class="language-swift">class ImageLoader {
+    private let urlSession: URLSession
+    private let cache: NSCache&lt;NSURL, UIImage&gt;
+
+    init(urlSession: URLSession = .shared,
+         cache: NSCache&lt;NSURL, UIImage&gt; = .init()) {
+        self.urlSession = urlSession
+        self.cache = cache
+    }
+    ...
+}
+</code></pre>
+<p>我们需要使用Objective-C的NSURL，而不是Swift自己的URL，作为我们缓存的键类型，因为NSCache只支持Objective-C兼容的类型。要了解更多关于缓存的知识，请查看“Swift缓存”。</p>
+<p>注入并存储缓存之后，我们现在需要做两件事——缓存所有已下载的图像，并在启动给定下载之前检查缓存中现有的图像。第一种方法可以通过在现有的Combine管道末尾使用handleEvents操作符来实现，如下所示:</p>
+<pre><code class="language-swift">class ImageLoader {
+    ...
+
+    func publisher(for url: URL) -&gt; AnyPublisher&lt;UIImage, Error&gt; {
+        urlSession.dataTaskPublisher(for: url)
+            .map(\.data)
+            .tryMap { data in
+                ...
+            }
+            .receive(on: DispatchQueue.main)
+            .handleEvents(receiveOutput: { [cache] image in
+                cache.setObject(image, forKey: url as NSURL)
+            })
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>对于第二个任务(从缓存中检索图像)，我们将需要一个单独的管道，与用于下载的管道不同，因为如果缓存的图像存在，我们不希望启动任何网络调用。</p>
+<p>这就是Combine的常量值API非常方便的地方，因为它使我们能够构造只带有单个值的管道 -使用适当命名的Just publisher。 下面是我们如何使用这个发布者来直接返回在给定URL中找到的缓存图像:</p>
+<pre><code class="language-swift">class ImageLoader {
+    ...
+    func publisher(for url: URL) -&gt; AnyPublisher&lt;UIImage, Error&gt; {
+        if let image = cache.object(forKey: url as NSURL) {
+            return Just(image)
+                .setFailureType(to: Error.self)
+                .receive(on: DispatchQueue.main)
+                .eraseToAnyPublisher()
+        }
+        ...
+    }
+}
+</code></pre>
+<p>注意，我们需要显式地将Error设置为发布者的失败类型，因为常量发布者在默认情况下不能够发出错误。 我们仍然希望总是在主队列上返回结果，即使是常量值，让我们的API在哪个DispatchQueue上发出值，保持完全一致。</p>
+<p>最后，通过使用内置的Fail publisher, Combine还提供了一种发出常量错误的方法。下面是一个例子，展示了我们如何使用该API在请求非https URL的图像时直接返回错误:</p>
+<pre><code class="language-swift">class ImageLoader {
+    ...
+    func publisher(for url: URL) -&gt; AnyPublisher&lt;UIImage, Error&gt; {
+        guard url.scheme == &quot;https&quot; else {
+            return Fail(error: URLError(.badURL, userInfo: [
+                NSLocalizedFailureReasonErrorKey: &quot;&quot;&quot;
+                Image loading may only be performed over HTTPS
+                &quot;&quot;&quot;,
+                NSURLErrorFailingURLErrorKey: url
+            ]))
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
+        }
+        ...
+    }
+}
+</code></pre>
+<p>Just和Fail的发布者对于单元测试也非常有用，因为他们让我们能够轻松地设置带有模拟值或错误的组合管道。</p>
+<p><a href="https://www.swiftbysundell.com/tips/constant-combine-publishers/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/handling-loading-states-within-swiftui-views/">
+                  <h3 class="post-title">
+                    Handling loading states within SwiftUI views
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Capturing objects in Swift closures | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="自从blocks作为iOS 4的一部分被引入Objective-C以来，它们已经成为苹果平台上大多数现代api的重要组成部分。使用Block的惯例也随着closures被带入Swift，这是我们大多数人每天都在使用的语言特性。
+但是，即使闭..." />
+    <meta name="keywords" content="closures,state management" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Capturing objects in Swift closures</h2>
+            <div class="post-date">2017-10-22</div>
+            
+            <div class="post-content" v-pre>
+              <p>自从blocks作为iOS 4的一部分被引入Objective-C以来，它们已经成为苹果平台上大多数现代api的重要组成部分。使用Block的惯例也随着closures被带入Swift，这是我们大多数人每天都在使用的语言特性。</p>
+<p>但是，即使闭包被广泛使用，在使用它们时也要记住许多行为和注意事项。本周，让我们仔细看看闭包、捕获是如何工作的，以及一些使处理闭包更容易的技术。就让我们一探究竟吧!</p>
+<h2 id="the-great-escape">The great escape</h2>
+<p>闭包有两种不同的变体——逃逸和非逃逸。当一个闭包进行逃逸(由@escaping参数属性标记)时，意味着它将以某种方式存储(要么作为属性，要么被另一个闭包捕获)。另一方面，非逃逸闭包不能存储，必须在使用时直接执行。</p>
+<p>非逃逸闭包的一个例子是在集合上使用函数操作，例如forEach:</p>
+<pre><code class="language-swift">[1, 2, 3].forEach { number in
+    ...
+}
+</code></pre>
+<p>由于闭包将为集合的每个成员直接执行，因此不需要对其进行逃逸。</p>
+<p>逃逸闭包主要出现在异步api中，比如DispatchQueue。例如，当你在调度一个异步闭包时，这个闭包将会逃逸:</p>
+<pre><code class="language-swift">DispatchQueue.main.async {
+    ...
+}
+</code></pre>
+<p>那么，有什么区别呢? 因为逃逸闭包将被存储，所以它们还需要存储定义它们的上下文。 当该上下文涉及到其他值或对象时，需要捕获这些值或对象，以便在闭包等待执行时不会消失。最常见的实际含义是在self上使用api时，这要求我们以某种方式显式地捕获self。</p>
+<h2 id="capturing-retain-cycles">Capturing &amp; retain cycles</h2>
+<p>由于转义闭包会自动捕获在闭包内使用的任何值或对象，因此它们是循环引用的常见来源。例如，当一个视图控制器被它的视图模型存储在一个闭包中:</p>
+<pre><code class="language-swift">class ListViewController: UITableViewController {
+    private let viewModel: ListViewModel
+
+    init(viewModel: ListViewModel) {
+        self.viewModel = viewModel
+
+        super.init(nibName: nil, bundle: nil)
+
+        viewModel.observeNumberOfItemsChanged {
+            // This will cause a retain cycle, since our view controller
+            // retains its view model, which in turn retains the view
+            // controller by capturing it in an escaping closure.
+            self.tableView.reloadData()
+        }
+    }
+}
+</code></pre>
+<p>对于这个问题的一个常见的解决方法，正如大多数使用闭包的人可能已经知道的那样，是弱地捕获self来打破retain循环:</p>
+<pre><code class="language-swift">viewModel.observeNumberOfItemsChanged { [weak self] in
+    self?.tableView.reloadData()
+}
+</code></pre>
+<h2 id="capturing-the-context-instead-of-self">Capturing the context instead of self</h2>
+<p>虽然上面的[weak self]解决方案在大多数情况下是伟大的，当你想要避免强捕获一个对象，它也有一些缺点。首先，它非常容易被忽略，因为编译器不会警告您任何潜在的循环引用。其次，当你必须从弱引用转换回强引用时，它可能会导致一些相当混乱的代码，像这样:</p>
+<pre><code class="language-swift">dataLoader.loadData(from: url) { [weak self] data in
+    guard let strongSelf = self else {
+        return
+    }
+    let model = try strongSelf.parser.parse(data, using: strongSelf.schema)
+    strongSelf.titleLabel.text = model.title
+    strongSelf.textLabel.text = model.text
+}
+</code></pre>
+<p>捕获self的一个替代解决方案是捕获你在闭包中需要的单个对象。 这仍然可以让我们避免一个循环引用(因为像标签和模式这样的对象不存储闭包)， 不需要做“weak/strong self dance”。下面是如何使用上下文元组实现这一点:</p>
+<pre><code class="language-swift">// We define a context tuple that contains all of our closure's dependencies
+let context = (
+    parser: parser,
+    schema: schema,
+    titleLabel: titleLabel,
+    textLabel: textLabel
+)
+
+dataLoader.loadData(from: url) { data in
+    // We can now use the context instead of having to capture 'self'
+    let model = try context.parser.parse(data, using: context.schema)
+    context.titleLabel.text = model.title
+    context.textLabel.text = model.text
+}
+</code></pre>
+<h2 id="arguments-instead-of-capturing">Arguments instead of capturing</h2>
+<p>捕获对象的另一种方法是将它们作为参数传递。这是我在为我的新游戏引擎Imagine引擎设计事件API时使用的一种技术，它允许你在使用闭包观察事件时传递一个观察者。这允许self被传入，它将被传入事件的闭包，而不必手动捕获它:</p>
+<pre><code class="language-swift">actor.events.moved.addObserver(self) { scene in
+    ...
+}
+</code></pre>
+<p>让我们回到最初的ListViewController示例，看看在观察它的视图模型时，我们如何实现完全相同的API。这样，我们甚至可以传入我们想要作为观察者重新加载的表视图，给我们一个非常好的调用站点，像这样:</p>
+<pre><code class="language-swift">viewModel.numberOfItemsChanged.addObserver(tableView) { tableView in
+    tableView.reloadData()
+}
+</code></pre>
+<p>为了实现上述目标，我们将使用一种非常类似于Imagine Engine事件系统的技术。 我们首先定义一个简单的事件类型，它可以附加观察闭包:</p>
+<pre><code class="language-swift">class Event {
+    private var observers = [() -&gt; Void]()
+}
+</code></pre>
+<p>然后，我们将添加一个方法，该方法允许我们添加任何引用类型的观察者，以及一个在观察被触发后调用的闭包。这里有一个技巧，我们将把这个闭包传递到第二个闭包中，这个闭包弱地捕获了观察者，像这样:</p>
+<pre><code class="language-swift">func addObserver&lt;T: AnyObject&gt;(_ observer: T, using closure: @escaping (T) -&gt; Void) {
+    observers.append { [weak observer] in
+        observer.map(closure)
+    }
+}
+</code></pre>
+<p>这使得我们只需要进行一次弱/强转换，而不会影响调用站点。最后，我们将添加一个触发器方法来触发事件:</p>
+<pre><code class="language-swift">func trigger() {
+    for observer in observers {
+        observer()
+    }
+}
+</code></pre>
+<p>现在我们可以回到ListViewModel，为numberOfItemsChanged添加一个事件，一旦它的条件满足，我们就会触发它，像这样:</p>
+<pre><code class="language-swift">class ListViewModel {
+    let numberOfItemsChanged = Event()
+    var items: [Item] { didSet { itemsDidChange(from: oldValue) } }
+
+    private func itemsDidChange(from previousItems: [Item]) {
+        if previousItems.count != items.count {
+            numberOfItemsChanged.trigger()
+        }
+    }
+}
+</code></pre>
+<p>似于上面的基于事件的API的最大优点是，它更难意外地引入retain循环，而且我们可以在代码中对任何类型的事件观察重用相同的实现。虽然上面的事件实现非常简单，而且缺乏像取消观察者注册这样的高级特性，但对于更简单的用例来说已经足够好了。</p>
+<p>我们将在以后的博客文章中更详细地介绍基于事件的编程，您也可以查看Imagine Engine中使用的完整事件实现以获得更多细节。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>闭包可以自动捕获在其内部使用的任何对象或值，这是一个非常棒的特性，也是使闭包易于使用的必要条件。然而，捕获也可能是bugs和 循环引用 的来源，并可能使代码变得更复杂和更难理解。</p>
+<p>虽然我不建议在所有情况下都避免捕获，但我希望这篇文章能够提供一些替代方法来始终捕捉特定的 self。在某些情况下，采用经典的弱自捕获是最合适的解决方案，但对于其他情况，使用一些替代技术可以帮助您使基于闭包的代码更容易使用和维护。</p>
+<p><a href="https://www.swiftbysundell.com/articles/capturing-objects-in-swift-closures/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/WHIN6Hnog/" class="tag">
+                    closures
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EWN51MbzW/" class="tag">
+                    state management
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/avoiding-singletons-in-swift/">
+                  <h3 class="post-title">
+                    Avoiding singletons in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

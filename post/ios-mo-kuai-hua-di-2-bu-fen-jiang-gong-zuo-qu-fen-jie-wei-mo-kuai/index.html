@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>iOS模块化第二部分:将工作区分解为模块 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+iOS模块化第2部分:将工作区分解为模块
+
+
+1.1. Add your project to a workspace
+1.2. Add additional projects
+1.3. Organise your workspac..." />
+    <meta name="keywords" content="modular" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">iOS模块化第二部分:将工作区分解为模块</h2>
+            <div class="post-date">2021-05-14</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#iOS2:">iOS模块化第2部分:将工作区分解为模块</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Addyourprojecttoaworkspace">Add your project to a workspace</a></li>
+<li>1.2. <a href="#Addadditionalprojects">Add additional projects</a></li>
+<li>1.3. <a href="#Organiseyourworkspace">Organise your workspace</a></li>
+<li>1.4. <a href="#Accessingcodefromyourmodules">Accessing code from your modules</a></li>
+<li>1.5. <a href="#CleanuptheProjectNavigator">Clean up the Project Navigator</a></li>
+<li>1.6. <a href="#Comingupnext">Coming up next</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameios2aios模块化第2部分将工作区分解为模块">1. <a name='iOS2:'></a>iOS模块化第2部分:将工作区分解为模块</h2>
+<p>如果你还没有读过本系列文章的前一部分，请点击这里:<a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/ios-mo-kuai-hua-di-yi-bu-fen-e-sha-pang-ran-da-wu/">iOS模块化第一部分:扼杀iOS Monolith</a>。在前一篇文章中，我讨论了模块化体系结构的好处，希望从视觉效果中可以明显看出这一点!</p>
+<p>在这篇文章中，我将分享如何划分你的工作空间(workspace)。</p>
+<h3 id="11-a-nameaddyourprojecttoaworkspaceaadd-your-project-to-a-workspace">1.1. <a name='Addyourprojecttoaworkspace'></a>Add your project to a workspace</h3>
+<p>如果您还没有一个工作空间，那么从现有的项目创建一个工作空间是非常简单的。(如果您是CocoaPods用户，您可能熟悉在首次安装依赖项时自动创建的工作区。)</p>
+<p>从现有的项目中创建一个工作空间，在Xcode中打开项目，选择<strong>File→Save as workspace…</strong></p>
+<p>(如果该选项被禁用，这意味着您的项目已经是工作区的一部分!)</p>
+<p>选择一个合适的位置来保存.xcworkspace包。这通常与表示项目的.xcodeproj包在同一个目录中。</p>
+<p>现在您可以将特性模块添加到代码库中了!</p>
+<h3 id="12-a-nameaddadditionalprojectsaadd-additional-projects">1.2. <a name='Addadditionalprojects'></a>Add additional projects</h3>
+<p>可能是你正在从零开始一个项目，想要遵循良好的实践。也可能是您希望对一个已经成熟的代码库进行模块化。无论哪种方式，您都希望在工作空间中创建一个额外的项目来开始。</p>
+<ol>
+<li>
+<p>Select <em><strong>File → New → Project…</strong></em></p>
+</li>
+<li>
+<p>Select <em><strong>Cocoa Touch Framework</strong></em> from the template options and hit Next</p>
+</li>
+<li>
+<p>Give your feature module a name and hit Next</p>
+</li>
+<li>
+<p>When selecting a directory to save your new module, you may wish to create a new directory, such as <em><strong>Features</strong></em>. It’s best to create the new directory in the same location as the .xcworkspace package</p>
+</li>
+<li>
+<p><em><strong>Don’t hit Create yet!</strong></em></p>
+</li>
+<li>
+<p>From the <em><strong>Add to</strong></em>: drop-down, select your workspace</p>
+</li>
+<li>
+<p>From the <em><strong>Group</strong></em>: drop-down, select your workspace again. Make sure you’ve selected the workspace and not the project. You can tell because the workspace has a white background to the icon instead of blue</p>
+</li>
+<li>
+<p><em><strong>Now hit Create!</strong></em></p>
+</li>
+</ol>
+<p>现在您有了自己的特性模块，您可以向其添加新代码，或者从现有项目中迁移代码。</p>
+<p>如果你正在迁移代码，请确保将文件以及Xcode Project Navigator中的文件引用移到磁盘上。如果你使用Xcode来移动文件，请确保选择***Copy items if needed***。然后，你可以安全地删除原始文件和***移动到垃圾篓***。</p>
+<h3 id="13-a-nameorganiseyourworkspaceaorganise-your-workspace">1.3. <a name='Organiseyourworkspace'></a>Organise your workspace</h3>
+<p>默认情况下，Xcode会将每个新项目(模块)添加到项目导航器的顶部。因此，主项目——包含App Delegate的项目——出现在你的特性模块下面。</p>
+<p>将添加的项目移到主项目下方是一个很好的实践，这样当开发人员打开您的工作区时，主项目是最重要的。</p>
+<p>从Xcode 9.3开始，你可以在工作区中拖放框架项目。您还可以通过在Project Navigator中二次单击并选择New Group来添加组。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhruigeaoj308c08mglo.jpg" alt="avatar" loading="lazy"></figure>
+<blockquote>
+<p>在Xcode 9.3之前，在工作空间中移动框架项目时Xcode会崩溃。</p>
+</blockquote>
+<p>如果你创建了一个组并添加了一些模块，你的Project Navigator看起来就像这样:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhrularmvj305i04cmx1.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="14-a-nameaccessingcodefromyourmodulesaaccessing-code-from-your-modules">1.4. <a name='Accessingcodefromyourmodules'></a>Accessing code from your modules</h3>
+<p>任何想要从主应用程序访问的代码，都需要声明***public***。(Swift接口默认为内部接口。)</p>
+<p>要从你的主项目访问模块的公共接口，你需要链接框架并嵌入框架二进制文件。</p>
+<p>为此，选择主应用程序target和General选项卡。向下滚动到Embedded Binaries部分。单击+按钮。</p>
+<p>您将看到如下所示的对话框，您可以从中选择想要访问的模块。您可以一次选择多个，通过命令选择，然后点击添加。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhrummvt0j30b90fb0tg.jpg" alt="avatar" loading="lazy"></figure>
+<p>通过将它们添加到嵌入式二进制文件(Embedded Binaries)列表中，它们也被添加到链接框架和库(Linked Frameworks and Libraries)列表中。它们需要同时具备:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhruomdbpj30gw098mxi.jpg" alt="avatar" loading="lazy"></figure>
+<p>你现在可以像导入任何系统或第三方模块一样导入你的代码:</p>
+<pre><code class="language-swift">import UIKit
+import Common
+import ProfileUI
+</code></pre>
+<h3 id="15-a-namecleanuptheprojectnavigatoraclean-up-the-project-navigator">1.5. <a name='CleanuptheProjectNavigator'></a>Clean up the Project Navigator</h3>
+<p>你会注意到这些框架已经被添加到Project Navigator中，在主项目下，就像这样:</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhrupxzjmj305i08cglm.jpg" alt="avatar" loading="lazy"></figure>
+<p>让它们像这样暴露在外面感觉有点乱，尤其是当你添加越来越多的时候。我们可以通过创建一个“Frameworks”组并将它们移动到那里来清理这个问题，就像这样:</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhrusbga4j305o08sq2y.jpg" alt="avatar" loading="lazy"></figure>
+<p>然后你就可以瓦解这个小组，再也不看它了!🙈</p>
+<h3 id="16-a-namecomingupnextacoming-up-next">1.6. <a name='Comingupnext'></a>Coming up next</h3>
+<p>在本系列的下一篇文章中，我将展示如何从模块设置单元测试，以便在为主要目标运行测试时运行;如何设置CocoaPods，以跨模块化代码库使用这样;以及如何在模块之间共享测试逻辑。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/GAkD_BWre/" class="tag">
+                    modular
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/ios-mo-kuai-hua-di-yi-bu-fen-e-sha-pang-ran-da-wu/">
+                  <h3 class="post-title">
+                    iOS模块化第一部分: 扼杀庞然大物
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

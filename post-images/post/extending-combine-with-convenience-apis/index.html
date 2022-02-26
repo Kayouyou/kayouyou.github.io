@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Extending Combine with convenience APIs | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Apple的Combine框架使我们能够将异步代码建模为反应管道，每个管道由一系列独立的操作组成。然后，这些管道可以以各种方式进行观察、转换和组合——由于Combine大量使用Swift的高级泛型功能，这些都可以通过高度的类型安全性和编译时..." />
+    <meta name="keywords" content="extensions,combine" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Extending Combine with convenience APIs</h2>
+            <div class="post-date">2020-11-22</div>
+            
+            <div class="post-content" v-pre>
+              <p>Apple的Combine框架使我们能够将异步代码建模为反应管道，每个管道由一系列独立的操作组成。然后，这些管道可以以各种方式进行观察、转换和组合——由于Combine大量使用Swift的高级泛型功能，这些都可以通过高度的类型安全性和编译时验证来实现。</p>
+<p>在扩展Combine便利api时，这种强类型信息也非常有用，因为它允许我们创建定制的转换和实用程序，这些转换和实用程序是为特定类型的输出量身定制的。本周，让我们来看看实现这一目标的几种方法，以及如何在实现诸如网络和数据验证等事情时帮助我们消除常见的样板源。</p>
+<h2 id="inserting-default-arguments">Inserting default arguments</h2>
+<p>虽然结合了一套非常全面的内置转换(通常称为“操作符”)，但有时我们可能想要创建这些api的定制变体，根据它们在给定应用程序中的使用方式进行定制。这样做通常涉及扩展Combine的发布者协议，并且通过使用该协议的输出和失败类型，我们可以准确地选择我们想要添加新api的发布者类型。</p>
+<p>例如，标准的decode操作符可用于将一个发布数据值的发布者转换为发布可解码Swift类型实例的发布者。 然而，该操作符要求我们总是手动传递要解码的类型，以及希望使用的解码器-这很好理解，因为内置操作符的目标是尽可能的通用 -但在我们自己的代码库中，我们可以创建该操作符的自定义版本，自动为这两个实参插入默认值，像这样:</p>
+<pre><code class="language-swift">extension Publisher where Output == Data {
+    func decode&lt;T: Decodable&gt;(
+        as type: T.Type = T.self,
+        using decoder: JSONDecoder = .init()
+    ) -&gt; Publishers.Decode&lt;Self, T, JSONDecoder&gt; {
+        decode(type: type, decoder: decoder)
+    }
+}
+</code></pre>
+<p>注意我们是如何从上面的便利API返回一个Publishers.Decode实例的，而不是使用类型擦除的AnyPublisher类型，这在本例中是不需要的，因为我们有一个已知的、具体的可以按原样返回的类型。</p>
+<p>另一个选项是将上面对.init()的调用替换为我们在应用程序中使用的任何静态共享JSONDecoder实例。例如，如果我们下载JSON的web api都使用基于snake_case的键，然后，我们可能想要使用下面的snakeCaseConverting实例作为我们的默认解码器参数:</p>
+<pre><code class="language-swift">extension JSONDecoder {
+    static let snakeCaseConverting: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return decoder
+    }()
+}
+
+extension Publisher where Output == Data {
+    func decode&lt;T: Decodable&gt;(
+        as type: T.Type = T.self,
+        using decoder: JSONDecoder = .snakeCaseConverting
+    ) -&gt; Publishers.Decode&lt;Self, T, JSONDecoder&gt; {
+        decode(type: type, decoder: decoder)
+    }
+}
+</code></pre>
+<p>有了上述两个扩展，只要编译器能够推断出我们想要的输出类型，我们现在就可以简单地使用.decode()来解码JSON数据，例如这样的情况:</p>
+<pre><code class="language-swift">class ConfigModelController: ObservableObject {
+    @Published private(set) var config: Config
+    private let urlSession: URLSession
+    ...
+    func update() {
+        // Here the compiler is able to infer which type that we’re
+        // looking to decode our JSON into, based on the property
+        // that we’re assigning our pipeline’s output to:
+        urlSession.dataTaskPublisher(for: .config)
+            .map(\.data)
+            .decode()
+            .replaceError(with: .default)
+            .receive(on: DispatchQueue.main)
+            .assign(to: &amp;$config)
+    }
+}
+</code></pre>
+<p>当我们必须手动指定所需的输出类型时，我们的自定义解码操作符也非常有用，现在我们可以简单地这样做:</p>
+<pre><code class="language-swift">cancellable = URLSession.shared
+    .dataTaskPublisher(for: .allItems)
+    .map(\.data)
+    .decode(as: NetworkResponse.self)
+    .sink { completion in
+        // Handle completion
+        ...
+    } receiveValue: { response in
+        // Handle response
+        ...
+    }
+
+</code></pre>
+<p>更进一步说，我们还可以创建抽象，使我们不必手动将每个URLSession发布者映射到数据<br>
+并且总是解压缩结果NetworkResponse类型的内容——就像我们在“Swift中创建通用网络api”中所做的那样。</p>
+<h2 id="data-validation">Data validation</h2>
+<p>接下来，让我们看看如何还可以通过专用api扩展Combine来执行数据验证。作为一个例子，假设我们想要验证前面示例中加载的每个NetworkResponse实例至少包含一个项。为了实现这一点，我们可以添加以下API，它使用tryMap操作符，使我们能够在验证给定发行者的输出值时使用errors作为控制流:</p>
+<pre><code class="language-swift">extension Publisher {
+    func validate(
+        using validator: @escaping (Output) throws -&gt; Void
+    ) -&gt; Publishers.TryMap&lt;Self, Output&gt; {
+        tryMap { output in
+            try validator(output)
+            return output
+        }
+    }
+}
+</code></pre>
+<p>然后，我们可以简单地在前面的Combine管道中插入对上述validate操作符的调用，并且在我们的items数组为空的情况下抛出一个错误——像这样:</p>
+<pre><code class="language-swift">cancellable = URLSession.shared
+    .dataTaskPublisher(for: .allItems)
+    .map(\.data)
+    .decode(as: NetworkResponse.self)
+    .validate { response in
+    guard !response.items.isEmpty else {
+        throw NetworkResponse.Error.missingItems
+    }
+}
+    .sink { completion in
+        // Handle completion
+        ...
+    } receiveValue: { response in
+        // Handle response
+        ...
+    }
+
+</code></pre>
+<p>在Swift中验证数据的另一种非常常见的方法是展开可选项，尽管Combine内置的compactMap操作符正是这样做的，使用该操作符可以使给定的管道忽略所有的nil值，而不是在需要的值丢失时抛出错误。 因此，如果我们希望在这些情况下抛出错误，则可以通过使用tryMap构建一个自定义操作符来实现:</p>
+<pre><code class="language-swift">extension Publisher {
+    func unwrap&lt;T&gt;(
+        orThrow error: @escaping @autoclosure () -&gt; Failure
+    ) -&gt; Publishers.TryMap&lt;Self, T&gt; where Output == Optional&lt;T&gt; {
+        tryMap { output in
+            switch output {
+            case .some(let value):
+                return value
+            case nil:
+                throw error()
+            }
+        }
+    }
+}
+</code></pre>
+<p>上面我们使用@autoclosure属性自动地将每个错误参数转换为一个闭包， 这反过来又阻止了这些表达式的求值，除非它们确实需要。这个模式也在标准库中用于实现诸如断言之类的东西。要了解更多信息，请查看“Swift中断言的框架下”。</p>
+<p>为了看看我们新的unwrap操作符的实际效果， 假设我们正在从recentItems端点加载另一个Item值的集合， 只是这一次我们只对第一个元素感兴趣——我们现在可以像这样轻松地展开它:</p>
+<pre><code class="language-swift">cancellable = URLSession.shared
+    .dataTaskPublisher(for: .recentItems)
+    .map(\.data)
+    .decode(as: NetworkResponse.self)
+    .map(\.items.first)
+    .unwrap(orThrow: NetworkResponse.Error.missingItems)
+    .sink { completion in
+        // Handle completion
+        ...
+    } receiveValue: { response in
+        // Handle response
+        ...
+    }
+</code></pre>
+<p>真的很不错! 但是，有一件重要的事情需要指出，当遇到错误时，组合管道总是会完成 (除非使用catch或replaceError等操作符捕获该错误)，这意味着，当我们要寻找的行为类型是上述两种数据验证操作符时，我们应该只使用这两种操作符。</p>
+<h2 id="result-conversions">Result conversions</h2>
+<p>处理给定组合管道输出的最常见方法之一是使用sink操作符和两个闭包—一个用于处理每个输出值，另一个用于处理完成事件。</p>
+<p>但是，单独处理成功的输出值和完成(例如错误)有时会有点不方便，在这种情况下，发送单个结果值是一个很好的选择 -因此，让我们也引入一个自定义操作符来执行这种转换:</p>
+<pre><code class="language-swift">extension Publisher {
+    func convertToResult() -&gt; AnyPublisher&lt;Result&lt;Output, Failure&gt;, Never&gt; {
+        self.map(Result.success)
+            .catch { Just(.failure($0)) }
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>当使用Combine为SwiftUI视图构建视图模型时，我们新的convertToResult操作符会变得特别有用。 例如，现在我们已经将前面的项目加载管道移动到ItemListViewModel中，它使用我们的新操作符，可以轻松地切换每个加载操作的结果:</p>
+<pre><code class="language-swift">class ItemListViewModel: ObservableObject {
+    @Published private(set) var items = [Item]()
+    @Published private(set) var error: Error?
+
+    private let urlSession: URLSession
+    private var cancellable: AnyCancellable?
+
+    ...
+
+    func load() {
+        cancellable = urlSession
+            .dataTaskPublisher(for: .allItems)
+            .map(\.data)
+            .decode(as: NetworkResponse.self)
+            .validate { response in
+                guard !response.items.isEmpty else {
+                    throw NetworkResponse.Error.missingItems
+                }
+            }
+            .map(\.items)
+            .convertToResult()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] result in
+                switch result {
+                case .success(let items):
+                    self?.items = items
+                    self?.error = nil
+                case .failure(let error):
+                    self?.items = []
+                    self?.error = error
+                }
+            }
+    }
+}
+</code></pre>
+<p>进一步说，如果我们更新上面的视图模型，用LoadableObject协议和LoadingState enum代替“处理SwiftUI视图中的加载状态”，那么我们可以使上面的实现简单得多。让我们先添加一个转换操作符，它会发出LoadingState值，而不是使用内置的结果类型:</p>
+<pre><code class="language-swift">extension Publisher {
+    func convertToLoadingState() -&gt; AnyPublisher&lt;LoadingState&lt;Output&gt;, Never&gt; {
+        self.map(LoadingState.loaded)
+            .catch { Just(.failed($0)) }
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>有了上面的扩展，我们就可以像这样简单地加载和分配视图模型的状态:</p>
+<pre><code class="language-swift">class ItemListViewModel: LoadableObject {
+    @Published private(set) var state = LoadingState&lt;[Item]&gt;.idle
+    
+    ...
+    
+    func load() {
+    	guard !state.isLoading else {
+            return
+    	}
+    
+    	state = .loading
+    
+        urlSession
+            .dataTaskPublisher(for: .allItems)
+            .map(\.data)
+            .decode(as: NetworkResponse.self)
+            .validate { response in
+                guard !response.items.isEmpty else {
+                    throw NetworkResponse.Error.missingItems
+                }
+            }
+            .map(\.items)
+            .receive(on: DispatchQueue.main)
+            .convertToLoadingState()
+            .assign(to: &amp;$state)
+    }
+}
+</code></pre>
+<p>尽管可能很容易把上面的变化看成是“语法上的糖”，减少执行最常见的操作所需的代码量通常可以显著提高生产率，通过使用共享的、经过充分测试的实现，还可以帮助我们避免重复的bug和错误。</p>
+<h2 id="type-erased-constant-publishers">Type-erased constant publishers</h2>
+<p>就像我们在“使用Combine发布常量值”中看到的那样，有时我们可能希望创建只发出单个值或错误的发布者，这可以用Just或Fail来实现。然而，当使用这些发布者时，我们通常还必须使用setFailureType和eraseToAnyPublisher这样的操作符来标准化它们，例如:</p>
+<pre><code class="language-swift">class SearchResultsLoader {
+    private let urlSession: URLSession
+    private let cache: Cache&lt;String, [Item]&gt;
+    
+    ...
+
+    func searchForItems(
+        matching query: String
+    ) -&gt; AnyPublisher&lt;[Item], SearchError&gt; {
+        guard !query.isEmpty else {
+            return Fail(error: SearchError.emptyQuery)
+                .eraseToAnyPublisher()
+        }
+
+        if let cachedItems = cache.value(forKey: query) {
+            return Just(cachedItems)
+                .setFailureType(to: SearchError.self)
+                .eraseToAnyPublisher()
+        }
+
+        return urlSession
+            .dataTaskPublisher(for: .search(for: query))
+            .map(\.data)
+            .decode(as: NetworkResponse.self)
+            .mapError(SearchError.requestFailed)
+            .map(\.items)
+            .handleEvents(receiveOutput: { [cache] items in
+                cache.insert(items, forKey: query)
+            })
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>再说一次，我们目前的实现没有任何大问题，但如果我们在应用程序的多个地方使用上述模式，那么实现一组方便的api肯定是值得的。</p>
+<p>这一次，让我们用两个静态方法扩展AnyPublisher类型——一个用于创建类型擦除的发布者，另一个用于创建失败的发布者:</p>
+<pre><code class="language-swift">extension AnyPublisher {
+    static func just(_ output: Output) -&gt; Self {
+        Just(output)
+            .setFailureType(to: Failure.self)
+            .eraseToAnyPublisher()
+    }
+    
+    static func fail(with error: Failure) -&gt; Self {
+        Fail(error: error).eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>有了以上两个方法，我们现在就可以使用Swift的“点语法”来创建constant publisher，只需要一行代码-像这样:</p>
+<pre><code class="language-swift">class SearchResultsLoader {
+    ...
+
+    func searchForItems(
+        matching query: String
+    ) -&gt; AnyPublisher&lt;[Item], SearchError&gt; {
+        guard !query.isEmpty else {
+            return .fail(with: SearchError.emptyQuery)
+        }
+
+        if let cachedItems = cache.value(forKey: query) {
+            return .just(cachedItems)
+        }
+
+        ...
+    }
+}
+</code></pre>
+<p>上面的代码不仅比我们之前的实现紧凑得多，我们的return语句现在实际上可以被读成正确的英语句子 -“搜索错误失败:空查询”和“返回只是缓存的项目”-这通常是一个好迹象，当谈到可读性。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>尽管泛型api通常非常复杂，但它们包含如此丰富的类型信息这一事实为我们提供了很多机会，可以用非常特定的方便api来扩展它们-然后可以利用该类型信息来实际减少执行常见任务所需的复杂性和冗长性。</p>
+<p>当然，我们应该始终致力于在我们必须维护的便利api数量，以及我们从中获得的价值之间取得一个良好的平衡。我个人的方法是遵循“三个规则”，只有当我遇到三个调用站点需要相同类型的样板时才创建一个抽象。</p>
+<p><a href="https://www.swiftbysundell.com/articles/extending-combine-with-convenience-apis/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/caKSUYFIR/" class="tag">
+                    extensions
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swiftui-and-uikit-interoperability-part-2/">
+                  <h3 class="post-title">
+                    SwiftUI and UIKit interoperability - Part 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

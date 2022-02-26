@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 56:What Is a Parser?: Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+PointFree Episode 56:What Is a Parser?: Part 1
+
+Introduction
+Simple parsers in Swift/Foundation
+More advanced parsing ..." />
+    <meta name="keywords" content="parser,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 56:What Is a Parser?: Part 1</h2>
+            <div class="post-date">2022-01-15</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#pointfree-episode-56what-is-a-parser-part-1">PointFree Episode 56:What Is a Parser?: Part 1</a>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#simple-parsers-in-swiftfoundation">Simple parsers in Swift/Foundation</a></li>
+<li><a href="#more-advanced-parsing-in-foundation">More advanced parsing in Foundation</a></li>
+<li><a href="#parsing-from-scratch">Parsing from scratch</a></li>
+<li><a href="#addressing-edge-cases">Addressing edge cases</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<!-- # PointFree Episode 56:What Is a Parser?: Part 1 -->
+<h2 id="introduction">Introduction</h2>
+<p>广义地说，我们可以将解析定义为试图获取一团模糊的数据，例如字符串、数据、用户输入，甚至URL请求，并将其转换为更特定于域的第一类数据类型，例如用户模型。如果这样说的话，你甚至可以想象解析是一个从“模糊的数据块”到“结构良好的数据”的函数，因此函数编程可能有很多关于这个主题的内容。但是，这个函数一开始很难实现，因为我们可能需要做很多工作才能从中提取出有意义的数据。</p>
+<p>解析器组合器的目标是将这个问题分解为许多非常特定的解析器，这些解析器只做一项工作，而且做得很好。然后，它提供了所有高级函数，允许我们将许多解析器粘合在一起，得到能够处理越来越复杂数据的大型解析器。它使我们能够专注于单个随机单元，然后通过有趣的方式将它们粘合在一起，构建出许多复杂的随机生成器。这种解决问题的方式在函数式编程中不断出现，而且非常强大。</p>
+<hr>
+<h2 id="simple-parsers-in-swiftfoundation">Simple parsers in Swift/Foundation</h2>
+<p>事实证明，解析是很重要的，Swift和Foundation有一整套解析字符串的方法。</p>
+<p>其中一些与类型上的初始化器一样简单，例如，<strong>Int</strong>上有一个初始化器，它接受一个字符串：</p>
+<pre><code class="language-swift">Int(&quot;42&quot;) // 42
+Int(&quot;42-&quot;) // nil
+</code></pre>
+<p><strong>Double</strong>上的初始化器也有类似的作用。</p>
+<pre><code class="language-swift">Double(&quot;42&quot;) // 42.0
+Double(&quot;42.32435&quot;) // 42.32435
+</code></pre>
+<p>甚至<strong>Bool</strong>也有这样一个初始化器。</p>
+<pre><code class="language-swift">Bool(&quot;true&quot;) // true
+Bool(&quot;false&quot;) // false
+Bool(&quot;f&quot;) // nil
+</code></pre>
+<p>许多基础类型带有这些初始化器解析器，包括UUID、URL，甚至<strong>URLComponents</strong>。</p>
+<pre><code class="language-swift">import Foundation
+
+UUID(uuidString: &quot;DEADBEEF-DEAD-BEEF-DEAD-BEEFDEADBEEF&quot;) // UUID
+UUID(uuidString: &quot;DEADBEEF-DEAD-BEEF-DEAD-BEEFDEADBEE&quot;)  // nil
+UUID(uuidString: &quot;DEADBEEF-DEAD-BEEF-DEAD-BEEFDEADBEEZ&quot;) // nil
+
+URL(string: &quot;https://www.pointfree.co&quot;)  // URL
+URL(string: &quot;^https://www.pointfree.co&quot;) // nil
+
+let components = URLComponents(string: &quot;https://www.pointfree.co?ref=twitter&quot;)
+components?.queryItems // [{name &quot;ref&quot;, value &quot;twitter&quot;}]
+</code></pre>
+<p>所有这些初始化器都只是函数，它们接收模糊的字符串并返回第一类值，无论是整数、Double、UUID还是URL。</p>
+<p>然后有一些高级分析器做很多更复杂的事情，比如Foundation的<strong>DateFormatter</strong>。现在，这个名称会让您相信它负责将日期格式化为字符串，但它的作用正好相反：它可以将字符串解析为日期值：</p>
+<pre><code class="language-swift">let df = DateFormatter()
+df.timeStyle = .none
+df.dateStyle = .short
+df.date(from: &quot;1/29/17&quot;) // Date
+</code></pre>
+<p>和我们的其他格式化程序一样，它返回一个可选的日期，因为解析可能会失败。</p>
+<pre><code class="language-swift">df.date(from: &quot;-1/29/17&quot;) // nil
+</code></pre>
+<p><strong>DateFormatter</strong>只是格式化程序类型的整个类层次结构中的一个，可以将字符串解析为其他类型。有<strong>NumberFormatter、ByteCountFormatter、PersonNameComponentsFormatter</strong>等等。</p>
+<hr>
+<h2 id="more-advanced-parsing-in-foundation">More advanced parsing in Foundation</h2>
+<p>到目前为止，这些示例都是特定领域的，也就是说，您无法使用这些函数解析Swift一无所知的自定义格式。对于这种情况，<strong>Foundation</strong>还提供了一些其他工具。</p>
+<p>正则表达式就是这样一种工具。正则表达式本身就是一种语言，用字符串描述解析字符串的方法。它可以用来“<strong>capture</strong>”复杂正则表达式中需要特定数据类型的字符串部分。</p>
+<p>例如，下面是一个从字符串中解析电子邮件地址的正则表达式：</p>
+<pre><code class="language-swift">let emailRegexp = try NSRegularExpression(pattern: #&quot;\S+@\S+&quot;#)
+let emailString = &quot;You're logged in as blob@pointfree.co&quot;
+let emailRange = emailString.startIndex..&lt;emailString.endIndex
+let match = emailRegexp.firstMatch(
+  in: emailString,
+  range: NSRange(emailRange, in: emailString)
+)!
+emailString[Range(match.range(at: 0), in: emailString)!]
+// &quot;blob@pointfree.co&quot;
+</code></pre>
+<p>正则表达式确实很强大，但是有一个非常简洁的符号来匹配事物。它们的解析能力也非常有限。解析越复杂，表达式就越神秘。</p>
+<p>该API在Swift中仍然相当笨拙，需要进行大量<strong>Range - NSRange</strong>来回转换。</p>
+<p>另一种工具叫做<strong>Scanner</strong>。它是一个通用的解析工具，允许您从字符串开始解析各种类型。</p>
+<pre><code class="language-swift">let scanner = Scanner(&quot;42 Hello World&quot;)
+var int = 0
+scanner.scanInt(&amp;int) // true
+int // 42
+</code></pre>
+<p>要使用它，您必须创建一个可变变量来传递给<strong>scanner</strong>，如果解析成功，<strong>scanner</strong>将使用解析的值更新该变量，并且<strong>scan</strong>方法将返回一个布尔值，指示扫描是否成功。</p>
+<p>这是一个非常古老的API，如<strong>NSRegularExpression</strong>，早在Swift的优秀功能（如optionals和代数数据类型）出现之前就已经出现了。这个API可以改进很多，但至少很高兴知道苹果给了我们一些解析工具，而且在幕后它可以做一些非常强大的事情。</p>
+<p>这是<strong>Swift和Foundation</strong>的一些解析工具的简要概述。它们可能非常强大，并且服务于许多用例，但它们有一些严重的缺点：</p>
+<ul>
+<li>
+<p>其中许多是特定于域的，例如初始化器和格式化程序类。它们在这些域中工作得非常好，但它们不能通用化，以允许您解析自己的格式。</p>
+</li>
+<li>
+<p>对于更通用的解析器，如正则表达式和<strong>scanner</strong>，它们无法组合。没有办法将它们拼接在一起并且使用两个小型解析器来完成一件事。这使得我们无法将复杂的解析器重构为更简单的解析器，并可能在完全不同的解析器之间进行一些代码重用。</p>
+</li>
+<li>
+<p>最后，所有这些API都非常古老，它们都没有像泛型那样利用Swift特性。</p>
+</li>
+</ul>
+<hr>
+<h2 id="parsing-from-scratch">Parsing from scratch</h2>
+<p>既然我们看到解析对苹果来说非常重要，可以给我们提供许多解决方案，那么让我们自己来尝试一下解析，这样我们就可以看到它有多么困难和微妙。让我们尝试解析一种相对简单的字符串格式：纬度和经度坐标。有一种常见的格式，即纬度/经度坐标以度数表示，同时还有一个基本方向，用于描述坐标位于赤道和本初子午线的哪一侧。</p>
+<p>例如，这里是纽约布鲁克林的经纬度：</p>
+<pre><code class="language-swift">// 40.6782° N, 73.9442° W
+</code></pre>
+<p>我们想将这个松散的字符串解析为更加计算机友好的内容，比如说下面的结构：</p>
+<pre><code class="language-swift">struct Coordinate {
+  let latitude: Double
+  let longitude: Double
+}
+</code></pre>
+<p>让我们试着手工将字符串解析到这个结构中。这意味着我们将尝试从头开始实现此功能：</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+
+}
+</code></pre>
+<p>这将返回一个可选的字符串，因为我们可能无法解析该字符串。</p>
+<p>我们将通过执行大量不同的字符串操作来实现这一点。例如，我们可以从拆分空格上的字符串开始，这样就可以得到坐标的所有部分：</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+  let parts = string.split(separator: &quot; &quot;)
+}
+</code></pre>
+<p><strong>parts</strong>应保持纬度坐标，然后是其基本方向，然后是经度坐标，然后是其基本方向。如果我们得到的<strong>parts</strong>比我们预期的多或少，我们可能应该提前退出并返回nil，因为这意味着我们得到了一些不好的数据：</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+  let parts = string.split(separator: &quot; &quot;)
+  guard parts.count == 4 else { return nil }
+}
+</code></pre>
+<p>通过检查，让我们将<strong>parts</strong>提取到变量中：</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+  let parts = string.split(separator: &quot; &quot;)
+  guard parts.count == 4 else { return nil }
+  let lat = parts[0]
+  let latCard = parts[1]
+  let long = parts[2]
+  let longCard = parts[3]
+}
+</code></pre>
+<p>我们可以很容易地将<strong>lat和long</strong>变量转换为<strong>Double</strong>，只需删除度数符号：</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+  let parts = string.split(separator: &quot; &quot;)
+  guard parts.count == 4 else { return nil }
+  let lat = Double(parts[0].dropLast())
+  let latCard = parts[1]
+  let long = Double(parts[2].dropLast())
+  let longCard = parts[3]
+}
+</code></pre>
+<p>现在这种<strong>double</strong> 解释实际上是失败的，所以我想我们必须做一些额外的防护：</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+  let parts = string.split(separator: &quot; &quot;)
+  guard parts.count == 4 else { return nil }
+  guard
+    let lat = Double(parts[0].dropLast()),
+    let long = Double(parts[2].dropLast())
+    else { return nil }
+  let latCard = parts[1]
+  let longCard = parts[3]
+}
+</code></pre>
+<p>我们的解析很接近成功了，但我们必须以某种方式结合基本方向。基本方向只是确定坐标是正还是负，因此添加该逻辑实际上非常简单：</p>
+<p>剩下要做的就是把坐标乘以它们的符号：</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+  let parts = string.split(separator: &quot; &quot;)
+  guard parts.count == 4 else { return nil }
+
+  guard
+    let lat = Double(parts[0].dropLast()),
+    let long = Double(parts[2].dropLast())
+  else { return nil }
+
+  let latCardinal = parts[1]
+  let longCardinal = parts[3]
+  let latSign = latCardinal == &quot;N&quot; ? 1.0 : -1
+  let longSign = longCardinal == &quot;E&quot; ? 1.0 : -1
+
+  return Coordinate(latitude: lat * latSign, longitude: long * longSign)
+}
+</code></pre>
+<p>让我们来试一试：</p>
+<pre><code class="language-swift">print(parseLatLong(&quot;40.6782° N, 73.9442° W&quot;))
+// Coordinate(latitude: -40.6782, longitude: -73.9442))
+</code></pre>
+<hr>
+<h2 id="addressing-edge-cases">Addressing edge cases</h2>
+<p>那是不对的。我们试图分析北纬40.6782°，但由于某种原因，结果是-40.6782。为什么？</p>
+<p>看起来我忘了N后面的“,”，所以我们的等式检查**parts[1] == &quot;N``&quot;**总是会失败，因此符号将为-1。我们可以去掉逗号来解决这个问题。</p>
+<pre><code class="language-swift">let latCardinal = parts[1].dropLast()
+</code></pre>
+<p>这修复了我们正在进行的当前解析。</p>
+<pre><code class="language-swift">print(parseLatLong(&quot;40.6782° N, 73.9442° W&quot;))
+// Coordinate(latitude: 40.6782, longitude: -73.9442))
+</code></pre>
+<p>不过，这仍然不太正确。如果我们给出一个无效的方向，我们仍然会得到一个坐标。</p>
+<pre><code class="language-swift">print(parseLatLong(&quot;40.6782° X, 73.9442° W&quot;))
+// Coordinate(latitude: -40.6782, longitude: -73.9442))
+</code></pre>
+<p>我们可能只想识别何时使用了<strong>N/S/E/W</strong>字符，如果提供了其他字符，则识别失败。看来我们需要加强这一逻辑：</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+  let parts = string.split(separator: &quot; &quot;)
+  guard parts.count == 4 else { return nil }
+  guard
+    let lat = Double(parts[0].dropLast()),
+    let long = Double(parts[2].dropLast())
+  else { return nil }
+  let latCard = parts[1].dropLast()
+  guard latCard == &quot;N&quot; || latCardinal == &quot;S&quot; else { return nil }
+  let longCard = parts[3]
+  guard longCard == &quot;E&quot; || longCardinal == &quot;W&quot; else { return nil }
+  let latSign = latCard == &quot;N&quot; ? 1.0 : -1
+  let longSign = longCard == &quot;E&quot; ? 1.0 : -1
+  return Coordinate(latitude: lat * latSign, longitude: long * longSign)
+}
+</code></pre>
+<p>现在我们的解析器完全失败了。</p>
+<pre><code class="language-swift">print(parseLatLong(&quot;40.6782° X, 73.9442° W&quot;))
+// nil
+</code></pre>
+<p>现在这个函数变得相当复杂，但仍然不太正确。看看这个：</p>
+<pre><code class="language-swift">print(parseLatLong(&quot;40.6782% N- 73.9442% W&quot;))
+// Coordinate(latitude: 40.6782, longitude: -73.9442))
+</code></pre>
+<p>我们将度符号改为百分比，逗号改为减号，但不知何故，它仍然可以解析。</p>
+<p>我们可能应该检查该符号，如果它不匹配，解析就会失败。因此，这个解析器还有更多的工作要做，它的复杂性将继续增长。</p>
+<p>但这还不是最糟糕的部分。最糟糕的是，这个解析函数是一个一次性的、特别的解决方案，用于解析非常特定的纬度/经度坐标格式。在本例之外，主体内部没有可重用的内容。</p>
+<p>我们想提出一个解析的解决方案，使构建小型的、可重用的解析器变得容易，这样就可以将它们拼接在一起，形成一个大型的、复杂的解析器。事实上，如果我们甚至可以将所有的小解析放在一个共享库中，这样我们就可以在许多不同的解析情况下重用它们，那就太好了。</p>
+<hr>
+<h2 id="references">References</h2>
+<p><a href="https://developer.apple.com/documentation/foundation/scanner">Scanner</a><br>
+<a href="https://nshipster.com/nsscanner/">NSScanner</a><br>
+<a href="https://talk.objc.io/episodes/S01E13-parsing-techniques">Ledger Mac App: Parsing Techniques</a><br>
+<a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/">Parse, don’t validate</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/IQVuijH5g/" class="tag">
+                    parser
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-108composable-swiftui-bindings-case-paths/">
+                  <h3 class="post-title">
+                    PointFree Episode 108:Composable SwiftUI Bindings: Case Paths
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

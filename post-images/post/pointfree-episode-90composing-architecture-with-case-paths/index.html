@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 90:Composing Architecture with Case Paths  | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Refresher: the Composable Architecture
+
+
+
+
+The problem with enum properties
+
+
+
+
+Case paths in the a..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 90:Composing Architecture with Case Paths </h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Refresher:theComposableArchitecture">Refresher: the Composable Architecture</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Theproblemwithenumproperties">The problem with enum properties</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Casepathsinthearchitecture">Case paths in the architecture</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Casepathsintheapplication">Case paths in the application</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Whatsthepoint">What's the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 90:Composing Architecture with Case Paths  -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>上周，我们结束了对“<strong>case paths</strong>”概念的介绍。它是一个工具，可以让您从一般情况下分离枚举的单个case与其他案ase。我们受到启发，创建了这个工具，因为我们看到了键路径是多么方便，它们允许我们编写可以拆分和重组结构的泛型算法，而且很明显，这样的东西对枚举也很好。</p>
+<p>事实上，我们在可组合架构中已经有了一个很好的用例。当我们想要模块化我们的<strong>reducer</strong>，以便<strong>reducer</strong>可以只在它关心的领域上工作，同时仍然允许它自己被插入到全局领域时，我们自然会被引导到<strong>pullback</strong>操作。它允许您使用一个在本地域上工作的<strong>reducer</strong>，并将其拉回到全局域上工作。然后你可以把一大堆的这些小<strong>reducer</strong>组合成一个大的ole<strong>reducer</strong>，为你的整个应用提供动力。</p>
+<p>为了定义这个<strong>pullback</strong>操作，我们使用了键路径，这是一个很好的例子，说明了如何编写抽象数据形状的泛型算法。我们可以使用关键路径来取出我们关心的数据结构的各个部分，在这些较小的部分上运行<strong>reducer</strong>，然后再次使用关键路径将所有东西粘在一起。</p>
+<p>然而，我们使用的关键路径的<strong>reducer</strong>的行动有点奇怪。也许最突出的问题是，我们必须通过代码生成来访问关键路径。幸运的是，我们为案例路径所做的所有工作都适用于可组合架构，并且它将同时简化我们的<strong>pullback</strong>操作并消除所有的代码生成。</p>
+<p>听起来好得难以置信，但这是真的。但在我们开始之前，让我们快速回顾一下我们的应用程序是什么样子，并简要概述一下我们是如何构建它的。</p>
+<h2 id="2-a-namerefresherthecomposablearchitecturearefresher-the-composable-architecture">2. <a name='Refresher:theComposableArchitecture'></a>Refresher: the Composable Architecture</h2>
+<p>首先，请记住，我们一直在构建带有一些附加功能的计数器应用。这听起来可能不是很有趣，但它确实有一些高级特性，可以帮助演示架构需要解决的现实世界中的问题。</p>
+<ul>
+<li>我们可以导航到counter屏幕并增加或减少counter。</li>
+<li>而且，即使我们离开并回到这个屏幕，这个状态也会被持久化。</li>
+<li>我们可以问一个特定的数是否为质数，它将表示是否展示一个模态视图。</li>
+<li>如果质数认出这个数是质数，我们就可以把它从最喜欢的质数列表中保存或删除。</li>
+<li>让我们添加几个最喜欢的质数。</li>
+<li>我们也可以问“第n个”质数是多少，这实际上是发出一个网络请求，为了让Wolfram Alpha，一个强大的计算平台，来计算质数。当效果结束时，会显示一个警告。</li>
+<li>我们还可以导航到最喜欢的质数屏幕，以查看我们在前一个屏幕中所做的所有更改都反映在这里。</li>
+<li>此外，我们可以点击“save”，这将执行另一个副作用，将质数保存到磁盘。</li>
+<li>我们可以删除一些我们的收藏</li>
+<li>我们可以点击Load来执行从磁盘加载质数的另一个副作用。</li>
+</ul>
+<p>这是应用程序的基础。不是特别复杂，但它确实展示了一些我们认为任何架构都需要解决的核心问题:</p>
+<ul>
+<li>状态在多个屏幕上共享和持久化。</li>
+<li>特性可以单独构建和测试。每个屏幕，包括视图逻辑和业务逻辑，都存在于各自的Swift模块中。</li>
+<li>该体系结构精确地描述了如何处理副作用，比如网络请求，以及加载和保存效果。</li>
+<li>该架构是超级可测试的。我们前面已经演示了我们可以编写非常有表现力的测试来测试应用程序的每个方面(可测试状态管理:第1部分、第2部分、第3部分、第4部分)，包括同时测试应用程序的多个层的集成测试。</li>
+</ul>
+<hr>
+<h2 id="3-a-nametheproblemwithenumpropertiesathe-problem-with-enum-properties">3. <a name='Theproblemwithenumproperties'></a>The problem with enum properties</h2>
+<p>当我们第一次开始探索可组合架构时，我们自然而然地遇到了如何转换<strong>reducer</strong>函数的问题。我们已经使用<strong>reducer</strong>对架构的核心进行了建模，因为它们允许我们从给定用户操作的当前状态逐渐演变应用程序的状态。当我们使用<strong>reducer</strong>构建了整个应用程序后，我们意识到我们只剩下一个巨大的<strong>reducer</strong>，当应用程序发生变化时，如果我们想要模块化应用程序的特性，这将不是很好。</p>
+<p>因此，我们开始创建只作用于它们真正关心的领域的更小的简化程序，同时还定义了转换，允许我们将所有这些不同的<strong>reducer</strong>粘合到一个大的应用程序<strong>reducer</strong>中。我们首先发现，只要我们有一个从全局状态到局部状态的关键路径，我们就可以将一个在局部状态下工作的<strong>reducer</strong>转换为一个在全局状态下工作的<strong>reducer</strong>。让我们重新实现它，以便记住它的外观。</p>
+<p>签名看起来像这样:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: Reducer&lt;LocalValue, Action&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  fatalError()
+}
+</code></pre>
+<p>让我们用语言来描述这个变换应该做什么。当一个全局值和动作出现时，我们可以使用键路径来提取一个局部值，对该局部值运行<strong>reducer</strong>，然后使用键路径将新的局部值插入到全局值中。</p>
+<p>要实现这个函数，我们需要返回一个接受全局值和动作的闭包:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: Reducer&lt;LocalValue, Action&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  return { globalValue, action in
+
+  }
+}
+</code></pre>
+<p>然后通过传递一个关键路径的全局值和一个动作来调用我们的reducer:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: Reducer&lt;LocalValue, Action&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  return { globalValue, action in
+    reducer(&amp;globalValue[keyPath: value], action)
+  }
+}
+</code></pre>
+<p>基本上就是这样。这一行同时获得局部值，改变它，并将其插入到全局值中。</p>
+<p>从技术上讲，<strong>reducer</strong>返回一个<strong>effects</strong>数组，但这正是我们需要从全局<strong>reducer</strong>返回的:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: Reducer&lt;LocalValue, Action&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  return { globalValue, action in
+    let effects = reducer(&amp;globalValue[keyPath: value], action)
+    return effects
+  }
+}
+</code></pre>
+<p>一旦我们知道如何将在局部状态下工作的<strong>reducer</strong>转换为在全局状态下工作的<strong>reducer</strong>，我们当然想知道如何做同样的事情，但对于动作而言。如果我们有一个可以处理局部行动的<strong>reducer</strong>，我们能不能把它变成一个可以处理全局行动的<strong>reducer</strong>?</p>
+<p>让我们先用语言描述一下这种变换是如何进行的。当一个全局性的行动出现时，我们需要尝试从中提取出一个局部性的行动。这并不总是会成功，所以如果它不，我们将只是从<strong>reducer</strong>提前返回，什么也不做。如果它成功了，我们可以用这个动作运行<strong>reducer</strong>。然后，我们将剩下一个局部<strong>effects</strong>数组，我们需要将其转换为一个全局<strong>effects</strong>数组，以便可以从新的reducer返回它。</p>
+<p>这听起来似乎很多，但我们在讨论这个话题时意识到，我们需要某种方法从全局中提取局部操作，然后将局部操作插入到全局中。那时我们只有一个工具:enum属性。</p>
+<p>这是我们之前讨论过的一个话题，它满足了我们的需要，我们甚至有一个开源的工具，允许我们自动生成枚举属性。它简单地为文件中每一个枚举的每一种情况创建一个计算属性，允许您轻松地使用点语法访问关联值，甚至在枚举中设置新的关联值。这帮助我们编写了将局部操作的<strong>reducer</strong>转换为全局操作的<strong>reducer</strong>的函数。</p>
+<p>我们可以增加当前的<strong>pullback</strong>函数，我们需要使用另一个参数来描述如何将全局操作变为局部操作:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, GlobalAction, LocalAction&gt;(
+  reducer: Reducer&lt;LocalValue, LocalAction&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; Reducer&lt;GlobalValue, GlobalAction&gt; {
+  return { globalValue, globalAction in
+    let effects = reducer(&amp;globalValue[keyPath: value], action)
+    return effects
+  }
+}
+</code></pre>
+<p>注意，操作键路径返回一个可选的LocalAction，这是因为并不总是可以从全局操作中提取局部操作。 现在我们需要修复这个函数，以便它能够编译。我们可以做的第一件事是尝试从全局操作中提取一个局部操作:</p>
+<pre><code class="language-swift">guard let localAction = globalAction[keyPath: action] else { return [] }
+</code></pre>
+<p>现在我们有了一个局部动作，所以我们可以运行我们的<strong>reducer</strong>，它将返回一个局部<strong>effects</strong>数组:</p>
+<pre><code class="language-swift">let localEffects = reducer(&amp;globalValue[keyPath: value], localAction)
+</code></pre>
+<p>我们需要将这个局部<strong>effects</strong>数组转换为全局<strong>effects</strong>，我们可以使用action键路径的setter功能来实现这一点。首先，我们需要映射数组来访问一个特定的局部<strong>effect</strong>，然后我们可以映射局部<strong>effect</strong>来将其转化为全局<strong>effect</strong>:</p>
+<pre><code class="language-swift">return localEffects.map { localEffect in
+  localEffect.map { localAction in
+    var globalAction = globalAction
+    globalAction[keyPath: action] = localAction
+    return globalAction
+  }
+  .eraseToEffect()
+}
+</code></pre>
+<p>这就是我们第一次引入操作时用到的<strong>pullback</strong>的实现。 很高兴看到工具枚举属性是如何允许我们定义这样的操作的。</p>
+<p>为了使用这个操作，我们需要运行我们开放源代码的枚举属性CLI工具，以便为我们的操作枚举生成枚举属性。</p>
+<p>例如，它为我们的AppAction生成了所有这些代码:</p>
+<pre><code class="language-swift">enum AppAction {
+  case counterView(CounterViewAction)
+  case favoritePrimes(FavoritePrimesAction)
+
+  var counterView: CounterViewAction? {
+    get {
+      guard case let .counterView(value) = self else { return nil }
+      return value
+    }
+    set {
+      guard case .counterView = self, let newValue = newValue else { return }
+      self = .counterView(newValue)
+    }
+  }
+
+  var favoritePrimes: FavoritePrimesAction? {
+    get {
+      guard case let .favoritePrimes(value) = self else { return nil }
+      return value
+    }
+    set {
+      guard case .favoritePrimes = self, let newValue = newValue else { return }
+      self = .favoritePrimes(newValue)
+    }
+  }
+}
+</code></pre>
+<p>有了这些属性的定义，我们就能够拉回在计数器状态和最喜欢的质数状态工作的reducers，以工作在整个应用程序状态:</p>
+<pre><code class="language-swift">public let counterViewReducer = combine(
+  pullback(
+    counterReducer,
+    value: \CounterViewState.counter,
+    action: \CounterViewAction.counter
+  ),
+  pullback(
+    primeModalReducer,
+    value: \.primeModal,
+    action: \.primeModal
+  )
+)
+</code></pre>
+<p>这是非常强大的。这不仅让我们能够将大型、复杂的<strong>reducers</strong>分解为较小的<strong>reducers</strong>，还允许我们将应用模块化，以便计数器和最喜欢的主要功能存在于完全独立的模块中。</p>
+<p>然而，这些枚举属性有点奇怪。最引人注目的是，我们必须为我们的<strong>action</strong>枚举使用代码生成。我们构建的CLI工具使用起来非常简单，但它无疑给构建应用程序的过程增加了一些复杂性。</p>
+<ul>
+<li>
+<p>如果您决定手动运行该工具，那么您必须记住每次添加、删除或更改操作枚举时都要运行它。否则你将会有编译错误。</p>
+</li>
+<li>
+<p>如果您决定将其作为构建过程的一部分来运行，那么您需要确保该工具非常有效，否则您将冒着降低构建速度的风险。在对枚举进行更改和构建之间的时间内，您还可能受到过时代码生成工件的影响。</p>
+</li>
+</ul>
+<p>因此，使用代码生成并不理想，但它可能比手动编写所有样板要好。</p>
+<p>但是，还有一个更微妙的问题。让我们再来看看我们是如何将局部<strong>effects</strong> 转化为全球<strong>effects</strong>的:</p>
+<pre><code class="language-swift">localEffect.map { localAction in
+  var globalAction = globalAction
+  globalAction[keyPath: action] = localAction
+  return globalAction
+}
+</code></pre>
+<p>这个<strong>map</strong>操作的主体真的很奇怪。 它的目的是将局部操作转换为全局操作，但我们实现这一目的的方法是创建一个全局操作的副本，并使用关键路径在其中设置局部操作。</p>
+<p>他的古怪之处在于关键路径设定者的工作方式。为了用关键路径设置一些东西，你必须先有一个根。但是在将局部操作转换为全局操作的情况下，我们并没有真正使用根值。我们只是在复制和设置舞蹈，因为关键路径迫使我们这么做。</p>
+<hr>
+<h2 id="4-a-namecasepathsinthearchitectureacase-paths-in-the-architecture">4. <a name='Casepathsinthearchitecture'></a>Case paths in the architecture</h2>
+<p>这两个关于enum属性的小麻烦足以让我们考虑它们是否适合这项工作。但事实证明，这并不完全正确。但是，我们最近引入了另一个非常适合<strong>pullback</strong>的工具:<strong>case paths</strong>!</p>
+<p>让我们看看，如果我们用<strong>case paths</strong>替换所有用于操作的<strong>key paths</strong>，会发生什么。</p>
+<p>我们将首先关注<strong>ComposableArchitecture</strong>模块，它是处理我们的体系结构的库代码。当前的<strong>pullback</strong>操作是这样的:</p>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction&gt;(
+  _ reducer: @escaping Reducer&lt;LocalValue, LocalAction&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; Reducer&lt;GlobalValue, GlobalAction&gt; {
+  return { globalValue, globalAction in
+    guard let localAction = globalAction[keyPath: action] else { return [] }
+    let localEffects = reducer(&amp;globalValue[keyPath: value], localAction)
+
+    return localEffects.map { localEffect in
+      localEffect.map { localAction -&gt; GlobalAction in
+        var globalAction = globalAction
+        globalAction[keyPath: action] = localAction
+        return globalAction
+      }
+      .eraseToEffect()
+    }
+  }
+}
+</code></pre>
+<p>我们想用一个<strong>case paths</strong>从<strong>GlobalAction到LocalAction</strong>。</p>
+<p><strong>case paths</strong>的核心定义如下:</p>
+<pre><code class="language-swift">//struct CasePath&lt;Root, Value&gt; {
+//  let extract: (Root) -&gt; Value?
+//  let embed: (Value) -&gt; Root
+//}
+</code></pre>
+<p>它通用于Root和Value，就像键路径一样，它捆绑了两部分功能:从Root中提取值的能力，以及在Root中嵌入值的能力。</p>
+<p>现在，我们可以用<strong>case paths</strong>替换回调函数中的action键路径:</p>
+<pre><code class="language-swift">//action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+action: CasePath&lt;GlobalAction, LocalAction&gt;
+</code></pre>
+<p>我们已经很好地从关键路径中删除了可选项。</p>
+<p>我们遇到的第一个编译错误是当我们试图从全局操作中提取局部操作时。 之前我们使用关键路径来下标全局操作，但现在我们可以使用case path的extract功能:</p>
+<pre><code class="language-swift">//guard let localAction = globalAction[keyPath: action] else { return [] }
+guard let localAction = action.extract(globalAction) else { return [] }
+</code></pre>
+<p>下一个编译器错误是在我们对局部<strong>effect</strong>的转换中。 现在，我们可以简单地使用<strong>case paths</strong>的嵌入功能，而不是杂用一个可变的全局动作和一个关键路径下标:</p>
+<pre><code class="language-swift">localEffect.map { localAction -&gt; GlobalAction in
+//  var globalAction = globalAction
+//  globalAction[keyPath: action] = localAction
+//  return globalAction
+  action.embed(localAction)
+}
+</code></pre>
+<p>我们甚至可以通过将<strong>embed</strong>函数直接传递给<strong>map</strong>函数来简化整个过程:</p>
+<pre><code class="language-swift">localEffect.map(action.embed)
+  .eraseToEffect()
+</code></pre>
+<p>现在我们的回调实现已经简化了很多:</p>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction&gt;(
+  _ reducer: @escaping Reducer&lt;LocalValue, LocalAction&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: CasePath&lt;GlobalAction, LocalAction&gt;
+) -&gt; Reducer&lt;GlobalValue, GlobalAction&gt; {
+  return { globalValue, globalAction in
+    guard let localAction = action.extract(globalAction) else { return [] }
+    let localEffects = reducer(&amp;globalValue[keyPath: value], localAction)
+
+    return localEffects.map { localEffect in
+      localEffect.map(action.embed)
+        .eraseToEffect()
+    }
+  }
+}
+</code></pre>
+<hr>
+<h2 id="5-a-namecasepathsintheapplicationacase-paths-in-the-application">5. <a name='Casepathsintheapplication'></a>Case paths in the application</h2>
+<p>现在，可组合架构模块已经成功构建了，所以是时候开始修复应用程序的其余部分了。幸运的是，这很容易做到。</p>
+<p>我们可以从<strong>counter</strong>模块开始，在那里我们当前做这个<strong>pullback</strong>来分别运行核心 <strong>counter reducer</strong> 和驱动主模态的<strong>reducer</strong>:</p>
+<pre><code class="language-swift">public let counterViewReducer = combine(
+  pullback(
+    counterReducer,
+    value: \CounterViewState.counter,
+    action: \CounterViewAction.counter
+  ),
+  pullback(
+    primeModalReducer,
+    value: \.primeModal,
+    action: \.primeModal
+  )
+)
+</code></pre>
+<p>目前这是在<strong>CounterViewAction</strong>枚举中使用关键路径，以拉回操作。让我们改为使用case路径:</p>
+<pre><code class="language-swift">public let counterViewReducer = combine(
+  pullback(
+    counterReducer,
+    value: \CounterViewState.counter,
+    action: CasePath(CounterViewAction.counter)
+  ),
+  pullback(
+    primeModalReducer,
+    value: \.primeModal,
+    action: CasePath(CounterViewAction.primeModal)
+  )
+)
+</code></pre>
+<p>我们确实失去了一些类型推断，我们之前有键路径，但也许当case路径成为一级语言特性时，我们会恢复它!</p>
+<p>现在<strong>Counter</strong>模块正在编译，我们可以注释掉之前生成的一堆代码:</p>
+<pre><code class="language-swift">public enum CounterViewAction: Equatable {
+  case counter(CounterAction)
+  case primeModal(PrimeModalAction)
+
+//  var counter: CounterAction? {
+//    get {
+//      guard case let .counter(value) = self else { return nil }
+//      return value
+//    }
+//    set {
+//      guard case .counter = self, let newValue = newValue else { return }
+//      self = .counter(newValue)
+//    }
+//  }
+//
+//  var primeModal: PrimeModalAction? {
+//    get {
+//      guard case let .primeModal(value) = self else { return nil }
+//      return value
+//    }
+//    set {
+//      guard case .primeModal = self, let newValue = newValue else { return }
+//      self = .primeModal(newValue)
+//    }
+//  }
+}
+</code></pre>
+<p>下一个未编译的文件是主应用目标中的ContentView，我们在这里做如下回调:</p>
+<pre><code class="language-swift">let appReducer = combine(
+  pullback(
+    counterViewReducer,
+    value: \AppState.counterView,
+    action: \AppAction.counterView
+  ),
+  pullback(
+    favoritePrimesReducer,
+    value: \.favoritePrimes,
+    action: \.favoritePrimes
+  )
+)
+</code></pre>
+<p>Let’s change those key paths to case paths:</p>
+<pre><code class="language-swift">let appReducer = combine(
+  pullback(
+    counterViewReducer,
+    value: \AppState.counterView,
+    action: CasePath(AppAction.counterView)
+  ),
+  pullback(
+    favoritePrimesReducer,
+    value: \.favoritePrimes,
+    action: CasePath(AppAction.favoritePrimes)
+  )
+)
+</code></pre>
+<p>如果我们运行这个应用程序，我们会看到一切都和之前一样，但现在我们要注释掉更多之前生成的代码:</p>
+<pre><code class="language-swift">enum AppAction {
+  case counterView(CounterViewAction)
+  case favoritePrimes(FavoritePrimesAction)
+
+//  var counterView: CounterViewAction? {
+//    get {
+//      guard case let .counterView(value) = self else { return nil }
+//      return value
+//    }
+//    set {
+//      guard case .counterView = self, let newValue = newValue else { return }
+//      self = .counterView(newValue)
+//    }
+//  }
+//
+//  var favoritePrimes: FavoritePrimesAction? {
+//    get {
+//      guard case let .favoritePrimes(value) = self else { return nil }
+//      return value
+//    }
+//    set {
+//      guard case .favoritePrimes = self, let newValue = newValue else { return }
+//      self = .favoritePrimes(newValue)
+//    }
+//  }
+}
+</code></pre>
+<p>我们甚至可以让事情变得更好一点。您可能还记得，在上一集的case路径中，我们介绍了一个前缀操作符，它使case路径的构造看起来有点类似于键路径。你可以在任何enum的case前面加一个斜杠，你会立即得到该case的path。让我们在这个项目中做出改变。</p>
+<p>在Counter模块中，我们可以做:</p>
+<pre><code class="language-swift">public let counterViewReducer = combine(
+  pullback(
+    counterReducer,
+    value: \CounterViewState.counter,
+    action: /CounterViewAction.counter
+  ),
+  pullback(
+    primeModalReducer,
+    value: \.primeModal,
+    action: /CounterViewAction.primeModal
+  )
+)
+</code></pre>
+<p>然而，如果自定义操作不是您所需要的，不用担心! 通过调用初始化器，用常规方法构造案例路径是非常好的。它实际上并没有那么冗长，而且对您的团队来说可能更容易接受。</p>
+<p>And in the main application target we can do:</p>
+<pre><code class="language-swift">let appReducer = combine(
+  pullback(
+    counterViewReducer,
+    value: \AppState.counterView,
+    action: /AppAction.counterView
+  ),
+  pullback(
+    favoritePrimesReducer,
+    value: \.favoritePrimes,
+    action: /AppAction.favoritePrimes
+  )
+)
+</code></pre>
+<hr>
+<h2 id="6-a-namewhatsthepointawhats-the-point">6. <a name='Whatsthepoint'></a>What's the point?</h2>
+<p>所以，通常在这个时候，我们会问“有什么意义?”在这个时候，我们要把事情搬到现实中来，确保我们谈论的是真实世界，实际的事情。</p>
+<p>但这次整集都很实用。我们已经花了大量的时间来解释为什么我们认为可组合架构是构建应用程序的一种实际方法。 但是它有一个轻微的缺点，如果您想完全模块化您的应用程序，您需要编写一些样板或做一些代码生成。我们现在已经完全删除了样板和代码生成，这意味着可组合架构更容易采用。</p>
+<p>此外，我们很快就会在编程的其他领域有更多的案例路径应用。这真的是一个强大的工具。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-89-case-paths-for-free/">
+                  <h3 class="post-title">
+                    PointFree Episode 89: Case Paths for Free
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

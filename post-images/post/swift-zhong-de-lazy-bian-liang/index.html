@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift中的Lazy变量 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Lazy var in Swift explained with code examples
+
+
+1.1. What is a lazy var?
+1.2. When should I use a lazy stored prope..." />
+    <meta name="keywords" content="lazy var" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift中的Lazy变量</h2>
+            <div class="post-date">2021-05-08</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#LazyvarinSwiftexplainedwithcodeexamples">Lazy var in Swift explained with code examples</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Whatisalazyvar">What is a lazy var?</a></li>
+<li>1.2. <a href="#WhenshouldIusealazystoredproperty">When should I use a lazy stored property?</a></li>
+<li>1.3. <a href="#Thedifferencebetweenacomputedandalazystoredproperty">The difference between a computed and a lazy stored property</a></li>
+<li>1.4. <a href="#Understandingthelifecycleoflazyvariables">Understanding the lifecycle of lazy variables</a></li>
+<li>1.5. <a href="#Lazystoredpropertiesaremutable">Lazy stored properties are mutable</a></li>
+<li>1.6. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namelazyvarinswiftexplainedwithcodeexamplesalazy-var-in-swift-explained-with-code-examples">1. <a name='LazyvarinSwiftexplainedwithcodeexamples'></a>Lazy var in Swift explained with code examples</h2>
+<p>A lazy var 是一个直到第一次调用它时才计算其初始值的属性。它是属性家族的一部分，我们有常量属性、计算属性和可变属性。</p>
+<p>在Swift中，一个惰性属性可能不太为初学者所知，但一旦你知道何时以及如何使用它们，它实际上是非常有价值的。有一些重要的事情需要了解，以便您知道何时使用哪种类型的属性。</p>
+<p>延迟存储属性是指直到第一次使用它时才计算其初始值的属性。通过在修饰符声明之前编写惰性修饰符来声明惰性存储属性。</p>
+<h3 id="11-a-namewhatisalazyvarawhat-is-a-lazy-var">1.1. <a name='Whatisalazyvar'></a>What is a lazy var?</h3>
+<p>“lazy”这个词最能说明惰性属性的含义，因为惰性属性的初始值直到第一次使用时才会计算出来。换句话说:这是延迟初始化。这可能是优化代码以避免做任何不必要工作的好方法。</p>
+<p>惰性变量如下所示:</p>
+<pre><code class="language-swift">lazy var oldest: Person? = {
+    return people.max(by: { $0.age &lt; $1.age })
+}()
+</code></pre>
+<h3 id="12-a-namewhenshouldiusealazystoredpropertyawhen-should-i-use-a-lazy-stored-property">1.2. <a name='WhenshouldIusealazystoredproperty'></a>When should I use a lazy stored property?</h3>
+<p>对于昂贵且不太可能被一致调用的代码，惰性变量是一个很好的解决方案。让我们以上面的例子为例，在视图模型中使用它:</p>
+<pre><code class="language-swift">struct Person {
+    let name: String
+    let age: Int
+}
+
+struct PeopleViewModel {
+    let people: [Person]
+    
+    lazy var oldest: Person? = {
+        print(&quot;Lazy var oldest initialized&quot;)
+        return people.max(by: { $0.age &lt; $1.age })
+    }()
+    
+    init(people: [Person]) {
+        self.people = people
+        print(&quot;View model initialized&quot;)
+    }
+}
+</code></pre>
+<p>对一组元素排序的代价可能很高，所以我们希望确保只在实际使用值时才执行这个操作。因此，惰性变量是一个很好的解决方案。一旦实际计算出值，就会调用print语句:</p>
+<pre><code class="language-swift">var viewModel = PeopleViewModel(people: [
+    Person(name: &quot;Antoine&quot;, age: 30),
+    Person(name: &quot;Jaap&quot;, age: 3),
+    Person(name: &quot;Lady&quot;, age: 3),
+    Person(name: &quot;Maaike&quot;, age: 27)
+])
+// Prints: &quot;View model initialized&quot;
+
+print(viewModel.oldest)
+// Prints: &quot;Lazy var oldest initialized&quot;
+// Prints: Person(name: &quot;Antoine&quot;, age: 30)
+</code></pre>
+<p>如您所见，print语句不会在初始化视图模型本身时调用，而是在调用属性oldest之后才调用。</p>
+<h3 id="13-a-namethedifferencebetweenacomputedandalazystoredpropertyathe-difference-between-a-computed-and-a-lazy-stored-property">1.3. <a name='Thedifferencebetweenacomputedandalazystoredproperty'></a>The difference between a computed and a lazy stored property</h3>
+<p>理解计算属性和延迟存储属性之间的区别很重要。 如果我们使用了computed属性，那么oldest的值每次都会重新计算:</p>
+<pre><code class="language-swift">struct PeopleViewModel {
+    let people: [Person]
+    
+    var oldest: Person? {
+        print(&quot;oldest person calculated&quot;)
+        return people.max(by: { $0.age &lt; $1.age })
+    }
+}
+
+print(viewModel.oldest)
+// Prints: &quot;oldest person calculated&quot;
+// Prints: Person(name: &quot;Antoine&quot;, age: 30)
+print(viewModel.oldest)
+// Prints: &quot;oldest person calculated&quot;
+// Prints: Person(name: &quot;Antoine&quot;, age: 30)
+</code></pre>
+<p>与只调用一次的惰性变量相比，这是性能上的损失:</p>
+<pre><code class="language-swift">struct PeopleViewModel {
+    let people: [Person]
+    
+    lazy var oldest: Person? = {
+        print(&quot;oldest person calculated&quot;)
+        return people.max(by: { $0.age &lt; $1.age })
+    }()
+}
+
+print(viewModel.oldest)
+// Prints: &quot;oldest person calculated&quot;
+// Prints: Person(name: &quot;Antoine&quot;, age: 30)
+print(viewModel.oldest)
+// Prints: Person(name: &quot;Antoine&quot;, age: 30)
+</code></pre>
+<p>由于这种差异，理解惰性变量的生命周期很重要，因为它可能会带来意想不到的副作用。</p>
+<h3 id="14-a-nameunderstandingthelifecycleoflazyvariablesaunderstanding-the-lifecycle-of-lazy-variables">1.4. <a name='Understandingthelifecycleoflazyvariables'></a>Understanding the lifecycle of lazy variables</h3>
+<p>由于惰性属性只计算一次调用，这意味着它也将使用它被调用的时刻的状态。例如，如果人的集合是可变的，这可能意味着在发生突变之前调用的oldest是不同的:</p>
+<pre><code class="language-swift">struct PeopleViewModel {
+    var people: [Person]
+    
+    lazy var oldest: Person? = {
+        print(&quot;oldest person calculated&quot;)
+        return people.max(by: { $0.age &lt; $1.age })
+    }()
+}
+
+var viewModel = PeopleViewModel(people: [
+    Person(name: &quot;Antoine&quot;, age: 30),
+    Person(name: &quot;Jaap&quot;, age: 3),
+    Person(name: &quot;Lady&quot;, age: 3),
+    Person(name: &quot;Maaike&quot;, age: 27)
+])
+
+print(viewModel.oldest)
+// Prints: &quot;oldest person calculated&quot;
+// Prints: Person(name: &quot;Antoine&quot;, age: 30)
+
+viewModel.people.append(Person(name: &quot;Jan&quot;, age: 69))
+print(viewModel.oldest)
+// Prints: Person(name: &quot;Antoine&quot;, age: 30)
+</code></pre>
+<p>在将Jan加上69岁后，你会期望老人返回Jan。然而，由于最老的在突变发生之前已经初始化，存储的值被设置为Antoine，年龄为30岁。在这种情况下，使用计算属性可能会更好，因为它会考虑人员集合的实际状态。</p>
+<h3 id="15-a-namelazystoredpropertiesaremutablealazy-stored-properties-are-mutable">1.5. <a name='Lazystoredpropertiesaremutable'></a>Lazy stored properties are mutable</h3>
+<p><strong>另一件需要意识到的事情是，惰性变量是可变的</strong>。这意味着你只能在可变结构上调用惰性变量:</p>
+<pre><code class="language-swift">let viewModel = PeopleViewModel(people: [
+    Person(name: &quot;Antoine&quot;, age: 30),
+    Person(name: &quot;Jaap&quot;, age: 3),
+    Person(name: &quot;Lady&quot;, age: 3),
+    Person(name: &quot;Maaike&quot;, age: 27)
+])
+
+print(viewModel.oldest)
+</code></pre>
+<p>如果你的结构不是可变的，而你正在调用惰性变量，你会遇到这样的错误:</p>
+<blockquote>
+<p>Cannot use mutating getter on immutable value: ‘viewModel’ is a ‘let’ constant</p>
+</blockquote>
+<p>这只适用于值类型，在本例中是结构体。如果我们的视图模型是一个类，这个错误就不会发生。</p>
+<h3 id="16-a-nameconclusionaconclusion">1.6. <a name='Conclusion'></a>Conclusion</h3>
+<p>惰性变量允许延迟存储属性的初始化。这对于只在实际需要时执行昂贵的工作是有用的。在需要根据值的当前状态进行计算的情况下，惰性属性和计算属性之间的区别非常重要。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/7SMPaUgD5/" class="tag">
+                    lazy var
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/result-builders-in-swift-explained-with-code-examples/">
+                  <h3 class="post-title">
+                    用Swift代码示例解释 Result Builder
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

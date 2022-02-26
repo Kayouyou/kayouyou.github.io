@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Structuring Swift code | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="几乎所有的应用程序和框架都有一个共同点，那就是随着时间的推移，它们的规模和复杂性都在增长。一开始可能是一个简单的想法，由一个开发人员完成，但通常很快就会转变成涉及多个团队和具有不同经验的人的更大的努力。
+随着项目的发展，维护一个稳定和一致的..." />
+    <meta name="keywords" content="maintenance,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Structuring Swift code</h2>
+            <div class="post-date">2018-07-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>几乎所有的应用程序和框架都有一个共同点，那就是随着时间的推移，它们的规模和复杂性都在增长。一开始可能是一个简单的想法，由一个开发人员完成，但通常很快就会转变成涉及多个团队和具有不同经验的人的更大的努力。</p>
+<p>随着项目的发展，维护一个稳定和一致的结构变得越来越重要，但同时，这样做也变得越来越困难-这是很常见的，以一个庞大的代码库结束，很难导航和新开发者需要很长时间才能进入。</p>
+<p>本周，让我们来看看如何从几个关键方面改善Swift项目结构的一些技巧和技巧。</p>
+<h2 id="code-dumping-grounds">Code dumping grounds</h2>
+<p>可以说，任何项目结构的主要目标都是为开发人员提供一种简单的方式，让他们了解项目及其各个部分的工作，能够快速找到并处理任何给定的组件、功能或类型。</p>
+<p>为了能够实现这个目标，一个好的结构也需要随着项目不断地演进。即使我们一开始就有最好的计划和最干净的结构，如果没有持续的调整和维护，我们的部分代码库很容易失去控制，并成为“code dumping grounds”。</p>
+<p>识别code dumping grounds依据的一种简单方法是查找包含许多不相关功能的类型、文件或文件夹。 例如，在构建iOS应用程序时，一个非常常见的起点是创建一个BaseViewController，它包含所有视图控制器的通用功能。虽然这样的基类看起来可能是一个非常方便的解决方案——而且一开始它可能只有少量的特性-这种类型很容易(也很常见)成为放置任何类型共享功能的默认位置，迅速地把它变成各种几乎没有共同点的代码的垃圾场。</p>
+<p>另一个常见的code dumping grounds 源是称为Library、Utilities或Helpers之类的文件夹。 同样，这样的文件夹一开始可能只有少量扩展和帮助器方法-但可以迅速成为任何类型的代码的全部，并基本上变成一个放置代码的地方，我们只是不知道在哪里放置代码。</p>
+<h2 id="breaking-things-up">Breaking things up</h2>
+<p>code dumping grounds的核心问题是，我们创建的文件夹、文件或类型的范围太广了。几乎任何东西都可以称为“Utility”或“Helper”，而前缀为“Base”的名称并不能真正告诉我们应该做什么。相反，如果我们尝试使用更清晰、更集中的名称，并给代码仓库的各个部分一个更窄的范围-维护一个定义更明确的结构通常会变得更容易。</p>
+<p>例如，要将一个BaseViewController dumping ground 分解成更小、命名更清楚的部分，我们可以使用子视图控制器 -并利用复合来混合和匹配我们在不同视图控制器中需要的各种功能。查看“在Swift中使用子视图控制器作为插件”，以获得一些具体的例子来说明如何做到这一点。</p>
+<p>同样，如果我们有一个名为String+Utilities.swift的巨大文件，它包含了很多不同的字符串扩展名，我们可以将它分割成多个文件，每个文件都包含这些扩展名的一个子集。我们可能有一个用于拆分字符串(String+ splitting .swift)，一个用于定义API常量(String+APIConstants.swift)，等等。通过这种方式，我们不断地“被迫”考虑某个扩展属于何处，并且我们通常以一个使事情更容易找到和处理的结构结束。</p>
+<h2 id="the-rule-of-threes">The Rule of Threes</h2>
+<p>成功地拆散关系是关于平衡的。如果我们将内容分解得太多，那么我们便不能真正改善项目的结构，因为我们最终只会拥有大量难以理解的文件和类型。实现这种平衡的一种方法是遵循“三法则”:</p>
+<p>每次我们最终得到一个类型的三个部分，文件夹或文件，可以组合在一起-让我们尝试这样做</p>
+<p>例如，我们假设我们正在构建一个地址簿应用程序，它有一个ContactViewController来显示用户的联系人之一。 它的UI有三个组件-一个标题，一个显示联系人所有信息的表视图和一个包含各种操作的视图。现在这些都是在ContactViewController本身内设置的，像这样:</p>
+<pre><code class="language-swift">class ContactViewController: UIViewController {
+    private lazy var headerImageView = UIImage()
+    private lazy var headerLabel = UILabel()
+    private lazy var headerButton = UIButton()
+
+    private lazy var infoTableView = UITableView()
+
+    private lazy var actionsTitleLabel = UILabel()
+    private lazy var actionsSubtitleLabel = UILabel()
+    private lazy var actionsStackView = UIStackView()
+}
+</code></pre>
+<p>将三法则应用于上述类，我们可以看到，稍微拆分一下可能会对它有好处。我们有三个共享header前缀的属性，actions前缀也是如此。这告诉我们，我们可能可以将这些属性提取到它们自己的专用类型中，就像头视图的情况:</p>
+<pre><code class="language-swift">class ContactHeaderView: UIView {
+    let imageView = UIImageView()
+    let label = UILabel()
+    let button = UIButton()
+}
+</code></pre>
+<p>如果我们也对与动作相关的属性做同样的事情，我们就可以真正改善ContactViewController的结构，让它简单地管理那些新的、更高级的容器视图:</p>
+<pre><code class="language-swift">class ContactViewController: UIViewController {
+    private lazy var headerView = ContactHeaderView()
+    private lazy var infoTableView = UITableView()
+    private lazy var actionsView = ContactActionsView()
+}
+</code></pre>
+<p>现在，获得ContactViewController所做的事情的概览要容易得多，而且它变成代码 dumping ground 的可能性也大大降低了，因为它有了一个更坚实的结构。</p>
+<p>另一种实现相同的方法是把ContactViewController变成一个自定义的容器视图控制器。</p>
+<p>这是另一个例子，我们有一个在文字处理应用程序中保存文档的大型功能。保存文档需要很多不同的步骤，现在所有这些步骤都在同一个函数中内联执行。下面是如何处理文档标题的各种属性:</p>
+<pre><code class="language-swift">func saveDocument() {
+    guard let titleText = titleLabel.text else {
+        return
+    }
+
+    guard !titleText.isEmpty else {
+        return
+    }
+
+    let titleFontIndex = titleFontPicker.selectedSegmentIndex
+    let titleFont = fonts[titleFontIndex]
+    let titleAlignmentIndex = titleTextAligmentPicker.selectedSegmentIndex
+    let titleAlignment = textAlignments[titleAlignmentIndex]
+
+    ...
+}
+</code></pre>
+<p>这里也一样，我们应用三法则，因为我们有超过三个引用来处理文档的标题-让我们把这个函数提取到它自己的函数中，像这样:</p>
+<pre><code class="language-swift">func makeTitle() -&gt; Article.Title? {
+    guard let text = titleLabel.text else {
+        return nil
+    }
+
+    guard !text.isEmpty else {
+        return nil
+    }
+
+    let fontIndex = titleFontPicker.selectedSegmentIndex
+    let font = fonts[fontIndex]
+    let alignmentIndex = titleTextAligmentPicker.selectedSegmentIndex
+    let alignment = textAlignments[alignmentIndex]
+
+    return .init(text: text, font: font, alignment: alignment)
+}
+</code></pre>
+<p>正如您在上面所看到的，执行这些提取和重构以改进代码的结构也可以真正地提高代码的可读性。不必总是到处引用“title”，我们现在可以删除这个前缀，最终得到更清晰的代码👍。</p>
+<p>就像编程中的任何规则一样，三法则的诀窍不是学习它，而是决定什么时候应用它，什么时候不应用它。像大多数规则一样(至少在编程中是😅)——在适当的情况下，完全可以打破它。</p>
+<h2 id="features">Features</h2>
+<p>当涉及到改善组件或应用的整体结构时，另一个有用的技巧是根据它所包含的功能将其分解。尽管我们可能大多认为功能是UI的顶层部分——一个应用程序通常有比暴露给用户的功能多得多的功能。</p>
+<p>例如，如果我们的应用程序包含一组用于解析URL的类和函数，这些可以被视为URL解析特性——或者我们应用程序的网络层可以被称为网络特性。将属于给定特性的类型分组在一起可以是结构的一个很好的起点，该结构在添加新特性时也可以很好地扩展。所有的特性都变成了它们自己的小子系统，有它们自己的内部结构。</p>
+<p>例如，以下是一个面向用户的功能(搜索)和一个系统级功能(网络)如何在我们的Xcode项目中组织:</p>
+<pre><code class="language-swift">Features
+Search
+View Controllers
+SearchResultsViewController.swift
+SearchViewController.swift
+Models
+SearchNetworkResponse.swift
+SearchResult.swift
+Views
+SearchBar.swift
+SearchTableViewCell.swift
+Logic
+SearchLogicController.swift
+SearchResultsLoader.swift
+Networking
+Models
+Request.swift
+Endpoint.swift
+Logic
+DataLoader.swift
+RequestFactory.swift
+Extensions
+URL+Endpoint.swift
+URLSession+RequestFactory.swift
+</code></pre>
+<p>使用特性来构建和组织我们的项目的好处，就像我们上面所做的那样，是它提供了一个很好的额外层次结构——而不是像视图控制器和模型这样的文件夹在顶层(因为这些很快就会有变成垃圾场的风险)。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>维护一个稳固的项目结构主要是定义一些关键的原则(如三的规则或按特性组织事物)，这些原则与您和您的团队希望如何组织代码有关 - 然后持续花时间根据这些原则重新安排事情。做到这一点的一种方法是遵循“侦察规则”——每当你接触到代码库的一部分时，你会试图让它比你发现它时更好。</p>
+<p>就像编程中的大多数事情一样，在组织和构建项目时，没有什么银弹。每个项目都是不同的，为每个项目设计(和更新)一个特定的结构通常是可行的-同时仍然试图坚持通用的命名约定，并使我们建立的层次结构尽可能直观。</p>
+<p><a href="https://www.swiftbysundell.com/articles/structuring-swift-code/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5VmnTv3Lu/" class="tag">
+                    maintenance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/writing-backward-compatible-swift-code/">
+                  <h3 class="post-title">
+                    Writing backward compatible Swift code
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

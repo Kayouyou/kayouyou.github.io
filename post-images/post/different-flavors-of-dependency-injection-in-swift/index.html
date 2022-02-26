@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Different flavors of dependency injection in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="之前的文章中，我们已经看了一些不同的方法来使用依赖注入来在Swift应用中实现一个更加解耦和可测试的架构。例如，在“Swift使用工厂的依赖注入”中将依赖注入与工厂模式相结合，在“避免Swift使用单例”中将依赖注入替换为单例。
+到目前为止..." />
+    <meta name="keywords" content="different flavors,dependency injection" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Different flavors of dependency injection in Swift</h2>
+            <div class="post-date">2017-12-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>之前的文章中，我们已经看了一些不同的方法来使用依赖注入来在Swift应用中实现一个更加解耦和可测试的架构。例如，在“Swift使用工厂的依赖注入”中将依赖注入与工厂模式相结合，在“避免Swift使用单例”中将依赖注入替换为单例。</p>
+<p>到目前为止，我的大部分文章和例子都使用了基于初始化器的依赖注入。 然而，就像大多数编程技术一样，依赖注入有多种“风格”——每一种都有自己的优缺点。本周，让我们看看这三种风格，以及它们如何在Swift中使用。</p>
+<h2 id="initializer-based">Initializer-based</h2>
+<p>让我们先快速回顾一下最常见的依赖项注入——基于初始化器——即对象在初始化时应该被赋予它所需要的依赖项。 这种特性的最大好处是，它保证我们的对象拥有它们需要的一切，以便立即完成它们的工作。</p>
+<p>假设我们正在构建一个从磁盘加载文件的文件加载器。为此，它使用两个依赖项——一个系统提供的FileManager实例和一个缓存。使用基于初始化器的依赖注入，实现可能是这样的:</p>
+<pre><code class="language-swift">class FileLoader {
+    private let fileManager: FileManager
+    private let cache: Cache
+
+    init(fileManager: FileManager = .default,
+         cache: Cache = .init()) {
+        self.fileManager = fileManager
+        self.cache = cache
+    }
+}
+</code></pre>
+<p>注意上面是如何使用默认参数来避免在使用单例或新实例时总是创建依赖项的。这使我们能够在生产代码中使用FileLoader()简单地创建一个文件加载器，同时仍然通过在测试代码中注入模拟或显式实例来支持测试。</p>
+<h2 id="property-based">Property-based</h2>
+<p>虽然基于初始化式的依赖项注入通常非常适合您自己的自定义类，但当您必须从系统类继承时，有时使用它有点困难。一个例子是当构建视图控制器，特别是如果你使用XIBs或故事板来定义它们，因为那时你不再控制你的类的初始化器。</p>
+<p>对于这些类型的情况，基于属性的依赖注入是一个很好的选择。不需要将对象的依赖项注入到它的初始化器中，它们可以在之后被赋值。这种类型的依赖项注入还可以帮助您减少样板文件，特别是当存在一个不需要注入的良好默认值时。</p>
+<p>让我们看看另一个例子——在这个例子中，我们正在构建一个PhotoEditorViewController，它允许用户从他们的库中编辑一张照片。为了运行，这个视图控制器需要一个系统提供的phphotollibrary类的实例(这是一个单例)，以及我们自己的photoeditoengine类的实例。要在不使用自定义初始化器的情况下启用依赖注入，我们可以创建具有默认值的可变属性，如下所示:</p>
+<pre><code class="language-swift">class PhotoEditorViewController: UIViewController {
+    var library: PhotoLibrary = PHPhotoLibrary.shared()
+    var engine = PhotoEditorEngine()
+}
+</code></pre>
+<p>请注意上面的“用系统单例代码在3个简单步骤中测试Swift代码”技术是如何通过使用协议为系统照片库类提供一个更抽象的照片库接口的。 这将使测试和模仿更容易!</p>
+<p>上面的好处是，我们仍然可以很容易地在测试中注入模拟，只需重新分配视图控制器的属性:</p>
+<pre><code class="language-swift">class PhotoEditorViewControllerTests: XCTestCase {
+    func testApplyingBlackAndWhiteFilter() {
+        let viewController = PhotoEditorViewController()
+
+        // Assign a mock photo library to gain complete control over
+        // what photos are stored in it
+        let library = PhotoLibraryMock()
+        library.photos = [TestPhotoFactory.photoWithColor(.red)]
+        viewController.library = library
+
+        // Run our testing commands
+        viewController.selectPhoto(atIndex: 0)
+        viewController.apply(filter: .blackAndWhite)
+        viewController.savePhoto()
+
+        // Assert that the outcome is correct
+        XCTAssertTrue(photoIsBlackAndWhite(library.photos[0]))
+    }
+}
+</code></pre>
+<h2 id="parameter-based">Parameter-based</h2>
+<p>最后，让我们看看基于参数的依赖注入。当您希望轻松地使遗留代码更具可测试性，而不必过多地更改其现有结构时，这种风格特别有用。</p>
+<p>很多时候，我们只需要一次特定的依赖项，或者只需要在特定条件下对其进行模拟。不必更改对象的初始化器或将属性公开为可变的(这并不总是一个好主意)，我们可以打开特定的API来接受依赖项作为参数。</p>
+<p>让我们来看看NoteManager类，它是一个笔记应用程序的一部分。它的工作是管理用户编写的所有注释，并提供基于查询搜索注释的API。由于这是一个可能需要一段时间的操作(如果用户有很多注释，这是很有可能的)，我们通常在后台队列上执行它，像这样:</p>
+<pre><code class="language-swift">class NoteManager {
+    func loadNotes(matching query: String,
+                   completionHandler: @escaping ([Note]) -&gt; Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let database = self.loadDatabase()
+            let notes = database.filter { note in
+                return note.matches(query: query)
+            }
+
+            completionHandler(notes)
+        }
+    }
+}
+</code></pre>
+<p>虽然上述方法对于我们的产品代码来说是一个很好的解决方案，但在测试中，我们通常希望尽可能地避免异步代码和并行，以避免不稳定。虽然使用基于初始化器或属性的依赖注入来指定NoteManager应该总是使用的显式队列是很好的，但它可能需要对类进行大的更改，而我们现在还不能/不愿意这样做。</p>
+<p>这就是基于参数的依赖注入的由来。我们不需要重构整个类，我们只需要注入要在哪个队列上运行loadNotes操作:</p>
+<pre><code class="language-swift">class NoteManager {
+    func loadNotes(matching query: String,
+                   on queue: DispatchQueue = .global(qos: .userInitiated),
+                   completionHandler: @escaping ([Note]) -&gt; Void) {
+        queue.async {
+            let database = self.loadDatabase()
+            let notes = database.filter { note in
+                return note.matches(query: query)
+            }
+            completionHandler(notes)
+        }
+    }
+}
+</code></pre>
+<p>这使我们能够在测试代码中方便地使用定制队列，我们可以等待它。 这几乎可以让我们在测试中将上述API转换为同步API，从而使事情变得更容易和更可预测。</p>
+<p>基于参数的依赖注入的另一个用例是当你想测试静态api时。 对于静态api，我们没有初始化器，理想情况下我们也不应该静态地保持任何状态，因此基于参数的依赖注入成为一个很好的选择。让我们来看看一个静态的MessageSender类，它目前依赖于singleton:</p>
+<pre><code class="language-swift">class MessageSender {
+    static func send(_ message: Message, to user: User) throws {
+        Database.shared.insert(message)
+
+        let data: Data = try wrap(message)
+        let endpoint = Endpoint.sendMessage(to: user)
+        NetworkManager.shared.post(data, to: endpoint.url)
+    }
+}
+</code></pre>
+<p>虽然这里理想的长期解决方案可能是重构MessageSender，使其成为非静态的，并适当地注入到使用它的任何地方，但是为了能够轻松地测试它(例如，为了重现/验证一个bug)，我们可以简单地将它的依赖项作为参数注入，而不是依赖于单例:</p>
+<pre><code class="language-swift">class MessageSender {
+    static func send(_ message: Message,
+                     to user: User,
+                     database: Database = .shared,
+                     networkManager: NetworkManager = .shared) throws {
+        database.insert(message)
+
+        let data: Data = try wrap(message)
+        let endpoint = Endpoint.sendMessage(to: user)
+        networkManager.post(data, to: endpoint.url)
+    }
+}
+</code></pre>
+<p>我们再次使用默认实参，这既是为了方便，但更重要的是能够向我们的代码添加测试支持，同时仍然保持100%的向后兼容性👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>那么哪种依赖注入是最好的呢?我的答案是，就像在许多情况下一样，一个无聊的答案:这取决于具体情况😅。我在这个博客上经常尝试的一件事就是针对一个给定的问题提出许多不同的解决方案。原因很简单——我真的不相信银弹，我认为有多种工具和特定的技术可以让我们在编写代码时做出更好、更明智的决定。</p>
+<p><a href="https://www.swiftbysundell.com/articles/different-flavors-of-dependency-injection-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/wBXIGknAly/" class="tag">
+                    different flavors
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SI7Eu5Vqu/" class="tag">
+                    dependency injection
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/building-an-enum-based-analytics-system-in- swift/">
+                  <h3 class="post-title">
+                    Building an enum-based analytics system in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

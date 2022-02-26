@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 70:Composable State Management: Action Pullbacks | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+PointFree Episode 70:Composable State Management: Action Pullbacks
+
+Introduction
+Focusing a reducer's actions
+Enums an..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 70:Composable State Management: Action Pullbacks</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#pointfree-episode-70composable-state-management-action-pullbacks">PointFree Episode 70:Composable State Management: Action Pullbacks</a>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#focusing-a-reducers-actions">Focusing a reducer's actions</a></li>
+<li><a href="#enums-and-key-paths">Enums and key paths</a></li>
+<li><a href="#enum-properties">Enum properties</a></li>
+<li><a href="#pulling-back-reducers-along-actions">Pulling back reducers along actions</a></li>
+<li><a href="#pulling-back-more-reducers">Pulling back more reducers</a></li>
+<li><a href="#till-next-time">Till next time</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<!-- # PointFree Episode 70:Composable State Management: Action Pullbacks -->
+<h2 id="introduction">Introduction</h2>
+<p>因此，我们现在已经非常接近完成另一个我们在这一系列剧集开始时就开始着手解决的架构问题。我们说过，我们希望能够用简单的、可组合的单元构建大型复杂的应用程序。</p>
+<p>我们现在可以用我们的<strong>reducers</strong>和它们运行的状态来做到这一点。我们可以编写我们的<strong>reducers</strong>，让它们在最低限度的状态下运行，以完成工作，然后把它们拉回来，放入一个更大的<strong>reducers</strong>中，并在整个应用程序的状态下运行。</p>
+<p>理想情况下，我们甚至希望这些简单的、可组合的单元能够被隔离，我们甚至可以将它们放在自己的模块中，这样它们就可以轻松地与其他模块和应用程序共享。</p>
+<p>这真是太令人兴奋了!但是，还有一个问题。尽管我们的<strong>reducers</strong>运行于更小的数据块，但它们仍然对嵌入其中的更大的<strong>reducers</strong>了解得太多，特别是它们可以监听每一个应用程序的操作。</p>
+<h2 id="focusing-a-reducers-actions">Focusing a reducer's actions</h2>
+<p>让我们再来看看我们的<strong>counterReducer</strong>:</p>
+<pre><code class="language-swift">func counterReducer(state: inout Int, action: AppAction) -&gt; Void {
+  switch action {
+  case .counter(.decrTapped):
+    state -= 1
+
+  case .counter(.incrTapped):
+    state += 1
+
+  default:
+    break
+  }
+}
+</code></pre>
+<p>这个<strong>reducers</strong>只对一个整数起作用，这很好。这对我的思维模式很有帮助，我知道<strong>reducers</strong>想要完成什么，因为我知道它真的不能做太多。 它只有一个整数可以改变。</p>
+<p>但是，请注意，它也包含应用程序的全部操作。</p>
+<p>我们应该知道出错了，因为在<strong>switch</strong>语句中有一个<strong>default</strong>情况。这意味着，如果我们向<strong>CounterAction</strong>枚举中添加一个新操作，我们将不会得到编译器错误，并且会在<strong>reducers</strong>中静默地忽略该操作。</p>
+<p>解决这一缺点的一种方法是在彻底<strong>switching</strong>之前先提取<strong>counter</strong>动作:</p>
+<pre><code class="language-swift">func counterReducer(state: inout Int, action: AppAction) -&gt; Void {
+  switch action {
+  case let .counter(action):
+    switch action {
+    case .decrTapped:
+      state -= 1
+
+    case .incrTapped:
+      state += 1
+    }
+
+  default:
+    break
+  }
+}
+</code></pre>
+<p>但这并不理想，因为这会增加嵌套和噪音。</p>
+<p>所以，让我们重构这个<strong>reducer</strong>，让它只执行它关心的动作:</p>
+<pre><code class="language-swift">func counterReducer(state: inout Int, action: CounterAction) -&gt; Void {
+  switch action {
+  case .decrTapped:
+    state -= 1
+
+  case .incrTapped:
+    state += 1
+  }
+}
+</code></pre>
+<p>这很简单，它使代码更短，我们不再需要<strong>default</strong>情况。它现在只关注动作和状态，甚至可以被提取到模块中。这是一件很强大的事情!例如，一个代码库的新手可能会在自己的模块中看到一个<strong>reducer</strong>，并知道它不可能触及应用目标中的任何东西。</p>
+<h2 id="enums-and-key-paths">Enums and key paths</h2>
+<p>然而，我们现在有一个编译错误在我们的应用程序<strong>reducer</strong>:</p>
+<pre><code class="language-swift">let appReducer = combine(
+  pullback(counterReducer, value: \.count),
+  primeModalReducer,
+  pullback(favoritePrimesReducer, value: \.favoritePrimesState)
+)
+</code></pre>
+<blockquote>
+<p>🛑 Type of expression is ambiguous without more context</p>
+</blockquote>
+<p>尽管<strong>counterReducer</strong>在状态方面与其他<strong>reducer</strong>使用相同的语言，但它不再使用相同的<strong>actions</strong>语言。<strong>counter reducer</strong>只理解计数器动作，而其他<strong>reducers</strong>则理解整个应用动作，所以我们不能再将这些<strong>reducers</strong>组合在一起。</p>
+<p>所以，问题是:我们如何把一个只理解局部作用的<strong>reducer</strong>转变成一个理解全局作用的<strong>reducer</strong>?</p>
+<p>这与我们在<strong>reducer</strong>和状态上遇到的问题非常相似，因为我们想将在局部状态下工作的<strong>reducer</strong>转换为在全局状态下工作的<strong>reducer</strong>。在这种情况下，我们发现解决方案是沿着一条从全局状态到局部状态的关键路径<strong>pullback</strong>。但在<strong>action</strong>世界中，相应的解决方案是什么呢?</p>
+<p>我们的操作是枚举，枚举没有键路径的概念，至少不是Swift定义的，也不是Swift编译器自动提供的。然而，这不应该阻止我们探索对应的枚举关键路径的概念是什么样子的，并看看这是否可能解决我们的问题。</p>
+<p>如果我们要将关键路径的本质提取到一个包中，它可能看起来像这样:</p>
+<pre><code class="language-swift">struct _KeyPath&lt;Root, Value&gt; {
+  let get: (Root) -&gt; Value
+  let set: (inout Root, Value) -&gt; Void
+}
+</code></pre>
+<p>这根本不是在Swift中实现关键路径的方式，我们在前面加上了下划线，以表明这只是一个思想实验。但关键路径的核心在于，它们为您提供了一种从根中“获取”值的方法，并允许您在根中设置值，从而为您提供一个已更改的新根。这两个操作基本上是您可以在结构上执行的最一般的操作。您可以从结构中提取字段，也可以在结构上的字段中设置新值。</p>
+<p>举还有两个非常基本的操作可以在其上执行，它们非常类似于关键路径的<strong>get和set</strong>。对于某些枚举类型，您可以获取一个值并将其嵌入到枚举的一种情况中，或者您可以获取枚举的一个值并尝试在其中一种情况中提取相关的数据。</p>
+<p>例如，从我们的<strong>AppAction</strong>枚举。我们可以从<strong>case</strong>的相关数据中获取一个值，并将其放入枚举中:</p>
+<pre><code class="language-swift">AppAction.counter(CounterAction.incrTapped)
+</code></pre>
+<p>这有点像<strong>setter</strong>:我们接受一个值并将其嵌入到<strong>AppAction enum</strong>中。</p>
+<p>我们也有类似<strong>getter</strong>的东西:我们可以取一个枚举值并尝试从一个特定的情况中提取一个值:</p>
+<pre><code class="language-swift">let action = AppAction.favoritePrimes(.deleteFavoritePrimes([1]))
+let favoritePrimesAction: FavoritePrimesAction?
+switch action {
+case let .favoritePrimes(action):
+  favoritePrimesAction = action
+default:
+  favoritePrimesAction = nil
+}
+</code></pre>
+<p>虽然这非常冗长，但它类似于<strong>getter</strong>操作，我们可以进行模式匹配并提取可选的关联值。</p>
+<p>这是我们可以对枚举做的两个操作，我们可以对每一个枚举做。如果Swift支持<strong>enum</strong>键路径，我们可以将这两个操作打包成一个新的类型，可能像这样:</p>
+<pre><code class="language-swift">struct EnumKeyPath&lt;Root, Value&gt; {
+  let embed: (Value) -&gt; Root
+  let extract: (Root) -&gt; Value?
+}
+</code></pre>
+<p>也许Swift编译器可以自动为我们创建枚举键路径，每个枚举都有一个键路径，也许我们可以通过相同的语法访问它们:</p>
+<pre><code class="language-swift">// \AppAction.counter // EnumKeyPath&lt;AppAction, CounterAction&gt;
+</code></pre>
+<h2 id="enum-properties">Enum properties</h2>
+<p>现在，即使Swift今天没有给我们这个功能，但事实证明，如果我们只做一点前期工作，我们就可以非常接近这个功能。事实上，关于这个话题，我们有一整系列的节目。</p>
+<p>几个月前，我们花了几集的时间讨论结构体和枚举实际上只是一枚硬币的两面，也就是说，它们是基本相连的概念。这让我们看到，一个概念拥有的许多功能，另一个概念自然也会拥有。然而，有时Swift更喜欢结构体而不是枚举，因为它提供了强大的特性，在枚举世界中没有相应的版本。</p>
+<p>特别是:属性和键路径。结构体通过点语法有非常简单的数据访问，这意味着你可以很容易地访问结构体中的字段，只需要做“.”然后是你的字段名称。枚举没有这样的功能。如果您想要获取枚举中的数据，您别无选择，只能<strong>switch</strong>枚举，在您关心的情况下进行模式匹配，然后在该情况下获取相关的数据。此外，结构上的每个属性都获得编译器生成的键路径，这就像一个小的<strong>getter/setter</strong>对，可以解锁所有类型的有趣的东西。对于枚举没有这样的东西。</p>
+<p>这两个概念之间存在很大的不平衡。这使得Swift似乎更喜欢结构体而不是枚举，尽管其中一个并不比另一个更重要。因此，在本系列的下一集中，我们将通过引入“enum属性”概念来弥补这一缺陷。这些是在枚举上定义的计算属性，每个枚举对应一个。它基本上把我们在上面的特别方式中所做的工作打包成一个漂亮的、一致的包。</p>
+<p>例如，对于<strong>AppAction</strong>枚举，它看起来像这样:</p>
+<pre><code class="language-swift">enum AppAction {
+  case counter(CounterAction)
+  case primeModal(PrimeModalAction)
+  case favoritePrimes(FavoritePrimesAction)
+
+  var counter: CounterAction? {
+    get {
+      guard case let .counter(value) = self else { return nil }
+      return value
+    }
+  }
+  var primeModal: PrimeModalAction? {
+    get { 
+      guard case let .primeModal(value) = self else { return nil }
+      return value
+    }
+  }
+  var favoritePrimes: FavoritePrimesAction? {
+    get {
+      guard case let .favoritePrimes(value) = self else { return nil }
+      return value
+    }
+  }
+}
+</code></pre>
+<p>通过这些属性，我们可以获得<strong>AppAction</strong>枚举中任何情况下的关联数据的实例访问权，这给了应用程序<strong>actions</strong>很多与应用程序<strong>state</strong>结构体相同的人机工程学。</p>
+<p>尽管这些枚举属性非常有用，但从头编写和维护它们是相当痛苦的。这就是为什么我们花了<a href="https://www.pointfree.co/episodes/ep54-advanced-swift-syntax-enum-properties">三集</a>额外的时间来探索苹果的<strong>SwiftSyntax</strong>库，这样我们就可以构建一个命令行工具来为我们生成这些属性，并自动将代码插入到我们的源代码中。我们最终开放了这个工具，它很容易使用，我们可以直接将它添加到这个<strong>playground</strong>中，并自动生成所有这些<strong>enum</strong>属性。所以，让我们开始吧!</p>
+<p>我们已经在<strong>playground</strong>当前所在的目录中添加了一个<strong>Package.swift</strong>文件，它的依赖项指向开源的<strong>swift-enum-properties</strong> repo:</p>
+<pre><code class="language-swift">// swift-tools-version:4.2
+import PackageDescription
+
+let package = Package(
+  name: &quot;StateManagement&quot;,
+  dependencies: [
+    .package(url: &quot;https://github.com/pointfreeco/swift-enum-properties.git&quot;, from: &quot;0.1.0&quot;)
+  ]
+)
+</code></pre>
+<p>这样我们就可以运行这个工具附带的generate-enum-properties可执行文件了:</p>
+<pre><code class="language-swift">$ swift run generate-enum-properties
+Generate enum properties (version 0.1.0).
+
+usage: generate-enum-properties [--help|-h] [--dry-run|-n] [&lt;file&gt;...]
+
+    -h, --help
+        Print this message.
+
+    -n, --dry-run
+        Don't update files in place. Print to stdout instead.
+
+    --version
+        Print the version.
+</code></pre>
+<p>这将打印出使用说明。</p>
+<p>要真正调用这个工具，我们只需要将它指向这个目录和所有子目录中的所有.<strong>swift</strong>文件。让我们首先删除<strong>AppAction</strong>中的所有属性，这样我们就可以看到它的作用了。然后运行:</p>
+<pre><code class="language-swift">$ swift run generate-enum-properties ComposableArchitecture.playground/Contents.swift
+Updating ComposableArchitecture.playground/Contents.swift
+</code></pre>
+<p>就像我们的<strong>playground</strong>代码被更新为新代码，它为我们定义的每一个枚举以及该枚举中的每一个情况提供枚举属性。例如，这个属性被添加到<strong>AppAction</strong>中:</p>
+<pre><code class="language-swift">var counter: CounterAction? {
+  get {
+    guard case let .counter(value) = self else { return nil }
+    return value
+  }
+  set {
+    guard case .counter = self, let newValue = newValue else { return }
+    self = .counter(newValue)
+  }
+}
+</code></pre>
+<p>这里我们有之前定义的<strong>getter</strong>，甚至还有<strong>setter</strong>，我们现在不会用到，但在后面的章节中会很方便。</p>
+<p>工具现在为我们生成的这些属性使枚举的行为非常类似于结构体。例如，我们可以很容易地从枚举实例中提取一个值:</p>
+<pre><code class="language-swift">let someAction = AppAction.counter(.incrTapped)
+someAction.counter
+// Optional(incrTapped)
+
+someAction.favoritePrimes
+// nil
+</code></pre>
+<p>现在，我们还可以为枚举的每个例子获取关键路径:</p>
+<pre><code class="language-swift">\AppAction.counter
+// WritableKeyPath&lt;AppAction, CounterAction?&gt;
+</code></pre>
+<h2 id="pulling-back-reducers-along-actions">Pulling back reducers along actions</h2>
+<p>现在，我们有了一种方法来为每个枚举生成属性和键路径，这给了我们什么? 结构体上的关键路径正是让我们能够沿着<strong>state</strong>拉回<strong>reducers</strong>的原因。希望<strong>enum</strong>上的关键路径给我们同样的能力，除了我们想沿着<strong>action</strong>拉回reducer。</p>
+<p>为了理解我们试图完成的任务，让我们编造一个函数签名。我们希望能够将知道如何与本地<strong>actions</strong>合作的<strong>reducers</strong>撤回到知道如何与全球<strong>actions</strong>合作的<strong>reducers</strong>:</p>
+<pre><code class="language-swift">func pullback&lt;Value, GlobalAction, LocalAction&gt;(
+  _ reducer: @escaping (inout Value, LocalAction) -&gt; Void,
+  ???
+) -&gt; (inout Value, GlobalAction) -&gt; Void {
+
+  ???
+}
+</code></pre>
+<p>问题是:我们要把什么拉回来? 对于结构体，它是从全局状态到局部状态的简单关键路径。但这在这里并不完全正确，因为从全局<strong>action</strong>中提取特定的局部<strong>action</strong>并不总是可能的。这就是<strong>enum</strong>属性返回可选值的原因。所以我们需要的是一个可选的本地<strong>action</strong>的关键路径:</p>
+<pre><code class="language-swift">func pullback&lt;Value, GlobalAction, LocalAction&gt;(
+  _ reducer: @escaping (inout Value, LocalAction) -&gt; Void,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; (inout Value, GlobalAction) -&gt; Void {
+
+  ???
+}
+</code></pre>
+<p>我们应该能够实现这个函数。在这之前，让我们先想想它应该代表什么。我们从一个操作局部<strong>actions</strong>的<strong>reducers</strong>开始，也就是特定于大应用程序中的一个小屏幕的动作。我们还从一个关键路径开始，该路径可以从全局<strong>actions</strong>中提取局部<strong>actions</strong>，但有时会失败。我们想把这个起始信息变成一个<strong>reducers</strong>，在整个应用程序的全局动作上工作。它的做法是，当一个全局<strong>actions</strong>进来时，我们会尝试使用关键路径从它提取一个局部<strong>actions</strong>。如果成功了，我们就可以把它传递给<strong>reducers</strong>，如果失败了，我们就默默地让它过去，什么也不做。</p>
+<p>这真的很简单，实现也很简单:</p>
+<pre><code class="language-swift">func pullback&lt;Value, GlobalAction, LocalAction&gt;(
+  _ reducer: @escaping (inout Value, LocalAction) -&gt; Void,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; (inout Value, GlobalAction) -&gt; Void {
+
+  return { value, globalAction in
+    guard let localAction = globalAction[keyPath: action] else { return }
+    reducer(&amp;value, localAction)
+  }
+}
+</code></pre>
+<p>就这些。</p>
+<p>在我们继续之前，让我们快速地清理一下。现在我们有两个版本的拉回:一个用于<strong>state</strong>，一个用于<strong>action</strong>。让我们将它们合并成一个单独的拉回:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, GlobalAction, LocalAction&gt;(
+  _ reducer: @escaping (inout LocalValue, LocalAction) -&gt; Void,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; (inout GlobalValue, GlobalAction) -&gt; Void {
+
+  return { globalValue, globalAction in
+    guard let localAction = globalAction[keyPath: action] else { return }
+    reducer(&amp;globalValue[keyPath: value], localAction)
+  }
+}
+</code></pre>
+<p>我们怎么用这个呢? 现在我们的<strong>appReducer</strong>无法编译。 我们需要更新这些回调，以便它们能够与新签名一起工作，这需要指定<strong>action</strong>。<strong>counter reducer</strong>现在可以通过将应用<strong>action</strong>投射到counter<strong>action</strong>中的关键路径被拉回:</p>
+<pre><code class="language-swift">let _appReducer = combine(
+  pullback(counterReducer, value: \.count, action: \.counter),
+  primeModalReducer,
+  pullback(favoritePrimesReducer, value: \.favoritePrimesState)
+)
+</code></pre>
+<p>我们还需要更新<strong>favoritePrimesReducer</strong>和<strong>appReducer</strong>的回调。我们可以做的一件简单的事情是沿着<strong>identity key path</strong>将它拉回来:</p>
+<pre><code class="language-swift">let _appReducer = combine(
+  pullback(counterReducer, value: \.count, action: \.counter),
+  primeModalReducer,
+  pullback(favoritePrimesReducer, value: \.favoritePrimesState, action: \.self)
+)
+let appReducer = pullback(_appReducer, value: \.self, action: \.self)
+</code></pre>
+<p>这让代码再次编译，我们可以看到计数器工作就像以前一样，尽管它的<strong>reducers</strong>完全与应用程序<strong>state</strong>和应用程序<strong>action</strong>隔离。</p>
+<h2 id="pulling-back-more-reducers">Pulling back more reducers</h2>
+<p>我们现在有了第三种形式的<strong>reducers</strong>组合:我们能够沿着<strong>action</strong>的关键路径拉回，以便让我们的<strong>reducers</strong>只关注局部<strong>action</strong>，我们将其拉回全球<strong>action</strong>的世界。</p>
+<p>在这个过程中，我们大大简化了计数器<strong>reducer</strong>。</p>
+<p>我们的其他<strong>reducer</strong>仍然在全球<strong>action</strong>中运行，所以让我们修复它!</p>
+<p><strong>favoritePrimesReducer</strong>正在沿着标识键路径拉回它的<strong>action</strong>，这意味着它仍然在操作完整的应用程序<strong>action enum</strong>。</p>
+<pre><code class="language-swift">pullback(favoritePrimesReducer, value: \.favoritePrimesState, action: \.self)
+</code></pre>
+<p>我们可以让<strong>reducer</strong>更简单、更具体，只使用最喜欢的<strong>primes</strong>动作:</p>
+<pre><code class="language-swift">func favoritePrimesReducer(state: inout FavoritePrimesState, action: FavoritePrimesAction) -&gt; Void {
+  switch action {
+  case let .deleteFavoritePrimes(indexSet):
+    for index in indexSet {
+      state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(state.favoritePrimes[index])))
+      state.favoritePrimes.remove(at: index)
+    }
+  }
+}
+</code></pre>
+<p>然后我们可以更新回拉，沿着关键路径将<strong>app action</strong>投射到<strong>favorite prime</strong> action中:</p>
+<pre><code class="language-swift">let appReducer = combine(
+  pullback(counterReducer, value: \.count, action: \.counter),
+  primeModalReducer,
+  pullback(favoritePrimesReducer, value: \.favoritePrimesState, action: \.favoritePrimes)
+)
+</code></pre>
+<p>一切仍然像以前一样构建和运行。</p>
+<p>最后我们有<strong>primeModalReducer</strong>，它的操作也非常一般化。</p>
+<p>我们可以让它更具体，只工作于模态<strong>actions</strong>:</p>
+<pre><code class="language-swift">func primeModalReducer(state: inout AppState, action: PrimeModalAction) -&gt; Void {
+  switch action {
+  case .removeFavoritePrimeTapped:
+    state.favoritePrimes.removeAll(where: { $0 == state.count })
+    state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(state.count)))
+
+  case .saveFavoritePrimeTapped:
+    state.favoritePrimes.append(state.count)
+    state.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(state.count)))
+  }
+}
+</code></pre>
+<p>然后我们可以像这样更新<strong>app reducer</strong>:</p>
+<pre><code class="language-swift">let _appReducer = combine(
+  pullback(counterReducer, value: \.count, action: \.counter),
+  pullback(primeModalReducer, value: \.self, action: \.primeModal),
+  pullback(favoritePrimesReducer, value: \.favoritePrimesState, action: \.favoritePrimes)
+)
+</code></pre>
+<blockquote>
+<p>🛑 Generic parameter ‘Action’ could not be inferred</p>
+</blockquote>
+<p>我们有一个编译器错误，因为我们已经完全从<strong>AppAction</strong>隔离了我们的<strong>reducer</strong>，所以它不能再推断。编译器不知道它回调到哪种全局操作。</p>
+<p>我们可以通过标注<strong>reducer</strong>函数来给它一个提示。</p>
+<pre><code class="language-swift">let _appReducer: (inout AppState, AppAction) -&gt; Void = combine(
+  pullback(counterReducer, value: \.count, action: \.counter),
+  pullback(primeModalReducer, value: \.self, action: \.primeModal),
+  pullback(favoritePrimesReducer, value: \.favoritePrimesState, action: \.favoritePrimes)
+)
+</code></pre>
+<p>编译器很高兴，一切正常!</p>
+<p>我们已经将处理全球<strong>state</strong>和全球<strong>action</strong>的巨型<strong>reducer</strong>重构为3个更小的<strong>reducer</strong>，它们只处理它们关心的<strong>state和action</strong>。然后我们便能够将这些小型<strong>reducer</strong>进行整合，从而形成我们的大型应用<strong>reducer</strong>。</p>
+<p>我们能够用很少的库代码完成大部分工作。我们的<strong>Store</strong>类大约有15行代码，而回调则需要另外4行左右。这是我们“<strong>architecture</strong>”的核心，它描述了在应用程序中应用状态变化的一致方式。</p>
+<p>这种架构风格的唯一缺点和成本是，我们需要进行一些代码生成，以便为我们的操作枚举的每个案例提供关键路径。 我们同意这不是理想的，但实际上我们只是在做代码生成来弥补Swift中结构体和枚举之间的不平衡。我们认为这是代码生成的一种无害的用法，因为它解决了Swift数据类型的一个严重缺陷，希望有一天Swift能够解决struct和enum之间的这种不平衡。</p>
+<h2 id="till-next-time">Till next time</h2>
+<p>既然我们已经有了架构的基础，我们就可以开始探索与之相关的东西，以解锁在旧的应用程序制作方式中甚至不可能实现的功能。有一个概念，我们已经讨论过很多次关于称为“高阶结构”。在这里，你要做一些你已经学习过的构造，并将它提升到一个更高的层次，通过考虑函数，把那个对象作为输入，然后返回那个对象作为输出。 典型的例子是“高阶函数”，即以函数作为输入，以函数作为输出的函数。</p>
+<p>但在Point-Free中，我们也考虑了“高阶随机数生成器”，即将Gen类型作为输入并返回Gen类型作为输出的函数。我们还考虑了“高阶解析器”，这是将解析器作为输入并将解析器作为输出的函数。每当你形成这些更高阶结构之一时，你就获得了解锁新东西的能力，这是普通结构单独做不到的。</p>
+<p>那么“<strong>higher order reducer</strong>”到底是什么样的呢? 一个函数以<strong>reducer</strong>作为输入，以<strong>reducer</strong>作为输出，这意味着什么?</p>
+<p>我们下次再探讨这个问题!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-69-composable-state-management-state-pullbacks/">
+                  <h3 class="post-title">
+                    PointFree Episode 69: Composable State Management: State Pullbacks
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

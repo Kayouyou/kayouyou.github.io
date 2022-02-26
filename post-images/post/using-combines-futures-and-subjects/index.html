@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using Combine’s futures and subjects | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管Combine主要关注publishers的概念，发布者会随着时间的推移发出一系列的值，还包括一组方便的api，使我们能够充分利用框架的强大功能，而不必从头编写完全自定义publisher实现。
+例如，假设我们想要向现有的基于闭包的AP..." />
+    <meta name="keywords" content="combine" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using Combine’s futures and subjects</h2>
+            <div class="post-date">2021-03-23</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管Combine主要关注publishers的概念，发布者会随着时间的推移发出一系列的值，还包括一组方便的api，使我们能够充分利用框架的强大功能，而不必从头编写完全自定义publisher实现。</p>
+<p>例如，假设我们想要向现有的基于闭包的API添加组合支持 -例如这个ImageProcessor，它使用经典的完成处理程序模式，在给定图像的处理完成或失败时异步通知它的调用者:</p>
+<pre><code class="language-swift">struct ImageProcessor {
+    func process(
+        _ image: UIImage,
+        then handler: @escaping (Result&lt;UIImage, Error&gt;) -&gt; Void
+    ) {
+        // Process the image and call the handler when done
+        ...
+    }
+}
+</code></pre>
+<p>上面的API使用Swift的内置结果类型来封装成功处理的图像或遇到的任何错误。</p>
+<p>现在，与其重写我们的ImageProcessor，不如以一种完全附加的方式添加一个新的、组合驱动的API。这样不仅可以保持所有现有代码的完整，还可以让我们在编写新代码时，根据具体情况选择是使用Combine还是使用completion handler。</p>
+<h2 id="retrofitting-with-futures">Retrofitting with futures</h2>
+<p>为了实现这一点，让我们使用Combine的Future类型，它是期货/承诺模式的一种适应，该模式在各种不同的编程语言中都很常见。从本质上讲，Combine Future给了我们一个promise闭包，我们可以在异步操作完成时调用它，然后Combine将自动将我们给出的闭包结果映射到适当的发布者事件中。</p>
+<p>在这种情况下，真正方便的是我们现有的完成处理程序闭包已经使用了一个结果类型作为输入， 因此，在基于future的实现中，我们所要做的就是简单地将promise闭包传递给我们一个对现有流程API的调用，就像这样:</p>
+<pre><code class="language-swift">extension ImageProcessor {
+    func process(_ image: UIImage) -&gt; Future&lt;UIImage, Error&gt; {
+        Future { promise in
+            process(image, then: promise)
+        }
+    }
+}
+</code></pre>
+<p>为了说明这一点，如果我们使用一个专用的完成处理程序闭包，然后手动将其结果传递给我们的promise，那么上面的实现将是这样的:</p>
+<pre><code class="language-swift">extension ImageProcessor {
+    func process(_ image: UIImage) -&gt; Future&lt;UIImage, Error&gt; {
+        Future { promise in
+            process(image) { result in
+                promise(result)
+            }
+        }
+    }
+}
+</code></pre>
+<p>因此Future类型提供了一种非常简洁的方式，可以将现有的、基于闭包的api转换为可以在Combine的反应世界中使用的api -而且，由于这些futures和其他一样只是publishers，这意味着我们可以使用Combine的整套operators来转换和观察它们:</p>
+<pre><code class="language-swift">processor.process(image)
+    .replaceError(with: .errorIcon)
+    .map { $0.withRenderingMode(.alwaysTemplate) }
+    .receive(on: DispatchQueue.main)
+    .assign(to: \.image, on: imageView)
+    .store(in: &amp;cancellables)
+</code></pre>
+<p>然而，就像一般的Futures and Promises一样，Combine的Future类型只能发出单个结果，因为一旦它的promise闭包被调用，它将立即完成并关闭。</p>
+<p>那么，如果我们想要在一段时间内释放多个值(这正是Combine的主要目的)，该怎么办呢?</p>
+<h2 id="handling-multiple-output-values">Handling multiple output values</h2>
+<p>让我们回到之前基于闭包的ImageProcessor API，假设它接受了两个闭包-一个是在图像处理过程中定期更新进度的调用，另一个是在操作完全完成后调用的:</p>
+<pre><code class="language-swift">struct ImageProcessor {
+    typealias CompletionRatio = Double
+    typealias ProgressHandler = (CompletionRatio) -&gt; Void
+    typealias CompletionHandler = (Result&lt;UIImage, Error&gt;) -&gt; Void
+
+    func process(
+        _ image: UIImage,
+        onProgress: @escaping ProgressHandler,
+        onComplete: @escaping CompletionHandler
+    ) {
+        // Process the image and call the progress handler to
+        // report the operation's ongoing progress, and then
+        // call the completion handler once the image has finished
+        // processing, or if an error was encountered.
+        ...
+    }
+}
+</code></pre>
+<p>上面我们使用了类型别名，这既使我们实际的方法定义更容易阅读，也使传递到我们的ProgressHandler中的Double对象上下文化。</p>
+<p>在我们开始为上面的新API更新基于组合的扩展之前，让我们先引入一个名为ProgressEvent的枚举，我们将使用它作为将要创建的组合发布者的输出类型(因为发布者只能发出单一类型的值)。它将包括两种情况，一种用于更新事件，一种用于完成事件:</p>
+<pre><code class="language-swift">extension ImageProcessor {
+    enum ProgressEvent {
+        case updated(completionRatio: CompletionRatio)
+        case completed(UIImage)
+    }
+}
+</code></pre>
+<p>关于如何更新我们的Combine API的最初想法可能是继续使用Future类型，就像我们之前所做的那样，但是现在多次调用promise closure来报告更新和完成事件-例如:</p>
+<pre><code class="language-swift">extension ImageProcessor {
+    func process(_ image: UIImage) -&gt; Future&lt;ProgressEvent, Error&gt; {
+        Future { promise in
+            process(image,
+                onProgress: { ratio in
+                    promise(.success(
+                        .updated(completionRatio: ratio)
+                    ))
+                },
+                onComplete: { result in
+                    promise(result.map(ProgressEvent.completed))
+                }
+            )
+        }
+    }
+}
+</code></pre>
+<p>然而，上述方法不起作用，因为——如前所述——组合期货只能发出单个值，这意味着使用上述设置，在整个管道完成之前，我们将只接收第一个更新的事件。</p>
+<h2 id="sending-values-using-subjects">Sending values using subjects</h2>
+<p>相反，这是subject的一个很好的用例——它允许我们在手动完成之前发送尽可能多的值。将shipss与两种主要的subject实现相结合:PassthroughSubject和currentvaluessubject。让我们从使用前者开始，它不保留我们要发送给它的任何值，而是将它们传递给它的每个订阅者。</p>
+<p>下面是我们如何使用这样一个主题来更新我们的Combine-powered 的ImageProcessing API，现在完全支持进度更新和完成事件:</p>
+<pre><code class="language-swift">extension ImageProcessor {
+    func process(_ image: UIImage) -&gt; AnyPublisher&lt;ProgressEvent, Error&gt; {
+        // First, we create our subject:
+        let subject = PassthroughSubject&lt;ProgressEvent, Error&gt;()
+
+        // Then, we call our closure-based API, and whenever it
+        // sends us a new event, then we'll pass that along to
+        // our subject. Finally, when our operation was finished,
+        // then we'll send a competion event to our subject:
+        process(image,
+            onProgress: { ratio in
+                subject.send(.updated(completionRatio: ratio))
+            },
+            onComplete: { result in
+                switch result {
+                case .success(let image):
+                    subject.send(.completed(image))
+                    subject.send(completion: .finished)
+                case .failure(let error):
+                    subject.send(completion: .failure(error))
+                }
+            }
+        )
+        
+        // To avoid returning a mutable object, we convert our
+        // subject into a type-erased publisher before returning it:
+        return subject.eraseToAnyPublisher()
+    }
+}
+
+</code></pre>
+<p>现在，我们要做的就是更新我们的调用站点，从以前的处理ProgressEvent值，而不仅仅是UIImage实例-像这样:</p>
+<pre><code class="language-swift">processor.process(image)
+    .replaceError(with: .completed(.errorIcon))
+    .receive(on: DispatchQueue.main)
+    .sink { event in
+        switch event {
+        case .updated(let completionRatio):
+            progressView.completionRatio = completionRatio
+        case .completed(let image):
+            imageView.image = image.withRenderingMode(
+                .alwaysTemplate
+            )
+        }
+    }
+    .store(in: &amp;cancellables)
+</code></pre>
+<p>但是，在使用PassthroughSubject时要记住的一件事是，附加到它的每个订阅者将只接收在该订阅成功后发送的值。</p>
+<p>因此，在我们的例子中，因为我们立即开始每个图像处理操作，而且我们不知道调用者是否会对其处理发出的值的方式应用某种形式的延迟，所以我们可能希望使用currentvaluessubject。 顾名思义，这样的主题将跟踪我们发送给它的当前(或最后)值，并在所有新订阅者连接到我们的subject之后将其发送给所有新订阅者。</p>
+<p>值得庆幸的是，在这两个subject变量之间切换通常非常简单，因为唯一的区别是我们必须用我们希望它跟踪的初始值初始化currentvaluessubject:</p>
+<pre><code class="language-swift">extension ImageProcessor {
+    func process(_ image: UIImage) -&gt; AnyPublisher&lt;ProgressEvent, Error&gt; {
+        let subject = CurrentValueSubject&lt;ProgressEvent, Error&gt;(
+            .updated(completionRatio: 0)
+        )
+
+        ...
+
+        return subject.eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>但是，值得指出的是，上面的新实现还将导致在创建主题时立即发出初始的ProgressEvent值，这可能是我们想要的，也可能不是，这取决于具体情况。但在这个例子中，它实际上会很好，因为这将确保所有的进度处理代码在连接到主题时总是重置为零。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在构建组合驱动的api时，Combine的Future和subject类型绝对值得记住——与从头构建完全定制的发布者相比，它们通常是更简单的替代方案。</p>
+<p>当然还有Published属性，它提供了通过存储的属性发出值的另一种方式， 这篇文章已经深入讨论了哪些内容 - 所以Combine确实提供了一个非常全面的工具套件，我们可以根据我们想要构建的内容进行选择。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-combine-futures-and-subjects/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/bindable-swiftui-list-elements/">
+                  <h3 class="post-title">
+                    Bindable SwiftUI list elements
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

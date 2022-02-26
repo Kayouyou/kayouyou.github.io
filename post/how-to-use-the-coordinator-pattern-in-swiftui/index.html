@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>How to Use the Coordinator Pattern in SwiftUI | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在使用UIKit开发iOS应用时，许多开发者都使用了Coordinator模式来抽象各个view组件之间的联系。这增加了view components(如View Controller)的可重用性，减少了UIViewController实现..." />
+    <meta name="keywords" content="coordinator" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">How to Use the Coordinator Pattern in SwiftUI</h2>
+            <div class="post-date">2021-09-28</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gurol4vyhyj60j009nq3j02.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>在使用<em>UIKit</em>开发iOS应用时，许多开发者都使用了<em>Coordinator</em>模式来抽象各个<em>view</em>组件之间的联系。这增加了<em>view components</em>(如<em>View Controller</em>)的可重用性，减少了<em>UIViewController</em>实现频繁且过度拥挤的责任，并使视图组件之间的联系(如转场和数据交换)更加可见。</p>
+<p>一旦你理解了这个概念，在<em>UIKit</em>中使用<em>Coordinator</em>模式开发应用就非常简单了。 (为了进一步简化实现，我们引入了<a href="https://github.com/quickbirdstudios/XCoordinator">XCoordinator</a>，这个框架提供了使协调器和转场尽可能优雅和强大的工具。) 然而，随着SwiftUI在大约两年半前发布并逐渐成熟，如何在SwiftUI中使用<em>Coordinator</em>模式的问题出现了。</p>
+<p>事实证明，这并不像用它们的<em>SwiftUI</em>等价物替换所有的<em>UIKit</em>视图(和视图控制器)那么容易。 这是由于从根本上改变了，视图不再是<em>class</em>对象，而是<em>structs</em>。在本文中，我们将探讨如何使用声明性UI框架(如SwiftUI)实现<em>Coordinator</em>模式，然后创建一个小示例应用程序来展示如何应用该模式。如果你迫不及待地想看看它是如何工作的，下面是我们的示例应用repo的链接: <a href="https://github.com/quickbirdstudios/SwiftUI-Coordinators-Example">SwiftUI-Coordinators-Example</a></p>
+<hr>
+<h2 id="the-coordinator-pattern">The Coordinator Pattern</h2>
+<p>协调模式是由<a href="https://khanlou.com/2015/01/the-coordinator/"><strong>Soroush Khanlou</strong></a>在2015年引入iOS社区的，它将视图控制器之间的转场逻辑提取为我们称之为<em>Coordinator</em>的独立组件。你可以将它们视为不同场景(视图控制器或“屏幕”)之间的“<strong>粘合剂(glue)</strong>”，因为它们的工作是控制这些场景之间的数据流，定义在某一事件的基础上进行哪种转场过渡，并创建新的场景。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gurpcs56fvj60iv085q3b02.jpg" alt="avatar" loading="lazy"></figure>
+<p>通过结合MVVM(Model-View-ViewModel)体系结构模式，我们可以清楚地分离 <strong>view components and business logic</strong> 之间的关注点。与其他应用程序架构一样，<strong>Model components</strong>是为应用程序的持久性、联网和计算能力而构建的。 <strong>ViewModels</strong>从<strong>Models</strong>中检索到的信息并将其转发给<strong>View</strong>组件，这些组件依次定义用户界面。 结合<em>Coordinator</em>模式，我们可以使用<em>Coordinator</em>在不同的视图模型之间交换信息，并定义转场逻辑。</p>
+<h2 id="how-swiftui-is-different">How SwiftUI is Different</h2>
+<p>我们现在如何在SwiftUI中实现这一功能? 正如在介绍中提到的，我们不能简单地使用与<em>UIKit</em>中相同的架构。原因是<em>SwiftUI</em>遵循声明式方法。我们没有描述如何用长期存在的对象构建用户界面的过程，而是简单地根据应用程序的当前状态定义视图应该是什么样子。只要状态改变，就会重新创建视图，并相应地更新用户界面。因此，我们可以将<em>SwiftUI</em>视图定义为当前状态的函数，或者用数学方法:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gurpimxmmsj604p019t8h02.jpg" alt="avatar" loading="lazy"></figure>
+<p>每当状态改变时，就会创建一个新视图:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gurpj4d3b2j604n016we902.jpg" alt="avatar" loading="lazy"></figure>
+<p>因此，在<em>SwiftUI</em>中执行转场不像在<em>UIKit</em>中那样是一个简单的方法调用，这使得采用<em>Coordinator</em>更加困难。相反，我们需要考虑我们的<strong>coordinators</strong>在<em>UIKit</em>中扮演什么角色，以及如何将这些独立的责任转移到<em>SwiftUI</em>。</p>
+<p>在UIKit中，<em>Coordinator</em>有以下职责:</p>
+<ol>
+<li>它控制<em>view</em>的上下文，也就是说无论它是在<em>UINavigationController</em>中使用，还是在<em>UITabBarController</em>中使用。</li>
+<li>它定义了当某些事件发生时执行哪些转场，比如呈现一个新的视图控制器或将其推到当前导航堆栈上。</li>
+<li>它创建视图控制器并管理它们之间的内存交换(例如，通过创建新的视图模型)。</li>
+</ol>
+<p>现在，让我们看看如何将这些责任转移到<em>SwiftUI</em>!</p>
+<hr>
+<h2 id="a-coordinator-in-swiftui">A Coordinator in SwiftUI</h2>
+<p>我们将使用<strong>MVVM</strong>方法(非常类似于之前的博客文章中的MVVM方法)，因此每个视图将有一个符合<strong>ObservableObject</strong>的对应view model，用于定义<strong>view's state</strong>。但最疯狂的部分来了:不仅我们的<em>view</em>有<strong>view models</strong>——我们的<em>Coordinator</em>也有<strong>view models</strong>!</p>
+<p><em>SwiftUI</em>中的<em>Coordinator</em>由两个组件组成:</p>
+<ul>
+<li>a coordinator view,</li>
+<li>and a coordinator object.</li>
+</ul>
+<p><em>coordinator view</em>是视图层次结构的一部分，它控制子视图的转场逻辑和整个视图上下文。<em>coordinator view</em>需要一个<em>coordinator object</em>来创建view models，并允许不同场景之间的通信。类似于<em>UIKit</em>中的<em>Coordinator</em>，我们可以从子场景的view models中引用<em>Coordinator</em>，并基于view model的业务逻辑在<em>Coordinator</em>中触发转场事件。</p>
+<p>❓<strong>为什么我们把<em>Coordinator</em>分成两部分?</strong></p>
+<blockquote>
+<p>在SwiftUI中，<em>Coordinator</em>有两项不同的职责需要处理: <em>View</em>的上下文需要由视图层次结构的一部分的视图来控制。但是我们不能控制<em>view</em>的生命周期。这可以很容易地通过<strong>ObservableObject</strong>实现。 我们可以很容易地通过引用来传递它，并使它符合<em>Identifiable</em>协议。</p>
+</blockquote>
+<hr>
+<h2 id="coordinators-in-practice">Coordinators in Practice</h2>
+<p>现在让我们看看在实践中是什么样子! 首先，我们将探讨<em>Coordinator View</em>及其伴生的<em>Coordinator Object</em>的一般设置，然后通过这个设置处理各个转场及其使用。</p>
+<h3 id="general-setup">General Setup</h3>
+<p>我们从创建一个简单的<em>SwiftUI</em>视图开始。它有一个<em>ObservedObject</em>属性作为它的 <strong>coordinator object</strong>:</p>
+<pre><code class="language-swift">struct CoordinatorView: View {
+    @ObservedObject var object: CoordinatorObject
+    var body: some View {
+        /* create the view based on the state of &lt;code data-enlighter-language=&quot;generic&quot; class=&quot;EnlighterJSRAW&quot;&gt;object&lt;/code&gt; */
+    }
+}
+</code></pre>
+<p>因此，这个<em>CoordinatorObject</em>对象必须符合<em>ObservableObject</em>协议。</p>
+<pre><code class="language-swift">class CoordinatorObject: ObservableObject {
+    init() {
+        /* setup object */
+    }
+}
+</code></pre>
+<p>在这个设置中，<em>CoordinatorView</em>设置通用视图上下文。它根据对象的<em>state</em>创建<em>NavigationViews或TabViews</em>，引入表、弹窗和NavigationLinks。</p>
+<p><em>CoordinatorObject</em>以*@Published-wrapped*属性的形式保持其状态。这种状态主要由视图模型或上下文相关的信息组成，例如创建某个工作表或弹出窗口所需的信息。其中一些视图模型可能有对协调器对象的(<em>weak or unowned</em>)引用。 <em>CoordinatorObject</em>提供了当某个事件发生时要触发的方法，而不是对协调器对象的状态本身进行操作。</p>
+<p>听起来有点理论化?“有时你必须先跑后走”，所以让我们看看一些常见的用户界面组件，来了解一下这些新的<em>coordinators</em>!</p>
+<h3 id="navigationview">NavigationView</h3>
+<p><strong>Navigation Views</strong>最好在<em>coordinator view</em>中创建，而不是在某个<em>view</em>本身中创建。这允许<em>view</em>在不同的上下文中被重用，而不需要更改其代码。</p>
+<p>首先，让我们来看看底层逻辑和状态管理:</p>
+<pre><code class="language-swift">class CoordinatorObject: ObservableObject {
+    @Published var listViewModel: ListViewModel!
+    @Published var detailViewModel: DetailViewModel?
+    init() {
+        self.listViewModel = ListViewModel(coordinator: self)
+    }
+    func open(_ item: ListItem) {
+        self.detailViewModel = DetailViewModel(item: item, coordinator: self)
+    }
+}
+</code></pre>
+<p>这个<em>CoordinatorObject</em>跟踪<em>listViewModel</em>(负责主视图)和一个可选的<em>detailViewModel</em>(负责细节视图)。每当调用<em>open</em>方法时，我们都会创建一个新的<em>DetailViewModel</em>，并将其分配给我们的<em>DetailViewModel</em>属性。当这个属性被设置为非nil视图模型时，我们打算触发一个<em>push</em>转场。但那是我们的<em>CoordinatorView</em>的工作!</p>
+<p>❓<strong>为什么listViewModel被强制解包?</strong></p>
+<blockquote>
+<p>因为它的值取决于<em>CoordinatorObject</em>是否完全初始化。<em>listViewModel</em>在创建时需要<em>coordinator</em>本身，而这只能发生在<em>CoordinatorObject</em>完全初始化之后。一旦创建了它，就可以安全地强制解包，只要我们不显式地将它设置为nil。通常，我们可以为此目的使用<em>lazy</em>属性，但是<em>wrapped properties</em>不能被标记为<em>lazy</em>属性。</p>
+</blockquote>
+<p>现在，让我们创建相应的<em>coordinator view</em>:</p>
+<pre><code class="language-swift">struct CoordinatorView: View {
+    @ObservedObject var object: CoordinatorObject
+    var body: some View {
+        NavigationView {
+            ListView(viewModel: object.listViewModel)
+               .navigation(item: object.detailViewModel) { DetailView(viewModel: $0) } 
+        }
+    }
+}
+</code></pre>
+<p>我们所做的就是将我们现有的<em>ListView</em>包装在一个<em>NavigationView</em>中，并且——正如你可能已经注意到的——为<em>ListView</em>添加一个<em>navigation</em>视图修饰符。这是我们创建的一个自定义视图修饰符，专门用于向<em>NavigationView</em>添加一个新的“页面”(带有我们想要显示的视图)。它的使用方式类似于表单和弹出窗口，并在内部使用<em>NavigationLink</em>。如果您对它的工作原理感兴趣，可以在这里找到它的源代码。</p>
+<pre><code class="language-swift">extension View {
+
+    func onNavigation(_ action: @escaping () -&gt; Void) -&gt; some View {
+        let isActive = Binding(
+            get: { false },
+            set: { newValue in
+                if newValue {
+                    action()
+                }
+            }
+        )
+        return NavigationLink(
+            destination: EmptyView(),
+            isActive: isActive
+        ) {
+            self
+        }
+    }
+
+    func navigation&lt;Item, Destination: View&gt;(
+        item: Binding&lt;Item?&gt;,
+        @ViewBuilder destination: (Item) -&gt; Destination
+    ) -&gt; some View {
+        let isActive = Binding(
+            get: { item.wrappedValue != nil },
+            set: { value in
+                if !value {
+                    item.wrappedValue = nil
+                }
+            }
+        )
+        return navigation(isActive: isActive) {
+            item.wrappedValue.map(destination)
+        }
+    }
+
+    func navigation&lt;Destination: View&gt;(
+        isActive: Binding&lt;Bool&gt;,
+        @ViewBuilder destination: () -&gt; Destination
+    ) -&gt; some View {
+        overlay(
+            NavigationLink(
+                destination: isActive.wrappedValue ? destination() : nil,
+                isActive: isActive,
+                label: { EmptyView() }
+            )
+        )
+    }
+
+}
+
+extension NavigationLink {
+
+    init&lt;T: Identifiable, D: View&gt;(item: Binding&lt;T?&gt;,
+                                   @ViewBuilder destination: (T) -&gt; D,
+                                   @ViewBuilder label: () -&gt; Label) where Destination == D? {
+        let isActive = Binding(
+            get: { item.wrappedValue != nil },
+            set: { value in
+                if !value {
+                    item.wrappedValue = nil
+                }
+            }
+        )
+        self.init(
+            destination: item.wrappedValue.map(destination),
+            isActive: isActive,
+            label: label
+        )
+    }
+
+}
+</code></pre>
+<p>我们现在可以显示一个<em>NavigationView</em>并从<em>CoordinatorObject</em>推送新的子视图，但是我们还没有查看从<em>ListView</em>触发推送转场的机制。让我们做下一个!</p>
+<pre><code class="language-swift">struct ListView: View {
+    @ObservedObject var viewModel: ListViewModel
+    var body: some View {
+        List(viewModel.items) { item in
+            Cell(item)
+                .onNavigation { viewModel.open(item) }
+        }
+    }
+}
+</code></pre>
+<p><em>ListView</em>显示了一个项目列表。为了获得与直接使用<em>NavigationLink</em>相同的用户界面，我们提供了一个自定义的<em>onNavigation</em>视图修饰符，该修饰符在选择项目时执行闭包。在它的闭包中，我们调用视图模型上的一个方法，该方法将调用转发给协调器:</p>
+<pre><code class="language-swift">class ListViewModel: ObservableObject, Identifiable {
+    @Published var items = [ListItem]()
+    private unowned let coordinator: CoordinatorObject
+    init(coordinator: CoordinatorObject) {
+        self.coordinator = coordinator
+    }
+    func open(_ item: ListItem) {
+        coordinator.open(item)
+    }
+}
+</code></pre>
+<p>正如我们在上面看到的，<em>Coordinator</em>将通过创建一个新的视图模型并将其分配给它的detailViewModel属性来改变它的状态。因此，执行转场地。</p>
+<p>❓ <strong>Why so complicated?</strong></p>
+<blockquote>
+<p>你可能会问自己，为什么我们要涉及所有这些组件来实现同一个目标，而这个目标在SwiftUI的单个视图中就可以实现。原因是我们想让我们的单个场景(在本例中是ListView和DetailView)完全独立于它们的视图上下文。 例如，我们希望能够改变从<em>ListView</em>到<em>DetailView</em>使用<em>sheet</em>代替<em>push</em>-而不实际接触<em>ListView</em>。此外，我们不想在<em>ListViewModel</em>中创建<em>DetailView</em>的<em>ViewModel</em>，因为这会在两者之间创建依赖关系，并使测试变得非常复杂。现在，我们可以简单地替换<em>CoordinatorObject</em>来轻松地更改应用程序这部分中所有视图模型的创建。</p>
+</blockquote>
+<h3 id="tabview">TabView</h3>
+<p>标签视图很容易理解，所以，让我们直接进入代码，从<strong>CoordinatorObject</strong>开始:</p>
+<pre><code class="language-swift">enum CoordinatorTab {
+    case one
+    case two
+}
+class CoordinatorObject: ObservableObject {
+    @Published var tab = CoordinatorTab.one
+    @Published var tabOneViewModel: TabOneViewModel!
+    @Published var tabTwoViewModel: TabTwoViewModel!
+    init() {
+        self.tabOneViewModel = TabOneViewModel(coordinator: self)
+        self.tabTwoViewModel = TabTwoViewModel(coordinator: self)
+    }
+    func switchToTabOne() {
+        self.tab = .one
+    }
+}
+</code></pre>
+<p>同样，我们在<em>coordinator object</em>中有不同的<strong>view models</strong>和一个<strong>tab</strong>属性，并将它们封装在@<strong>Published-property</strong>包装器中。我们可以通过简单地对选项卡属性进行赋值来切换选项卡，正如您在<strong>switchToTabOne</strong>方法中看到的那样。 但仍然存在一个问题:视图如何利用这些属性?很简单:</p>
+<pre><code class="language-swift">struct CoordinatorView: View {
+    @ObservedObject var object: CoordinatorObject
+    var body: some View {
+        TabView(selection: $object.tab) {
+            Tab1View(viewModel: object.tabOneViewModel)
+                .tabItem { /* ... */ }
+                .tag(CoordinatorTab.one)
+            Tab2View(viewModel: object.tabTwoViewModel)
+                .tag(CoordinatorTab.two)
+                .tabItem { /* ... */ }
+        }
+    }
+}
+</code></pre>
+<p>因为我们不想让<em>Tab1View和Tab2View</em>知道它们的视图上下文，所以我们也在<em>coordinator view</em>中添加了<em>tab和tabItem</em>，而不是它们的<em>body</em>属性。</p>
+<h3 id="sheets-popovers">Sheets &amp; Popovers</h3>
+<p>到现在为止，你应该熟悉我们的模式-对<em>sheets and popovers</em>窗口来说是一样的。我们首先创建一个可观察的<em>CoordinatorObject</em>，带有相应的<em>view model</em>和一个触发工作表(或弹窗)的方法:</p>
+<pre><code class="language-swift">class CoordinatorObject: ObservableObject {
+    @Published var sheetViewModel: SheetViewModel?
+    func openSheet(_ info: SheetInformation) {
+        self.sheetViewModel = SheetViewModel(info: info)
+    }
+}
+</code></pre>
+<p>就像<em>NavigationViews</em>一样，表单和弹出窗口是通过视图修改器创建的:</p>
+<pre><code class="language-swift">struct CoordinatorView: View {
+    @ObservedObject var object: CoordinatorObject
+    var body: some View {
+        Text(&quot;Hello, World!&quot;)
+            .sheet(item: $object.sheetViewModel) { 
+                SomeSheet(viewModel: $0) 
+            }
+    }
+}
+</code></pre>
+<p>特别是在弹窗的情况下，这些视图修改器的位置(在本例中是.sheet修改器)是特别重要的，因为它定义了弹窗的源视图(即它的箭头指向哪里)。因此，它需要在场景视图本身内创建。</p>
+<p>有两种方法可以处理这种情况:</p>
+<ol>
+<li>
+<p>我们将<em>coordinator object</em>注入到<em>view</em>中，包装为@<em>ObservedObject</em>——就像我们在<em>coordinator view</em>中做的那样。这样，视图就可以观察协调器的状态，并在设置相应属性时触发弹出窗口。</p>
+</li>
+<li>
+<p>我们将一个视图修饰符注入到视图中，在弹出窗口应该在的地方使用。这有点棘手，这就是为什么我们不会在本文中详细解释这种方法的原因。但是，如果您是一位经验丰富的开发人员，可以在示例应用程序中查看我们的解决方案。</p>
+</li>
+</ol>
+<p>对于许多SwiftUI开发人员(尤其是初学者)来说，第一个解决方案可能要简单得多，但它创建了一个从场景视图到协调器的依赖关系，这正是我们在<em>coordinators</em>试图避免的。这就是为什么我们绝对推荐使用第二种解决方案，如果你觉得舒服的话。</p>
+<blockquote>
+<p>不要试图通过场景的 <em>view model</em> 来访问<em>coordinator’s</em>状态——我们尝试过，但没能以合理的方式实现。</p>
+</blockquote>
+<p><a href="https://quickbirdstudios.com/blog/coordinator-pattern-in-swiftui/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fkXsOWHsE/" class="tag">
+                    coordinator
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-combines-share-operator-to-avoid-duplicate-work/">
+                  <h3 class="post-title">
+                    Using Combine’s share operator to avoid duplicate work
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

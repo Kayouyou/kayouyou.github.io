@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The Swift 5.1 features that power SwiftUI’s API | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="苹果声明式的新UI框架SwiftUI的引入显然是今年WWDC大会上最具影响力的公告之一。作为一种为所有苹果平台构建ui的全新方式，SwiftUI使用了一种与UIKit工作方式截然不同的编码风格，它不仅仅是一种新的框架——它是一种范式的转变。..." />
+    <meta name="keywords" content="what's new,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The Swift 5.1 features that power SwiftUI’s API</h2>
+            <div class="post-date">2019-06-09</div>
+            
+            <div class="post-content" v-pre>
+              <p>苹果声明式的新UI框架SwiftUI的引入显然是今年WWDC大会上最具影响力的公告之一。作为一种为所有苹果平台构建ui的全新方式，SwiftUI使用了一种与UIKit工作方式截然不同的编码风格，它不仅仅是一种新的框架——它是一种范式的转变。</p>
+<p>作为苹果平台上的一个新的,现代的UI开发方式,SwiftUI也将迅速Swift语言本身推向了新的极限,通过大量使用一组在Swift5.1版本中引入的关键的新语法特,从而提供了一个非常DSL的API。</p>
+<p>本周，让我们来看看这些特性，以及深入了解它们，学习它们是如何工作的，这样我们就能更全面地了解SwiftUI的API及其构建方式。虽然这并不是对SwiftUI本身的介绍(详见Sundell在WWDC上的文章)，但它很有可能是对苹果令人兴奋的新UI框架的一窥。</p>
+<h2 id="opaque-return-types">Opaque return types</h2>
+<p>查看到目前为止共享的大多数SwiftUI示例代码时，有一个特性比较突出，那就是新的some关键字。通过Swift Evolution提案SE-0244引入——这个新关键字允许函数、下标和计算属性声明不透明的返回类型。</p>
+<p>这意味着，即使是泛型协议(具有关联类型或对Self的引用的协议)现在也可以用作返回类型——就像它们是具体类型一样——比如非泛型协议、类或结构。当使用SwiftUI时，some经常用于声明视图的body - like:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Text(&quot;Hello, world!&quot;)
+    }
+}
+</code></pre>
+<p>视图协议用于定义SwiftUI视图描述，并且为了使每个视图决定为其body属性使用什么类型——该属性要求使用关联的body类型来定义。在Swift 5.1之前，试图引用这样的协议(没有some关键字)会导致编译器错误，认为View只能作为通用约束使用。为了解决这个问题，我们必须指定一个具体的类型来适应视图，例如:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: Text {
+        Text(&quot;Hello, world!&quot;)
+    }
+}
+</code></pre>
+<p>另一种方法是使用类型擦除，要求每个视图实现在返回之前都要被类型擦除到一个AnyView实例中:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: AnyView {
+        AnyView(Text(&quot;Hello, world!&quot;))
+    }
+}
+</code></pre>
+<p>但是现在,通过使用一些关键字,我们可以返回任何符合指定协议的值(如视图,对于SwiftUI)——当处理我们的返回值时，在我们实现中的调用的任何其他代码仍然可以使用协议的所有属性和方法,而不需要我们使用包装器类型(如AnyView),或 通过将具体类型公开为API的一部分来打破代码的封装。</p>
+<p>这个新关键字的一个很好的副作用是它为我们提供了额外的灵活性，因为我们不再需要修改公共API来更改底层使用的确切返回类型。这对于视图框架来说尤其重要，比如SwiftUI——因为编写可维护的视图代码的关键部分是不断地重构和分解UI的各个部分，将其分解为独立的、更小的构建块</p>
+<h2 id="omitted-return-keywords">Omitted return keywords</h2>
+<p>也许不像新的some关键字那么重要，但是在一致性方面有一个很好的改进，而且当谈到SwiftUI的轻量级API感觉如何时，一个重要的因素是现在对于单表达式函数可以忽略return关键字。</p>
+<p>Swift Evolution提案SE-0255使函数和计算属性的行为方式与闭包相同——前提是它们中只有一个表达式,不再需要使用return关键字——使以下两个实现的行为完全相同:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        // Using an explicit return keyword
+        return Text(&quot;Hello, world!&quot;)
+    }
+}
+
+struct ContentView: View {
+    var body: some View {
+        // Omitting the return keyword, just like within a closure  
+        Text(&quot;Hello, world!&quot;)
+    }
+}
+</code></pre>
+<p>虽然上面的方法可能需要一段时间来适应，但它确实是一种使函数和计算属性中的单个表达式更加干净的方法——例如在工厂方法中:</p>
+<pre><code class="language-swift">func makeProfileViewController(for user: User) -&gt; UIViewController {
+    ProfileViewController(
+        logicController: ProfileLogicController(
+            user: user,
+            networking: networking
+        )
+    )
+}
+</code></pre>
+<p>然而，编译器将继续接受使用return关键字的代码，以及省略它的代码——因此每个开发人员都可以自由选择他们喜欢的风格。</p>
+<h2 id="function-builders">Function builders</h2>
+<p>有了some关键字和省略return,我们现在有一个SwiftUI的顶层视图声明API是如何成为可能的答案,但到目前为止,我们仍然没有一个关于多个视图是如何组合在一起的解释,没有任何形式的关键字或额外的语法——像这样的:</p>
+<pre><code class="language-swift">struct HeaderView: View {
+    let image: UIImage
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack {
+            // Here three seperate expressions are evaluated,
+            // without any return keyword or additional syntax.
+            Image(uiImage: image)
+            Text(title)
+            Text(subtitle)
+        }
+    }
+}
+</code></pre>
+<p>SwiftUI的分组视图，例如VStack、HStack和Group，可以通过在闭包中创建新的实例来将多个视图组合在一起。由于这些闭包具有多个表达式，这意味着我们没有在这里处理忽略的return关键字——那么这种语法究竟是如何实现的呢?🤔</p>
+<p>答案是函数构建器——这是一个非常新的特性，在我写这篇文章的时候，它甚至还没有一个正式的提案。建议的初稿可以在这里找到，但有趣的是，这个特性已经在Swift编译器中实现了</p>
+<p>函数构建器允许使用闭包实现构建器模式——通过将此类闭包中定义的表达式传递给专用的构建器类型，提供非常类似dsl的开发体验。</p>
+<p>如果没有新的function builder特性，我们将不得不手动创建一个builder来构建像VStack这样的容器实例，给出如下代码:</p>
+<pre><code class="language-swift">struct HeaderView: View {
+    let image: UIImage
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        var builder = VStackBuilder()
+        builder.add(Image(uiImage: image))
+        builder.add(Text(title))
+        builder.add(Text(subtitle))
+        return builder.build()
+    }
+}
+</code></pre>
+<p>note: 上面的内容当然不是很糟糕，但是它确实让API感觉不那么轻量级了</p>
+<p>那么函数构建器是如何工作的呢?这一切都从新的@functionBuilder属性(或@_functionBuilder，作为目前的实现，因为该特性仍然被认为是一个私有实现细节)开始——它将给定类型标记为一个构建器。</p>
+<p>与新的自定义字符串文字API的工作方式类似，构建器随后声明buildBlock方法的不同重载，以便为包含各种表达式的闭包提供支持。例如，以下是swifttui自己的ViewBuilder类型的“释义”实现:</p>
+<pre><code class="language-swift">@functionBuilder
+struct ViewBuilder {
+    // Build a value from an empty closure, resulting in an
+    // empty view in this case:
+    static func buildBlock() -&gt; EmptyView {
+        return EmptyView()
+    }
+
+    // Build a single view from a closure that contains a single
+    // view expression:
+    static func buildBlock&lt;V: View&gt;(_ view: V) -&gt; some View {
+        return view
+    }
+
+    // Build a combining TupleView from a closure that contains
+    // two view expressions:
+    static func buildBlock&lt;A: View, B: View&gt;(
+        _ viewA: A,
+        _ viewB: B
+    ) -&gt; some View {
+        return TupleView((viewA, viewB))
+    }
+
+    // And so on, and so forth.
+    ...
+}
+</code></pre>
+<p>请注意，每个闭包变量都需要由上面的构建器显式地处理，因为我们可能会处理在同一个闭包中定义的不同类型的视图实现。如果不是这样，ViewBuilder可以使用可变参数来处理包含多个表达式的闭包-像这样:</p>
+<pre><code class="language-swift">@functionBuilder
+struct ViewBuilder {
+    static func buildBlock(_ views: View...) -&gt; CombinedView {
+        return CombinedView(views: views)
+    }
+}
+</code></pre>
+<p>有了上面的ViewBuilder类型，编译器现在会合成一个与它的名称(@ViewBuilder)匹配的属性——然后我们可以用它来标记所有希望使用新构建器的闭包参数，像这样:</p>
+<pre><code class="language-swift">struct VStack&lt;Content: View&gt;: View {
+    init(@ViewBuilder builder: () -&gt; Content) {
+        // A function builder closure can be called just like
+        // any other, and the resulting expression can then be
+        // used to, for instance, construct a container view.
+        let content = builder()
+        ...
+    }
+}
+</code></pre>
+<p>使用上述两部分——函数构建器类型和标记为该类型用户的闭包，构建真正轻量级的dsl现在成为可能——这正是苹果实现Swift UI视图构建语法的方式:</p>
+<pre><code class="language-swift">VStack {
+    Image(uiImage: image)
+    Text(title)
+    Text(subtitle)
+}
+</code></pre>
+<p>作为一种特性，函数构建器肯定是倾向于高级的用法——但它们的好处在于，使用基于DSL的框架(如SwiftUI)的开发人员在理想情况下甚至都不应该注意到它们——因为整个构建器部分只是DSL本身的实现细节。</p>
+<h2 id="property-wrappers">Property wrappers</h2>
+<p>Swift 5.1的最后一个核心新特性是Swift API的属性包装(正式称为“属性委托”)。作为SE-0258提案的一部分引入的这个新特性允许使用特定类型自动包装属性值。在这方面，它的工作方式与函数构建器非常相似——因为实现属性包装器既需要自定义属性，也需要处理该属性的类型。</p>
+<p>SwiftUI使用了属性包装器，这使得定义各种可绑定属性变得更加容易。例如，为了定义一个属性来管理视图状态的一部分，@State属性可以被用来自动地在一个可绑定状态类型的实例中包装这样一个属性的值:</p>
+<pre><code class="language-swift">struct SettingsView: View {
+    @State var saveHistory: Bool
+    @State var enableAutofill: Bool
+
+    var body: some View {
+        return VStack {
+            // We can now access bindable versions of our state
+            // properties by prefixing their name with '$':
+            Toggle(isOn: $saveHistory) {
+                Text(&quot;Save browsing history&quot;)
+            }
+            Toggle(isOn: $enableAutofill) {
+                Text(&quot;Autofill my information&quot;)
+            }
+        }
+    }
+}
+</code></pre>
+<p>由于属性包装器的真正作用是充当属性值和底层存储类型之间的某种接口，所以上面的代码示例本质上与下一个实现等价，它做了完全相同的事情，只是直接使用了底层的State结构体:</p>
+<pre><code class="language-swift">struct SettingsView: View {
+    var saveHistory: State&lt;Bool&gt;
+    var enableAutofill: State&lt;Bool&gt;
+
+    var body: some View {
+        return VStack {
+            Toggle(isOn: saveHistory.binding) {
+                Text(&quot;Save browsing history&quot;)
+            }
+            Toggle(isOn: enableAutofill.binding) {
+                Text(&quot;Autofill my information&quot;)
+            }
+        }
+    }
+}
+
+</code></pre>
+<p>同样，属性包装器的设计与函数构建器的设计非常相似，即使用@propertyWrapper属性将委托属性(如@State)映射到相应的底层类型。 例如，以下是swifttui的State结构体的公共API的简化版本:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct State&lt;Value&gt; {
+    init(initialValue: Value) {
+        ...
+    }
+
+    var wrappedValue: Value {
+        get { ... }
+        set { ... }  
+    }
+}
+</code></pre>
+<p>属性包装器特别令人兴奋的地方在于，它们为消除许多不同类型的样板提供了机会，甚至在我们自己的代码中也是如此。例如，我们可以定义一个@Transformed属性，让我们自动地对各种值应用转换，或者定义一个@Database属性，让我们自动地把属性值同步到底层数据库——这里有很多不同的可能性。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>SwiftUI不仅为苹果平台提供了一种新的用户界面构建方式，还带来了全新的Swift编码风格-它也很可能是Swift 5.1中引入的许多新特性背后的驱动因素-从而让这门语言对每个人来说都更强大，即使是那些还没有采用SwiftUI的人</p>
+<p><a href="https://www.swiftbysundell.com/articles/the-swift-51-features-that-power-swiftuis-api/">原文地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_Xob8a1C4/" class="tag">
+                    what&#39;s new
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/extracting-view-controller-actions-in-swift/">
+                  <h3 class="post-title">
+                    Extracting view controller actions in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

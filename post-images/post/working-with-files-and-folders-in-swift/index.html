@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Working with files and folders in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="读写文件和文件夹是几乎所有应用程序都需要执行的任务之一。 虽然现在的许多应用程序，尤其是iOS上的应用程序，可能不能让用户透明地打开、保存和更新他们想要的文档 - 当我们处理某种形式的长期数据持久性，或捆绑资源时，我们总是必须以某种方式与文..." />
+    <meta name="keywords" content="file system,data,state management" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Working with files and folders in Swift</h2>
+            <div class="post-date">2020-08-30</div>
+            
+            <div class="post-content" v-pre>
+              <p>读写文件和文件夹是几乎所有应用程序都需要执行的任务之一。 虽然现在的许多应用程序，尤其是iOS上的应用程序，可能不能让用户透明地打开、保存和更新他们想要的文档 - 当我们处理某种形式的长期数据持久性，或捆绑资源时，我们总是必须以某种方式与文件系统交互。</p>
+<p>所以这周，让我们来仔细看看Swift提供的与文件系统相关的api的各种使用方法——在苹果自己的平台上，也在像Linux这样的平台上  - 还有一些在使用这些api时需要记住的事情。</p>
+<h2 id="urls-locations-and-data">URLs, locations, and data</h2>
+<p>基本上，有两种基础类型在Swift中读写文件时特别重要——URL和数据。 就像执行网络调用时一样，url用于指向磁盘上的各个位置，然后我们可以从中读取二进制数据，也可以向其中写入新数据。</p>
+<p>例如，这里我们检索一个文件路径作为一个Swift命令行工具的参数， 然后我们把它转换成一个文件系统URL，以便加载该文件的数据:</p>
+<pre><code class="language-swift">// This lets us easily access any command line argument passed
+// into our program as &quot;-path&quot;:
+guard let path = UserDefaults.standard.string(forKey: &quot;path&quot;) else {
+    throw Error.noPathGiven
+}
+
+let url = URL(fileURLWithPath: path)
+
+do {
+    let data = try Data(contentsOf: url)
+    ...
+} catch {
+    throw Error.failedToLoadData
+}
+</code></pre>
+<p>要了解更多关于以上使用用户默认值的方式，以及一般使用命令行参数，请查看“Swift中的启动参数”。</p>
+<p>在使用基于字符串的路径时，通常需要记住的一件事是，某些字符需要以特定的方式进行解释，例如波浪字符(~)，它通常用于引用当前用户的主目录。</p>
+<p>虽然这不是我们在处理命令行工具输入时通常需要手动处理的事情(因为终端shell倾向于自动扩展这些符号)，在其他情况下，我们可以借助字符串类型的Objective-C“兄弟”NSString，来帮助我们将给定字符串中的波浪字符扩展到用户的完整主目录路径:</p>
+<pre><code class="language-swift">var path = resolvePath()
+path = (path as NSString).expandingTildeInPath
+</code></pre>
+<p>值得注意的是，NSString也可以通过开源的、基于swift的Foundation版本在Linux上使用。</p>
+<h2 id="bundles-and-modules">Bundles and modules</h2>
+<p>在苹果的平台上，应用是捆绑发布的，这意味着为了访问我们自己的应用中包含(或捆绑)的内部文件，我们首先需要通过在应用的主捆绑中搜索它们来解析它们的实际url。</p>
+<p>主bundle可以使用bundle访问.main，它允许我们检索包含在我们的主要应用目标中的任何资源文件，例如一个绑定的JSON文件，像这样:</p>
+<pre><code class="language-swift">struct ContentLoader {
+    enum Error: Swift.Error {
+        case fileNotFound(name: String)
+        case fileDecodingFailed(name: String, Swift.Error)
+    }
+
+    func loadBundledContent(fromFileNamed name: String) throws -&gt; Content {
+        guard let url = Bundle.main.url(
+            forResource: name,
+            withExtension: &quot;json&quot;
+        ) else {
+            throw Error.fileNotFound(name: name)
+        }
+
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            return try decoder.decode(Content.self, from: data)
+        } catch {
+            throw Error.fileDecodingFailed(name: name, error)
+        }
+    }
+    
+    ...
+}
+</code></pre>
+<p>虽然它乍一看可能像Bundle.main是我们唯一需要处理的bundle，通常不是这样的。例如，我们现在想要编写一个单元测试来验证上面的ContentLoader，方法是让它加载在我们的测试包中绑定的特定文件:</p>
+<pre><code class="language-swift">class ContentLoaderTests: XCTestCase {
+    func testLoadingContentFromBundledFile() throws {
+        let loader = ContentLoader()
+        let content = try loader.loadBundledContent(fromFileNamed: &quot;testContent&quot;)
+        XCTAssertEqual(content.title, &quot;This is a test&quot;)
+    }
+    ...
+}
+</code></pre>
+<p>当运行上述测试时，我们最终会得到一个错误，这最初可能看起来有点奇怪(假设我们捆绑了一个名为testContent的文件。json在我们的测试目标中)。问题是我们的单元测试套件有它自己的bundle，它是独立于bundle.main，因为我们的ContentLoader当前总是使用main bundle，所以我们的测试文件不会被找到。</p>
+<p>因此，为了能够执行上述测试，我们首先需要添加一些基于参数的依赖注入，使ContentLoader能够从任何Bundle加载文件(同时仍然保持main为默认值):</p>
+<pre><code class="language-swift">struct ContentLoader {
+    ...
+    func loadBundledContent(fromFileNamed name: String,
+                            in bundle: Bundle = .main) throws -&gt; Content {
+        guard let url = bundle.url(
+            forResource: name,
+            withExtension: &quot;json&quot;
+        ) else {
+            throw Error.fileNotFound(name: name)
+        }
+        ...
+    }
+    ...
+}
+</code></pre>
+<p>有了上面的步骤，我们现在就可以在单元测试中解析正确的bundle了——通过向系统请求包含我们当前测试类的bundle——然后在调用loadBundledContent方法时注入它:</p>
+<pre><code class="language-swift">class ContentLoaderTests: XCTestCase {
+    func testLoadingContentFromBundledFile() throws {
+        let loader = ContentLoader()
+        let bundle = Bundle(for: Self.self)
+
+        let content = try loader.loadBundledContent(
+            fromFileNamed: &quot;testContent&quot;,
+            in: bundle
+        )
+        XCTAssertEqual(content.title, &quot;This is a test&quot;)
+    }
+    ...
+}
+
+</code></pre>
+<p>在使用Swift包管理器的新功能(从Swift 5.3开始)时，我们可以在Swift包中嵌入绑定的资源， 我们也不能假设Bundle.main将包含我们应用程序的所有资源——因为捆绑在Swift包中的任何文件都可以通过新的模块属性访问，它指的是当前模块的包，而不是应用程序本身的包。</p>
+<p>所以，一般来说，当我们设计一个使用Bundle来加载本地资源的API时，让任何Bundle实例都能被注入通常是一个好主意，而不是硬编码逻辑来总是使用主实例。</p>
+<h2 id="storing-files-within-system-defined-folders">Storing files within system-defined folders</h2>
+<p>到目前为止，我们已经探索了各种读取文件的方法，可以通过命令行工具(运行在macOS或Linux上)从任何文件系统位置读取文件，也可以从捆绑在应用程序中的文件读取文件。但是现在，让我们来看看我们是如何编写文件的——以一种既可预测，又能与iOS等平台上更严格的沙箱规则兼容的方式。</p>
+<p>实际上，将二进制数据写入磁盘就像对任何数据值调用write(to:)方法一样简单，但问题是如何解析要写入的URL——特别是当我们想要将文件写入系统定义的文件夹(如库或文档)时。</p>
+<p>答案是使用Foundation的FileManager API，它允许我们以跨平台的方式解析系统文件夹的url。例如，下面是我们如何编码和编写任何Encodable值到当前用户的Documents文件夹中的文件:</p>
+<pre><code class="language-swift">struct FileIOController {
+    func write&lt;T: Encodable&gt;(
+        _ value: T,
+        toDocumentNamed documentName: String,
+        encodedUsing encoder: JSONEncoder = .init()
+    ) throws {
+        let folderURL = try FileManager.default.url(
+            for: .documentDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: false
+        )
+
+        let fileURL = folderURL.appendingPathComponent(documentName)
+        let data = try encoder.encode(value)
+        try data.write(to: fileURL)
+    }
+    
+    ...
+}
+</code></pre>
+<p>在macOS上，上面的folderURL将指向~/Documents，正如我们所期望的，但在iOS上，它将指向我们的应用自己版本的文件夹，该文件夹位于应用的沙箱中。</p>
+<p>同样，我们也可以使用上面的FileManager API来解析其他类型的系统文件夹 —例如，系统认为最适合用于基于磁盘的缓存的文件夹:</p>
+<pre><code class="language-swift">let cacheFolderURL = try FileManager.default.url(
+    for: .cachesDirectory,
+    in: .userDomainMask,
+    appropriateFor: nil,
+    create: false
+)
+</code></pre>
+<p>但是，如果我们寻找的只是一个临时文件夹的URL，那么我们可以使用更简单的NSTemporaryDirectory函数 - 返回一个系统文件夹的URL，可以用来存储数据，我们只希望持续一小段时间:</p>
+<pre><code class="language-swift">let temporaryFolderURL = URL(fileURLWithPath: NSTemporaryDirectory())
+</code></pre>
+<p>同样的URL也可以使用FileManager.default.temporaryDirectory检索。</p>
+<p>使用上述api的好处，而不是在代码中硬编码特定的文件夹路径，是我们让系统决定哪些文件夹最适合手头的任务， 这通常有助于使处理文件系统的代码更加可移植性和更具有前瞻性。</p>
+<h2 id="managing-custom-folders">Managing custom folders</h2>
+<p>尽管将文件直接存储在由系统管理的文件夹中确实有它的用例，但是我们很可能想要将我们的文件封装在我们自己的文件夹中-特别是当在macOS上写文件到共享系统文件夹(如文件或库)时，如果我们不小心，可能会导致与其他应用程序或用户数据的冲突。</p>
+<p>这是FileManager真正有用的另一个领域，因为它提供了许多api，让我们可以创建、修改和删除自定义文件夹。例如，下面是我们如何修改FileIOController从以前到现在的文件存储在嵌套的MyAppFiles文件夹中，而不是直接在Documents文件夹中:</p>
+<pre><code class="language-swift">struct FileIOController {
+    var manager = FileManager.default
+
+    func write&lt;T: Encodable&gt;(
+        _ object: T,
+        toDocumentNamed documentName: String,
+        encodedUsing encoder: JSONEncoder = .init()
+    ) throws {
+        let rootFolderURL = try manager.url(
+            for: .documentDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: false
+        )
+
+        let nestedFolderURL = rootFolderURL.appendingPathComponent(&quot;MyAppFiles&quot;)
+
+        try manager.createDirectory(
+            at: nestedFolderURL,
+            withIntermediateDirectories: false,
+            attributes: nil
+        )
+
+        let fileURL = nestedFolderURL.appendingPathComponent(documentName)
+        let data = try encoder.encode(object)
+        try data.write(to: fileURL)
+    }
+    
+    ...
+}
+</code></pre>
+<p>上面的代码确实有一个相当大的问题，那就是我们现在试图在每次我们的write方法被调用时创建我们的嵌套文件夹——如果那个文件夹已经存在，这将导致抛出一个错误。</p>
+<p>而我们可以简单地用try?而不是try去解决这个问题 - 这样做还可以抑制在我们真正想要创建该文件夹时可能抛出的任何合法错误，这并不理想。 所以让我们使用另一个FileManager API, fileExists，它也可以用来检查一个文件夹是否存在于给定的路径:</p>
+<pre><code class="language-swift">if !manager.fileExists(atPath: nestedFolderURL.relativePath) {
+    try manager.createDirectory(
+        at: nestedFolderURL,
+        withIntermediateDirectories: false,
+        attributes: nil
+    )
+}
+</code></pre>
+<p>一个可选的isDirectory参数也可以传递给fileExists方法，如果我们还想检查给定路径上的项目是否确实是一个文件夹，但在上面的情况下这样做感觉有点多余。</p>
+<p>请注意，我们是如何使用relativePath属性将上面的nestedFolderURL转换为基于字符串的路径，而不是使用absoluteString，后者通常用于处理指向internet上某个位置的url。 这是因为absoluteString会生成一个以file:// scheme为前缀的URL字符串，这不是我们在将文件URL传递给接受文件路径的API时想要的结果。</p>
+<p>同样值得注意的是，上面的方法实际上只在单线程上下文中是安全的，或者当我们的程序完全控制它所创建的目录时，因为如果不这样做，就有可能在fileExists检查和createDirectory调用之间创建有问题的文件夹。 处理这种情况的一种方法是始终尝试创建目录，然后只在该错误与已经存在的文件夹引发的错误相匹配时才忽略任何结果错误，如下所示:</p>
+<pre><code class="language-swift">do {
+    try manager.createDirectory(
+        at: nestedFolderURL,
+        withIntermediateDirectories: false,
+        attributes: nil
+    )
+} catch CocoaError.fileWriteFileExists {
+    // Folder already existed
+} catch {
+    throw error
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift，更确切地说，是Foundation，附带了一套相当全面的文件系统api，使我们能够以跨苹果所有平台的方式执行大量操作-其中许多也是完全与linux兼容的。虽然本文的目的并不是要涵盖所有的API(毕竟这是苹果官方文档的目的)，但我希望它能够简要概述在Swift中处理文件和文件夹时涉及到的各种关键API。</p>
+<p><a href="https://www.swiftbysundell.com/articles/working-with-files-and-folders-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/qdqRkSaiz/" class="tag">
+                    file system
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hbk2Vw39ZT/" class="tag">
+                    data
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EWN51MbzW/" class="tag">
+                    state management
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-compiler-directives-in-swift/">
+                  <h3 class="post-title">
+                    Using compiler directives in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Writing backward compatible Swift code | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="向现有代码中添加新功能确实很有挑战性——特别是当这些代码在一个或多个项目中被大量使用时。 我们不仅要了解我们的变化可能对不同的调用站点产生的影响，但是如果我们对现有的API做了很大的改变，我们也会冒着引入错误和奇怪行为的风险。
+向后兼容性可..." />
+    <meta name="keywords" content="maintenance,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Writing backward compatible Swift code</h2>
+            <div class="post-date">2018-07-22</div>
+            
+            <div class="post-content" v-pre>
+              <p>向现有代码中添加新功能确实很有挑战性——特别是当这些代码在一个或多个项目中被大量使用时。 我们不仅要了解我们的变化可能对不同的调用站点产生的影响，但是如果我们对现有的API做了很大的改变，我们也会冒着引入错误和奇怪行为的风险。</p>
+<p>向后兼容性可以在很多方面帮助我们以更流畅的方式进行这些更改。避免完全替换现有的api和约定可以让我们一点一点地迁移到新的实现中-允许我们添加新的功能，而不破坏任何现有的代码。</p>
+<p>尤其是在大型代码库中，这一点非常关键——因为它让我们可以进行小的、原子的修改，而不必一次更改所有的调用站点 -使变更更容易审查、测试和集成。本周，让我们来看看一些不同的技术，它们可以帮助我们对代码库进行完全向后兼容的更改。</p>
+<h2 id="discardable-results">Discardable results</h2>
+<p>有时候，我们会发现自己处于这样一种情况:我们想要将一种“着火就忘了”的API转变为能够报告某种形式的状态或结果的API。例如，我们在应用程序中使用URLHandler来处理来自不同来源的url(比如深度链接或web视图):</p>
+<pre><code class="language-swift">class URLHandler {
+    func handle(_ url: URL) {
+        ...
+    }
+}
+</code></pre>
+<p>现在我们的URLHandler没有从它的handle方法返回任何东西-我们只是要求它处理一个给定的URL，它要么成功地这样做，要么失败，但我们没有办法知道结果。</p>
+<p>到目前为止，这还不错， 但是，假设我们希望能够根据我们正在构建的新特性中是否成功处理了URL而做出不同的反应 (例如，我们可能希望显示一个错误视图，以防止出现无效的URL)。</p>
+<p>为了实现这一点，我们首先要创建一个表示URLHandler结果的enum-它要么告诉我们URL已被处理，要么告诉我们遇到的任何错误，像这样:</p>
+<pre><code class="language-swift">extension URLHandler {
+    enum Outcome {
+        case handled
+        case failed(Error)
+    }
+}
+</code></pre>
+<p>然而，如果我们只是更新我们的handle方法来返回一个结果，我们将在整个项目中得到警告，告诉我们调用该方法的结果没有被使用。幸运的是，我们可以通过使用@discardableResult来避免这种情况。</p>
+<p>通过向我们的方法添加@discardableResult属性，实际上，我们告诉编译器丢弃它的结果是完全没问题的 -赋予我们在新代码中使用结果的灵活性，而在旧代码中仍然忽略它。</p>
+<p>下面是我们的新实现:</p>
+<pre><code class="language-swift">class URLHandler {
+    @discardableResult
+    func handle(_ url: URL) -&gt; Outcome {
+        do {
+            try validate(url)
+        } catch {
+            return .failed(error)
+        }
+
+        ...
+
+        return .handled
+    }
+}
+</code></pre>
+<p>上面的方法的美妙之处在于，我们从本质上为我们的URLHandler添加了更多的功能，而不影响任何现有的代码👍。</p>
+<h2 id="extended-enum-cases">Extended enum cases</h2>
+<p>枚举是为一组互斥值建模的好方法，但有时当枚举在整个项目中广泛使用时，我们可能会陷入困境。例如，假设我们在应用程序中使用Navigator模式，并且我们使用enum来建模用户可以导航到的各种目的地:</p>
+<pre><code class="language-swift">extension Navigator {
+    enum Destination {
+        case favorites
+        case bookList
+        case book(Book)
+    }
+}
+</code></pre>
+<p>然后，在某个时刻，我们意识到我们的代码库中有一些部分应该被允许导航到图书的目的地，但不能获得任何完整的图书模型。为了解决这个问题，我们决定将图书目的地改为只需要给定图书的元数据， 这也给了我们更好的关注点分离。我们还让目的地的命名更清晰一些，给了我们一个全新的bookDetails enum case:</p>
+<pre><code class="language-swift">extension Navigator {
+    enum Destination {
+        case favorites
+        case bookList
+        case bookDetails(Book.Metadata)
+    }
+}
+</code></pre>
+<p>不用遍历整个代码库，用.bookdetails代替.book的所有用法，让我们将此更改向后兼容。使用静态方法，我们可以创建一种“假的”enum大小写，以匹配旧的图书签名，如下所示:</p>
+<pre><code class="language-swift">extension Navigator.Destination {
+    static func book(_ book: Book) -&gt; Navigator.Destination {
+        return .bookDetails(book.metadata)
+    }
+}
+</code></pre>
+<p>通过执行上述操作，我们可以在所有新代码中使用新的bookDetails目的地，同时保持旧代码的完整性。由于Swift的类型推断使我们能够使用点表示法来处理静态方法等事情，所以所有的调用位置都可以保持与以前完全相同。</p>
+<h2 id="default-arguments">Default arguments</h2>
+<p>在向函数或初始化器添加新形参时，使用默认实参是保持向后兼容性的好方法 -特别是如果我们想做的改变是纯粹的附加。例如，假设我们有一个函数，让我们从一个给定的URL加载数据:</p>
+<pre><code class="language-swift">func loadData(from url: URL,
+              then handler: @escaping (Result&lt;Data&gt;) -&gt; Void) {
+    ...
+}
+</code></pre>
+<p>如果我们现在想要添加选项来定制数据加载请求超时所需的时间-完全向后兼容-我们可以使用一个默认实参来匹配我们已经在内部使用的值，像这样:</p>
+<pre><code class="language-swift">func loadData(from url: URL,
+              timeout: TimeInterval = 10,
+              then handler: @escaping (Result&lt;Data&gt;) -&gt; Void) {
+    ...
+}
+</code></pre>
+<p>做上述的事情也有一些很好的自文档化效果，因为我们现在清楚地显示了方法签名中的默认超时值。总而言之，对于不需要在调用站点指定的参数，这是一种维护向后兼容性的简单方法。</p>
+<p>使用默认参数也是一个很好的方法来重构单例，并使我们的代码更容易测试。</p>
+<h2 id="protocol-extensions">Protocol extensions</h2>
+<p>默认实参值也可用于对协议进行向后兼容的更改。尽管不能直接将默认值添加到协议函数声明中，但可以使用协议扩展实现相同的结果。</p>
+<p>在这里，我们使用Canvas协议为自定义渲染系统创建一个抽象接口，让我们能够绘制各种形状:</p>
+<pre><code class="language-swift">protocol Canvas {
+    func draw(_ shape: Shape, at point: Point)
+}
+</code></pre>
+<p>现在让我们说我们想要添加对我们正在绘制的任何形状应用转换的支持。为了做到这一点，我们将在我们的draw方法中添加一个transform参数，并且为了使这个改变完全向后兼容，我们伴随这个改变而来的是一个协议扩展，它简单地重新定义了我们的旧方法，并将所有的调用转发到我们的新方法——像这样:</p>
+<pre><code class="language-swift">protocol Canvas {
+    func draw(_ shape: Shape, at point: Point, transform: Transform)
+}
+
+extension Canvas {
+    func draw(_ shape: Shape, at point: Point) {
+        draw(shape, at: point, transform: .identity)
+    }
+}
+</code></pre>
+<p>上面的扩展不仅作为一种保持向后兼容性的方法，它还为我们提供了一个很好的方便API，当我们在绘制形状时对添加转换不感兴趣时👍。</p>
+<h2 id="deprecations">Deprecations</h2>
+<p>向后兼容性可能有点像一把“双刃剑”——我们可能会添加更多的代码来继续服务于我们现有的调用站点，而不是一次性更新。有时我们想要那些额外的代码留下来，为了方便，或者只是为了避免仅仅因为我们需要添加新特性而要求API用户更改代码，但有时我们想让大家明白，旧的API正在消失。</p>
+<p>弃用就是做到这一点的一种方法。 就像苹果在他们的SKDs和框架中使用弃用(deprecations)给我们一些提示和鼓励，让我们把代码移动到更现代的api中一样，我们也可以对自己的代码做同样的事情。</p>
+<p>例如，让我们回顾一下之前的导航目标代码。假设我们不想让我们的“假的”bookenum盒子存在太久，而只是想把它作为迁移到新的bookDetails API的跳板。这是弃用的一个很好的用例。</p>
+<p>使用@available属性和deprecated关键字，我们可以正式弃用我们的旧API，同时提供一个关于哪个API取代了它的提示，像这样:</p>
+<pre><code class="language-swift">extension Navigator.Destination {
+    @available(*, deprecated, renamed: &quot;bookDetails&quot;)
+    static func book(_ book: Book) -&gt; Navigator.Destination {
+        return .bookDetails(book.metadata)
+    }
+}
+</code></pre>
+<p>像我们上面做的那样使用弃用的一个很棒的事情是，Xcode会在所有的调用站点显示警告，并提供修复，以迁移到新的API -就像它会为苹果自己的API一样!🎉</p>
+<p>我们还可以在协议中使用弃用，甚至可以使用自定义消息，以备我们想要做一些事情，比如将我们的同事或API用户指向一个详细说明如何从旧API迁移到新API的文档</p>
+<pre><code class="language-swift">extension Canvas {
+    @available(*, deprecated, message: &quot;See docs/MigratingToTransforms.md&quot;)
+    func draw(_ shape: Shape, at point: Point) {
+        draw(shape, at: point, transform: .identity)
+    }
+}
+</code></pre>
+<p>尽管这需要额外的努力，但在替换类型和api时添加更细粒度的弃用可以真正帮助通信 -尤其是在开源项目或大型团队中。当一个新版本突然破坏了他们的代码时，他们不会感到沮丧，我们的API用户现在将得到需要对其调用站点进行哪些更改的明确指示。</p>
+<h2 id="custom-warnings">Custom warnings</h2>
+<p>最后，让我们来看看Swift 4.2中引入的一个特性，它允许我们使用新的#warning指令将自定义警告嵌入到代码中。</p>
+<p>说到向后兼容性，使用这种新的警告机制可以很好地跟踪我们正在使用的临时或旧api，以简化向新api的迁移-这样当他们不再需要的时候，我们就不会错过移除他们的机会-像这样:</p>
+<pre><code class="language-swift">#warning(&quot;Old API, remove as soon as possible&quot;)
+extension Navigator.Destination {
+    @available(*, deprecated, renamed: &quot;bookDetails&quot;)
+    static func book(_ book: Book) -&gt; Navigator.Destination {
+        return .bookDetails(book.metadata)
+    }
+}
+</code></pre>
+<p>一个好的旧TODO或FIXME与一个如SwiftLint的linting工具相结合也可以完成工作。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>采取一些额外的步骤使API更改向后兼容，乍一看似乎是不必要的努力，但它通常可以使更大的重构和API添加更快、更容易地完成。特别是在一个更大的团队中，或者在开发开源软件时，避免每次更改或添加都会破坏api，这确实有助于改善开发人员之间的工作流程，向后兼容性也是一个很好的沟通工具，可以帮助了解为什么会做出特定的更改。</p>
+<p>当然，并不是所有的更改都保证向后兼容，在很长一段时间内保持向后兼容本身也是一个复杂的问题。在我看来，让更大的更改或重构变得更容易、风险更小，或者向后兼容以更低的成本增加了便利性，这样做是值得的。 像往常一样，所有的事情都是一种权衡，但是我们需要的破坏性改变越少，我们的工作流程就越顺畅。</p>
+<p><a href="https://www.swiftbysundell.com/articles/writing-backward-compatible-swift-code/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5VmnTv3Lu/" class="tag">
+                    maintenance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/subclass-free-view-controllers-in-swift/">
+                  <h3 class="post-title">
+                    Subclass-free view controllers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Alternatives to protocols in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="毫无疑问，协议是Swift整体设计的重要组成部分——它可以提供一种很好的方式来创建抽象，分离关注点，并提高系统或特性的整体灵活性。 通过不强烈地将类型捆绑在一起，而是通过更抽象的接口连接代码库的各个部分，我们最终通常会得到一个更加分离的架构..." />
+    <meta name="keywords" content="protocols,code structure,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Alternatives to protocols in Swift</h2>
+            <div class="post-date">2019-10-06</div>
+            
+            <div class="post-content" v-pre>
+              <p>毫无疑问，协议是Swift整体设计的重要组成部分——它可以提供一种很好的方式来创建抽象，分离关注点，并提高系统或特性的整体灵活性。 通过不强烈地将类型捆绑在一起，而是通过更抽象的接口连接代码库的各个部分，我们最终通常会得到一个更加分离的架构，让我们能够独立地迭代每个单独的特性。</p>
+<p>然而，尽管协议在许多不同的情况下都是很好的工具，但它们也有自己的缺点和权衡。本周，让我们来看看其中的一些特性，并探索一些Swift中抽象代码的替代方法——看看它们与使用协议有何不同。</p>
+<h2 id="single-requirements-using-closures">Single requirements using closures</h2>
+<p>使用协议抽象代码的优点之一是，它允许我们将多个需求组合在一起。例如，一个persistdvalue协议可能需要一个save和一个load方法 -这使我们能够在所有这些值之间强制一定程度的一致性，并编写用于保存和加载数据的共享实用程序。</p>
+<p>然而，并不是所有的抽象都涉及到多个需求，最终的协议通常只有一个方法或属性——比如下面这个:</p>
+<pre><code class="language-swift">protocol ModelProvider {
+    associatedtype Model: ModelProtocol
+    func provideModel() -&gt; Model
+}
+</code></pre>
+<p>假设上面的ModelProvider协议用于抽象我们在代码库中加载和提供模型的方式。它使用关联的类型，以便让每个实现以一种非常类型安全的方式声明它所提供的模型类型，这很好，因为它使我们能够编写泛型代码来执行常见的任务 - 例如渲染一个给定模型的详细视图:</p>
+<pre><code class="language-swift">class DetailViewController&lt;Model: ModelProtocol&gt;: UIViewController {
+    private let modelProvider: AnyModelProvider&lt;Model&gt;
+
+    init&lt;T: ModelProvider&gt;(modelProvider: T) where T.Model == Model {
+        // We wrap the injected provider in an AnyModelProvider
+        // instance to be able to store a reference to it.
+        self.modelProvider = AnyModelProvider(modelProvider)
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        let model = modelProvider.provideModel()
+        ...
+    }
+    ...
+}
+</code></pre>
+<p>虽然上面的代码可以工作，但它说明了使用具有关联类型的协议的缺点之一——我们不能直接存储对ModelProvider的引用。相反，我们首先必须执行类型擦除，将协议引用转换为具体的类型，这将使我们的代码变得混乱，并要求我们实现额外的类型，以便能够使用我们的协议。</p>
+<p>由于我们处理的协议只有一个需求，问题是——我们真的需要它吗?毕竟，我们的ModelProvider协议没有添加任何额外的分组或结构，所以让我们将其唯一的需求提出来，并将其转换为一个闭包-然后可以直接注入，像这样:</p>
+<pre><code class="language-swift">class DetailViewController&lt;Model: ModelProtocol&gt;: UIViewController {
+    private let modelProvider: () -&gt; Model
+
+    init(modelProvider: @escaping () -&gt; Model) {
+        self.modelProvider = modelProvider
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        let model = modelProvider()
+        ...
+    }
+    
+    ...
+}
+</code></pre>
+<p>通过直接注入我们需要的功能，而不是要求类型遵循协议，我们也极大地提高了代码的灵活性-因为我们现在可以自由地注入任何东西，从一个自由函数，到一个内联定义的闭包，再到一个实例方法。我们也不再需要执行任何类型擦除，留下更简单的代码。</p>
+<h2 id="using-generic-types">Using generic types</h2>
+<p>虽然闭包和函数是对单个需求抽象进行建模的好方法，但如果我们要开始添加额外的需求，使用它们可能会有点混乱。例如，我们想扩展上面的DetailViewController来支持书签和删除模型。如果我们坚持我们的基于闭包的方法，我们会得到这样的结果:</p>
+<pre><code class="language-swift">class DetailViewController&lt;Model: ModelProtocol&gt;: UIViewController {
+    private let modelProvider: () -&gt; Model
+    private let modelBookmarker: (Model) -&gt; Void
+    private let modelDeleter: (Model) -&gt; Void
+
+    init(modelProvider: @escaping () -&gt; Model,
+         modelBookmarker: @escaping (Model) -&gt; Void,
+         modelDeleter: @escaping (Model) -&gt; Void) {
+        self.modelProvider = modelProvider
+        self.modelBookmarker = modelBookmarker
+        self.modelDeleter = modelDeleter
+        
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    ...
+}
+</code></pre>
+<p>上面的设置不仅需要我们跟踪多个独立闭包，还会导致大量重复的“model”前缀——这(使用“三的规则”)告诉我们这里有一些结构性问题。虽然我们可以回过头来将上述所有闭包封装到协议中，这同样需要我们进行类型擦除，并失去一些我们在开始使用闭包时获得的灵活性。</p>
+<p>相反，让我们使用一个泛型类型来将我们的需求组合在一起——这既让我们保留了使用闭包的灵活性，同时也添加了一些额外的结构到我们的代码:</p>
+<pre><code class="language-swift">struct ModelHandling&lt;Model: ModelProtocol&gt; {
+    var provide: () -&gt; Model
+    var bookmark: (Model) -&gt; Void
+    var delete: (Model) -&gt; Void
+}
+</code></pre>
+<p>由于上面的类型是一个具体的类型，所以它不需要任何形式的类型擦除(事实上，它实际上看起来非常类似于我们在使用带有相关类型的协议时经常被迫编写的类型擦除包装器)。所以，就像闭包一样，它可以被直接使用和存储——像这样:</p>
+<pre><code class="language-swift">class DetailViewController&lt;Model: ModelProtocol&gt;: UIViewController {
+    private let modelHandler: ModelHandling&lt;Model&gt;
+    private lazy var model = modelHandler.provide()
+
+    init(modelHandler: ModelHandling&lt;Model&gt;) {
+        self.modelHandler = modelHandler
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @objc private func bookmarkButtonTapped() {
+        modelHandler.bookmark(model)
+    }
+    
+    @objc private func deleteButtonTapped() {
+        modelHandler.delete(model)
+        dismiss(animated: true)
+    }
+    
+    ...
+}
+</code></pre>
+<p>虽然关联类型的协议在定义更高级的需求时非常有用(就像标准库的Equatable和Collection协议一样)，需要直接使用这样的协议时，使用独立闭包或泛型类型通常可以提供相同级别的封装——但通过更简单的抽象。</p>
+<h2 id="separating-requirements-using-enums">Separating requirements using enums</h2>
+<p>在设计任何类型的抽象时，一个常见的挑战是不要因为添加了太多的需求而“过度抽象”。 例如，我们现在正在开发一个应用程序，它允许用户消费多种媒体——比如文章、播客、视频等等 -我们想为所有这些不同的格式创建一个共享的抽象。如果我们再次以面向协议的方法开始，我们可能会以这样的方式结束:</p>
+<pre><code class="language-swift">protocol Media {
+    var id: UUID { get }
+    var title: String { get }
+    var description: String { get }
+    var text: String? { get }
+    var url: URL? { get }
+    var duration: TimeInterval? { get }
+    var resolution: Resolution? { get }
+}
+</code></pre>
+<p>由于上述协议需要与所有不同类型的媒体一起工作，我们最终得到了多个只与特定格式相关的属性。 例如，文章类型没有任何持续时间或解析的概念-留给我们几个属性，我们必须实现，因为我们的协议要求我们:</p>
+<pre><code class="language-swift">struct Article: Media {
+    let id: UUID
+    var title: String
+    var description: String
+    var text: String?
+    var url: URL? { return nil }
+    var duration: TimeInterval? { return nil }
+    var resolution: Resolution? { return nil }
+}
+</code></pre>
+<p>上面的设置不仅要求我们向符合类型添加不必要的样板，它也可能是歧义的来源 -因为我们没有办法强制一个文章实际上包含文本，或者应该支持URL的类型，持续时间或解析实际上携带数据-因为所有这些属性是可选的。</p>
+<p>我们有多种方法可以解决上述问题，首先将我们的协议分成多个，每个都有一个不断增加的专门化程度——像这样:</p>
+<pre><code class="language-swift">protocol Media {
+    var id: UUID { get }
+    var title: String { get }
+    var description: String { get }
+}
+
+protocol ReadableMedia: Media {
+    var text: String { get }
+}
+
+protocol PlayableMedia: Media {
+    var url: URL { get }
+    var duration: TimeInterval { get }
+    var resolution: Resolution? { get }
+}
+</code></pre>
+<p>上面肯定是一种进步,因为这将使我们能够有类型文章符合ReadableMedia,和播放类型(比如音频和视频)符合PlayableMedia-减少歧义和样板，因为每种类型都可以选择它想要遵循的媒体的特定版本。</p>
+<p>然而，由于上述协议都是关于数据的，因此使用实际的数据类型来为它们建模可能会更有意义-这样既可以减少重复实现的需求，也可以让我们通过单一的具体类型处理任何媒体格式:</p>
+<pre><code class="language-swift">struct Media {
+    let id: UUID
+    var title: String
+    var description: String
+    var content: Content
+}
+</code></pre>
+<p>上面的结构现在只包含在我们所有媒体格式中共享的数据，除了它的content属性——这是我们将用于专门化的属性。但这一次，我们不需要让Content成为一个协议，而是使用enum——这将使我们能够通过关联的值为每种格式定义一组定制的属性:</p>
+<pre><code class="language-swift">extension Media {
+    enum Content {
+        case article(text: String)
+        case audio(Playable)
+        case video(Playable, resolution: Resolution)
+    }
+    
+    struct Playable {
+        var url: URL
+        var duration: TimeInterval
+    }
+}
+</code></pre>
+<p>没有了可选的选项，我们现在已经在共享抽象和支持特定格式的专门化之间取得了很好的平衡。枚举的妙处还在于，它使我们能够表达数据的差异，而不必使用泛型或协议——只要我们预先知道变量的数量，一切都可以封装在相同的具体类型中。</p>
+<h2 id="classes-and-inheritance">Classes and inheritance</h2>
+<p>另一种方法可能在Swift中不像在其他语言中那样流行，但仍然绝对值得考虑，那就是使用通过继承专门化的类来创建抽象。例如，与其使用Content enum来实现上面的媒体格式，不如使用media基类来子类化，以便添加特定格式的属性，如下所示:</p>
+<pre><code class="language-swift">class Media {
+    let id: UUID
+    var title: String
+    var description: String
+
+    init(id: UUID, title: String, description: String) {
+        self.id = id
+        self.title = title
+        self.description = description
+    }
+}
+
+class PlayableMedia: Media {
+    var url: URL
+    var duration: TimeInterval
+
+    init(id: UUID,
+         title: String,
+         description: String,
+         url: URL,
+         duration: TimeInterval) {
+        self.url = url
+        self.duration = duration
+        super.init(id: id, title: title, description: description)
+    }
+}
+</code></pre>
+<p>然而，尽管上面的方法从结构的角度来看是完全有意义的——它确实有一些缺点。首先，由于类还不支持memberwise初始化器，我们必须自己定义所有的初始化器——而且我们还必须通过调用super.init来手动向上传递数据。但也许更重要的是，类是引用类型，这意味着在跨代码库共享媒体实例时，我们必须小心不要执行任何意外的更改。</p>
+<p>但这并不意味着Swift中没有有效的继承用例。例如，在“Under the hood of Futures &amp; Promises in Swift”中，继承提供了一种很好的方式来向API用户公开一个只读的Future类型——同时仍然允许这样的实例通过Promise子类被私下改变:</p>
+<pre><code class="language-swift">class Future&lt;Value&gt; {
+    fileprivate var result: Result&lt;Value, Error&gt;? {
+        didSet { result.map(report) }
+    }
+    
+    ...
+}
+
+class Promise&lt;Value&gt;: Future&lt;Value&gt; {
+    func resolve(with value: Value) {
+        result = .success(value)
+    }
+
+    func reject(with error: Error) {
+        result = .failure(error)
+    }
+}
+
+func loadCachedData() -&gt; Future&lt;Data&gt; {
+    let promise = Promise&lt;Data&gt;()
+    cache.load { promise.resolve(with: $0) }
+    return promise
+}
+</code></pre>
+<p>使用上述设置，我们可以使同一个实例在不同的上下文中公开不同的api集，这在我们只允许其中一个上下文中改变给定对象时非常有用。在使用泛型代码时尤其如此，因为如果我们试图使用协议来实现同样的事情，我们将再次遇到关联类型问题。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>协议很棒，在可预见的将来，它很可能仍然是Swift中定义抽象的最常见方式。 然而，这并不意味着使用协议永远是最好的解决方案——有时超越流行的“面向协议编程”的咒语可以产生更简单和更健壮的代码-特别是当我们想要定义的协议要求我们使用关联类型时。</p>
+<p><a href="https://www.swiftbysundell.com/articles/alternatives-to-protocols-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/computing-dates-in-swift/">
+                  <h3 class="post-title">
+                    Computing dates in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

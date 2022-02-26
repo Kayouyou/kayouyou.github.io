@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Different flavors of type erasure in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift的首要目标是功能强大到足以用于低级系统编程，同时又足够容易让初学者学习，这有时会导致非常有趣的情况 - 当Swift的类型系统需要我们部署相当先进的技术来解决问题时，乍一看，这些问题可能显得微不足道。
+多数Swift开发人员在某一..." />
+    <meta name="keywords" content="type erasure,different flavors,generics" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Different flavors of type erasure in Swift</h2>
+            <div class="post-date">2019-03-24</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift的首要目标是功能强大到足以用于低级系统编程，同时又足够容易让初学者学习，这有时会导致非常有趣的情况 - 当Swift的类型系统需要我们部署相当先进的技术来解决问题时，乍一看，这些问题可能显得微不足道。</p>
+<p>多数Swift开发人员在某一点或另一点(通常是早一点，而不是晚一点)都会遇到这样的情况——需要某种形式的类型擦除才能引用通用协议。本周，让我们先来看看是什么让类擦除在Swift中成为如此重要的技术，然后继续探索实现它的不同“风格”——以及每种风格如何具有其各自的优点和缺点。</p>
+<h2 id="when-is-type-erasure-needed">When is type erasure needed?</h2>
+<p>“类型擦除”一词乍一看可能与Swift着重于类型和编译时类型安全的观点相悖-所以它可能更好的描述为隐藏类型，而不是完全擦除它们。 我们的目标是使我们能够更容易地与具有特定于将实现它们的各种类型的需求的通用协议进行交互。</p>
+<p>以标准库中的Equatable协议为例。 因为它是为了使相同类型的两个值能够以相等的方式进行比较，所以它使用Self元类型作为它唯一的方法要求的参数:</p>
+<pre><code class="language-swift">protocol Equatable {
+    static func ==(lhs: Self, rhs: Self) -&gt; Bool
+}
+</code></pre>
+<p>上面的方法使得任何类型都可以符合Equatable，同时仍然要求==操作符两边的值是同一类型的，因为每个符合协议的类型在实现上述方法时都必须“填写”自己的类型:</p>
+<pre><code class="language-swift">extension User: Equatable {
+    static func ==(lhs: User, rhs: User) -&gt; Bool {
+        return lhs.id == rhs.id
+    }
+}
+</code></pre>
+<p>这种方法的伟大之处在于，它使得不可能偶然地比较两个不相关的等价类型(如User和String)，然而，它也使它不可能引用Equatable作为一个独立的协议(例如创建一个像[Equatable]这样的数组)，因为编译器需要知道确切的类型是符合协议的，这样才能使用它。</p>
+<p>当协议包含关联的类型时也是如此。 例如，这里我们定义了一个请求协议，使我们能够将各种形式的数据请求(如网络调用、数据库查询和缓存获取)隐藏在一个单一的、统一的实现后</p>
+<pre><code class="language-swift">protocol Request {
+    associatedtype Response
+    associatedtype Error: Swift.Error
+
+    typealias Handler = (Result&lt;Response, Error&gt;) -&gt; Void
+
+    func perform(then handler: @escaping Handler)
+}
+</code></pre>
+<p>上面的方法给了我们和Equatable一样的权衡——它非常强大，因为它可以让我们为任何类型的请求创建通用的抽象，但它也使直接引用请求协议本身成为不可能，像这样:</p>
+<pre><code class="language-swift">class RequestQueue {
+    // Error: protocol 'Request' can only be used as a generic
+    // constraint because it has Self or associated type requirements
+    func add(_ request: Request,
+             handler: @escaping Request.Handler) {
+        ...
+    }
+}
+</code></pre>
+<p>解决上述问题的一种方法是完全按照错误消息所说的去做，而不是直接引用Request，而是将其作为一个通用约束:</p>
+<pre><code class="language-swift">class RequestQueue {
+    func add&lt;R: Request&gt;(_ request: R,
+                         handler: @escaping R.Handler) {
+        ...
+    }
+}
+</code></pre>
+<p>上述方法是可行的，因为现在编译器能够保证传递的handler确实与作为request传递的请求实现兼容 -因为它们都是基于泛型R类型的，而R类型又被限制为符合Request。</p>
+<p>然而，虽然我们已经解决了方法签名的问题，但是我们仍然不能对所传递的请求做太多的事情 -因为我们不能存储它，无论是作为一个请求属性或作为[Request]数组的一部分，这样就很难继续构建RequestQueue了。也就是说，直到我们开始进行类型擦除。</p>
+<h2 id="generic-wrapper-types">Generic wrapper types</h2>
+<p>我们要探讨的第一个类型擦除方法实际上并没有擦除任何类型，而是将它们包装在一个更容易引用的泛型类型中。继续在前面的RequestQueue示例的基础上构建，我们将从创建该包装器类型开始 -它将捕获每个请求的执行方法作为一个闭包，以及请求完成后应该调用的处理程序:</p>
+<pre><code class="language-swift">// This will let us wrap a Request protocol implementation in a
+// generic has the same Response and Error types as the protocol.
+struct AnyRequest&lt;Response, Error: Swift.Error&gt; {
+    typealias Handler = (Result&lt;Response, Error&gt;) -&gt; Void
+
+    let perform: (@escaping Handler) -&gt; Void
+    let handler: Handler
+}
+</code></pre>
+<p>接下来，我们还将把RequestQueue本身转换为具有相同响应和错误类型的泛型-使编译器能够保证所有相关类型和泛型类型对齐，允许我们将请求存储为独立引用或数组的一部分——像这样:</p>
+<pre><code class="language-swift">class RequestQueue&lt;Response, Error: Swift.Error&gt; {
+    private typealias TypeErasedRequest = AnyRequest&lt;Response, Error&gt;
+
+    private var queue = [TypeErasedRequest]()
+    private var ongoing: TypeErasedRequest?
+
+    // We modify our 'add' method to include a 'where' clause that
+    // gives us a guarantee that the passed request's associated
+    // types match our queue's generic types.
+    func add&lt;R: Request&gt;(
+        _ request: R,
+        handler: @escaping R.Handler
+    ) where R.Response == Response, R.Error == Error {
+        // To perform our type erasure, we simply create an instance
+        // of 'AnyRequest' and pass it the underlying request's
+        // 'perform' method as a closure, along with the handler.
+        let typeErased = AnyRequest(
+            perform: request.perform,
+            handler: handler
+        )
+
+        // Since we're implementing a queue, we don't want to perform
+        // two requests at once, but rather save the request for
+        // later in case there's already an ongoing one.
+        guard ongoing == nil else {
+            queue.append(typeErased)
+            return
+        }
+
+        perform(typeErased)
+    }
+
+    private func perform(_ request: TypeErasedRequest) {
+        ongoing = request
+
+        request.perform { [weak self] result in
+            request.handler(result)
+            self?.ongoing = nil
+
+            // Perform the next request if the queue isn't empty
+            ...
+        }
+    }
+}
+</code></pre>
+<p>请注意，上面的示例以及本文中的其他示例代码都不是线程安全的-为了让事情简单。有关线程安全的更多信息，请查看“Swift中避免竞争条件”。</p>
+<p>上述方法运行良好，但也有一些缺点。我们不仅引入了新的AnyRequest类型，还需要将RequestQueue转换为泛型。这使我们的灵活性降低了一些，因为我们现在只能对具有相同响应/错误类型组合的请求使用任何给定的队列。具有讽刺意味的是，它可能还要求我们在将来键入擦除队列本身——以防我们想要组合多个实例。</p>
+<h2 id="closures-to-the-rescue">Closures to the rescue!</h2>
+<p>我们不引入包装器类型，而是看一下如何使用闭包来实现同样的类型擦除 -同时也保持我们的RequestQueue非通用，和足够多的用途，以用于不同类型的请求。</p>
+<p>当使用闭包进行类型擦除时，其思想是捕获在闭包中执行操作所需的所有类型信息，并让该闭包只接受非泛型(甚至Void)输入。 这样我们就可以在不知道内部发生什么的情况下引用、存储和传递这部分功能——这给了我们更大程度的灵活性。</p>
+<p>下面是如何更新RequestQueue来代替使用基于闭包的类型擦除:</p>
+<pre><code class="language-swift">class RequestQueue {
+    private var queue = [() -&gt; Void]()
+    private var isPerformingRequest = false
+
+    func add&lt;R: Request&gt;(_ request: R,
+                         handler: @escaping R.Handler) {
+        // This closure will capture both the request and its
+        // handler, without exposing any of that type information
+        // outside of it, providing full type erasure.
+        let typeErased = {
+            request.perform { [weak self] result in
+                handler(result)
+                self?.isPerformingRequest = false
+                self?.performNextIfNeeded()
+            }
+        }
+
+        queue.append(typeErased)
+        performNextIfNeeded()
+    }
+
+    private func performNextIfNeeded() {
+        guard !isPerformingRequest &amp;&amp; !queue.isEmpty else {
+            return
+        }
+
+        isPerformingRequest = true
+        let closure = queue.removeFirst()
+        closure()
+    }
+}
+</code></pre>
+<p>虽然过度依赖闭包来获取功能和状态有时会使我们的代码更难调试， 它还可以完全封装类型信息 - 使得像我们的RequestQueue这样的对象可以在不知道任何具体类型的情况下工作。</p>
+<p>要了解更多关于基于闭包的类型擦除的信息和一些不同的做法，请查看“Swift中使用闭包的类型擦除”。</p>
+<h2 id="external-specialization">External specialization</h2>
+<p>到目前为止，我们一直在RequestQueue本身内执行所有类型擦除，这有一些优点 -  它使得使用我们的队列而不让任何外部代码知道任何类型擦除正在发生。然而，在将协议实现传递到API之前，有时做一些轻量级的转换既可以让事情更简单， 同时也简洁地封装了类型erasure代码本身。</p>
+<p>为我们的RequestQueue做到这一点的一种方法是在将每个请求实现添加到队列之前要求对其进行专门化-它将转换成一个RequestOperation，看起来像这样:</p>
+<pre><code class="language-swift">struct RequestOperation {
+    fileprivate let closure: (@escaping () -&gt; Void) -&gt; Void
+
+    func perform(then handler: @escaping () -&gt; Void) {
+        closure(handler)
+    }
+}
+</code></pre>
+<p>类似于我们之前在RequestQueue中使用闭包来执行类型擦除，上面的RequestOperation类型可以让我们在扩展Request中这样做:</p>
+<pre><code class="language-swift">extension Request {
+    func makeOperation(with handler: @escaping Handler) -&gt; RequestOperation {
+        return RequestOperation { finisher in
+            // We actually want to capture 'self' here, since otherwise
+            // we risk not retaining the underlying request anywhere.
+            self.perform { result in
+                handler(result)
+                finisher()
+            }
+        }
+    }
+}
+</code></pre>
+<p>上述方法的妙处在于，它让我们可以让RequestQueue变得更简单，无论是在公共API还是内部实现方面。 现在，它可以完全专注于作为一个队列，而不必关注任何类型擦除:</p>
+<pre><code class="language-swift">class RequestQueue {
+    private var queue = [RequestOperation]()
+    private var ongoing: RequestOperation?
+
+    // Since the type erasure now happens before a request is
+    // passed to the queue, it can simply accept a concrete
+    // instance of 'RequestOperation'.
+    func add(_ operation: RequestOperation) {
+        guard ongoing == nil else {
+            queue.append(operation)
+            return
+        }
+
+        perform(operation)
+    }
+
+    private func perform(_ operation: RequestOperation) {
+        ongoing = operation
+
+        operation.perform { [weak self] in
+            self?.ongoing = nil
+
+            // Perform the next request if the queue isn't empty
+            ...
+        }
+    }
+}
+</code></pre>
+<p>然而，缺点是在将每个请求添加到队列之前，我们必须手动将其转换为RequestOperation-虽然这不会在每个调用站点添加大量的代码，取决于相同的转换必须完成的次数，它可能最终感觉有点像样板。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然Swift提供了一个非常强大的类型系统，可以帮助我们避免大量的bug，但有时我们会觉得为了使用通用协议之类的特性而不得不与系统进行斗争。 必须进行类型擦除在一开始似乎是一件不必要的苦差事，但它也带来了好处——比如从代码中隐藏特定的类型信息，而代码并不需要关心这些类型。</p>
+<p>在未来，我们可能还会看到Swift添加了一些新特性，可以自动创建类型擦除包装器类型，或者通过允许协议也被用作适当的泛型来消除对它的大量需求(例如能够定义一个协议，如Request&lt;Response, Error&gt;，而不是仅仅依赖于相关的类型)。</p>
+<p><a href="https://www.swiftbysundell.com/articles/different-flavors-of-type-erasure-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/3mcbew_6V/" class="tag">
+                    type erasure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/wBXIGknAly/" class="tag">
+                    different flavors
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/string-parsing-in-swift/">
+                  <h3 class="post-title">
+                    String parsing in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

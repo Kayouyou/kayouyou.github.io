@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>使用闭包时总是需要使用[weak self]吗 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="使用闭包时总是需要使用[weak self]吗?
+当一个对象或值在逃逸闭包中被引用时，它将被捕获，以便在执行该闭包时可用。默认情况下，当一个对象被捕获时，它将使用强引用来保留——引用self的情况下，在某些情况下可能导致循环引用。
+例如，下..." />
+    <meta name="keywords" content="weak self" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">使用闭包时总是需要使用[weak self]吗</h2>
+            <div class="post-date">2021-05-25</div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="使用闭包时总是需要使用weak-self吗">使用闭包时总是需要使用[weak self]吗?</h2>
+<p>当一个对象或值在逃逸闭包中被引用时，它将被捕获，以便在执行该闭包时可用。默认情况下，当一个对象被捕获时，它将使用强引用来保留——引用self的情况下，在某些情况下可能导致循环引用。</p>
+<p>例如，下面的代码在闭包中捕获<strong>self</strong>，闭包本身最终也被同一对象引用，导致一个循环引用:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    private lazy var buyButton = Button()
+    private let purchaseController: PurchaseController
+    
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Since our buyButton retains its closure, and our
+        // view controller in turn retains that button, we'll
+        // end up with a retain cycle by capturing self here:
+        buyButton.handler = {
+            self.showShoppingCart()
+            self.purchaseController.startPurchasingProcess()
+        }
+    }
+
+    private func showShoppingCart() {
+        ...
+    }
+}
+</code></pre>
+<p>例如，为了解决上述问题，我们可以使用[weak self]捕获列表 - 这将打破我们的循环引用，现在捕捉self使用一个弱引用:</p>
+<pre><code class="language-swift">buyButton.handler = { [weak self] in
+    guard let self = self else { return }
+    self.showShoppingCart()
+    self.purchaseController.startPurchasingProcess()
+}
+</code></pre>
+<p>然而，这并不意味着捕获self总是导致一个循环引用——实际上只有在上述类型的情况下，这样的问题才会发生。例如，以下代码不会导致保留周期:</p>
+<pre><code class="language-swift">class HomeViewController: UIViewController {
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        if shouldShowPromotion {
+            // Capturing self within this closure does not cause
+            // a retain cycle, since our view controller does not
+            // retain this dispatch queue in any way:
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.showPromotionView()
+            }
+        }
+    }
+
+    private func showPromotionView() {
+        ...
+    }
+}
+</code></pre>
+<p>有一件重要的事情需要考虑，当我们像上面那样捕捉self时，只要闭包本身在内存中(在这种情况下，是两秒钟)，我们就会保留它。因此，虽然从技术上讲，我们可能不会在这些情况下导致一个循环引用，但我们最终可能会延长某些对象的生命周期，这可能会导致意外的行为。</p>
+<p>综上所述:</p>
+<ol>
+<li>使用[weak self]只在以下情况下才需要，即强引用self最终会导致一个循环引用，例如，当self在一个闭包中被捕获时，该闭包最终也会被同一对象保留。</li>
+<li>使用[weak self]在处理将存储较长时间的闭包时也是一个好主意，因为在这样的闭包中强捕获一个对象将导致它在内存中保留相同的时间。</li>
+<li>在所有其他情况下，使用[weak self]是可选的，但添加它通常没有坏处——除非我们出于某种原因想强捕获self</li>
+</ol>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/qycQ4lSln/" class="tag">
+                    weak self
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/ru-he-zai-swift-zhong-chuang-jian-yi-ge-hun-he-lei-xing-de-shu-zu/">
+                  <h3 class="post-title">
+                    如何在Swift中创建一个混合类型的数组?
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Designing Swift APIs | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="每个人都是API设计师。虽然很容易认为api只与打包代码(如sdk或框架)相关，但事实证明，所有应用开发者几乎每天都在设计api。实际上，每次我们定义非私有属性或函数时，我们都是在设计一个API。
+然而，设计优秀的api一开始可能相当棘手。..." />
+    <meta name="keywords" content="api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Designing Swift APIs</h2>
+            <div class="post-date">2019-04-14</div>
+            
+            <div class="post-content" v-pre>
+              <p>每个人都是API设计师。虽然很容易认为api只与打包代码(如sdk或框架)相关，但事实证明，所有应用开发者几乎每天都在设计api。实际上，每次我们定义非私有属性或函数时，我们都是在设计一个API。</p>
+<p>然而，设计优秀的api一开始可能相当棘手。我们不仅需要在易用性和提供足够的功能之间取得平衡，我们还需要考虑到在我们的api领域中，不同的人会有不同的知识水平——这也涉及到一定程度的品味。</p>
+<p>本周，让我们来看看在Swift中设计各种api时需要记住的一些技巧和技术——以及我们如何创建既易用又功能强大的api。</p>
+<h2 id="context-and-call-sites">Context and call sites</h2>
+<p>一个真正优秀的API的关键特性之一是，它提供了恰到好处的上下文，让人感觉直观和自然。添加过多的上下文，API就会开始让人感觉“笨拙”和冗长，而如果上下文太少，它就会变得令人困惑和含糊不清。</p>
+<p>例如，假设我们正在构建某种形式的购物应用程序，并且正在为我们的一个关键模型——购物车——设计API。我们首先创建一个方法，通过添加产品来改变购物车，如下所示:</p>
+<pre><code class="language-swift">struct ShoppingCart {
+    mutating func add(product: Product) {
+        ...
+    }
+}
+</code></pre>
+<p>乍一看，上面的API似乎确实在简单性和清晰性之间取得了很好的平衡。如果我们看一下定义，它读起来很好&quot;添加产品&quot;。</p>
+<p>然而，在设计api时，我们不应该关注属性和方法的定义——我们应该关注它们将如何在调用站点上使用，这将呈现出略微不同的画面。</p>
+<pre><code class="language-swift">let product = loadProduct()
+cart.add(product: product)
+</code></pre>
+<p>不管怎么说，上面的情况都不是什么大灾难，在这里加上外部的产品参数标签感觉有点多余，因为很明显，我们所添加的实际上是一个产品——给定所使用的模型。因此，让我们通过在前面添加下划线来删除这个标签:</p>
+<pre><code class="language-swift">struct ShoppingCart {
+    mutating func add(_ product: Product) {
+        ...
+    }
+}
+</code></pre>
+<p>这看起来像是一个挑剔的细节，但是上面的改变确实使我们的呼叫站点读起来更好——甚至像一个正确的英语句子——“cart: add product”:</p>
+<pre><code class="language-swift">let product = loadProduct()
+cart.add(product)
+</code></pre>
+<p>另一方面，如果我们处理的类型不能使上下文非常清楚，那么删除外部标签会使事情变得非常混乱。以这个方法为例，它使我们能够计算将购物车中的所有产品发送到给定地址的总价格:</p>
+<pre><code class="language-swift">extension ShoppingCart {
+    func calculateTotalPrice(_ address: Address) -&gt; Price {
+        ...
+    }
+}
+</code></pre>
+<p>同样，通过查看上面的方法定义，我们可以计算出地址很可能用于计算运输成本，但在读取调用站点时，这一点肯定不清楚:</p>
+<pre><code class="language-swift">let price = cart.calculateTotalPrice(user.address)
+
+</code></pre>
+<p>上面的情况看起来几乎像是程序员的错误——就像错误的数据被传递给了错误的方法。这表明我们还没有设计出足够清晰的API。让我们通过添加一个外部参数标签来解决这个问题，它清楚地说明了我们将使用地址的用途:</p>
+<pre><code class="language-swift">extension ShoppingCart {
+    func calculateTotalPrice(shippingTo address: Address) -&gt; Price {
+        ...
+    }
+}
+</code></pre>
+<p>这就给了我们以下的调用地点:</p>
+<pre><code class="language-swift">let price = cart.calculateTotalPrice(shippingTo: user.address)
+</code></pre>
+<p>更好的!我们可以再一次验证我们的API的清晰度，方法是把它读成一个英语句子(添加了一些“glue”):“cart: calculate the total price for shipping to the user’s address.”</p>
+<h2 id="nested-types-and-overloads">Nested types and overloads</h2>
+<p>在我们的“API设计器工具箱”中另一个非常有用的工具是嵌套类型。就像我们在“带有嵌套类型的Swift代码命名空间”中看到的那样，构建相关类型的层次结构是提供额外上下文的好方法。</p>
+<p>假设我们要向购物应用程序添加一个新功能，它允许供应商定义可以作为一个单元出售的捆绑产品。仅仅添加一个名为Bundle的顶级模型可能无法提供足够的上下文，让人一眼就能理解我们谈论的是一个产品Bundle-特别是考虑到我们会与Foundation的Bundle类型发生冲突(它不会给我们实际的编译错误，但在清晰度方面仍然不是很好)。</p>
+<p>让我们把Bundle类型嵌套在Product中——给我们额外的上下文，让我们的API更加清晰:</p>
+<pre><code class="language-swift">extension Product {
+    struct Bundle {
+        var name: String
+        var products: [Product]
+    }
+}
+</code></pre>
+<p>明确命名类型的一大好处是，它允许我们使用方法重载来定义类似的api，同时仍然保持清晰性。例如，要将一个产品包添加到购物车中，我们可以重载之前的add API——给我们同样好的包调用站点:</p>
+<pre><code class="language-swift">extension ShoppingCart {
+    mutating func add(_ bundle: Product.Bundle) {
+        bundle.products.forEach { add($0) }
+    }
+}
+</code></pre>
+<p>任何使用我们的ShoppingCart API的人现在只需要知道关键谓词是add—不管我们添加的是产品、捆绑包还是其他任何东西。 这既可以生成非常优雅的代码，也可以让我们的API学习曲线不那么陡峭。</p>
+<h2 id="strong-typing">Strong typing</h2>
+<p>在API设计中，命名很重要，但更重要的是实际涉及的类型。充分利用Swift强大的类型系统可以让我们的api更直观，更不容易出错。</p>
+<p>假设我们希望添加到购物车中的下一个特性是支持用于折扣和促销的优惠券代码。由于用户将使用文本字段输入实际的优惠券代码，最初的想法可能是从该文本字段中提取字符串，并简单地将其直接传递到我们的购物车中-像这样:</p>
+<pre><code class="language-swift">extension ShoppingCart {
+    mutating func apply(couponCode code: String) {
+        ...
+    }
+}
+</code></pre>
+<p>虽然上面的方法确实很方便，但它使我们的API有可能被不兼容的输入意外地使用。 因为代码只是一个普通的字符串，任何字符串都可以传递给它——而且因为字符串在所有程序中是如此的普遍，一个糟糕的合并，或者只是一个误解，可能会导致类似这样的事情:</p>
+<pre><code class="language-swift">cart.apply(couponCode: user.name)
+</code></pre>
+<p>上面的方法显然是错误的，但是编译器不会警告我们，因为我们将一个有效的字符串传递给一个接受字符串的方法。为了解决这个问题，并使我们的API更加健壮，让我们引入一个专用的优惠券类型——它将把基于字符串的代码作为属性包含进来。</p>
+<p>这样做还可以简化我们的apply方法，因为现在涉及的类型使上下文清晰(就像我们之前的add API一样):</p>
+<pre><code class="language-swift">struct Coupon {
+    let code: String
+}
+
+extension ShoppingCart {
+    mutating func apply(_ coupon: Coupon) {
+        ...
+    }
+}
+</code></pre>
+<p>如果我们再看一下调用站点，有趣的是它的读取方式与之前完全相同(“Cart: Apply coupon code”)，但现在有了更类型安全的设置</p>
+<pre><code class="language-swift">cart.apply(Coupon(code: &quot;spring-sale&quot;))
+
+</code></pre>
+<p>当我们处理实际的文本和数字时，直接使用原始值(如字符串、整数等)是完全合适的，但对于更具体的用法，引入专用类型的额外“仪式”通常是值得的。</p>
+<h2 id="scalable-apis">Scalable APIs</h2>
+<p>另一个可以决定API成败的方面是它根据不同的用例扩展的好坏。理想情况下，最常见的用例应该非常简单，而更高级的用例应该通过顺利地添加更多参数或定制选项来实现。</p>
+<p>例如，假设我们正在构建一个ImageTransformer，它允许我们应用各种变换到UIImage。目前，我们的API是这样的:</p>
+<pre><code class="language-swift">struct ImageTransformer {
+    func transform(_ image: UIImage,
+                   scale: CGVector,
+                   angle: Measurement&lt;UnitAngle&gt;,
+                   tintColor: UIColor?) -&gt; UIImage {
+        ...
+    }
+}
+</code></pre>
+<p>我们再次利用了上面的强类型，通过使用内置的度量类型来表示角度，而不是直接传递数值。</p>
+<p>如果我们想要同时缩放、旋转和着色图像，上面的方法非常好用——但是在很多地方，我们只需要执行一到两个特定的变换。 为了实现这一点，我们不需要总是将“虚拟数据”传递给我们不感兴趣的转换——让我们通过为除图像之外的所有参数添加默认值，使API可伸缩。</p>
+<p>我们还将利用这个机会为所有转换添加外部参数标签，使我们的调用站点能够很好地读取，不管提供了多少参数:</p>
+<pre><code class="language-swift">struct ImageTransformer {
+    func transform(
+        _ image: UIImage,
+        scaleBy scale: CGVector = .zero,
+        rotateBy angle: Measurement&lt;UnitAngle&gt; = .zero,
+        tintWith color: UIColor? = nil
+    ) -&gt; UIImage {
+        ...
+    }
+}
+
+// To enable us to simply use '.zero' to create a
+// Measurement instance above, we'll add this extension:
+extension Measurement where UnitType: Dimension {
+    static var zero: Measurement {
+        return Measurement(value: 0, unit: .baseUnit())
+    }
+}
+</code></pre>
+<p>有了上面的变化，我们现在在如何使用我们的API方面有了很大的灵活性，各种各样的排列给了我们清晰的调用地点-有足够的上下文来了解发生了什么:</p>
+<pre><code class="language-swift">// Rotate an image
+let angle = Measurement&lt;UnitAngle&gt;(value: 180, unit: .degrees)
+transformer.transform(image, rotateBy: angle)
+
+// Scale and tint an image
+let scale = CGVector(dx: 0.5, dy: 1.2)
+transformer.transform(image, scaleBy: scale, tintWith: .blue)
+
+// Apply all supported transforms to an image
+transformer.transform(image,
+    scaleBy: scale,
+    rotateBy: angle,
+    tintWith: .blue
+)
+</code></pre>
+<p>上述方法唯一的缺点是，由于现在可以忽略所有非图像参数，所以可以只调用一个图像而不调用转换API - 有效地再次返回相同的图像 - 但这是在这种情况下最有可能值得做的权衡。</p>
+<h2 id="convenience-wrappers">Convenience wrappers</h2>
+<p>另一种使API可伸缩的方法是将一些更高级的方法包装在方便的API中，这些API可以执行给定情况下所需的所有底层定制。</p>
+<p>举个例子，假设我们在我们的应用程序中呈现了大量的模态对话框，并且我们已经在UIViewController上编写了一个扩展，让它更容易设置一个DialogViewController实例来显示给定的对话框:</p>
+<pre><code class="language-swift">extension UIViewController {
+    func presentDialog(ofKind kind: DialogKind,
+                       title: String,
+                       text: String,
+                       actions: [DialogAction]) {
+        let dialog = DialogViewController()
+        ...
+        present(dialog, animated: true)
+    }
+}
+</code></pre>
+<p>上面的API本身已经是一个方便的API了，但是我们仍然可以使它在一些最常见的用例中更容易使用。</p>
+<p>假设我们正在使用上述API在许多不同的地方显示确认对话框，而这样做需要我们将DialogQuestion模型中的数据转换为对上述presentDialog方法的调用。 为了封装翻译逻辑，并提供另一种级别的方便，让我们创建一个包装方法，它专门用于显示确认对话框:</p>
+<pre><code class="language-swift">extension UIViewController {
+    func presentConfirmation(for question: DialogQuestion) {
+        presentDialog(
+            ofKind: .confirmation,
+            title: question.title,
+            text: question.explanation,
+            actions: [
+                question.actions.cancel,
+                question.actions.confirm
+            ]
+        )
+    }
+}
+</code></pre>
+<p>我们上面的api套件现在可以很好地扩展，从最简单的用例(呈现确认对话框)到更高级的用例(呈现任何类型的对话框)，再到完全可定制的(直接创建一个DialogViewController实例)。无论我们在任何给定的情况下需要什么样的控制级别，我们现在都有一个专门为此定制的API可供使用。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>真正伟大的API可能永远不会是一门精确的科学，因为不同的情况保证了不同的解决方案，每个开发人员都有自己喜欢的设计和使用各种API的方法。</p>
+<p><a href="https://www.swiftbysundell.com/articles/designing-swift-apis/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/string-literals-in-swift/">
+                  <h3 class="post-title">
+                    String literals in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

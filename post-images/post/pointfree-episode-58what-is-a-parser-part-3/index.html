@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 58:What Is a Parser?: Part 3 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Constructing more parsers
+
+
+
+
+What's the point?
+
+
+
+
+Revisiting coordinate parsing
+
+
+
+
+
+
+1. Constructing more parsers..." />
+    <meta name="keywords" content="parser,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 58:What Is a Parser?: Part 3</h2>
+            <div class="post-date">2022-01-15</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Constructingmoreparsers">Constructing more parsers</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Whatsthepoint">What's the point?</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Revisitingcoordinateparsing">Revisiting coordinate parsing</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 58:What Is a Parser?: Part 3 -->
+<h2 id="1-a-nameconstructingmoreparsersaconstructing-more-parsers">1. <a name='Constructingmoreparsers'></a>Constructing more parsers</h2>
+<p>现在我们有了解析器的“<strong>final form</strong>”：它是一个函数，它获取一个in-out子字符串并生成一个可选的匹配项。因此，让我们再创建几个解析器，这样我们就可以了解这是如何进行的。</p>
+<p>首先，让我们构建一个解析器，该解析器将尝试解析字符串开头的<strong>double</strong>：</p>
+<pre><code class="language-swift">let double = Parser&lt;Double&gt; { str in
+  let prefix = str.prefix(while: { $0.isNumber || $0 == &quot;.&quot; })
+  guard let match = Double(prefix) else { return nil }
+  str.removeFirst(prefix.count)
+  return match
+}
+</code></pre>
+<p>让我们试试吧！</p>
+<pre><code class="language-swift">double.run(&quot;42&quot;)
+// (match 42.0, rest &quot;&quot;)
+
+double.run(&quot;42.8743289247&quot;)
+// (match 42.8743289247, rest &quot;&quot;)
+
+double.run(&quot;42.8743289247 Hello World&quot;)
+// (match 42.8743289247, rest &quot; Hello World&quot;)
+</code></pre>
+<p>此<strong>double</strong>解析器并不完美，因为我们无法使用具有多个小数点的字符串：</p>
+<pre><code class="language-swift">double.run(&quot;42.4.1.4.6&quot;)
+// (nil, rest: &quot;42.4.1.4.6&quot;)
+</code></pre>
+<p>再多做一点工作，我们就能把它做好，但我们现在就把它留在这里。</p>
+<p>我们还可以制作一个解析器，解析字符串开头的常量字符串。这对于确保字符串中存在某些标记非常有用。这个解析器与其他两个解析器略有不同，因为我们实际上并不关心从字符串中获取解析的数据，而只关心解析是否成功。因此，解析器的类型为<strong>Parser<Void></strong>，这可能看起来有点奇怪：</p>
+<p>这个解析器的一个有趣之处是，它是一个生成解析器的函数。这允许我们为解析器的行为提供一些预先配置，在本例中，我们提供了希望在输入字符串开头匹配的字符串。</p>
+<pre><code class="language-swift">func literal(_ literal: String) -&gt; Parser&lt;Void&gt; {
+  return Parser&lt;Void&gt; { str in
+    guard str.hasPrefix(literal) else { return nil }
+    str.removeFirst(literal.count)
+    return ()
+  }
+}
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-swift">literal(&quot;cat&quot;).run(&quot;cat dog&quot;)
+// ((), rest &quot; dog&quot;
+
+literal(&quot;cat&quot;).run(&quot;dog cat&quot;)
+// (nil, rest &quot;dog cat&quot;)
+</code></pre>
+<p>在接下来的过程中，我们会遇到一些其他的“解析器生成器”，比如<strong>literal</strong>，函数返回解析器或将解析器作为输入，以更高阶的方式生成全新的解析器。</p>
+<p>我们也可以编写一些看似病态的解析器，但事实证明它们非常方便，我们稍后会看到。例如，我们可以制作一个始终成功且不消耗任何输入内容的解析器：</p>
+<pre><code class="language-swift">func always&lt;A&gt;(_ a: A) -&gt; Parser&lt;A&gt; {
+  return Parser { _ in a }
+}
+</code></pre>
+<p><strong>always</strong>解析器总是成功的。</p>
+<pre><code class="language-swift">always(&quot;cat&quot;).run(&quot;dog&quot;)
+// (match &quot;cat&quot;, rest &quot;dog&quot;)
+</code></pre>
+<p>这看起来似乎没有什么意义，但是解析器成功地使用了“<strong>cat</strong>”，我们还有“<strong>dog</strong>”要解析。</p>
+<p>我们也可以做相反的事情：解析器永远不会成功，但会立即失败，并且不会使用任何输入：</p>
+<pre><code class="language-swift">func never&lt;A&gt;() -&gt; Parser&lt;A&gt; {
+  return Parser { _ in nil }
+}
+</code></pre>
+<p>因此，为了使用它，我们可以给出一个显式泛型并运行解析器。</p>
+<pre><code class="language-swift">(never() as Parser&lt;Int&gt;).run(&quot;dog&quot;)
+// (nil, rest &quot;dog&quot;)
+</code></pre>
+<p>使用这样的泛型函数有点尴尬，但这是必要的，因为Swift不支持“泛型变量”：</p>
+<pre><code class="language-swift">// let never&lt;A&gt; = Parser&lt;A&gt; { ... }
+</code></pre>
+<p>我们可以通过静态计算属性来近似这一点，这是我们经常使用的：</p>
+<pre><code class="language-swift">extension Parser {
+  static var never: Parser {
+    return Parser { _ in nil }
+  }
+}
+</code></pre>
+<p>现在，使用<strong>never</strong>不会变得更好。</p>
+<pre><code class="language-swift">Parser&lt;Int&gt;.never.run(&quot;dog&quot;)
+// (nil, rest &quot;dog&quot;)
+</code></pre>
+<hr>
+<h2 id="2-a-namewhatsthepointawhats-the-point">2. <a name='Whatsthepoint'></a>What's the point?</h2>
+<p>我们现在已经构建了五个解析器：一个从字符串开头扫描一个int的int解析器，一个扫描一个double的double解析器，一个从另一个字符串开头扫描一个精确字符串的literal解析器，然后是一个always解析器和一个never解析器，它们总是或永远不会成功。</p>
+<p>好了，现在我们开始讨论一些奇怪的事情。我们定义的解析器总是成功的，但永远不会成功？在我们走得太远之前，让我们慢下来问问“这有什么意义？”。我们开始了这段插曲，演示了一些快速和基础的解析器。他们完成了任务，但我们声称他们不是很好的可扩展性或可组合性。因此，我们沿着这条道路构建了我们自己的解析器类型，尽管我们已经解析了一些东西，但我们仍然没有做任何太复杂的事情。那么，这是怎么回事？</p>
+<p>好吧，这一集的真正意义是让我们都熟悉解析器的问题空间，并正确定义解析器是什么。就我们而言，它只是一个接受字符串并返回某种类型的可选值的函数，它可能会使用输入字符串的某个子集。</p>
+<p>尽管到目前为止我们定义的类型似乎不能做太多的工作，但我们保证在该类型中潜伏着一个完整的可组合性世界，我们还未去探索它。但在我们讨论所有这些之前，我们认为这种类型已经显示出一些希望。</p>
+<hr>
+<h2 id="3-a-namerevisitingcoordinateparsingarevisiting-coordinate-parsing">3. <a name='Revisitingcoordinateparsing'></a>Revisiting coordinate parsing</h2>
+<p>让我们回到纬度/经度坐标解析函数，并将其更新为使用新的<strong>Parser</strong>类型。</p>
+<p>我们之前将这个解析器定义为一个普通的ole函数，在这里我们使用拆分、检查数组计数、字符相等性检查等进行了大量的手工工作。</p>
+<pre><code class="language-swift">func parseLatLong(_ string: String) -&gt; Coordinate? {
+  let parts = string.split(separator: &quot; &quot;)
+  guard parts.count == 4 else { return nil }
+  guard
+    let lat = Double(parts[0].dropLast()),
+    let long = Double(parts[2].dropLast())
+  else { return nil }
+  let latCardinal = parts[1].dropLast()
+  guard latCardinal == &quot;N&quot; || latCardinal == &quot;S&quot; else { return nil }
+  let longCardinal = parts[3]
+  guard longCardinal == &quot;E&quot; || longCardinal == &quot;W&quot; else { return nil }
+  let latSign = latCardinal == &quot;N&quot; ? 1.0 : -1
+  let longSign = longCardinal == &quot;E&quot; ? 1.0 : -1
+  return Coordinate(latitude: lat * latSign, longitude: long * longSign)
+}
+
+</code></pre>
+<p>让我们使用我们构建的解析器重做这个函数。</p>
+<p>我们需要做的第一件事是将字符串输入转换为<strong>Substring</strong>格式，因为这是解析器理解的：</p>
+<pre><code class="language-swift">func parseLatLong(_ coordString: String) -&gt; Coordinate? {
+  var str = coordString[...]
+}
+</code></pre>
+<p>然后我们可以首先从输入的前面解析出一个<strong>double</strong>：</p>
+<pre><code class="language-swift">func parseLatLong(_ coordString: String) -&gt; Coordinate? {
+  var str = coordString[...]
+  guard let lat = double.run(&amp;str)
+    else { return nil }
+}
+</code></pre>
+<p>然后我们可以从输入中解析度符号和空格：</p>
+<pre><code class="language-swift">func parseLatLong(_ coordString: String) -&gt; Coordinate? {
+  var str = coordString[...]
+  guard let lat = double.run(&amp;str)
+    else { return nil }
+
+  guard literal(&quot;° &quot;).run(&amp;str) != nil
+    else { return nil }
+</code></pre>
+<p>在进一步讨论之前，让我们组合我们的<strong>guard</strong>声明来清理一下。</p>
+<pre><code class="language-swift">func parseLatLong(_ coordString: String) -&gt; Coordinate? {
+  var str = coordString[...]
+  guard
+    let lat = double.run(&amp;str),
+    literal(&quot;° &quot;).run(&amp;str) != nil
+    else { return nil }
+</code></pre>
+<p>现在我们需要从字符串中解析一个“<strong>N”或“S</strong>”字符，并将其转换为+1或-1。以前我们是通过多个步骤来实现的，但现在我们可以构建专门的解析器来实现这一点：</p>
+<pre><code class="language-swift">let northSouth = Parser&lt;Double&gt; { str in
+  guard
+    let cardinal = str.first,
+    cardinal == &quot;N&quot; || cardinal == &quot;S&quot;
+    else { return nil }
+  str.removeFirst(1)
+  return cardinal == &quot;N&quot; ? 1 : -1
+}
+</code></pre>
+<p>我们可以简单地使用这个自包含、可重用的解析单元：</p>
+<pre><code class="language-swift">func parseLatLong(_ coordString: String) -&gt; Coordinate? {
+  var str = coordString[...]
+  guard
+    let lat = double.run(&amp;str),
+    literal(&quot;° &quot;).run(&amp;str) != nil,
+    let latSign = northSouth.run(&amp;str)
+  else { return nil }
+}
+</code></pre>
+<p>然后我们需要解析逗号和空格：</p>
+<pre><code class="language-swift">func parseLatLong(_ coordString: String) -&gt; Coordinate? {
+  var str = coordString[...]
+  guard
+    let lat = double.run(&amp;str),
+    literal(&quot;° &quot;).run(&amp;str) != nil,
+    let latSign = northSouth.run(&amp;str),
+    literal(&quot;, &quot;).run(&amp;str) != nil
+  else { return nil }
+}
+</code></pre>
+<p>然后我们通过解析一个<strong>double</strong>，然后是degree符号，然后是基数方向来重新进行这个过程。</p>
+<pre><code class="language-swift">func parseLatLong(_ coordString: String) -&gt; Coordinate? {
+  var str = coordString[...]
+  guard
+    let lat = double.run(&amp;str),
+    literal(&quot;° &quot;).run(&amp;str) != nil,
+    let latSign = northSouth.run(&amp;str),
+    literal(&quot;, &quot;).run(&amp;str) != nil,
+    let long = double.run(&amp;str),
+    literal(&quot;° &quot;).run(&amp;str) != nil,
+    let longSign = eastWest.run(&amp;str)
+    else { return nil }
+</code></pre>
+<p>但我们需要定义<strong>eastWest</strong>：</p>
+<pre><code class="language-swift">let eastWest = Parser&lt;Double&gt; { str in
+  guard
+    let cardinal = str.first,
+    cardinal == &quot;E&quot; || cardinal == &quot;W&quot;
+    else { return nil }
+  str.removeFirst(1)
+  return cardinal == &quot;E&quot; ? 1 : -1
+}
+</code></pre>
+<p>将所有这些结合起来，我们有：</p>
+<pre><code class="language-swift">func parseLatLong(_ coordString: String) -&gt; Coordinate? {
+  var str = coordString[...]
+  guard
+    let lat = double.run(&amp;str),
+    literal(&quot;° &quot;).run(&amp;str) != nil,
+    let latSign = northSouth.run(&amp;str),
+    literal(&quot;, &quot;).run(&amp;str) != nil,
+    let long = double.run(&amp;str),
+    literal(&quot;° &quot;).run(&amp;str) != nil,
+    let longSign = eastWest.run(&amp;str)
+    else { return nil }
+
+  return Coordinate(latitude: lat * latSign, longitude: long * longSign)
+}
+</code></pre>
+<p>现在，我们之前的解析现在失败了！</p>
+<pre><code class="language-swift">print(parseLatLong(&quot;40.6782% N- 73.9442% W&quot;))
+// nil
+</code></pre>
+<p>如果我们把东西换成正确的符号，它就会通过。</p>
+<pre><code class="language-swift">print(parseLatLong(&quot;40.6782° N, 73.9442° W&quot;))
+// Coordinate(latitude: 40.6782, longitude: -73.9442)
+</code></pre>
+<p>我认为这看起来已经比我们以前做的手工解析好了很多。首先，所有投入的增量消耗都是以线性、逐行的方式发生的，并且讲述了一个非常直接的故事。首先我们解析一个double，然后是度符号，然后是基数方向，然后是逗号，然后是另一个double，然后是度符号，然后是基数方向。一旦所有的数据都从字符串中解析出来，我们就把它们放在一起创建实际的<strong>Coordinate</strong>值。</p>
+<p>这种风格的另一个优点是我们第一次看到了代码重用。我们构建的南北和东西解析器可以在任何地方使用，而不仅仅是解析这个特定的坐标格式。我们可以根据需要剥离任意多个小助手解析器。例如，现在我们重复两次**literal(&quot;° &quot;)**解析器，因此我们可能应该将其提取出来：</p>
+<p><strong>Scanner</strong>式的解析有很多好处，但由于其API尚未针对Swift进行更新，因此使用起来相当麻烦。我们将为您省去从头开始编写代码的细节，但它看起来是这样的：</p>
+<pre><code class="language-swift">func parseLatLongWithScanner(_ string: String) -&gt; Coordinate? {
+  let scanner = Scanner(string: string)
+
+  var lat: Double = 0
+  guard scanner.scanDouble(&amp;lat) else { return nil }
+
+  guard scanner.scanString(&quot;° &quot;, into: nil) else { return nil }
+
+  var northSouth: NSString? = &quot;&quot;
+  guard scanner.scanCharacters(from: [&quot;N&quot;, &quot;S&quot;], into: &amp;northSouth) else { return nil }
+  let latSign = northSouth == &quot;N&quot; ? 1.0 : -1
+
+  guard scanner.scanString(&quot;, &quot;, into: nil) else { return nil }
+
+  var long: Double = 0
+  guard scanner.scanDouble(&amp;long) else { return nil }
+
+  guard scanner.scanString(&quot;° &quot;, into: nil) else { return nil }
+
+  var eastWest: NSString? = &quot;&quot;
+  guard scanner.scanCharacters(from: [&quot;E&quot;, &quot;W&quot;], into: &amp;eastWest) else { return nil }
+  let longSign = eastWest == &quot;E&quot; ? 1.0 : -1
+
+  return Coordinate(latitude: lat * latSign, longitude: long * longSign)
+}
+</code></pre>
+<p>每次解析某些内容时，我们需要两行代码：一行用于设置可变变量，另一行用于执行扫描，这也需要一个<strong>guard</strong>来检查扫描是否成功。</p>
+<p>因此，至少我们的解析器类型为解析提供了更符合人体工程学的界面，这更有利于共享解析器和支持代码重用。仅此一点就足以成为使用这种类型的理由，但这只是开始。现在我们已经为解析器的结构奠定了基础，我们可以开始定义一组有用的、可重用的解析器，并构建更复杂的解析器。我们将能够使用我们多次讨论过的所有通用操作符，比如<strong>map、zip和flatMap</strong>来实现这一点，事实证明解析器类型就是这样的！正是这些操作符释放了整个世界的可组合性，使我们能够将许多小解析器组合起来，构建一个巨大、复杂的解析器。这就是我们下次要讨论的！</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/IQVuijH5g/" class="tag">
+                    parser
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-57what-is-a-parser-part-2/">
+                  <h3 class="post-title">
+                    PointFree Episode 57:What Is a Parser?: Part 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

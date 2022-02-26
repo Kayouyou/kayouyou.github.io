@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 94: Adaptive State Management: Performance | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Fixing a couple memory leaks
+
+
+
+
+View.init/body: tracking
+
+
+
+
+View.init/body: analysis
+
+
+
+
+View.ini..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 94: Adaptive State Management: Performance</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Fixingacouplememoryleaks">Fixing a couple memory leaks</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#View.initbody:tracking">View.init/body: tracking</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#View.initbody:analysis">View.init/body: analysis</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#View.initbody:stresstest">View.init/body: stress test</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Conclution">Conclution</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 94: Adaptive State Management: Performance -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>现在，我们已经进入了润色可组合架构的最后阶段，使其具有生产价值。我们已经用了今年的前几个月来完成了架构的一些粗糙的边缘。比如通过使用<strong>case paths</strong>消除代码生成，通过将<strong>environment</strong>技术直接融入到架构中，使副作用和测试故事更加可靠。</p>
+<p>今天我们将开始研究如何改进可组合架构的性能，因为我们正在做的一件非常简单的事情，它很容易解决。但是，在解决性能问题的同时，我们实际上会偶然发现一种使架构适应多种情况的绝妙方法。例如，你可能正在制作一款面向iOS和macOS的应用，或者你甚至正在制作一款面向所有4个平台(iOS、macOS、tvOS和watchOS)的应用。如果您可以一次性编写应用程序的业务逻辑，并让它很容易地适应这些平台，这难道不是一件很棒的事情吗?这就是我们要做的。</p>
+<h2 id="2-a-namefixingacouplememoryleaksafixing-a-couple-memory-leaks">2. <a name='Fixingacouplememoryleaks'></a>Fixing a couple memory leaks</h2>
+<p>在开始改进体系结构的性能改进之前，让我们先解决一个在我们的体系结构中潜伏了相当一段时间的小问题。我们有两个可以很容易地修复的内存泄漏。在应用程序中发现内存泄漏需要很多技巧，就像所有技巧一样，你练习得越多，就会越熟练，但幸运的是，Xcode提供了一个出色的专门针对内存泄漏的调试工具。它被称为<strong>Memory Graph Debugger</strong>，它可以帮助指出代码中的任何循环引用。</p>
+<p>要看到这个问题，我们所要做的就是启动应用程序，增加一次计数，然后打开<strong>Memory Graph Debugger</strong>，我们会看到一些紫色的感叹号，表明我们可能在某个地方有一个循环引用</p>
+<p>我们甚至可以点击“!””图标，以仅显示内存泄漏行。</p>
+<p>在顶层，我们可以看到哪些框架泄漏了对象，因此，如果展开一个框架，我们可以看到框架中泄漏了哪些类型的对象。</p>
+<p>然后进一步单击泄漏的对象，将显示一个图表，演示循环引用是如何发生的:</p>
+<p>这里我们看到创建了一个Sink值，并且通过它的<strong>receiveCompletion</strong>属性引用了一个闭包，该闭包又捕获了一个闭包，该闭包又捕获了一个<strong>AnyCancellable</strong>。在这之后，我们有了某种到<strong>malloc&lt;48&gt;<strong>的链接，我不知道这是什么意思，但最终看起来它保存了开始整个循环的</strong>Sink</strong>对象。</p>
+<p>这很清楚地向我们展示了，我们有一串物体彼此相连最终回到它开始的地方。现在我们的工作是获取这些循环引用的小证据，并找出在我们的代码中可能发生这种情况的地方。</p>
+<pre><code class="language-swift">var effectCancellable: AnyCancellable?
+var didComplete = false
+effectCancellable = effect.sink(
+  receiveCompletion: { [weak self] _ in
+    didComplete = true
+    guard let effectCancellable = effectCancellable else { return }
+    self?.effectCancellables.remove(effectCancellable)
+},
+  receiveValue: self.send
+)
+if !didComplete, let effectCancellable = effectCancellable {
+  self.effectCancellables.insert(effectCancellable)
+}
+</code></pre>
+<ul>
+<li>最有力的证据是Sink对象，因为我们调用来运行一个effect的方法称为<strong>Sink</strong>。表面上，这个方法正在创建某种我们不公开看到的<strong>Sink</strong>对象。</li>
+</ul>
+<pre><code class="language-swift">effectCancellable = effect.sink
+</code></pre>
+<ul>
+<li>而且，sink方法确实有一个名为<strong>receiveCompletion</strong>的参数，而且它确实接受一个闭包。</li>
+</ul>
+<pre><code class="language-swift">receiveCompletion: { [weak self] _ in
+</code></pre>
+<ul>
+<li>更有罪证的是，我们在这个闭包中有一个<em>cancelable</em>，<strong>effectCancellable</strong>。因此，这似乎是导致内存泄漏的真正原因。</li>
+</ul>
+<pre><code class="language-swift">guard let effectCancellable = effectCancellable else { return }
+</code></pre>
+<p>事实上，这里有一个相当明显的循环引用。sink方法捕获了<strong>effectCancellable</strong>，但是我们也使用了sink的输出来定义<strong>effectCancellable</strong>。因此，我们似乎需要通过捕获<strong>effectCancellable</strong>来打破这个循环:</p>
+<pre><code class="language-swift">effectCancellable = effect.sink(
+  receiveCompletion: { [weak self, weak effectCancellable] _ in
+    didComplete = true
+    guard let effectCancellable = effectCancellable else { return }
+    self?.effectCancellables.remove(effectCancellable)
+},
+</code></pre>
+<p>这里貌似有点问题。</p>
+<p>添加<strong>effectCancellable</strong>到<strong>capture block</strong>会立即捕获它，所以它将始终为<strong>nil</strong>，永远不会从<strong>effectCancellables</strong>中删除。相反，我们应该更进一步地为<strong>cancellable</strong>创建一个标识符，并使用字典存储[UUID: AnyCancellable]:</p>
+<pre><code class="language-swift">public final class Store&lt;Value, Action&gt;: ObservableObject {
+  …
+  private var effectCancellables: [UUID: AnyCancellable] = [:]
+  …
+  func send(_ action: Action) {
+    let effect = self.reducer(&amp;self.state, action)
+    var didComplete = false
+    let uuid = UUID()
+    let effectCancellable = effect.sink(
+      receiveCompletion: { [weak self] _ in
+        didComplete = true
+        self?.effectCancellables[uuid] = nil
+      },
+      receiveValue: { [weak self] in self?.send($0) }
+    )
+    if !didComplete {
+      self.effectCancellables[uuid] = effectCancellable
+    }
+  }
+  …
+}
+</code></pre>
+<p>现在，当我们运行应用程序，点击周围，并检查内存调试器，我们将不会看到紫色的惊叹号。</p>
+<p>因此，我们刚刚看到，我们需要小心传递给<strong>sink</strong>方法的闭包，因为它们可能导致循环引用。sink方法接受另一个闭包，称为<strong>receiveValue</strong>，每次<strong>effect</strong>产生一个值时都会调用该闭包。 我们想要将这些值发送回<strong>store</strong>，所以我们:</p>
+<pre><code class="language-swift">receiveValue: self.send
+</code></pre>
+<p>从技术上讲，这现在是一个循环引用，因为<strong>sink</strong>持有<strong>self</strong>，但<strong>self</strong>也持有<strong>sink</strong>返回的<strong>cancellable</strong>。 运行这些<strong>effects</strong>的<strong>store</strong>是派生所有其他<strong>stores</strong>的根<strong>store</strong>。请记住，我们有一个视图方法，它允许我们将一个现有的<strong>store</strong>集中到一个只暴露状态和操作的子集的<strong>store</strong>中，我们使用这些较小的<strong>store</strong>传递给视图。所有这些派生的<strong>stores</strong>实际上只调用底层的根<strong>store</strong>，而根<strong>store</strong>，实际上是驱动一切的<strong>store</strong>，只在应用程序的最高层创建一次，即<strong>SceneDelegate</strong>:</p>
+<pre><code class="language-swift">window.rootViewController = UIHostingController(
+  rootView: ContentView(
+    store: Store(
+      initialValue: AppState(),
+      reducer: with(
+        appReducer,
+        compose(
+          logging,
+          activityFeed
+        )
+      )
+    )
+  )
+)
+</code></pre>
+<p>因此，如果我们试图多次从头重新创建根<strong>store</strong>，那么这个潜在的内存泄漏只会出现它丑陋的头，而我们在这个应用程序中没有这样做。然而，可能有一些人想在他们的应用程序中这样做，所以我们应该修复它。幸运的是，修复很简单:</p>
+<pre><code class="language-swift">receiveValue: { [weak self] in self?.send($0) }
+</code></pre>
+<p>现在，我们已经修复了在可组合架构中发现的两个内存泄漏。不幸的是，架构中混乱的运行时部分(即这个Store类中的所有内容)总是最难调试和理解的部分。但幸运的是，它的所有好的功能部分，如<strong>reducers</strong>，可以保持简单和易于理解。</p>
+<hr>
+<h2 id="3-a-nameviewinitbodytrackingaviewinitbody-tracking">3. <a name='View.initbody:tracking'></a>View.init/body: tracking</h2>
+<p>现在回到主要吸引人的地方: 性能。</p>
+<p>现在，我们的架构中存在一个潜在的性能问题。我们说潜在是因为很有可能你永远不会看到这个问题，但如果应用程序足够复杂，可能会出现卡顿和延迟。</p>
+<p>问题的根源与store有关:</p>
+<pre><code class="language-swift">public final class Store&lt;Value, Action&gt;: ObservableObject {
+  @Published public private(set) var value: Value
+
+  …
+}
+</code></pre>
+<p>注意，它是一个可观察对象，并且它有一个@<strong>Published</strong>字段，叫做<strong>value</strong>。这意味着每次值发生突变时，都会通知相关方去更改。从技术上讲，这种通知发生在突变发生之前，但这不是重点。</p>
+<p>SwiftUI视图是对这些突变“相关方”的一个例子。事实上，每个持有<strong>store</strong>的视图都使用@<strong>ObservedObject</strong>属性包装器，以便将<strong>store</strong>的变化链接到视图的重绘，例如我们的根ContentView:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  @ObservedObject var store: Store&lt;AppState, AppAction&gt;
+
+  …
+}
+</code></pre>
+<p>这意味着每当存储的底层值发生改变时，<strong>ContentView</strong>就会收到改变的通知，并可能会重新呈现其内容。</p>
+<p>为了看到这一点，让我们为每次<strong>ContentView</strong>被创建和每次body字段被访问添加一些打印语句:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  @ObservedObject var store: Store&lt;AppState, AppAction&gt;
+
+  init(store: Store&lt;AppState, AppAction&gt;) {
+    self.store = store
+    print(&quot;ContentView.init&quot;)
+  }
+
+  var body: some View {
+    print(&quot;ContentView.body&quot;)
+    return …
+  }
+}
+</code></pre>
+<p>当应用程序第一次启动时，我们会得到一些合理的日志:</p>
+<pre><code class="language-swift">ContentView.init
+ContentView.body
+</code></pre>
+<p>然而，如果我们深入到计数器演示并增加计数，我们会得到一个新的日志:</p>
+<pre><code class="language-swift">ContentView.body
+</code></pre>
+<p>为什么ContentView的body属性需要重新计算? <strong>ContentView</strong>甚至没有使用任何来自<strong>store</strong>的数据来渲染它的视图，它只是一些导航链接的静态列表。而且，我们在这个屏幕上做的任何事情似乎都触发了<strong>body</strong>属性，比如如果我们再次增加，询问它的质数，将质数保存为最喜欢的数，然后询问第二个质数。每一个动作都会触发body属性:</p>
+<pre><code class="language-swift">ContentView.body
+ContentView.body
+ContentView.body
+ContentView.body
+</code></pre>
+<p>虽然这看起来很奇怪，但它发生的原因很明显。我们的<strong>ContentView</strong>持有整个应用程序状态的store，<strong>Store &lt;AppState, AppAction&gt;</strong>，因此对应用程序任何部分的任何更改都将导致该视图重新计算自己。现在，我们不知道SwiftUI在重新计算主体的基础上到底在做什么。我们知道苹果说它使用了一些先进的差异技术，所以它只渲染屏幕上需要的东西，而SwiftUI可能非常聪明，因为我们的UI没有任何变化，所以它可能根本就不渲染任何东西。</p>
+<p>但是除了渲染的问题之外，您可能还会考虑调用body属性。如果在这个属性内发生的计算是超级密集的呢?</p>
+<p>好吧，苹果也在这方面给了我们指导，并说我们应该保持身体属性的实现尽可能简单和精益。它们应该只是将视图的状态简单地转换成一些视图层次结构。这些值的构造，比如<strong>NavigationView, List和NavigationLink</strong>都是超轻量级的，我们不应该在运行中费力地创建一堆。</p>
+<p>因此，我们没有理由认为这应该是性能问题。苹果告诉我们，他们做了一些强大的改变，以防止过度渲染我们的UI，并且这些视图的构造是超级轻量级的，所以不应该是太多的负担。</p>
+<p>但如果我们多放一些打印语句，事情就变得有点奇怪了。让我们在应用程序中每个视图的初始化和主体中添加一个打印:</p>
+<pre><code class="language-swift">public struct CounterView: View {
+  @ObservedObject var store: Store&lt;CounterViewState, CounterViewAction&gt;
+
+  public init(store: Store&lt;CounterViewState, CounterViewAction&gt;) {
+    self.store = store
+    print(&quot;CounterView.init&quot;)
+  }
+
+  public var body: some View {
+    print(&quot;CounterView.body&quot;)
+    return …
+  }
+}
+
+public struct IsPrimeModalView: View {
+  @ObservedObject var store: Store&lt;PrimeModalState, PrimeModalAction&gt;
+
+  public init(store: Store&lt;PrimeModalState, PrimeModalAction&gt;) {
+    self.store = store
+    print(&quot;IsPrimeModalView.init&quot;)
+  }
+
+  public var body: some View {
+    print(&quot;IsPrimeModalView.body&quot;)
+    return …
+  }
+}
+
+public struct FavoritePrimesView: View {
+  @ObservedObject var store: Store&lt;[Int], FavoritePrimesAction&gt;
+
+  public init(store: Store&lt;[Int], FavoritePrimesAction&gt;) {
+    self.store = store
+    print(&quot;FavoritePrimesView.init&quot;)
+  }
+
+  public var body: some View {
+    print(&quot;FavoritePrimesView.body&quot;)
+    return …
+  }
+}
+</code></pre>
+<p>让我们运行应用程序。首先我们会看到以下日志:</p>
+<pre><code class="language-swift">ContentView.init
+ContentView.body
+CounterView.init
+FavoritePrimesView.init
+</code></pre>
+<p>注意，创建了CounterView和FavoritePrimesView，但没有调用它们的<strong>body</strong>属性。这是很重要的。我们不应该害怕创建这些小的视图结构，因为这样做是非常轻量级的，它们的<strong>body</strong>只在需要时被调用。</p>
+<p>如果我们深入到CounterView中，我们将得到一个新的日志:</p>
+<pre><code class="language-swift">CounterView.body
+</code></pre>
+<p>只有在需要渲染计数器视图时，我们才访问它的<strong>body</strong>字段。</p>
+<p>如果我们在这个视图中增加计数，我们将在日志中看到以下内容:</p>
+<pre><code class="language-swift">CounterView.body
+ContentView.body
+CounterView.init
+FavoritePrimesView.init
+CounterView.body
+</code></pre>
+<p>这已经重新计算了<strong>CounterView</strong>，但也重新计算了<strong>ContentView</strong>，这随后创建了一个新的<strong>CounterView</strong>和<strong>FavoritePrimesView</strong>，然后重新计算了<strong>CounterView</strong>。这很奇怪，但我们希望如此，因为根内容视图持有所有应用程序状态的观察存储，当状态中发生任何变化时，它将触发这些事情。</p>
+<p>让我们更进一步，让计数增加到2，然后问它是否是质数。这将打印更多的日志，但现在让我们清除这些日志，然后将2保存为我们最喜欢的质数。所有这些日志只出现在一个操作上:</p>
+<pre><code class="language-swift">IsPrimeModalView.body
+ContentView.body
+CounterView.init
+FavoritePrimesView.init
+CounterView.body
+IsPrimeModalView.init
+IsPrimeModalView.body
+CounterView.body
+IsPrimeModalView.init
+IsPrimeModalView.body
+</code></pre>
+<hr>
+<h2 id="4-a-nameviewinitbodyanalysisaviewinitbody-analysis">4. <a name='View.initbody:analysis'></a>View.init/body: analysis</h2>
+<p>这里发生了什么? 整个视图层次结构被重新创建，从根视图一直到模态视图，有时视图甚至被创建多次。</p>
+<p>但是为什么会这样呢?  我们只是在收藏质数的数组中添加一个数字，而<strong>CounterView和ContentView</strong>甚至不关心这个数组。他们根本不用它来显示他们的UI。更糟糕的是，这个视图层次结构越深，这个问题就会变得越严重。</p>
+<p>发生这种情况的原因很简单。让我们来看看CounterView:</p>
+<pre><code class="language-swift">public struct CounterView: View {
+  @ObservedObject var store: Store&lt;CounterViewState, CounterViewAction&gt;
+
+  …
+}
+</code></pre>
+<p>即使这说它只需要一个<strong>CounterViewState</strong>的store，它将通知视图的任何部分的变化，应用程序状态，而不仅仅是<strong>CounterViewState</strong>。这是因为交给这个视图的<strong>store</strong>是从使用所有AppState的根全局<strong>store</strong>派生的。</p>
+<p>正因为如此，当对应用程序状态做出任何更改时，它将被通知，而不仅仅是<strong>counter</strong>视图状态。</p>
+<p>如果我们查看视图的实现，就可以直接看到这一点，视图是我们将全局域的<strong>store</strong>转换为局部域的<strong>store</strong>的转换方法。特别是这几行:</p>
+<pre><code class="language-swift">localStore.viewCancellable = self.$value.sink { [weak localStore] newValue in
+  localStore?.value = toLocalValue(newValue)
+}
+</code></pre>
+<p>这就是说，当全局<strong>store</strong>的值发生变化时，我们将立即将该变化重现到本地<strong>store</strong>。无论局部值如何变化，都会发生这种情况。全局值的某些完全不相关的部分可能发生了改变，但我们仍然会通知子值。</p>
+<p>我们可能想做的一件事是，以某种方式去重复我们发送到本地<strong>store</strong>的值流。例如，如果收藏的质数数组没有改变，那么就没有理由重新计算IsPrimeModalView视图。多亏了Combine的强大功能，我们可以很容易地通过映射值发布者来计算本地值，然后删除重复值:</p>
+<pre><code class="language-swift">localStore.viewCancellable = self.$value
+  .map(toLocalValue)
+  .removeDuplicates()
+  .sink { [weak localStore] newValue in localStore?.value = newValue }
+</code></pre>
+<p>当然，我们需要<strong>LocalValue</strong>泛型为<strong>Equatable</strong>，这样才能工作，但这很容易适应。然而，这只是解决了问题的一半。这是为了确保与全局状态无关的突变不会触发本地<strong>store</strong>中的值更改。但我们也有一个问题，视图持有的<strong>store</strong>所代表的状态比它们当前显示的要多。例如，当最喜欢的素数数组发生突变时，<strong>CounterView</strong>重新计算了它的主体，尽管它并不显示任何最喜欢的素数。更糟糕的是，当应用程序状态发生任何变化时，根ContentView都会被重新计算，即使它不显示任何动态内容。在这里添加<strong>removeDuplicates</strong>不会有任何帮助。</p>
+<hr>
+<h2 id="5-a-nameviewinitbodystresstestaviewinitbody-stress-test">5. <a name='View.initbody:stresstest'></a>View.init/body: stress test</h2>
+<p>所以，这不是我们想要的解决方案，我们现在看到了这个问题是多么微妙。可组合架构的一个主要好处是，我们有一个统一的、组合的<strong>reducer and store</strong> ，这样我们就有了一个单一的、一致的方式来改变我们的应用程序状态，这样这些变化就可以在整个应用程序中共享。然而，这个选择也给了我们一些奇怪的SwiftUI行为，导致超过我们实际需要的方式重新计算我们的视图。</p>
+<p>现在，再次，我们不知道SwiftUI在做什么，所以我们不知道这是一个多大的问题。苹果告诉我们，他们在差异方面做得很好，创建视图是轻量级的，所以我们不应该费力地创建它们。然而，如果我们只是天真地到处重新计算视图，那么一个足够大的应用程序可能会遇到性能问题。</p>
+<p>为了了解这一点，让我们对其中一个视图进行压力测试，看看是否可以重现任何性能问题。让我们向根ContentView添加大量的行。我们可以使用ForEach视图:</p>
+<pre><code class="language-swift">ForEach(Array(1...500_000), id: \.self) { value in
+  Text(&quot;\(value)&quot;)
+}
+</code></pre>
+<p>这将向我们的列表视图添加500,000行整数。这比我们在现实生活中看到的应用要多得多，但这是一个压力测试。</p>
+<p>如果我们运行应用程序，并深入到计数器演示，我们将看到我们所采取的任何行动都延迟了大约一秒。点击一个按钮后，UI就卡住了，表面上是因为SwiftUI正在做大量的工作来找出如何渲染根ContentView。因此，我们对store的设计选择肯定有可能在SwiftUI中造成一些性能问题，但在现实应用中这是一个多大的问题还不清楚。</p>
+<hr>
+<h2 id="6-a-nameconclutionaconclution">6. <a name='Conclution'></a>Conclution</h2>
+<p>因此，我们现在已经看到，我们设置可组合架构的方式存在一个潜在的问题。再说一次，我们说“潜力”是因为它实际上可能不会成为一个问题，直到你有一个大规模的应用程序。但是，与其坐等那一天的到来，事实证明，我们可以做一些相当简单的事情来解决这个问题。甚至更好的是，通过解决这个问题，我们实际上会发现一种奇妙的方法，使我们的<strong>reducers</strong>中的所有业务逻辑更能适应我们在现实世界应用程序中面临的平台和约束。</p>
+<p>问题的关键在于，我们在视图中有一个单一的<strong>store</strong>，它不仅保存显示其UI所需的所有状态，而且还保存其子视图的所有状态，这些状态可能要到以后才会显示。似乎我们的视图需要持有一个不同的对象，这个对象只能访问视图所关心的状态，仅此而已。这样我们就更有可能只得到我们真正关心的状态变化的通知。如果我们成功做到这一点，那么Store可能根本就不需要成为可观察对象，只有这个次要的东西需要成为可观察对象。</p>
+<p>在弄清楚如何做到这一点之前，让我们做一件我们知道需要做的事情:让我们从<strong>Store</strong>中删除<strong>ObservableObject</strong>的一致性，这样我们就可以停止通知视图的状态变化了</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-93-modular-dependency-injection-the-point/">
+                  <h3 class="post-title">
+                    PointFree Episode 93: Modular Dependency Injection: The Point
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

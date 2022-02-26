@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A deep dive into Grand Central Dispatch in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Grand Central Dispatch(简称GCD)是Swift开发人员多次使用的基本技术之一。它主要以能够在不同的并发队列上分派工作而闻名，并且经常被用来编写这样的代码:
+DispatchQueue.main.async {
+   ..." />
+    <meta name="keywords" content="concurrency,GCD" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A deep dive into Grand Central Dispatch in Swift</h2>
+            <div class="post-date">2017-06-04</div>
+            
+            <div class="post-content" v-pre>
+              <p>Grand Central Dispatch(简称GCD)是Swift开发人员多次使用的基本技术之一。它主要以能够在不同的并发队列上分派工作而闻名，并且经常被用来编写这样的代码:</p>
+<pre><code class="language-swift">DispatchQueue.main.async {
+    // Run async code on the main queue
+}
+</code></pre>
+<p>但如果我们再深入一点，就会发现GCD还有一套真正强大的api和特性，但不是每个人都知道。本周，让我们超越async{}，看看GCD在哪些情况下真的很有用，以及它如何为许多其他更常见的基础api提供更简单(和更“快速”)的选项。</p>
+<h2 id="delaying-a-cancellable-task-with-dispatchworkitem">Delaying a cancellable task with DispatchWorkItem</h2>
+<p>关于GCD的一个常见误解是“一旦你安排了一个任务，它就不能被取消，你需要使用Operation这个操作API”。这在过去是正确的，随着iOS 8和macOS 10.10引入了DispatchWorkItem，它在一个非常容易使用的API中提供了精确的功能。</p>
+<p>假设我们的UI有一个搜索栏，当用户输入一个字符时，我们通过调用后端来执行搜索。因为用户可以快速输入，所以我们不想马上启动网络请求(这可能会浪费大量数据和服务器容量)，相反，我们将“debounce”这些事件，只在用户在0.25秒内没有输入时执行请求。</p>
+<p>这就是DispatchWorkItem的作用所在。 通过将我们的请求代码封装在一个工作项中，我们可以很容易地在它被一个新的替换时取消它，像这样:</p>
+<pre><code class="language-swift">class SearchViewController: UIViewController, UISearchBarDelegate {
+    // We keep track of the pending work item as a property
+    private var pendingRequestWorkItem: DispatchWorkItem?
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        // Cancel the currently pending item
+        pendingRequestWorkItem?.cancel()
+
+        // Wrap our request in a work item
+        let requestWorkItem = DispatchWorkItem { [weak self] in
+            self?.resultsLoader.loadResults(forQuery: searchText)
+        }
+
+        // Save the new work item and execute it after 250 ms
+        pendingRequestWorkItem = requestWorkItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(250),
+                                      execute: requestWorkItem)
+    }
+}
+</code></pre>
+<p>正如我们上面所看到的，在Swift中使用DispatchWorkItem实际上比使用计时器或Operation要简单和漂亮得多，这要归功于尾随闭包语法和将GCD导入Swift的良好性能。 我们不需要@objc标记的方法或#选择器——这些都可以用闭包来完成。</p>
+<h2 id="grouping-and-chaining-tasks-with-dispatchgroup">Grouping and chaining tasks with DispatchGroup</h2>
+<p>有时我们需要执行一组操作，然后才能继续我们的逻辑。例如，假设我们需要在创建模型之前从一组数据源加载数据。不必自己跟踪所有的数据源，我们可以很容易地与DispatchGroup同步工作。</p>
+<p>使用分派组还有一个很大的优势，那就是我们的任务可以在单独的队列中并发地运行。这使我们能够从简单的开始，然后在需要时轻松地添加并发性，而不必重写任何任务。 我们所要做的就是平衡调用调度组上的enter()和leave()，让它同步我们的任务。</p>
+<p>让我们看一个例子，在这个例子中，我们从本地存储、iCloud驱动器和后端系统加载笔记，然后将所有的结果合并成一个NoteCollection:</p>
+<pre><code class="language-swift">// First, we create a group to synchronize our tasks
+let group = DispatchGroup()
+
+// NoteCollection is a thread-safe collection class for storing notes
+let collection = NoteCollection()
+
+// The 'enter' method increments the group's task count…
+group.enter()
+localDataSource.load { notes in
+    collection.add(notes)
+    // …while the 'leave' methods decrements it
+    group.leave()
+}
+
+group.enter()
+iCloudDataSource.load { notes in
+    collection.add(notes)
+    group.leave()
+}
+
+group.enter()
+backendDataSource.load { notes in
+    collection.add(notes)
+    group.leave()
+}
+
+// This closure will be called when the group's task count reaches 0
+group.notify(queue: .main) { [weak self] in
+    self?.render(collection)
+}
+</code></pre>
+<p>上面的代码可以工作，但是有很多重复的地方。让我们把它重构成一个数组扩展，使用数据源协议作为其元素类型的同类型约束:</p>
+<pre><code class="language-swift">extension Array where Element == DataSource {
+    func load(completionHandler: @escaping (NoteCollection) -&gt; Void) {
+        let group = DispatchGroup()
+        let collection = NoteCollection()
+
+        // De-duplicate the synchronization code by using a loop
+        for dataSource in self {
+            group.enter()
+            dataSource.load { notes in
+                collection.add(notes)
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            completionHandler(collection)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的扩展，我们现在可以将之前的代码简化为:</p>
+<pre><code class="language-swift">let dataSources: [DataSource] = [
+    localDataSource,
+    iCloudDataSource,
+    backendDataSource
+]
+
+dataSources.load { [weak self] collection in
+    self?.render(collection)
+}
+</code></pre>
+<p>造工十分札实精致;</p>
+<h2 id="waiting-for-asynchronous-tasks-with-dispatchsemaphore">Waiting for asynchronous tasks with DispatchSemaphore</h2>
+<p>DispatchGroup提供了一种简单的方法来同步一组异步操作，同时仍然保持异步状态，而DispatchSemaphore则提供了一种同步等待一组异步任务的方法。这在命令行工具或脚本中非常有用，因为我们没有应用程序run loop，而只是在全局上下文中同步执行，直到完成。</p>
+<p>像DispatchGroup一样，semaphore API非常简单，我们只通过调用wait()或signal()来增加或减少一个内部计数器。在signal()之前调用wait()将阻塞当前队列，直到接收到信号。</p>
+<p>让我们在之前的扩展数组上创建另一个重载，它以同步方式返回一个NoteCollection，或者抛出一个错误。我们将重用之前基于dispatchgroup的代码，但只是使用一个semaphore来协调该任务。</p>
+<pre><code class="language-swift">extension Array where Element == DataSource {
+    func load() throws -&gt; NoteCollection {
+        let semaphore = DispatchSemaphore(value: 0)
+        var loadedCollection: NoteCollection?
+
+        // We create a new queue to do our work on, since calling wait() on
+        // the semaphore will cause it to block the current queue
+        let loadingQueue = DispatchQueue.global()
+
+        loadingQueue.async {
+            // We extend 'load' to perform its work on a specific queue
+            self.load(onQueue: loadingQueue) { collection in
+                loadedCollection = collection
+
+                // Once we're done, we signal the semaphore to unblock its queue
+                semaphore.signal()
+            }
+        }
+
+        // Wait with a timeout of 5 seconds
+        semaphore.wait(timeout: .now() + 5)
+
+        guard let collection = loadedCollection else {
+            throw NoteLoadingError.timedOut
+        }
+
+        return collection
+    }
+}
+</code></pre>
+<p>在Array上使用上述新方法，我们现在可以像这样在脚本或命令行工具中同步加载notes:</p>
+<pre><code class="language-swift">let dataSources: [DataSource] = [
+    localDataSource,
+    iCloudDataSource,
+    backendDataSource
+]
+
+do {
+    let collection = try dataSources.load()
+    output(collection)
+} catch {
+    output(error)
+}
+</code></pre>
+<h2 id="observing-changes-in-a-file-with-dispatchsource">Observing changes in a file with DispatchSource</h2>
+<p>我想提到的GCD的最后一个“不太为人所知”的特性是它如何提供一种方法来观察文件系统中文件的变化。 与DispatchSemaphore一样，如果我们想自动对用户编辑的文件做出反应，这在脚本或命令行工具中非常有用。 这使我们能够轻松地构建具有“实时编辑”特性的开发工具。</p>
+<p>DispatchSource有几种不同的变体，这取决于我们想要观察什么。在本例中，我们将使用DispatchSourceFileSystemObject，它允许我们观察来自文件系统的事件。</p>
+<p>让我们看一个简单FileObserver的示例实现，它允许我们附加一个闭包，以便在每次给定文件发生更改时运行。它的工作原理是使用文件描述符和DispatchQueue创建一个dispatch source来执行观察，并使用文件来引用要观察的文件:</p>
+<pre><code class="language-swift">class FileObserver {
+    private let file: File
+    private let queue: DispatchQueue
+    private var source: DispatchSourceFileSystemObject?
+
+    init(file: File) {
+        self.file = file
+        self.queue = DispatchQueue(label: &quot;com.myapp.fileObserving&quot;)
+    }
+
+    func start(closure: @escaping () -&gt; Void) {
+        // We can only convert an NSString into a file system representation
+        let path = (file.path as NSString)
+        let fileSystemRepresentation = path.fileSystemRepresentation
+
+        // Obtain a descriptor from the file system
+        let fileDescriptor = open(fileSystemRepresentation, O_EVTONLY)
+
+        // Create our dispatch source
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fileDescriptor,
+            eventMask: .write,
+            queue: queue
+        )
+
+        // Assign the closure to it, and resume it to start observing
+        source.setEventHandler(handler: closure)
+        source.resume()
+        self.source = source
+    }
+}
+</code></pre>
+<p>我们现在可以像这样使用FileObserver:</p>
+<pre><code class="language-swift">let observer = try FileObserver(file: file)
+
+observer.start {
+    print(&quot;File was changed&quot;)
+}
+</code></pre>
+<p>想象一下，所有很酷的开发工具都可以用它来构建!😀</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Grand Central Dispatch是一个非常强大的框架，它的功能远远超过了它最初看起来的样子。希望这篇文章能激发你的想象力，让你知道你可以用它来做什么，我建议你下次需要做我们在这篇文章中提到的任务时尝试一下。</p>
+<p>在我看来，很多基于计时器或操作队列的代码，以及第三方异步框架的使用，实际上可以通过直接使用GCD来简化。</p>
+<p><a href="https://www.swiftbysundell.com/articles/a-deep-dive-into-grand-central-dispatch-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ArhVOQ_GL/" class="tag">
+                    concurrency
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/C46TKgaZSw/" class="tag">
+                    GCD
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-autoclosure-when-designing-swift-apis/">
+                  <h3 class="post-title">
+                    Using @autoclosure when designing Swift APIs
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

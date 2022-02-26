@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Chapter 15: Intro to Schedulers | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Chapter 15: Intro to Schedulers
+
+
+1.1. What is a scheduler?
+1.2. Demystifying the scheduler
+1.3. Setting up the proj..." />
+    <meta name="keywords" content="scheduler,rxswift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Chapter 15: Intro to Schedulers</h2>
+            <div class="post-date">2021-05-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Chapter15:IntrotoSchedulers">Chapter 15: Intro to Schedulers</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Whatisascheduler">What is a scheduler?</a></li>
+<li>1.2. <a href="#Demystifyingthescheduler">Demystifying the scheduler</a></li>
+<li>1.3. <a href="#Settinguptheproject">Setting up the project</a></li>
+<li>1.4. <a href="#Switchingschedulers">Switching schedulers</a>
+<ul>
+<li>1.4.1. <a href="#UsingsubscribeOn">Using subscribeOn</a></li>
+<li>1.4.2. <a href="#UsingobserveOn">Using observeOn</a></li>
+</ul>
+</li>
+<li>1.5. <a href="#Pitfalls">Pitfalls</a></li>
+<li>1.6. <a href="#Hotvs.cold">Hot vs. cold</a></li>
+<li>1.7. <a href="#Bestpracticesandbuilt-inschedulers">Best practices and built-in schedulers</a>
+<ul>
+<li>1.7.1. <a href="#Serialvsconcurrentschedulers">Serial vs concurrent schedulers</a></li>
+<li>1.7.2. <a href="#MainScheduler">MainScheduler</a></li>
+<li>1.7.3. <a href="#SerialDispatchQueueScheduler">SerialDispatchQueueScheduler</a></li>
+<li>1.7.4. <a href="#ConcurrentDispatchQueueScheduler">ConcurrentDispatchQueueScheduler</a></li>
+<li>1.7.5. <a href="#OperationQueueScheduler">OperationQueueScheduler</a></li>
+<li>1.7.6. <a href="#TestScheduler">TestScheduler</a></li>
+</ul>
+</li>
+<li>1.8. <a href="#Wheretogofromhere">Where to go from here?</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namechapter15introtoschedulersachapter-15-intro-to-schedulers">1. <a name='Chapter15:IntrotoSchedulers'></a>Chapter 15: Intro to Schedulers</h2>
+<p>到目前为止，您已经设法使用调度程序，同时避免解释它们实际上是什么以及它们如何处理线程或并发性。在前面的章节中，您使用了隐式使用某种<em>并发/线程</em>级别的方法，例如<strong>buffer</strong>、<strong>delaySubscription</strong>或<strong>interval</strong>操作符。</p>
+<p>您可能会觉得调度程序在内部具有某种魔力，但是在理解调度程序之前，您还需要理解<strong>observeOn</strong>操作符的全部内容。</p>
+<p>本章将介绍调度器背后的美丽之处，您将了解为什么RxSwift抽象如此强大，以及为什么使用异步编程远没有使用锁或队列那么痛苦。</p>
+<blockquote>
+<p>注意:创建自定义schedulers(调度器)程序超出了本书的范围。请记住，RxSwift、RxCocoa和RxBlocking提供的调度器和初始化器通常涵盖99%的情况。始终尝试使用内置schedulers。</p>
+</blockquote>
+<h3 id="11-a-namewhatisaschedulerawhat-is-a-scheduler">1.1. <a name='Whatisascheduler'></a>What is a scheduler?</h3>
+<p>在动手研究调度程序之前，了解它们是什么以及不是什么是很重要的。总之，调度程序是一个过程发生的上下文。这个上下文可以是 thread, a dispatch queue or similar entities, or even an Operation used inside the OperationQueueScheduler。</p>
+<p>下面是一个很好的例子来说明如何使用调度器:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnvhwqqhdj30wa07ctab.jpg" alt="avatar" loading="lazy"></figure>
+<p>在此图中，您了解了缓存操作符的概念。一个可观察对象向服务器发出请求并检索一些数据。该数据由一个名为cache的自定义操作符处理，该操作符将数据存储在某个地方。在此之后，数据被传递给不同调度程序上的所有订阅者，最有可能的是位于主线程之上的MainScheduler，这使得更新UI成为可能。</p>
+<h3 id="12-a-namedemystifyingtheschedulerademystifying-the-scheduler">1.2. <a name='Demystifyingthescheduler'></a>Demystifying the scheduler</h3>
+<p>关于调度器的一个常见误解是，调度器与线程是同等相关的。乍一看，这似乎是合乎逻辑的——毕竟，调度程序的工作方式与GCD的调度队列相似。</p>
+<p>但事实并非如此。如果您正在编写自定义调度器(这也是不推荐的方法)，您可以使用同一个线程创建多个调度器，或者在多个线程之上创建单个调度器。这可能会很奇怪——但它会起作用!</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnvzcxctkj30x00mw77g.jpg" alt="avatar" loading="lazy"></figure>
+<p>要记住的重要一点是，调度程序不是线程，它们与线程没有一对一的关系。总是检查调度程序在其中执行操作的上下文—而不是线程。在本章的后面，您将遇到一些很好的例子来帮助您理解这一点。</p>
+<h3 id="13-a-namesettinguptheprojectasetting-up-the-project">1.3. <a name='Settinguptheproject'></a>Setting up the project</h3>
+<p>是时候编写一些代码了! 在这个项目中，您将为macOS创建一个简单的命令行工具。为什么使用命令行工具? 因为你在处理线程和并发性，纯文本输出将比你在应用中创建的任何视觉元素更容易理解。</p>
+<p>为本章的启动项目安装CocoaPods依赖项，如第一章“Hello RxSwift”所述。(到目前为止，你肯定知道该如何用心去做，但谁也不知道你跳过了多少章节。)完成后，打开工作区，构建并运行，调试器控制台应该显示如下内容:</p>
+<pre><code class="language-swift">===== Schedulers =====
+
+00s | [E] [dog] emitted on Main Thread
+00s | [S] [dog] received on Main Thread
+
+</code></pre>
+<p>在继续之前，打开Utils.swift，看看dump()和dumpingSubscription()的实现。</p>
+<p>第一个方法使用[E]前缀将元素和当前线程信息转储到do(onNext:)操作符中(用于“Emitted”)。第二个使用[S]前缀(用于“Subscription”)转储类似的信息。它订阅可观察对象，显示它在哪个线程上接收元素。两个函数都显示经过的时间，所以上面的00s表示“经过0秒</p>
+<p>这些函数强调了向控制台打印信息的两种不同方式:</p>
+<ul>
+<li>
+<p>使用do(onNext:)让你在操作符链中注入副作用(执行不会改变可观察对象序列的&quot; on the side &quot;操作)。</p>
+</li>
+<li>
+<p>订阅可观察序列并从那里打印。</p>
+</li>
+</ul>
+<p>现在，您已经有了在任何给定时间检查正在运行的线程的方法，您已经准备好了解一个可观察链在调度程序之间切换是多么容易了。</p>
+<h3 id="14-a-nameswitchingschedulersaswitching-schedulers">1.4. <a name='Switchingschedulers'></a>Switching schedulers</h3>
+<p>RxSwift中最重要的一点是能够在任何时候切换调度程序，除了产生事件的内部进程施加的限制之外，没有任何限制。有很好的理由可以说明为什么你想要控制操作符接收元素的scheduler:</p>
+<ul>
+<li>在后台调度程序上执行昂贵的工作。</li>
+<li>控制昂贵的工程是串行的还是并行的。</li>
+<li>保证在主线程上交付用户界面更新。</li>
+</ul>
+<blockquote>
+<p>注意:当使用允许切换调度程序的操作符时，请确保序列传输的元素是线程安全的。RwSwift本身就像苹果的调度框架:它允许你切换调度程序/线程，<strong>不管你的数据的线程安全</strong>。</p>
+</blockquote>
+<p>为了理解调度器的行为，您将创建一个简单的可观察对象，它提供了一些结果。</p>
+<p>将以下代码添加到main.swift的底部:</p>
+<pre><code class="language-swift">let fruit = Observable&lt;String&gt;.create { observer in
+  observer.onNext(&quot;[apple]&quot;)
+  sleep(2)
+  observer.onNext(&quot;[pineapple]&quot;)
+  sleep(2)
+  observer.onNext(&quot;[strawberry]&quot;)
+  return Disposables.create()
+}
+</code></pre>
+<p>这个可观察的特征是睡眠功能。虽然这在实际应用程序中并不常见，但在本例中，它将帮助您理解订阅和观察是如何工作的。</p>
+<p>添加以下代码来订阅你创建的可观察对象:</p>
+<pre><code class="language-swift">fruit
+  .dump()
+  .dumpingSubscription()
+  .disposed(by: bag)
+</code></pre>
+<p>构建并运行，并在控制台中检出日志:</p>
+<pre><code class="language-swift">===== Schedulers =====
+
+00s | [E] [dog] emitted on Main Thread
+00s | [S] [dog] received on Main Thread
+00s | [E] [apple] emitted on Main Thread
+00s | [S] [apple] received on Main Thread
+02s | [E] [pineapple] emitted on Main Thread
+02s | [S] [pineapple] received on Main Thread
+04s | [E] [strawberry] emitted on Main Thread
+04s | [S] [strawberry] received on Main Thread
+
+</code></pre>
+<p>这里是最初的实验对象，接下来是每两秒钟一个水果。</p>
+<p>水果是在主线程中生成的，但是最好将其移到后台线程中。要在后台线程中创建水果，必须使用subscribeOn。</p>
+<blockquote>
+<p>注意:if the application doesn‘t compile, showing random errors related to missing derived data, clean it using Clean Build Folder under the Product menu and build again.</p>
+</blockquote>
+<h4 id="141-a-nameusingsubscribeonausing-subscribeon">1.4.1. <a name='UsingsubscribeOn'></a>Using subscribeOn</h4>
+<p>在某些情况下，你可能想要改变可观察对象计算代码运行的调度程序——<strong>不是任何订阅操作符中的代码，而是实际发出可观察对象事件的代码</strong>。</p>
+<blockquote>
+<p>对于你创建的自定义可观察对象来说，发出事件的代码是作为**observable.create{…}**的末尾闭包提供的。</p>
+</blockquote>
+<p>为该计算代码设置调度程序的方法是使用subscribeOn。乍一看，这可能听起来有点违反直觉，但经过一段时间的思考，它就开始有意义了。</p>
+<p>当你想要真正观察一个可观察对象时，你必须先订阅它。这决定了原始处理将在何处发生。如果subscribe没有被调用，RxSwift会自动使用当前线程:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqon9kjzcwj30qi07adgu.jpg" alt="avatar" loading="lazy"></figure>
+<p>该进程使用主调度程序在主线程上创建事件。MainScheduler位于主线程之上。希望在主线程上执行的所有任务都必须使用这个调度器，这就是为什么在前面的示例中使用UI时使用它的原因。要切换调度程序，您将使用subscribeOn。</p>
+<p>在main.swift中，有一个预定义的名为globalScheduler的调度器，它使用一个后台队列。这个调度器是使用全局调度队列创建的，它是一个并发队列:</p>
+<pre><code class="language-swift">let globalScheduler = ConcurrentDispatchQueueScheduler(queue: DispatchQueue.global())
+</code></pre>
+<p>因此，正如类名所暗示的那样，这个调度器要计算的所有任务都将由全局调度队列分派和处理。</p>
+<p>要使用这个调度程序，用这个新订阅替换之前创建的fruit订阅:</p>
+<pre><code class="language-swift">fruit
+  .subscribeOn(globalScheduler)
+  .dump()
+  .dumpingSubscription()
+  .disposed(by: bag)
+</code></pre>
+<p>现在将以下行添加到文件末尾:</p>
+<pre><code class="language-swift">RunLoop.main.run(until: Date(timeIntervalSinceNow: 13))
+</code></pre>
+<p>无可否认，这是一种黑客行为;一旦主线程上的所有操作都完成了，它将防止Terminal终止，这会杀死你的全局调度程序和可观察对象。在这种情况下，Terminal会存活13秒。</p>
+<blockquote>
+<p>注意:对于这个例子来说，13秒可能太长了，但当你浏览整个章节时，你的应用需要这段时间才能完成。因此，当所有的可观察对象都完成时，请随时停止应用程序。</p>
+</blockquote>
+<p>现在您的新调度程序已经就绪，构建并运行并检查结果:</p>
+<pre><code class="language-swift">00s | [E] [dog] emitted on Main Thread
+00s | [S] [dog] received on Main Thread
+00s | [E] [apple] emitted on Anonymous Thread
+00s | [S] [apple] received on Anonymous Thread
+02s | [E] [pineapple] emitted on Anonymous Thread
+02s | [S] [pineapple] received on Anonymous Thread
+04s | [E] [strawberry] emitted on Anonymous Thread
+04s | [S] [strawberry] received on Anonymous Thread
+</code></pre>
+<p>全局队列使用一个没有名称的线程，因此在本例中，<strong>Anonymous Thread</strong>是global, concurrent dispatch queue的线程之一。</p>
+<p>现在，emitter和subscriber都在同一个线程中处理数据。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqooskdk27j30t407kjsk.jpg" alt="avatar" loading="lazy"></figure>
+<p>这很酷，但是如果您想改变观察者执行操作符代码的位置，该怎么办呢?你必须使用observe。</p>
+<h4 id="142-a-nameusingobserveonausing-observeon">1.4.2. <a name='UsingobserveOn'></a>Using observeOn</h4>
+<p>观察是Rx的三个基本概念之一。它包括产生事件的实体和这些事件的观察者。在本例中，<strong>与subscribeOn相反，observeOn操作符在观察发生的地方更改调度程序</strong>。</p>
+<p>因此，一旦一个事件被Observable推入，这个操作符会确保订阅者在指定的调度程序上接收到这个事件。这还包括在observeOn之后添加的所有操作符。</p>
+<p>要从当前全局调度器切换到主线程，您需要在订阅之前调用observeOn。再一次，更换你的水果订阅代码:</p>
+<pre><code class="language-swift">fruit
+  .subscribeOn(globalScheduler)
+  .dump()
+  .observeOn(MainScheduler.instance)
+  .dumpingSubscription()
+  .disposed(by: bag)
+</code></pre>
+<p>编译并运行，并再次检查控制台输出(您需要等待几秒钟，直到程序在控制台中停止打印):</p>
+<pre><code class="language-swift">00s | [E] [dog] emitted on Main Thread
+00s | [S] [dog] received on Main Thread
+00s | [E] [apple] emitted on Anonymous Thread
+00s | [S] [apple] received on Main Thread
+02s | [E] [pineapple] emitted on Anonymous Thread
+02s | [S] [pineapple] received on Main Thread
+04s | [E] [strawberry] emitted on Anonymous Thread
+04s | [S] [strawberry] received on Main Thread
+</code></pre>
+<p>您已经获得了想要的结果:所有事件现在都在正确的线程上处理。主要可观察对象在后台线程中处理和生成事件，订阅方在主线程中接收事件。</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqoowi4d0pj30s807qq48.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="15-a-namepitfallsapitfalls">1.5. <a name='Pitfalls'></a>Pitfalls</h3>
+<p>切换调度器和线程的能力看起来很棒，但它也有一些缺陷。要了解原因，可以使用新线程将一些事件推送到subject。由于您需要跟踪计算发生在哪个线程上，一个好的解决方案是使用OS线程。</p>
+<p>在可观察的fruit之后，添加以下代码来生成一些动物:</p>
+<pre><code class="language-swift">let animalsThread = Thread() {
+  sleep(3)
+  animal.onNext(&quot;[cat]&quot;)
+  sleep(3)
+  animal.onNext(&quot;[tiger]&quot;)
+  sleep(3)
+  animal.onNext(&quot;[fox]&quot;)
+  sleep(3)
+  animal.onNext(&quot;[leopard]&quot;)
+}
+</code></pre>
+<p>接下来，给线程命名，这样你就能识别它，并启动它:</p>
+<pre><code class="language-swift">animalsThread.name = &quot;Animals Thread&quot;
+animalsThread.start()
+</code></pre>
+<p>构建和运行;你应该看到你的新线程在运行:</p>
+<pre><code class="language-swift">...
+03s | [E] [cat] emitted on Animals Thread
+03s | [S] [cat] received on Animals Thread
+04s | [E] [strawberry] emitted on Anonymous Thread
+04s | [S] [strawberry] received on Main Thread
+06s | [E] [tiger] emitted on Animals Thread
+06s | [S] [tiger] received on Animals Thread
+09s | [E] [fox] emitted on Animals Thread
+09s | [S] [fox] received on Animals Thread
+12s | [E] [leopard] emitted on Animals Thread
+12s | [S] [leopard] received on Animals Thread
+</code></pre>
+<p>完美-你有动物创造在专用线程。下一步——在全局线程上处理结果。</p>
+<blockquote>
+<p>注意:不断添加代码，然后用其他东西替换它，这似乎是重复的，但这里的目标是比较不同schedulers之间的差异。</p>
+</blockquote>
+<p>用以下代码替换动物主题的原始订阅:</p>
+<pre><code class="language-swift">animal
+  .dump()
+  .observeOn(globalScheduler)
+  .dumpingSubscription()
+  .disposed(by: bag)
+</code></pre>
+<p>构建并运行，新的结果如下:</p>
+<pre><code class="language-swift">...
+03s | [E] [cat] emitted on Animals Thread
+03s | [S] [cat] received on Anonymous Thread
+04s | [E] [strawberry] emitted on Anonymous Thread
+04s | [S] [strawberry] received on Main Thread
+06s | [E] [tiger] emitted on Animals Thread
+06s | [S] [tiger] received on Anonymous Thread
+09s | [E] [fox] emitted on Animals Thread
+09s | [S] [fox] received on Anonymous Thread
+12s | [E] [leopard] emitted on Animals Thread
+12s | [S] [leopard] received on Anonymous Thread
+</code></pre>
+<p>现在，你正在切换线程，并接近13秒的限制!</p>
+<p>如果你想在全局队列中生成动物，但在主线程中接收它们，该怎么办?对于第一种情况，observeOn已经是正确的，但是对于第二种情况，必须使用subscribeOn。</p>
+<p>这次更换动物订阅，如下:</p>
+<pre><code class="language-swift">animal
+  .subscribeOn(MainScheduler.instance)
+  .dump()
+  .observeOn(globalScheduler)
+  .dumpingSubscription()
+  .disposed(by: bag)
+</code></pre>
+<p>构建并运行，您将得到以下结果:</p>
+<pre><code class="language-swift">03s | [E] [cat] emitted on Animals Thread
+03s | [S] [cat] received on Anonymous Thread
+04s | [E] [strawberry] emitted on Anonymous Thread
+04s | [S] [strawberry] received on Main Thread
+06s | [E] [tiger] emitted on Animals Thread
+06s | [S] [tiger] received on Anonymous Thread
+09s | [E] [fox] emitted on Animals Thread
+09s | [S] [fox] received on Anonymous Thread
+12s | [E] [leopard] emitted on Animals Thread
+12s | [S] [leopard] received on Anonymous Thread
+</code></pre>
+<p>等待? 什么?为什么计算没有发生在正确的调度程序上?这是一个常见而危险的陷阱，它源于将RxSwift默认为异步或多线程的想法——事实并非如此。</p>
+<p>RxSwift和一般抽象是自由线程的;在处理数据时没有发生神奇的线程切换。如果不指定，计算总是发生在原始线程上。</p>
+<blockquote>
+<p>注意:任何线程切换都发生在程序员使用操作符subscribeOn和observeOn显式请求之后。</p>
+</blockquote>
+<p>认为RxSwift默认会做一些线程处理是一个常见的陷阱。上面发生的是Subject的误用。原始的计算发生在一个特定的线程上，这些事件使用thread(){…}。由于Subject的本质，RxSwift没有能力切换原始的计算调度程序并移动到另一个线程，因为没有直接控制Subject推送到哪里。</p>
+<p>为什么这对fruit thread起作用呢? 这是因为使用Observable.create(_:)可以让RxSwift控制Thread块内发生的事情，这样你就可以更精细地定制线程处理。</p>
+<p>这个意想不到的结果通常被称为“冷热”观测问题。</p>
+<p>在上面的例子中，你正在处理一个hot的可观测对象。<strong>这个可观察对象在订阅期间没有任何副作用，但是它有自己的上下文，在这个上下文中产生事件，RxSwift不能控制它(也就是说，它拥有自己的线程)。</strong></p>
+<p>相比之下，cold可观测对象在任何观察者订阅它之前都不会产生任何元素。这实际上意味着，<strong>在订阅之后，它创建一些上下文并开始生成元素之前，它没有自己的上下文。</strong></p>
+<h3 id="16-a-namehotvscoldahot-vs-cold">1.6. <a name='Hotvs.cold'></a>Hot vs. cold</h3>
+<p>上面的部分涉及了冷热观测的主题。热观测和冷观测的话题是相当武断的，并产生了很多争论，所以让我们在这里简要地看看它。这个概念可以简化为一个非常简单的问题:</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqoq8k6ffrj30tk0c6tap.jpg" alt="avatar" loading="lazy"></figure>
+<p>一些副作用的例子是:</p>
+<ul>
+<li>向服务器发出请求。</li>
+<li>编辑本地数据库。</li>
+<li>写入文件系统。</li>
+<li>发射火箭。</li>
+</ul>
+<p>副作用的世界是无穷无尽的，所以你需要确定你的Observable实例在订阅后是否会执行副作用。如果您不能确定这一点，那么就执行更多的分析或进一步深入源代码。向每个订阅用户发射火箭可能不是你想要实现的目标……</p>
+<p>另一种常见的描述方式是询问Observable是否共享副作用。如果您在订阅时执行副作用，这意味着副作用不被共享。否则，副作用将与所有订阅者共享。</p>
+<p>这是一个相当普遍的规则，适用于任何ObservableType对象，比如subject 和相关的子类型。</p>
+<p>正如你可能已经注意到的，到目前为止，我们在书中并没有过多讨论冷热观测。这在反应式编程中是一个常见的主题，但在RxSwift中，你只会在特定情况下遇到这个概念，比如上面的Thread例子，或者当你需要更大的控制时，比如运行测试时。</p>
+<p>将本节作为参考点，以便在您需要根据热观察或冷观察来解决问题时，您可以快速打开这本书，并在这一点上刷新自己的概念。</p>
+<h3 id="17-a-namebestpracticesandbuilt-inschedulersabest-practices-and-built-in-schedulers">1.7. <a name='Bestpracticesandbuilt-inschedulers'></a>Best practices and built-in schedulers</h3>
+<p>Schedulers是一个重要的主题，因此它们为最常见的用例提供了一些最佳实践。在本节中，您将快速介绍串行和并发调度器，了解它们如何处理数据，并了解哪种类型对特定上下文更有效。</p>
+<h4 id="171-a-nameserialvsconcurrentschedulersaserial-vs-concurrent-schedulers">1.7.1. <a name='Serialvsconcurrentschedulers'></a>Serial vs concurrent schedulers</h4>
+<p>考虑到调度程序只是一个上下文，它可以是任何东西(分派队列、线程、自定义上下文)，并且所有转换序列的操作符都需要保留隐式保证，因此需要确保使用了正确的调度程序。</p>
+<ul>
+<li>
+<p>如果你使用的是串行调度器，RxSwift会串行地进行计算。对于串行分派队列，调度程序还能够在下面执行它们自己的优化。</p>
+</li>
+<li>
+<p>在并发调度器中，RxSwift将尝试同时运行代码，但observeOn和subscribeOn将保持任务执行的顺序，并确保您的订阅代码最终在正确的调度器上。</p>
+</li>
+</ul>
+<h4 id="172-a-namemainscheduleramainscheduler">1.7.2. <a name='MainScheduler'></a>MainScheduler</h4>
+<p>MainScheduler位于主线程之上。此调度器用于处理用户界面上的更改并执行其他高优先级任务。在iOS、tvOS或macOS上开发应用程序时，通常不应该使用此调度器执行长时间运行的任务，因此要避免服务器请求或其他繁重的任务。</p>
+<p>此外，如果执行更新UI的副作用，则必须切换到MainScheduler以确保这些更新能够显示在屏幕上。</p>
+<p>当使用大多数RxCocoa Traits时，MainScheduler也用于所有的观察，更具体地说，<strong>Driver and Signal</strong>。正如前面章节所讨论的，这些特征确保观察总是在MainScheduler中执行，从而让您能够将数据直接绑定到应用程序的用户界面。</p>
+<h4 id="173-a-nameserialdispatchqueuescheduleraserialdispatchqueuescheduler">1.7.3. <a name='SerialDispatchQueueScheduler'></a>SerialDispatchQueueScheduler</h4>
+<p>serialdispatchqueuesscheduler管理对串行DispatchQueue上的工作进行抽象。在使用observeOn时，这个调度器有几个优化的巨大优势。</p>
+<p>您可以使用此调度器处理后台作业，这些作业最好以串行方式调度。例如，如果应用程序与服务器的单个端点通信(如在Firebase或GraphQL应用程序中)，您可能希望避免同时分派多个请求，这将给接收端带来太大的压力。对于任何应该像串行任务队列一样前进的作业，这个调度器肯定是您希望使用的。</p>
+<h4 id="174-a-nameconcurrentdispatchqueuescheduleraconcurrentdispatchqueuescheduler">1.7.4. <a name='ConcurrentDispatchQueueScheduler'></a>ConcurrentDispatchQueueScheduler</h4>
+<p>ConcurrentDispatchQueueScheduler，类似于SerialDispatchQueueScheduler，管理在DispatchQueue上抽象工作。这里的主要区别是，调度程序使用一个并发队列，而不是串行队列。</p>
+<p>这种调度器在使用observeOn时并没有优化，所以在决定使用哪种调度器时要记住考虑到这一点。</p>
+<p>对于需要同时结束的多个长时间运行的任务，并发调度程序可能是一个很好的选择。将多个可观察对象与一个阻塞操作符组合在一起，这样所有的结果都在准备好时被组合在一起，可以阻止串行调度器发挥它们的最佳性能。相反，并发调度可以执行多个并发任务并优化结果的收集。</p>
+<h4 id="175-a-nameoperationqueuescheduleraoperationqueuescheduler">1.7.5. <a name='OperationQueueScheduler'></a>OperationQueueScheduler</h4>
+<p>OperationQueueScheduler类似于ConcurrentDispatchQueueScheduler，但是它不是通过DispatchQueue抽象工作，而是通过OperationQueue执行工作。有时您需要对正在运行的并发作业进行更多的控制，而使用并发DispatchQueue无法做到这一点。</p>
+<p>如果需要调优最大并发作业数，则使用该作业的调度器。您可以设置maxConcurrentOperationCount来限制并发操作的数量，以满足应用程序的需要。</p>
+<h4 id="176-a-nametestscheduleratestscheduler">1.7.6. <a name='TestScheduler'></a>TestScheduler</h4>
+<p>TestScheduler是一种特殊的野兽。它只用于测试，所以不应该在生产代码中使用它。这种特殊的调度程序简化了运算符测试;它是RxTest库的一部分。您将在关于测试的专门章节中了解如何使用这个调度程序，但是既然您正在进行RxSwift调度程序的伟大之旅，让我们快速浏览一下。</p>
+<p>RxSwift测试套件提供了这个调度器的一个很好的用例。打开以下链接:https://bit.ly/2E0xVUq。你会找到一个专门用来测试delaySubscription操作符Observable+DelaySubscriptionTests.swift的文件，特别是一个名为testDelaySubscription_TimeSpan_Simple的测试用例。在这个测试用例中，你有调度程序的初始化:</p>
+<pre><code class="language-swift">let scheduler = TestScheduler(initialClock: 0)
+
+</code></pre>
+<p>在这个初始化之后，你就有了要测试的可观察对象的定义:</p>
+<pre><code class="language-swift">let xs = scheduler.createColdObservable([
+  next(50, 42),
+  next(60, 43),
+  completed(70)
+])
+</code></pre>
+<p>在定义期望之前，你有如何得到结果的声明:</p>
+<pre><code class="language-swift">let res = scheduler.start {
+  xs.delaySubscription(30, scheduler: scheduler)
+}
+</code></pre>
+<p>调度程序将使用之前定义的xs可观察对象创建Res。该结果包含有关发送的事件的所有信息，以及测试调度程序跟踪的时间。</p>
+<p>有了这个，你可以像这样写一个测试用例:</p>
+<pre><code class="language-swift">XCTAssertEqual(res.events, [
+  next(280, 42),
+  next(290, 43),
+  completed(300)
+])
+</code></pre>
+<p>想知道为什么事件发生在280，而不是80(考虑到最初的50，加上延迟的30)?这是由于testScheduler的特性，它会在200之后启动对ColdObservable的所有订阅。这个技巧确保冷观测不会在不可预知的时间开始——这会让测试变成一场噩梦!</p>
+<p>同样的事情不适用于HotObservable，所以HotObservable会立即开始推事件。</p>
+<p>在测试delaySubscription操作符时，仅发送事件及其时间的信息不足以处理这些事件。您将需要关于订阅时间的额外信息，以确保一切按预期运行。</p>
+<p>xs.subscriptions，你可以获得订阅列表来进行测试的最后一部分:</p>
+<pre><code class="language-swift">XCTAssertEqual(xs.subscriptions, [
+  Subscription(230, 300)
+])
+</code></pre>
+<p>第一个数字定义了第一次订阅的开始时间。第二个定义了何时释放订阅。在本例中，第二个数字与已完成的事件匹配，因为完成将释放所有订阅。</p>
+<h3 id="18-a-namewheretogofromhereawhere-to-go-from-here">1.8. <a name='Wheretogofromhere'></a>Where to go from here?</h3>
+<p>调度程序在RxSwift空间中是一个重要的话题;他们负责计算和执行RxSwift中的所有任务。<strong>调度的黄金法则是它可以是任何东西</strong>。记住这一点，在使用可观察对象以及使用和更改调度器时，您将能够很好地处理这些问题。</p>
+<p>如前所述，调度可以位于DispatchQueue、OperationQueue、Thread的顶部，甚至可以在当前线程上立即执行任务。关于这一点没有硬性规则，所以确保你知道你正在使用什么调度器来处理手头的任务。有时，使用错误的调度器可能会对性能产生负面影响，而正确选择的调度器可能会获得很高的性能回报。</p>
+<p>继续之前，花点时间研究一下当前示例，并测试一些调度器，看看它们对最终结果有什么影响。理解调度程序将使RxSwift的生活更轻松，并将提高您在使用subscribeOn和observeOn时的信心。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/kiqDJU0Xg/" class="tag">
+                    scheduler
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/chapter-14-error-handling-in-practice/">
+                  <h3 class="post-title">
+                    Chapter 14: Error Handling in Practice
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

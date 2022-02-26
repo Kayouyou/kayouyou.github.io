@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using SpriteKit to create animations in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="动画是一个很好的方式来解释我们的应用程序的功能通过运动，并取悦我们的用户。在合适的地方添加动画可以让UI看起来更漂亮。
+但创造优秀的动画需要进行大量调整和迭代，因为我们经常需要尝试不同的动画步骤、持续时间和曲线，从而让一切看起来更完美。
+这..." />
+    <meta name="keywords" content="spritekit,animations" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using SpriteKit to create animations in Swift</h2>
+            <div class="post-date">2017-06-25</div>
+            
+            <div class="post-content" v-pre>
+              <p>动画是一个很好的方式来解释我们的应用程序的功能通过运动，并取悦我们的用户。在合适的地方添加动画可以让UI看起来更漂亮。</p>
+<p>但创造优秀的动画需要进行大量调整和迭代，因为我们经常需要尝试不同的动画步骤、持续时间和曲线，从而让一切看起来更完美。</p>
+<p>这就是为什么使用能够让我们轻松改变事物和调整参数的工具来创建动画是如此重要。本周，让我们来看看SpriteKit是如何作为一种特定类型动画的工具。</p>
+<h2 id="the-basics">The basics</h2>
+<p>SpriteKit是苹果用于2D游戏开发的内置框架(自iOS 7以来)。 所以虽然它的主要目标是制作游戏，但它也是任何2D绘图和动画的好工具。事实上，在2017年的WWDC大会上，苹果透露他们正在使用SpriteKit为Xcode的内存调试器构建UI。</p>
+<p>对于动画来说，SpriteKit在构建更复杂、独立的场景时非常有用。 例如，当你正在创建某种形式的全屏加载动画时，一个插图作为你的入职流程的一部分，或任何其他包括多个动画步骤，但不直接涉及动画视图和UI控件的东西。</p>
+<p>作为一个例子，我们将建立一个加载动画包含4个表情符号，这将看起来像这样</p>
+<h2 id="setting-the-scene">Setting the scene</h2>
+<p>所有SpriteKit内容都呈现在一个场景中，由一个SKScene类的实例管理。然后使用基于节点的系统定义内容，该系统允许您创建层次结构， 就像使用uiview或CALayers一样。</p>
+<p>您可以使用SKNode的各种子类创建节点， 例如，SKSpriteNode用于基于sprite(图像)的内容，SKLabelNode用于文本内容。最后，你使用action(由SKAction类表示)让你的节点在场景中执行各种动画(如移动、缩放、旋转等)。</p>
+<h2 id="getting-started">Getting started</h2>
+<p>让我们开始创建一个SKScene作为我们的动画的容器。我们给它一个从视图控制器视图的最小尺寸中取来的正方形大小，并设置一个白色的背景颜色:</p>
+<pre><code class="language-swift">extension AnimationViewController {
+    func makeScene() -&gt; SKScene {
+        let minimumDimension = min(view.frame.width, view.frame.height)
+        let size = CGSize(width: minimumDimension, height: minimumDimension)
+
+        let scene = SKScene(size: size)
+        scene.backgroundColor = .white
+        return scene
+    }
+}
+</code></pre>
+<p>你使用SKView(它是iOS上的UIView子类)来呈现一个SKScene。 我们会把这样的视图添加到视图控制器，并设置它的大小和中心点。最后，我们让它呈现我们的场景，像这样:</p>
+<pre><code class="language-swift">class AnimationViewController: UIViewController {
+    private lazy var animationView = SKView()
+
+    override func loadView() {
+        super.loadView()
+        view.addSubview(animationView)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // Make sure we don't recreate the scene when the view re-appears
+        guard animationView.scene == nil else {
+            return
+        }
+
+        let scene = makeScene()
+        animationView.frame.size = scene.size
+        animationView.presentScene(scene)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+
+        animationView.center.x = view.bounds.midX
+        animationView.center.y = view.bounds.midY
+    }
+}
+</code></pre>
+<h2 id="adding-nodes">Adding nodes</h2>
+<p>所以我们现在有一个要渲染的场景，和一个会在视图控制器中呈现它的视图。 让我们开始添加一些内容。如果您使用关键帧来渲染图像和动画，那么您应该使用SKSpriteNode来进行渲染。但在本例中，我们将继续使用一些简单的表情符号，因此我们将使用SKLabelNode(这基本上是SpriteKit的UILabel)。</p>
+<p>让我们先在SKLabelNode上创建一个扩展，它允许我们渲染一个表情符号:</p>
+<pre><code class="language-swift">extension SKLabelNode {
+    func renderEmoji(_ emoji: Character) {
+        fontSize = 50
+        text = String(emoji)
+
+        // This enables us to move the label using its center point
+        verticalAlignmentMode = .center
+        horizontalAlignmentMode = .center
+    }
+}
+</code></pre>
+<p>然后，我们将在视图控制器上创建另一个扩展方法来添加场景中的所有表情符号(我们将从makeScene()调用):</p>
+<pre><code class="language-swift">extension AnimationViewController {
+    func addEmoji(to scene: SKScene) {
+        let allEmoji: [Character] = [&quot;🌯&quot;, &quot;🌮&quot;, &quot;🍔&quot;, &quot;🍕&quot;]
+        let distance = floor(scene.size.width / 4)
+
+        for (index, emoji) in allEmoji.enumerated() {
+            let node = SKLabelNode()
+            node.renderEmoji(emoji)
+            node.position.y = floor(scene.size.height / 2)
+            node.position.x = distance * (CGFloat(index) + 0.5)
+            scene.addChild(node)
+        }
+    }
+}
+</code></pre>
+<h2 id="lets-animate">Let’s animate!</h2>
+<p>所有的设置出来的方式，让我们进入有趣的部分-实际创建我们的动画。 我们将通过告诉每个表情节点放大然后缩小来执行动画，根据节点的索引有轻微的延迟:</p>
+<pre><code class="language-swift">func animateNodes(_ nodes: [SKNode]) {
+        for (index, node) in nodes.enumerated() {
+            // Offset each node with a slight delay depending on the index
+            let delayAction = SKAction.wait(forDuration: TimeInterval(index) * 0.2)
+
+            // Scale up and then back down
+            let scaleUpAction = SKAction.scale(to: 1.5, duration: 0.3)
+            let scaleDownAction = SKAction.scale(to: 1, duration: 0.3)
+
+            // Wait for 2 seconds before repeating the action
+            let waitAction = SKAction.wait(forDuration: 2)
+
+            // Form a sequence with the scale actions, as well as the wait action
+            let scaleActionSequence = SKAction.sequence([scaleUpAction, scaleDownAction, waitAction])
+
+            // Form a repeat action with the sequence
+            let repeatAction = SKAction.repeatForever(scaleActionSequence)
+
+            // Combine the delay and the repeat actions into another sequence
+            let actionSequence = SKAction.sequence([delayAction, repeatAction])
+
+            // Run the action
+            node.run(actionSequence)
+        }
+    }
+
+</code></pre>
+<p>上面的代码可以工作，但是很难阅读和推理，特别是如果我们要去掉注释。但好消息是，我们可以很容易地解决它!  多亏了Swift的点表示法，我们可以极大地减少代码的冗长，并消除所有临时let赋值:</p>
+<pre><code class="language-swift">extension AnimationViewController {
+    func animateNodes(_ nodes: [SKNode]) {
+        for (index, node) in nodes.enumerated() {
+            node.run(.sequence([
+                .wait(forDuration: TimeInterval(index) * 0.2),
+                .repeatForever(.sequence([
+                    .scale(to: 1.5, duration: 0.3),
+                    .scale(to: 1, duration: 0.3),
+                    .wait(forDuration: 2)
+                ]))
+            ]))
+        }
+    }
+}
+</code></pre>
+<p>现在我们可以通过调用makecene()中的所有场景节点来开始我们的动画:</p>
+<pre><code class="language-swift">animateNodes(scene.children)
+</code></pre>
+<h2 id="with-a-twist">With a twist</h2>
+<p>现在我们有了容易阅读(和非常声明性)的动画代码，我们可以开始使用它了。假设我们想要给我们的动画添加一点扭曲(字面上的!)，通过让我们的表情符号在缩放的同时旋转360度。</p>
+<p>我们所要做的就是将缩放动作和旋转动作组合成一个组，就像这样:</p>
+<pre><code class="language-swift">extension AnimationViewController {
+    func animateNodes(_ nodes: [SKNode]) {
+        for (index, node) in nodes.enumerated() {
+            node.run(.sequence([
+                .wait(forDuration: TimeInterval(index) * 0.2),
+                .repeatForever(.sequence([
+                    // A group of actions get performed simultaneously
+                    .group([
+                        .sequence([
+                            .scale(to: 1.5, duration: 0.3),
+                            .scale(to: 1, duration: 0.3)
+                        ]),
+                        // Rotate by 360 degrees (pi * 2 in radians)
+                        .rotate(byAngle: .pi * 2, duration: 0.6)
+                    ]),
+                    .wait(forDuration: 2)
+                ]))
+            ]))
+        }
+    }
+}
+</code></pre>
+<p>Which will give us the following result:</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>正如你在上面的例子中所看到的，使用SpriteKit制作动画能够让我们编写非常具有声明性的动画代码，从而更容易改变、扩展和试验。对于动画来说，这绝对不是一个银弹，因为我们没有办法以这种方式动画任何形式的uiview，但对于独立的基于场景的动画，我认为这是一个非常好的工具。</p>
+<p>当然，SpriteKit的内容远比我在这篇文章中介绍的要多，所以如果你想让我再写一篇文章，更深入地介绍SpriteKit及其功能，请告诉我。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-spritekit-to-create-animations-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/CIwLvBbFd/" class="tag">
+                    spritekit
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nk7gw0vRGQ/" class="tag">
+                    animations
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/exploring-the-new-string-api-in-swift-4/">
+                  <h3 class="post-title">
+                    Exploring the new String API in Swift 4
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

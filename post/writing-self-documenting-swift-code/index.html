@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Writing self-documenting Swift code | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="何时以及如何编写文档和代码注释往往会在开发人员中引起很多争论。有些人喜欢对所有代码进行大量的文档化和注释，通过留下代码编写时意图的“书面记录”，努力使事情更加清晰和易于维护。
+另一方面，其他人认为编写文档是浪费时间，而且实际上会使事情更难维..." />
+    <meta name="keywords" content="maintenance,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Writing self-documenting Swift code</h2>
+            <div class="post-date">2018-05-27</div>
+            
+            <div class="post-content" v-pre>
+              <p>何时以及如何编写文档和代码注释往往会在开发人员中引起很多争论。有些人喜欢对所有代码进行大量的文档化和注释，通过留下代码编写时意图的“书面记录”，努力使事情更加清晰和易于维护。</p>
+<p>另一方面，其他人认为编写文档是浪费时间，而且实际上会使事情更难维护，因为随着实现细节的变化，注释和文档往往会变得过时。</p>
+<p>不管你对编写(和阅读)文档有什么感觉——我想我们大多数人都同意，我们应该总是尝试让我们的代码和我们设计的api尽可能容易理解。我们都想避免这种情况，当我们的代码在团队中没有人理解时，要么是因为最初的作者离开了公司，要么只是因为没有人记得代码最初应该做什么细节。</p>
+<p>本周，让我们来看看一些简单的技巧和技巧，这些技巧和技巧可以让我们写出更容易自我记录的代码——代码可以使潜在的意图和细节更加清晰， 只是通过它的结构和写作方式。</p>
+<h2 id="breaking-things-up">Breaking things up</h2>
+<p>随着时间的推移，往往会引起最多混乱的系统是那些由大量逻辑团组成的系统。事物变得越庞大、越复杂，通常就越难以对其进行推理。 此外，随着事情的发展，细节往往丢失在混合-导致更多不清楚的行为和bug。</p>
+<p>让我们从看一个例子开始。这里我们有一个StoreViewController，它由三个部分组成 —一个头部视图，一个产品列表和一个动作视图。目前，这三个部分都在视图控制器的viewDidLoad()方法中设置，如下所示:</p>
+<pre><code class="language-swift">class StoreViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Setup header view
+        ...
+
+        // Setup product list
+        ...
+
+        // Setup actions view
+        ...
+    }
+}
+</code></pre>
+<p>虽然上面的实现一开始可能非常简单，但随着新特性的添加和UI变得更加复杂，这些方法往往会迅速增长。很有可能，如果我们扩大这些……上面我们会发现几百行设置代码，都在一个巨大的方法中，使事情既难以理解，又非常脆弱一个小的改变可能会导致另一部分的设置代码的错误。</p>
+<p>那么我们如何解决上述问题呢?一种方法是简单地将每个部分的设置移动到它自己的专用方法中，给我们三个更小的设置方法，每个都更容易推理和维护:</p>
+<pre><code class="language-swift">private extension StoreViewController {
+    func setupHeaderView() {
+        ...
+    }
+
+    func setupProductsView() {
+        ...
+    }
+
+    func setupActionsView() {
+        ...
+    }
+}
+</code></pre>
+<p>另一种方式，也是我个人最喜欢的，是使用视图控制器组合，为我们的store UI的每个部分创建一个专用的子视图控制器:</p>
+<pre><code class="language-swift">class StoreViewController: UIViewController {
+    private let header = HeaderViewController()
+    private let productList = ProductListViewController()
+    private let actions = ActionsViewController()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        add(header, productList, actions)
+    }
+}
+</code></pre>
+<p>上面的add方法是“在Swift中使用子视图控制器作为插件”中引入的便利API的变种。</p>
+<p>这样，每个子视图控制器现在都可以包含StoreViewController每个部分所需的所有设置——使得整个UI更容易处理、更改和维护，而不需要添加任何额外的注释或文档。</p>
+<h2 id="clear-apis">Clear APIs</h2>
+<p>另一个常见的复杂和混乱的来源是不清楚的api。就像我在“每个人都是API设计师”的演讲中所说的那样，在我们的类型之间创建清晰和集中的API确实有助于使代码库更容易理解——同样，不需要添加任何额外的文档。</p>
+<p>这里我们有一个FriendsManager，它允许我们通过名字查找当前用户的好友:</p>
+<pre><code class="language-swift">class FriendsManager {
+    private(set) var friends = [String : Friend]()
+}
+</code></pre>
+<p>通过查看上面的属性，并不是很清楚朋友字典中的键是不是实际的names。它们可能是id，用户名，或者我们所知道的任何其他字符串。如果没有文档说明，上面的API就很难使用，而且很容易因为“错误的方式”而意外地导致错误。</p>
+<p>相反，让我们通过将底层字典转为私有 (毕竟，这是一个好友如何存储的实现细节)， 相反，公开一个专门的方法来通过名字检索朋友，如下所示:</p>
+<pre><code class="language-swift">class FriendsManager {
+    private var friendsByName = [String : Friend]()
+
+    func friend(named name: String) -&gt; Friend? {
+        return friendsByName[name]
+    }
+}
+</code></pre>
+<p>正如您在上面所看到的，我们还借此机会使dictionary属性的名称更清楚一些。尽管它不再是公共API的一部分，但通过将它命名为friendsByName，将来使用这段代码的人就会非常清楚，朋友实际上是按名称存储的，而不是其他。</p>
+<h2 id="dedicated-types">Dedicated types</h2>
+<p>设计清晰的api当然不仅仅是如何命名我们的方法以及如何在实现和公共接口之间划清界限 - 还有很多关于如何构造类型，如何利用类型系统和编译器来确保代码正确的问题。</p>
+<p>就像我们在“Swift中的类型安全标识符”中看到的那样，为标识符之类的东西创建专用类型可以真正帮助我们在处理基于字符串的值时避免错误和混淆。对于其他 primitive-based的类型也是如此。让我们看一个使用Bool来表示推送通知是否成功打开的例子:</p>
+<pre><code class="language-swift">protocol PushNotificationService {
+    func enablePushNotifications(then handler: @escaping (Bool) -&gt; Void)
+}
+</code></pre>
+<p>在最初编写上述代码时，传递给处理程序的Bool表明推送通知是否确实打开，这一点似乎非常清楚， 但这同样会引起困惑，或者让我们觉得需要编写额外的文档。</p>
+<p>与使用普通Bool不同，使上述方法更显式的一种方法是使用专用类型，例如，枚举可以让我们清楚地表达操作的结果:</p>
+<pre><code class="language-swift">enum PushNotificationStatus {
+    case enabled
+    case disabled
+}
+</code></pre>
+<p>现在，当我们读取方法签名时，很明显，传递给我们处理程序的值实际上就是产生的推送通知状态:</p>
+<pre><code class="language-swift">protocol PushNotificationService {
+    typealias Handler = (PushNotificationStatus) -&gt; Void
+
+    func enablePushNotifications(then handler: @escaping Handler)
+}
+</code></pre>
+<p>这看起来可能是一个微不足道的细节，但尤其是当我们查看调用站点时，使用enum而不是Bool的优势变得更加明显:</p>
+<pre><code class="language-swift">service.enablePushNotifications { [weak self] status in
+    // Since we now use an enum, we are &quot;forced&quot; to deal with
+    // both potential outcomes, making our code more clear and
+    // also more robust as well.
+    switch status {
+    case .enabled:
+        self?.removeNotificationsButton()
+    case .disabled:
+        self?.showNotificationsDisabledLabel()
+    }
+}
+</code></pre>
+<p>使用类型系统来编写自文档化程度更高的代码的另一个例子是，当处理具有相同底层表示形式但应该分开处理的值时。 例如，假设我们的应用程序使用基于oauth的登录系统，我们已经定义了一种协议来处理授权以及由此产生的访问和刷新令牌:</p>
+<pre><code class="language-swift">protocol AuthorizationService {
+    typealias Handler = (_ accessToken: String, _ refreshToken: String) -&gt; Void
+
+    func authorize(then handler: @escaping Handler)
+}
+</code></pre>
+<p>由于上面的两个令牌值都是字符串，我们需要添加标签(很可能还有注释)，以便更清楚地表明哪个值是哪个值。同样，这很容易搞砸，因为如果我们在使用上述API时不小心记错了参数的顺序，编译器不会给我们任何警告:</p>
+<pre><code class="language-swift">service.authorize { refreshToken, accessToken in
+    // We're accidentially mixing up the two tokens by using the
+    // wrong parameter order, but the compiler won't help us.
+}
+</code></pre>
+<p>让我们用类型系统来帮助我们。通过声明两个简单的结构，我们可以为代表每种令牌的值创建专用类型，从而不可能意外地将刷新令牌值作为访问令牌传递:</p>
+<pre><code class="language-swift">struct AccessToken {
+    let string: String
+}
+
+struct RefreshToken {
+    let string: String
+}
+</code></pre>
+<p>上面的操作不仅为我们提供了更多类型安全的代码，还使我们的AuthorizationService具有了更多的自文档化。现在不会分不清哪个token是哪个token了，没有添加任何额外的标签或注释:</p>
+<pre><code class="language-swift">protocol AuthorizationService {
+    typealias Handler = (AccessToken, RefreshToken) -&gt; Void
+
+    func authorize(then handler: @escaping Handler)
+}
+</code></pre>
+<h2 id="type-aliases">Type aliases</h2>
+<p>为所有东西创建新类型并不总是实用的，有时这样做实际上也会使我们的代码更加复杂。然而，我们可能仍然希望利用类型系统使我们的代码更加自文档化，在这种情况下，使用类型别名是一个很好的选择。</p>
+<p>例如，我们有一个类型，我们用它来表示我们的应用程序中的文件:</p>
+<pre><code class="language-swift">struct File {
+    let name: String
+    let size: Int
+}
+</code></pre>
+<p>看看上面的声明，大小指的是什么有点不清楚。字节，千字节，还是兆字节?如果是文本文件，字符数是多少呢?虽然我们可能可以通过在实现中摸索找出答案，但如果在声明级别上事情不明显，这通常是一个不好的迹象。</p>
+<p>基于我们已经研究过的一些技术，我们可以采取以下几种不同的方法:</p>
+<p>Create a dedicated Size type that could have a numberOfBytes property.  创建一个可以具有numberOfBytes属性的专用大小类型。<br>
+Rename size to numberOfBytes    将size重命名为numberOfBytes<br>
+Add a comment that says This is measured in bytes. 添加一条注释，说明这是以字节为单位度量的。</p>
+<p>以上所有的解决方案都是有效的，但也许最简单的解决方案是使用typealias来明确我们将字节作为度量单位:</p>
+<pre><code class="language-swift">struct File {
+    typealias ByteCount = Int
+
+    let name: String
+    let size: ByteCount
+}
+</code></pre>
+<p>然而，以这种方式使用类型别名很容易走极端——导致代码变得不简单，不容易理解，像这样:</p>
+<pre><code class="language-swift">struct User {
+    typealias Name = String
+    typealias Age = Int
+    typealias CityName = String
+
+    let name: Name
+    let age: Age
+    let cityName: CityName
+}
+</code></pre>
+<p>和往常一样，平衡是关键。 如果使用得当(尤其是度量单位之类的东西)，类型别名可能是一个非常好的解决方案。 以下是我们在游戏中使用类型别名来定义重力和风力强度单位的另一个例子，同时仍然使用primitives来定义名称和索引等属性:</p>
+<pre><code class="language-swift">class Level {
+    typealias Newtons = CGFloat
+    typealias MetersPerSecond = CGFloat
+
+    let index: Int
+    let name: String
+    var gravity: Newtons
+    var windStrength: MetersPerSecond
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然文档和注释当然有它们的用处——特别是在显示某个API的用例时——但我们可以做很多事情来让我们的代码更容易理解，而不需要编写任何形式的指令。这样，当我们真正编写文档时，我们就可以专注于更大的画面，而不是将文本过多地绑定到总是会发生变化的实现细节上。</p>
+<p>特别是在像Swift这样的静态类型语言中，使用类型系统来编写更健壮、更清晰的代码通常是一个很好的选择。 这样，编译器可以帮助我们加强正确性，而且由于更好的自动完成和更清晰定义的api，我们的代码变得更容易处理。</p>
+<p><a href="https://www.swiftbysundell.com/articles/writing-self-documenting-swift-code/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5VmnTv3Lu/" class="tag">
+                    maintenance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/launch-arguments-in-swift/">
+                  <h3 class="post-title">
+                    Launch arguments in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

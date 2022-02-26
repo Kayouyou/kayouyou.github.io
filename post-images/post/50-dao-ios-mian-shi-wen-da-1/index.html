@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>50道iOS面试问答 - 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+50道iOS面试问答 - 1
+
+1- How could you set up Live Rendering? (如何设置实时渲染?)
+2- What is the difference between Synchronous &amp..." />
+    <meta name="keywords" content="interview" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">50道iOS面试问答 - 1</h2>
+            <div class="post-date">2021-05-25</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gqumlwpdrfj30qo0ip754.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#50%E9%81%93ios%E9%9D%A2%E8%AF%95%E9%97%AE%E7%AD%94---1">50道iOS面试问答 - 1</a>
+<ul>
+<li><a href="#1--how-could-you-set-up-live-rendering-%E5%A6%82%E4%BD%95%E8%AE%BE%E7%BD%AE%E5%AE%9E%E6%97%B6%E6%B8%B2%E6%9F%93">1- How could you set up Live Rendering? (如何设置实时渲染?)</a></li>
+<li><a href="#2--what-is-the-difference-between-synchronous--asynchronous-task-%E5%90%8C%E6%AD%A5%E5%92%8C%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%8C%BA%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88">2- What is the difference between Synchronous &amp; Asynchronous task? (同步和异步任务的区别是什么?)</a></li>
+<li><a href="#3--explain-compilation-conditions-%E8%A7%A3%E9%87%8A%E7%BC%96%E8%AF%91%E7%8E%AF%E5%A2%83">3- Explain Compilation Conditions (解释编译环境)</a></li>
+<li><a href="#4--what-is-made-up-of-nserror-object-nserror%E5%AF%B9%E8%B1%A1%E6%98%AF%E7%94%B1%E4%BB%80%E4%B9%88%E7%BB%84%E6%88%90%E7%9A%84">4- What is made up of NSError object? (NSError对象是由什么组成的?)</a></li>
+<li><a href="#5--what-is-enum-or-enumerations-%E4%BB%80%E4%B9%88%E6%98%AF%E6%9E%9A%E4%B8%BE%E6%88%96%E6%9E%9A%E4%B8%BE">5- What is Enum or Enumerations? (什么是枚举或枚举?)</a></li>
+<li><a href="#6--what-is-the-bounding-box-%E4%BB%80%E4%B9%88%E6%98%AF%E8%BE%B9%E7%95%8C%E6%A1%86">6- What is the bounding box? (什么是边界框?)</a></li>
+<li><a href="#7--why-dont-we-use-strong-for-enum-property-in-objective-c-%E4%B8%BA%E4%BB%80%E4%B9%88objective-c%E4%B8%AD%E4%B8%8D%E4%BD%BF%E7%94%A8strong%E4%BD%9C%E4%B8%BA%E6%9E%9A%E4%B8%BE%E5%B1%9E%E6%80%A7%E5%91%A2">7- Why don’t we use strong for enum property in Objective-C? (为什么Objective-C中不使用strong作为枚举属性呢?)</a></li>
+<li><a href="#8--what-is-synthesize-in-objective-c-objective-c%E4%B8%AD%E7%9A%84synthesize%E6%98%AF%E4%BB%80%E4%B9%88">8- What is @synthesize in Objective-C? (Objective-C中的@synthesize是什么)?</a></li>
+<li><a href="#9--what-is-dynamic-in-objective-c-objective-c%E4%B8%AD%E7%9A%84dynamic%E6%98%AF%E4%BB%80%E4%B9%88">9- What is @dynamic in Objective-C? (Objective-C中的@dynamic是什么?)</a></li>
+<li><a href="#10--why-do-we-use-synchronized-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8synchronized">10- Why do we use synchronized? (为什么要使用synchronized?)</a></li>
+<li><a href="#11--what-is-the-difference-strong-weaks-read-only-and-copy-%E5%BC%BA%E5%BC%B1%E5%8F%AA%E8%AF%BB%E5%92%8Ccopy%E7%9A%84%E5%8C%BA%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88">11- What is the difference strong, weaks, read only and copy? (强、弱、只读和copy的区别是什么?)</a></li>
+<li><a href="#12--what-is-dynamic-dispatch-%E4%BB%80%E4%B9%88%E6%98%AF%E5%8A%A8%E6%80%81%E8%B0%83%E5%BA%A6">12- What is Dynamic Dispatch? (什么是动态调度?)</a></li>
+<li><a href="#13--whats-code-coverage-%E4%BB%80%E4%B9%88%E6%98%AF%E4%BB%A3%E7%A0%81%E8%A6%86%E7%9B%96%E7%8E%87">13- What’s Code Coverage? (什么是代码覆盖率?)</a></li>
+<li><a href="#14--whats-completion-handler-completion-handler%E6%98%AF%E4%BB%80%E4%B9%88">14- What’s Completion Handler? (Completion Handler是什么?)</a></li>
+<li><a href="#15--how-to-prioritize-usability-in-design--%E5%A6%82%E4%BD%95%E5%9C%A8%E8%AE%BE%E8%AE%A1%E4%B8%AD%E4%BC%98%E5%85%88%E8%80%83%E8%99%91%E5%8F%AF%E7%94%A8%E6%80%A7">15- How to Prioritize Usability in Design ? (如何在设计中优先考虑可用性?)</a></li>
+<li><a href="#16--whats-the-difference-between-the-frame-and-the-bounds-frame%E5%92%8Cbounds%E4%B9%8B%E9%97%B4%E7%9A%84%E5%8C%BA%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88">16- What’s the difference between the frame and the bounds? (frame和bounds之间的区别是什么?)</a></li>
+<li><a href="#17--what-is-responder-chain--%E4%BB%80%E4%B9%88%E6%98%AF%E5%93%8D%E5%BA%94%E9%93%BE">17- What is Responder Chain ? (什么是响应链?)</a></li>
+<li><a href="#18--what-is-regular-expressions-%E4%BB%80%E4%B9%88%E6%98%AF%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F">18- What is Regular expressions? (什么是正则表达式?)</a></li>
+<li><a href="#19--what-is-operator-overloading-%E4%BB%80%E4%B9%88%E6%98%AF%E6%93%8D%E4%BD%9C%E7%AC%A6%E9%87%8D%E8%BD%BD">19- What is Operator Overloading? (什么是操作符重载?)</a></li>
+<li><a href="#20--what-is-tvmlkit-tvmlkit%E6%98%AF%E4%BB%80%E4%B9%88">20- What is TVMLKit? (TVMLKit是什么?)</a></li>
+<li><a href="#21--what-is-platform-limitations-of-tvos">21- What is Platform limitations of tvOS?</a></li>
+<li><a href="#22--what-is-functions">22- What is Functions?</a></li>
+<li><a href="#23--what-is-abi">23- What is ABI?</a></li>
+<li><a href="#24--why-is-design-pattern-very-important-">24- Why is design pattern very important ?</a></li>
+<li><a href="#25--what-is-singleton-pattern-">25- What is Singleton Pattern ?</a></li>
+<li><a href="#26--what-is-facade-design-pattern">26- What is Facade Design Pattern?</a></li>
+<li><a href="#27--what-is-decorator-design-pattern">27- What is Decorator Design Pattern?</a></li>
+<li><a href="#28--what-is-adapter-pattern">28- What is Adapter Pattern?</a></li>
+<li><a href="#29--what-is-observer-pattern">29- What is Observer Pattern?</a></li>
+<li><a href="#30--what-is-memento-pattern">30- What is Memento Pattern?</a></li>
+<li><a href="#31--explain-mvc">31- Explain MVC</a></li>
+<li><a href="#32--explain-mvvm">32- Explain MVVM</a></li>
+<li><a href="#33--how-many-different-annotations-available-in-objective-c-">33- How many different annotations available in Objective-C ?</a></li>
+<li><a href="#34--what-is-jsonplist-limits-">34- What is JSON/PLIST limits ?</a></li>
+<li><a href="#35--what-is-sqlite-limits-">35- What is SQLite limits ?</a></li>
+<li><a href="#36--what-is-realm-benefits-">36- What is Realm benefits ?</a></li>
+<li><a href="#37--how-many-are-there-apis-for-battery-efficient-location-tracking---%E6%9C%89%E5%A4%9A%E5%B0%91api%E7%94%A8%E4%BA%8E%E7%94%B5%E6%B1%A0%E6%95%88%E7%8E%87%E7%9A%84%E4%BD%8D%E7%BD%AE%E8%B7%9F%E8%B8%AA">37- How many are there APIs for battery-efficient location tracking ? ( 有多少api用于电池效率的位置跟踪?)</a></li>
+<li><a href="#38--what-is-the-swift-main-advantage-">38- What is the Swift main advantage ?</a></li>
+<li><a href="#39--explain-generics-in-swift-">39- Explain generics in Swift ?</a></li>
+<li><a href="#40--explain-lazy-in-swift-">40- Explain lazy in Swift ?</a></li>
+<li><a href="#41--explain-what-is-defer-">41- Explain what is defer ?</a></li>
+<li><a href="#42--how-to-pass-a-variable-as-a-reference--%E5%A6%82%E4%BD%95%E4%BC%A0%E9%80%92%E4%B8%80%E4%B8%AA%E5%8F%98%E9%87%8F%E4%BD%9C%E4%B8%BA%E5%BC%95%E7%94%A8">42- How to pass a variable as a reference ? （如何传递一个变量作为引用?)</a></li>
+<li><a href="#43--how-to-pass-data-between-view-controllers">43- How to pass data between view controllers?</a></li>
+<li><a href="#44--what-is-concurrency-">44- What is Concurrency ?</a></li>
+<li><a href="#45--grand-central-dispatch-gcd">45- Grand Central Dispatch (GCD)</a></li>
+<li><a href="#46--readers-writers-%E8%AF%BB%E5%86%99%E9%94%81%F0%9F%94%90">46- Readers-Writers (读写锁🔐)</a></li>
+<li><a href="#47--nsoperation--nsoperationqueue--nsblockoperation">47- NSOperation — NSOperationQueue — NSBlockOperation</a></li>
+<li><a href="#48--kvc--kvo">48- KVC — KVO</a></li>
+<li><a href="#49--please-explain-swifts-pattern-matching-techniques-%E8%AF%B7%E8%A7%A3%E9%87%8Aswift%E7%9A%84%E6%A8%A1%E5%BC%8F%E5%8C%B9%E9%85%8D%E6%8A%80%E6%9C%AF">49- Please explain Swift’s pattern matching techniques （请解释Swift的模式匹配技术）</a></li>
+<li><a href="#50--explain-guard-statement">50- Explain Guard statement</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="50道ios面试问答-1">50道iOS面试问答 - 1</h2>
+<!-- ![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gqumlwpdrfj30qo0ip754.jpg) -->
+<h3 id="1-how-could-you-set-up-live-rendering-如何设置实时渲染">1- How could you set up Live Rendering? (如何设置实时渲染?)</h3>
+<p>@IBDesignable属性允许Interface Builder对特定视图执行实时更新。 IBDesignable需要在UIView类中定义初始frame。</p>
+<h3 id="2-what-is-the-difference-between-synchronous-asynchronous-task-同步和异步任务的区别是什么">2- What is the difference between Synchronous &amp; Asynchronous task? (同步和异步任务的区别是什么?)</h3>
+<p>Synchronous:等待任务完成<br>
+Asynchronous:在后台完成任务，完成后会通知你</p>
+<h3 id="3-explain-compilation-conditions-解释编译环境">3- Explain Compilation Conditions (解释编译环境)</h3>
+<p>Compilation Conditions to use if DEBUG … endif structure to include or disable given block of code ve separate targets.</p>
+<h3 id="4-what-is-made-up-of-nserror-object-nserror对象是由什么组成的">4- What is made up of NSError object? (NSError对象是由什么组成的?)</h3>
+<p>NSError对象有三部分:域(domain)、错误代码(error code)和用户信息字典(user info dictionary)。域是一个字符串，用于标识错误的类别。</p>
+<h3 id="5-what-is-enum-or-enumerations-什么是枚举或枚举">5- What is Enum or Enumerations? (什么是枚举或枚举?)</h3>
+<p>According to Apple’s Swift documentation:</p>
+<p>管理状态，即记录应用程序当前使用情况的数据，是开发应用程序的一个重要部分。</p>
+<p>因为枚举定义有限数量的状态，并且可以将关联值绑定到每个单独的状态，所以您可以使用它们对应用程序及其内部进程的状态进行建模。</p>
+<p>Enum是一种类型，它基本上在同一伞中包含一组相关的值，但是case-less的Enum不允许我们创建实例。</p>
+<p>Reference: https://developer.apple.com/documentation/swift/maintaining_state_in_your_apps</p>
+<h3 id="6-what-is-the-bounding-box-什么是边界框">6- What is the bounding box? (什么是边界框?)</h3>
+<p>边界框是几何学中的一个术语;它指的是一组给定的点在其中的最小度量(面积或体积)。</p>
+<h3 id="7-why-dont-we-use-strong-for-enum-property-in-objective-c-为什么objective-c中不使用strong作为枚举属性呢">7- Why don’t we use strong for enum property in Objective-C? (为什么Objective-C中不使用strong作为枚举属性呢?)</h3>
+<p>因为枚举不是对象，所以这里不指定强或弱。</p>
+<h3 id="8-what-is-synthesize-in-objective-c-objective-c中的synthesize是什么">8- What is @synthesize in Objective-C? (Objective-C中的@synthesize是什么)?</h3>
+<p>Synthesize为属性生成getter和setter方法。</p>
+<h3 id="9-what-is-dynamic-in-objective-c-objective-c中的dynamic是什么">9- What is @dynamic in Objective-C? (Objective-C中的@dynamic是什么?)</h3>
+<p>我们对NSManagedObject的子类使用dynamic。@dynamic告诉编译器getter和setter是在其他地方实现的。</p>
+<h3 id="10-why-do-we-use-synchronized-为什么要使用synchronized">10- Why do we use synchronized? (为什么要使用synchronized?)</h3>
+<p>Synchronized保证在任何给定的时间内，只有一个线程可以执行代码块中的代码。</p>
+<h3 id="11-what-is-the-difference-strong-weaks-read-only-and-copy-强-弱-只读和copy的区别是什么">11- What is the difference strong, weaks, read only and copy? (强、弱、只读和copy的区别是什么?)</h3>
+<p>强、弱、赋值属性属性定义了如何管理该属性的内存。</p>
+<p><strong>Strong</strong>示引用计数将增加 对它的引用将在对象的整个生命周期中被维护</p>
+<p><strong>Weak(非强引用)</strong>，意味着我们正在指向一个对象，但没有增加它的引用计数。它经常用于创建父子关系。父对象对子对象有一个强引用，但子对象对父对象只有一个弱引用。</p>
+<ul>
+<li>Every time used on var (每次用在var上)</li>
+<li>Every time used on an optional type (每次用于可选类型)</li>
+<li>Automatically changes itself to nil (自动将自身更改为nil)</li>
+</ul>
+<p><strong>Read only</strong>，我们可以初始设置属性，但不能更改。</p>
+<p><strong>Copy</strong> 意味着我们在对象创建时复制它的值。也阻止它的值改变。 要了解更多细节，请<a href="https://www.sm-cloud.com/interview-questions-what-are-properties-and-instance-variables-in-objective-c-and-swift/">查看这个</a></p>
+<h3 id="12-what-is-dynamic-dispatch-什么是动态调度">12- What is Dynamic Dispatch? (什么是动态调度?)</h3>
+<p>动态调度是选择实现方式的过程 多态操作的(要在运行时调用的方法或函数)。这意味着，当我们想要调用像对象方法这样的方法时。但Swift不默认为动态调度</p>
+<h3 id="13-whats-code-coverage-什么是代码覆盖率">13- What’s Code Coverage? (什么是代码覆盖率?)</h3>
+<p>代码覆盖率是帮助我们度量单元测试价值的指标。</p>
+<h3 id="14-whats-completion-handler-completion-handler是什么">14- What’s Completion Handler? (Completion Handler是什么?)</h3>
+<p>当我们的应用程序进行API调用时，完成处理程序非常方便，当任务完成时，我们需要做一些事情，比如更新UI以显示来自API调用的数据。 我们将在苹果的api中看到完成处理程序，比如dataTaskWithRequest，它们在你自己的代码中非常方便。</p>
+<p>完成处理程序接受一个带有3个参数的代码块:(NSData?, NSURLResponse ?， NSError?)返回nothing :Void。这是一个闭包。</p>
+<blockquote>
+<p>The completion handlers have to marked @escaping since they are executed some point after the enclosing function has been executed.</p>
+</blockquote>
+<h3 id="15-how-to-prioritize-usability-in-design-如何在设计中优先考虑可用性">15- How to Prioritize Usability in Design ? (如何在设计中优先考虑可用性?)</h3>
+<p>将其设计过程划分为4个步骤:</p>
+<ul>
+<li>
+<p>像用户一样思考，然后设计用户体验。</p>
+</li>
+<li>
+<p>记住，用户是人，而不是人口统计数据。</p>
+</li>
+<li>
+<p>推广一款应用时，要考虑所有它可能有用的情况。</p>
+</li>
+<li>
+<p>即使在发布后，也要继续致力于应用的实用性。</p>
+</li>
+</ul>
+<h3 id="16-whats-the-difference-between-the-frame-and-the-bounds-frame和bounds之间的区别是什么">16- What’s the difference between the frame and the bounds? (frame和bounds之间的区别是什么?)</h3>
+<p>UIView的bounds是一个矩形，表示为相对于它自己的坐标系统(0,0)的位置(x,y)和大小(宽度，高度)。</p>
+<p>UIView的frame是一个矩形，表示为相对于它所包含的父视图的位置(x,y)和大小(宽度，高度)。</p>
+<h3 id="17-what-is-responder-chain-什么是响应链">17- What is Responder Chain ? (什么是响应链?)</h3>
+<p>ResponderChain是一个对象层次结构，这些对象有机会响应接收到的事件。</p>
+<h3 id="18-what-is-regular-expressions-什么是正则表达式">18- What is Regular expressions? (什么是正则表达式?)</h3>
+<p>正则表达式是描述如何搜索字符串的特殊字符串模式。</p>
+<h3 id="19-what-is-operator-overloading-什么是操作符重载">19- What is Operator Overloading? (什么是操作符重载?)</h3>
+<p>操作符重载允许我们改变现有操作符对已经存在的类型的行为方式。操作符是像+、*和/这样的小符号</p>
+<h3 id="20-what-is-tvmlkit-tvmlkit是什么">20- What is TVMLKit? (TVMLKit是什么?)</h3>
+<p>TVMLKit是TVML、JavaScript和原生tvOS应用程序之间的粘合剂。</p>
+<h3 id="21-what-is-platform-limitations-of-tvos">21- What is Platform limitations of tvOS?</h3>
+<p>首先，tvOS不提供任何类型的浏览器支持，也没有任何WebKit或其他基于web的渲染引擎可供编程使用。这意味着你的应用程序不能链接到任何网页浏览器，包括网页链接、OAuth或社交媒体网站。</p>
+<p>其次，tvOS应用程序不能显式地使用本地存储。在产品发布时，这些设备都有32gb或64gb的硬盘空间，但应用程序不允许直接写入板载存储。</p>
+<p>tvOS app bundle不能超过4gb。</p>
+<h3 id="22-what-is-functions">22- What is Functions?</h3>
+<p>函数让我们将一系列语句组合在一起来执行某些任务。一旦创建了一个函数，它就可以在代码中反复重用。 如果您发现自己在代码中重复语句，那么一个函数可能是避免这种重复的答案。<br>
+专业提示，好的函数接受输入并返回输出。糟糕的函数设置全局变量并依赖于其他函数来工作。</p>
+<h3 id="23-what-is-abi">23- What is ABI?</h3>
+<p>对于使用外部库的应用程序来说，abi非常重要。如果构建程序是为了使用某个特定的库，并且该库稍后会更新，那么您不希望必须重新编译该应用程序(并且从最终用户的角度来看，您可能没有源代码)。 如果更新后的库使用相同的ABI，那么您的程序将不需要更改。ABI稳定性将随Swift 5.0而来。</p>
+<h3 id="24-why-is-design-pattern-very-important">24- Why is design pattern very important ?</h3>
+<p>设计模式是软件设计中常见问题的可重用解决方案。它们是为了帮助您编写易于理解和重用的代码而设计的模板。最常见的Cocoa设计模式:</p>
+<ul>
+<li>Creational: Singleton.</li>
+<li>Structural: Decorator, Adapter, Facade.</li>
+<li>Behavioral: Observer, and, Memento</li>
+</ul>
+<h3 id="25-what-is-singleton-pattern">25- What is Singleton Pattern ?</h3>
+<p>单例设计模式确保对于给定的类只有一个实例存在，并且该实例有一个全局访问点。当第一次需要时，它通常使用惰性加载来创建单个实例。</p>
+<h3 id="26-what-is-facade-design-pattern">26- What is Facade Design Pattern?</h3>
+<p>Facade设计模式为复杂的子系统提供了单一的接口。您只公开一个简单的统一API，而不是将用户暴露给一组类及其API。</p>
+<h3 id="27-what-is-decorator-design-pattern">27- What is Decorator Design Pattern?</h3>
+<p>Decorator模式动态地向对象添加行为和职责，而无需修改其代码。它是子类化的另一种选择，通过包装另一个对象来修改一个类的行为。</p>
+<p>在Objective-C中，这种模式有两种常见的实现:<a href="https://www.raywenderlich.com/477-design-patterns-on-ios-using-swift-part-1-2">Category</a>和Delegation。在Swift中，这种模式也有两种非常常见的实现: Extensions and Delegation.</p>
+<h3 id="28-what-is-adapter-pattern">28- What is Adapter Pattern?</h3>
+<p>适配器允许具有不兼容接口的类一起工作。它将自己包装在对象周围，并公开与该对象交互的标准接口。</p>
+<h3 id="29-what-is-observer-pattern">29- What is Observer Pattern?</h3>
+<p>在观察者模式中，一个对象将任何状态更改通知其他对象。<br>
+Cocoa以两种方式实现观察者模式:通知和Key-Value Observing (KVO)。</p>
+<h3 id="30-what-is-memento-pattern">30- What is Memento Pattern?</h3>
+<p>在Memento模式中保存你的东西。 稍后，可以在不违反封装的情况下恢复这种外部化状态;也就是说，私有数据仍然是私有的。苹果的记忆碎片模式的一个特殊实现是存档，iOS使用记忆碎片模式作为状态恢复(State Restoration)的一部分。</p>
+<h3 id="31-explain-mvc">31- Explain MVC</h3>
+<ul>
+<li>
+<p>Models — 负责局部数据或操纵数据的数据访问层，想想“Person”或“PersonDataProvider”类。</p>
+</li>
+<li>
+<p>Views —  负责表示层(GUI)，对于iOS环境，考虑所有以“UI”开头的前缀。</p>
+</li>
+<li>
+<p>Controller/Presenter/ViewModel —  它是模型和视图之间的粘合剂或中介，通常负责通过响应用户在视图上执行的操作来更改模型，并使用来自模型的更改来更新视图。</p>
+</li>
+</ul>
+<h3 id="32-explain-mvvm">32- Explain MVVM</h3>
+<p>你的视图和它的状态的UIKit独立表示。视图模型调用模型中的更改，并使用更新后的模型更新自身，由于我们在视图和视图模型之间有一个绑定，因此第一个被相应地更新。</p>
+<p>你的视图模型会接受你的模型，它能将显示在你的视图上的信息格式化。</p>
+<p>有一个更有名的框架叫做RxSwift。它包含RxCocoa，这是Cocoa和CocoaTouch的反应性扩展。</p>
+<h3 id="33-how-many-different-annotations-available-in-objective-c">33- How many different annotations available in Objective-C ?</h3>
+<ul>
+<li>_Null_unspecified, 连接到Swift隐式解包可选。这是默认值</li>
+<li>_Nonnull,  该值不会为空，因为它连接到一个常规引用。</li>
+<li>_Nullable 该值可以为nil，它桥接到一个可选的。</li>
+<li>_Null_resettable 当读取时，这个值永远不能为nil，但是你可以将它设置为know来重置它。这只是应用属性。</li>
+</ul>
+<h3 id="34-what-is-jsonplist-limits">34- What is JSON/PLIST limits ?</h3>
+<ul>
+<li>我们创建对象，然后将它们序列化到磁盘。</li>
+<li>这是非常伟大和非常有限的用例。</li>
+<li>我们显然不能使用复杂的查询来过滤结果。</li>
+<li>这是非常缓慢。</li>
+<li>每当我们需要什么东西时，我们需要对它进行序列化或反序列化。</li>
+<li>这不是线程安全的。</li>
+</ul>
+<h3 id="35-what-is-sqlite-limits">35- What is SQLite limits ?</h3>
+<ul>
+<li>我们需要定义表之间的关系。定义所有表的模式。</li>
+<li>我们必须手动编写查询来获取数据。</li>
+<li>我们需要查询结果，然后将它们映射到模型。</li>
+<li>查询非常快。</li>
+</ul>
+<h3 id="36-what-is-realm-benefits">36- What is Realm benefits ?</h3>
+<ul>
+<li>开源数据库框架。</li>
+<li>从头开始实现。</li>
+<li>零复制对象存储。</li>
+<li>快。</li>
+</ul>
+<h3 id="37-how-many-are-there-apis-for-battery-efficient-location-tracking-有多少api用于电池效率的位置跟踪">37- How many are there APIs for battery-efficient location tracking ? ( 有多少api用于电池效率的位置跟踪?)</h3>
+<p>There are 3 apis.</p>
+<ul>
+<li>Significant location changes — 地点大约每500米(通常最多1公里)传送一次</li>
+<li>Region monitoring — 从半径大于等于100米的圆形区域追踪进入/退出事件。区域监测是仅次于GPS的最精确的API。</li>
+<li>Visit events — 从一个地方(家/办公室)进入/退出的访问事件。</li>
+</ul>
+<h3 id="38-what-is-the-swift-main-advantage">38- What is the Swift main advantage ?</h3>
+<p>To mention some of the main advantages of Swift:</p>
+<ul>
+<li>可选类型，使应用程序抗崩溃</li>
+<li>内置的错误处理</li>
+<li>闭包</li>
+<li>比其他语言快得多</li>
+<li>类型安全语言</li>
+<li>支持模式匹配</li>
+</ul>
+<h3 id="39-explain-generics-in-swift">39- Explain generics in Swift ?</h3>
+<p>泛型创建的代码并不特定于底层数据类型。看<a href="https://www.raywenderlich.com/3535703-swift-generics-tutorial-getting-started">这篇文章</a>。泛型允许我们知道它将包含什么类型。泛型还为我们的代码提供了优化。</p>
+<h3 id="40-explain-lazy-in-swift">40- Explain lazy in Swift ?</h3>
+<p>延迟存储属性的初始值只在第一次调用该属性时计算。 在某些情况下，惰性属性对开发人员非常方便。</p>
+<h3 id="41-explain-what-is-defer">41- Explain what is defer ?</h3>
+<p>delay关键字，它提供了在执行离开当前作用域时将执行的代码块。</p>
+<h3 id="42-how-to-pass-a-variable-as-a-reference-如何传递一个变量作为引用">42- How to pass a variable as a reference ? （如何传递一个变量作为引用?)</h3>
+<p>我们需要提到有两种类型的变量:引用类型和值类型。这两种类型的区别在于，通过传递值类型，变量将创建其数据的副本，而引用类型变量将只指向内存中的原始数据。</p>
+<h3 id="43-how-to-pass-data-between-view-controllers">43- How to pass data between view controllers?</h3>
+<p>There are 3 ways to pass data between view controllers.</p>
+<ol>
+<li>Segue，在prepareForSegue方法中(向前)</li>
+<li>委托(向后)</li>
+<li>直接设置变量(向前)</li>
+</ol>
+<h3 id="44-what-is-concurrency">44- What is Concurrency ?</h3>
+<p>并发是划分程序的执行路径，以便它们可能同时运行。 常用术语:进程、线程、多线程等。</p>
+<p>术语：</p>
+<ul>
+<li>进程，一个正在执行的应用程序的实例</li>
+<li>线程，代码执行的路径</li>
+<li>多线程，同时运行的多个线程或多条执行路径。</li>
+<li>并发性，以可伸缩的方式同时执行多个任务。</li>
+<li>队列，队列是轻量级数据结构，按照先进先出(FIFO)的顺序管理对象。</li>
+<li>同步任务与异步任务</li>
+</ul>
+<h3 id="45-grand-central-dispatch-gcd">45- Grand Central Dispatch (GCD)</h3>
+<p>GCD是一个库，它提供了一个底层的、基于对象的API，可以在后台管理线程的同时并发地运行任务。<br>
+术语：</p>
+<ul>
+<li>Dispatch Queues, 分派队列负责按照先入先出的顺序执行任务。</li>
+<li>Serial Dispatch Queue, 串行分派队列一次只运行一个任务。</li>
+<li>Concurrent Dispatch Queue, 并发调度队列可以运行尽可能多的任务，而不必等待已启动的任务完成。</li>
+<li>Main Dispatch Queue 全局可用的串行队列，用于在应用程序的主线程上执行任务。</li>
+</ul>
+<h3 id="46-readers-writers-读写锁">46- Readers-Writers (读写锁🔐)</h3>
+<p>多个线程同时读取，而应该只有一个线程写入。这个问题的解决方案是一个读写锁，它允许并发的只读访问和独占的写访问。</p>
+<p>Terminology;</p>
+<ul>
+<li>Race Condition 当两个或多个线程可以访问共享数据并试图同时更改数据时，就会出现竞争条件。</li>
+<li>Deadlock 当两个或更多的任务等待另一个任务完成时，就会发生死锁，但两者都没有完成。</li>
+<li>Readers-writer 问题同时有多个线程读取，而应该只有一个线程写入。</li>
+<li>Readers-writer 这种锁允许对共享资源进行并发的只读访问，而写操作需要独占访问。</li>
+<li>Dispatch Barrier Block 当使用并发队列时，Dispatch Barrier块创建了一个串行风格的瓶颈。</li>
+</ul>
+<h3 id="47-nsoperation-nsoperationqueue-nsblockoperation">47- NSOperation — NSOperationQueue — NSBlockOperation</h3>
+<ul>
+<li>
+<p><strong>NSOperation</strong> 与GCD相比，这会增加一些额外的开销，但我们可以在各种操作中添加依赖，并重用、取消或挂起它们。</p>
+</li>
+<li>
+<p><strong>NSOperationQueue</strong>, 它允许创建一个线程池，并用于并行执行NSOperations。操作队列不是GCD的一部分。</p>
+</li>
+<li>
+<p><strong>NSBlockOperation</strong> 允许你从一个或多个闭包创建一个NSOperation。NSBlockOperations可以有多个block，并发运行。</p>
+</li>
+</ul>
+<h3 id="48-kvc-kvo">48- KVC — KVO</h3>
+<ul>
+<li>
+<p><strong>KVC</strong> add表示键值编码。它是一种机制，可以在运行时使用字符串访问对象的属性，而不必在开发时静态地知道属性名。</p>
+</li>
+<li>
+<p><strong>KVO</strong> 代表Key-Value Observing，允许控制器或类观察属性值的变化。 在KVO中，一个对象可以要求被通知一个特定属性的任何变化，当属性改变值时，观察者就会被自动通知。</p>
+</li>
+</ul>
+<h3 id="49-please-explain-swifts-pattern-matching-techniques-请解释swift的模式匹配技术">49- Please explain Swift’s pattern matching techniques （请解释Swift的模式匹配技术）</h3>
+<ul>
+<li>元组模式用于匹配相应元组类型的值。</li>
+<li>类型转换模式允许您转换或匹配类型。</li>
+<li>通配符模式匹配并忽略任何类型的值。</li>
+<li>可选模式用于匹配可选值。</li>
+<li>枚举案例模式匹配现有枚举类型的案例。</li>
+<li>表达式模式允许您将给定值与给定表达式进行比较。</li>
+</ul>
+<h3 id="50-explain-guard-statement">50- Explain Guard statement</h3>
+<p>Guard语句有三大好处。</p>
+<ul>
+<li>一个是避免厄运金字塔，就像其他人提到的那样——有很多恼人的if let语句彼此嵌套，并向右移得越来越远。</li>
+<li>第二个好处是使用break或return提前退出函数。</li>
+<li>最后一个好处是，guard语句是安全展开可选对象的另一种方法。</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1UYNOQrST/" class="tag">
+                    interview
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/equatable-and-hashable-be-referenced-directly/">
+                  <h3 class="post-title">
+                    Equatable and Hashable, be referenced directly?
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Core Animation gems - Using replicator layers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="如果你曾经在苹果设备的屏幕上推动过一个像素，那么你已经直接或间接地使用了核心动画。和大多数苹果核心框架一样，它也是我们日常使用的许多工具的基础技术之一-无论我们的目标是哪个平台。
+虽然关于最常用的核心动画api有很多很棒的教程和资源-例如使..." />
+    <meta name="keywords" content="core animation,animations" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Core Animation gems - Using replicator layers in Swift</h2>
+            <div class="post-date">2017-08-27</div>
+            
+            <div class="post-content" v-pre>
+              <p>如果你曾经在苹果设备的屏幕上推动过一个像素，那么你已经直接或间接地使用了核心动画。和大多数苹果核心框架一样，它也是我们日常使用的许多工具的基础技术之一-无论我们的目标是哪个平台。</p>
+<p>虽然关于最常用的核心动画api有很多很棒的教程和资源-例如使用CALayer为UIView执行更多的低级渲染，或者使用像CAKeyframeAnimation这样的动画api -也有一些真正有用的功能，但并不广为人知。</p>
+<p>在这篇新的(非连续的)系列文章——“核心动画宝石”中，我们将深入了解其中的一些特性和api，以及如何用它们来解决与动画和渲染相关的问题。本周，让我们从第一个💎- CAReplicatorLayer开始。</p>
+<h2 id="specialization">Specialization</h2>
+<p>核心动画的 layer classes 的架构非常以专门化的思想为中心。你有根类- CALayer -它基本上是一个通用的画布，任何东西都可以在上面绘制，然后，您有一系列的子类，它们都专门化于特定类型的呈现。</p>
+<p>CAReplicatorLayer专门以一种高效(硬件加速)的方式绘制原始层的多个副本(因此它是一个“复制器”)。在绘制平铺背景、图案或其他需要重复多次的东西时，它非常有用。我甚至用它来实现我即将推出的开源Swift游戏引擎的纹理平铺功能。</p>
+<p><em>Can your UIColor do this?</em></p>
+<p>实现重复图像背景的一种常见方式是使用UIColor，它有一个以patternImage为参数的初始化器。它可以让你把重复的图像序列当作一种颜色，并把它用作背景，像这样:<br>
+<img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post-images/1618752363314.png" alt="" loading="lazy"></p>
+<pre><code class="language-swift">view.backgroundColor = UIColor(patternImage: image)
+</code></pre>
+<p>虽然在某些情况下，这种绘制重复图像的方式正是您想要的，但在其他情况下，您可能想要做一些更复杂的事情-这就是使用CAReplicatorLayer的原因。</p>
+<p>假设我们想绘制一个由重复图像组成的图案，但我们也想用蓝色的阴影来着色它，使图案形成一个渐变，从原始图像的颜色直到它完全着色，就像这样:</p>
+<p>这可以很容易地完成，不需要任何定制的核心图形绘图代码，使用replicator layer。让我们深入了解一下实现是什么样子的。</p>
+<h2 id="setting-things-up">Setting things up</h2>
+<p>我们将首先设置我们的replicator layer 作为UIView层的子层，为了在屏幕上渲染它(本文中的示例代码将针对iOS/tvOS，但它在macOS上的工作方式几乎完全相同）。</p>
+<pre><code class="language-swift">let replicatorLayer = CAReplicatorLayer()
+replicatorLayer.frame.size = view.frame.size
+replicatorLayer.masksToBounds = true
+view.layer.addSublayer(replicatorLayer)
+</code></pre>
+<p>我们使用上面的maskstobound来避免过度绘制，以防模式图像的大小与视图的大小不完全一致。</p>
+<p>我们还必须给replicator layer 一个子层来进行复制。为此，我们设置了一个简单的图层，将图像渲染为其内容:</p>
+<pre><code class="language-swift">let imageLayer = CALayer()
+imageLayer.contents = image.cgImage
+imageLayer.frame.size = image.size
+replicatorLayer.addSublayer(imageLayer)
+</code></pre>
+<p>如果我们现在运行上面的代码(例如在操场上)，我们将看到正在渲染的图像，但只有它的一个副本。这是因为我们还需要告诉复制器层我们希望它渲染多少副本(或实例)。让我们来设置它，以便我们渲染足够的副本来填充我们的视图宽度:</p>
+<pre><code class="language-swift">let instanceCount = view.frame.width / image.size.width
+replicatorLayer.instanceCount = Int(ceil(instanceCount))
+</code></pre>
+<p>我们现在将有多个副本渲染，但我们仍然不能看到多于一个-因为他们，每个默认，所有渲染堆叠在彼此之上。了解决这个问题，我们需要解决这个难题的最后一个部分——也是CAReplicatorLayer最强大的特性之一——实例偏移和转换。</p>
+<h2 id="using-instance-offsets-transforms">Using instance offsets &amp; transforms</h2>
+<p>replicator layer所呈现的每个实例都可以通过几种不同的方式进行转换。这使您能够创建相当复杂的模式，并以有趣的方式使它们动画化。</p>
+<p>为了实现我们正在寻找的梯度模式，我们将对每个实例应用CATransform3D变换——将它们向右移动 - 减少每个实例的色调的红色和绿色组件，如下所示:</p>
+<pre><code class="language-swift">// Shift each instance by the width of the image
+replicatorLayer.instanceTransform = CATransform3DMakeTranslation(
+    image.size.width, 0, 0
+)
+
+// Reduce the red &amp; green color component of each instance,
+// effectively making each copy more and more blue
+let colorOffset = -1 / Float(replicatorLayer.instanceCount)
+replicatorLayer.instanceRedOffset = colorOffset
+replicatorLayer.instanceGreenOffset = colorOffset
+</code></pre>
+<p>这样，我们就有了一个水平重复的梯度图案!🎉但是让我们更进一步，好吗? 😉</p>
+<h2 id="replicatorception">Replicatorception</h2>
+<p>因为CAReplicatorLayer是CALayer的子类，所以可以将它们嵌套在一起。这使您能够在多个维度中创建更复杂的模式。例如，我们想扩展我们原来的图案，也使用另一种色调梯度垂直重复，像这样:<br>
+<img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post-images/1618752379684.png" alt="" loading="lazy"><br>
+我们所要做的只是简单地将原始的复制器层包装到另一个层中，这将垂直地偏移每个实例并减少每个实例的蓝色组件:</p>
+<pre><code class="language-swift">let verticalReplicatorLayer = CAReplicatorLayer()
+verticalReplicatorLayer.frame.size = view.frame.size
+verticalReplicatorLayer.masksToBounds = true
+verticalReplicatorLayer.instanceBlueOffset = colorOffset
+view.layer.addSublayer(verticalReplicatorLayer)
+
+let verticalInstanceCount = view.frame.height / image.size.height
+verticalReplicatorLayer.instanceCount = Int(ceil(verticalInstanceCount))
+
+verticalReplicatorLayer.instanceTransform = CATransform3DMakeTranslation(
+    0, image.size.height, 0
+)
+
+verticalReplicatorLayer.addSublayer(replicatorLayer)
+
+</code></pre>
+<p>现在我们有了一个逐渐着色的宝石网格-让我们用它来享受一些乐趣😀我们毕竟在使用核心动画，所以添加一些动画似乎是正确的事情。</p>
+<p>只需要几行代码，我们就可以实现一些非常有趣的效果。首先，让我们设置我们的复制器(水平的和垂直的)，添加一个轻微的延迟，所有动画应用到他们复制的层:</p>
+<pre><code class="language-swift">let delay = TimeInterval(0.1)
+replicatorLayer.instanceDelay = delay
+verticalReplicatorLayer.instanceDelay = delay
+</code></pre>
+<p>然后，让我们添加一个CABasicAnimation，使图像层反复缩放:</p>
+<pre><code class="language-swift">let animation = CABasicAnimation(keyPath: &quot;transform.scale&quot;)
+animation.duration = 2
+animation.fromValue = 1
+animation.toValue = 0.1
+animation.autoreverses = true
+animation.repeatCount = .infinity
+imageLayer.add(animation, forKey: &quot;hypnoscale&quot;)
+</code></pre>
+<p>由于应用到图像层的动画也会被复制器层复制，并且由于我们对所有实例应用了轻微的延迟，我们得到了一个相当疯狂的结果:</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>对于某些类型的渲染和动画来说，CAReplicatorLayer是一个非常棒且易于使用的工具。例如，你可以使用它来实现平铺背景、自定义加载动画或其他通常需要某种形式的重复模式的东西。</p>
+<p>就像我们将在本系列文章中看到的大多数宝石一样，复制层几乎不是你每次渲染图像或图案时都会用到的东西-但如果你需要做一些更复杂但性能更好的事情，这绝对是一个很好的选择。</p>
+<p><a href="https://www.swiftbysundell.com/articles/ca-gems-using-replicator-layers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VXXvOQLSHR/" class="tag">
+                    core animation
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nk7gw0vRGQ/" class="tag">
+                    animations
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/replacing-legacy-code-using-swift-protocols/">
+                  <h3 class="post-title">
+                    Replacing legacy code using Swift protocols
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

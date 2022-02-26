@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title> Swift代码生成 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Code Generation in Swift
+
+
+1.1. Code generation use cases
+1.2. Resource accessors
+1.3. Test mocks
+1.4. Dependency In..." />
+    <meta name="keywords" content="generation" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title"> Swift代码生成</h2>
+            <div class="post-date">2021-05-17</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#CodeGenerationinSwift">Code Generation in Swift</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Codegenerationusecases">Code generation use cases</a></li>
+<li>1.2. <a href="#Resourceaccessors">Resource accessors</a></li>
+<li>1.3. <a href="#Testmocks">Test mocks</a></li>
+<li>1.4. <a href="#DependencyInjection">Dependency Injection</a></li>
+<li>1.5. <a href="#DTOmodels">DTO models</a></li>
+<li>1.6. <a href="#Other">Other</a></li>
+<li>1.7. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namecodegenerationinswiftacode-generation-in-swift">1. <a name='CodeGenerationinSwift'></a>Code Generation in Swift</h2>
+<p><strong>Discover use-cases of code generation and get an overview of the tools you can use to automate it</strong></p>
+<p>在开发iOS项目时，你会发现自己经常编写样板代码。这是您不喜欢手动编写的代码，并且在大多数情况下尝试复制和粘贴。它可能会导致某些错误，甚至在运行时崩溃。在这种情况下，代码生成可能会有用。它允许您生成乏味和重复的代码，并使应用程序更加可靠。</p>
+<p>在这篇文章中，让我们来看看代码生成有意义的用例，并概述一下我们可以用来自动化代码生成的工具。</p>
+<h3 id="11-a-namecodegenerationusecasesacode-generation-use-cases">1.1. <a name='Codegenerationusecases'></a>Code generation use cases</h3>
+<p>代码生成不是一项新技术，已经在许多Android、Golang等项目中使用。你可能已经在你的项目中使用了<a href="https://github.com/krzysztofzablocki/Sourcery">Sourcery</a>，这是Swift中一个用于代码生成和元编程的流行工具。</p>
+<p>首先，让我们定义最常见的代码生成用例:</p>
+<ul>
+<li>Resource accessors</li>
+<li>Test mocks</li>
+<li>Dependency Injection</li>
+<li>DTO models</li>
+</ul>
+<p>应该提到的是，随着Swift的发展，我们不再需要为某些任务生成代码。这包括可编码协议、可等量协议、可哈希协议和CaseIterable协议的自动合成。</p>
+<h3 id="12-a-nameresourceaccessorsaresource-accessors">1.2. <a name='Resourceaccessors'></a>Resource accessors</h3>
+<p>不幸的是，在iOS中没有类似于Android的R类。这就是为什么对应用资源(如资产、本地化字符串等)的访问需要在运行时进行评估。当应用程序包中缺少资源时，这可能会导致某些问题。</p>
+<p>幸运的是，有一个很棒的工具<a href="https://github.com/SwiftGen/SwiftGen">Swiftgen</a>，它允许你为你的项目资源自动生成Swift代码。 使用SwiftGen，您可以获得对资源的类型安全访问，并避免使用不存在的资源的风险。它可以为下一个资源类型生成常量:</p>
+<ul>
+<li>Asset Catalogs</li>
+<li>Localization strings</li>
+<li>IB Storyboards</li>
+<li>Colors</li>
+<li>Fonts</li>
+<li>JSON/YAML/Plist</li>
+<li>Core data models</li>
+</ul>
+<p>SwiftGen使用模板(<a href="https://github.com/stencilproject/Stencil">Stencil</a>)语言来定义模板。它与一些现成的模板捆绑在一起，并允许创建自定义模板。我建议检查下面的指南，以获得<a href="https://stencil.fuller.li">Stencil</a>的概述，并熟悉它的语法。</p>
+<h3 id="13-a-nametestmocksatest-mocks">1.3. <a name='Testmocks'></a>Test mocks</h3>
+<p>在像Swift这样的静态语言中，带mock的单元测试有点问题。原因是不能在运行时动态创建或修改类行为。作为一种选择，你可以使用OCMock库，但它仅限于NSObject子类，并且不提供完整的Swift支持。</p>
+<p>我们可以使用反射，但它在Swift中受到了很大限制，不适合在运行时创建模拟。 其他的选择是通过定义一个符合协议的类来手动创建这些测试模拟。</p>
+<p>但它会导致大量乏味和重复的工作。</p>
+<p>幸运的是，你可以使用工具自动生成可以在你的测试中使用的模拟对象:</p>
+<ul>
+<li><a href="https://github.com/krzysztofzablocki/Sourcery">Sourcery</a></li>
+<li><a href="https://github.com/Brightify/Cuckoo">Cuckoo</a></li>
+<li><a href="https://github.com/uber/mockolo">Mockolo</a></li>
+<li><a href="https://github.com/MakeAWishFoundation/SwiftyMocky">SwiftyMocky</a></li>
+</ul>
+<p>在这些帮助下，您可以自动编写和维护手动完成的模拟实现。</p>
+<h3 id="14-a-namedependencyinjectionadependency-injection">1.4. <a name='DependencyInjection'></a>Dependency Injection</h3>
+<p><a href="https://www.martinfowler.com/articles/injection.html">依赖注入</a>是一种基本的软件开发模式。它表示通过构造函数、公共属性或setter函数为类提供依赖关系的控制反转技术。</p>
+<p>随着项目的规模越来越大，注入依赖项并将它们通过几个抽象层传递下去会变得更加耗时。这就是为什么您可以在项目中开始使用DI框架的原因。像<a href="https://github.com/scribd/Weaver">Weaver</a>和<a href="https://github.com/uber/needle">Needle</a>这样的工具是受到<a href="https://dagger.dev/dev-guide/android.html">Dagger</a>的启发并利用代码生成的。他们负责生成必要的样板代码来注入依赖项。最终，通过确保依赖注入代码在编译时是安全的，您会获得更多的信心:如果它能编译，它就能工作。</p>
+<h3 id="15-a-namedtomodelsadto-models">1.5. <a name='DTOmodels'></a>DTO models</h3>
+<p>在与RESTful api集成时，通常需要定义大量的数据传输对象。很明显，这种方法效率低下，可能会导致代码中的错误。</p>
+<p>幸运的是，如果后端使用<a href="https://swagger.io">Swagger</a>并公开Open API Specification(Swagger Specification)文件，您可以生成客户端代码。这里有几个选择:</p>
+<ul>
+<li><a href="https://editor.swagger.io">swagger online editor</a></li>
+<li><a href="https://github.com/swagger-api/swagger-codegen">swagger-codegen</a> official application</li>
+<li><a href="https://github.com/yonaskolb/SwagGen">SwagGen</a> alternative tool, that has some improvements compared to the official one</li>
+</ul>
+<p>应该指出的是，这两种工具都使用模板来生成代码。如果不满意默认语法，可以提供自定义语法。</p>
+<h3 id="16-a-nameotheraother">1.6. <a name='Other'></a>Other</h3>
+<p>苹果的工程师也在使用代码生成技术。Swift维护人员创建了一个名为<a href="https://pypi.org/project/gyb/">GYB</a>的基于python的模板工具，它是“生成你的样板(Generate Your Boilerplate)”的首字母缩写。当您拥有具有公共结构的抽象时，它可能会很有帮助。您可以定义一个模板并生成其余的类/结构/枚举，而不是维护类似代码的多个版本。</p>
+<p><a href="https://nshipster.com/swift-gyb/">NSHipster</a>上还有一篇关于GYB以及如何在项目中采用GYB的文章。</p>
+<h3 id="17-a-nameconclusionaconclusion">1.7. <a name='Conclusion'></a>Conclusion</h3>
+<p>代码生成是提高生产力和使应用程序更健壮的有效方法。你可能熟悉iOS中的代码生成，并尝试过Sourcery或Swiftgen。 如果没有，我建议从资源访问器或测试模拟代码生成开始。通过这种方式，您可以消除手动维护样板代码的需要，并将重点放在其他重要的事情上。</p>
+<p>Thanks for reading!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/avaK43d2t/" class="tag">
+                    generation
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/li-jie-swift-zhong-de-di-gui-mei-ju/">
+                  <h3 class="post-title">
+                    理解Swift中的递归枚举
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

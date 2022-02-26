@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Enum iterations in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="随着每一个新版本的发布，Swift在创建通用样板的编译器生成实现方面做得越来越好。有了可编码的一致性和合成的一致性和可哈希，我们现在可以利用编译器，利用它对我们的类型的了解，为我们生成更不容易出错的实现。
+Swift 4.2的一个新特性是新..." />
+    <meta name="keywords" content="enums,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Enum iterations in Swift</h2>
+            <div class="post-date">2018-08-26</div>
+            
+            <div class="post-content" v-pre>
+              <p>随着每一个新版本的发布，Swift在创建通用样板的编译器生成实现方面做得越来越好。有了可编码的一致性和合成的一致性和可哈希，我们现在可以利用编译器，利用它对我们的类型的了解，为我们生成更不容易出错的实现。</p>
+<p>Swift 4.2的一个新特性是新的CaseIterable协议，它使我们能够告诉编译器自动为任何rawrepresentation枚举合成一个allCases集合。 本周，让我们看一些场景示例，在这些场景中，这个新特性可以非常方便地使用。</p>
+<h2 id="enum-dictionaries">Enum dictionaries</h2>
+<p>在Swift中，使用枚举来为字典创建类型安全键是很常见的，比如配置和选项。 甚至从Objective-C转换过来的类也开始采用这种模式(通过一些巧妙的转换成类似枚举的结构)，如NSAttributedString:</p>
+<pre><code class="language-swift">let string = NSAttributedString(
+    string: &quot;Hello, world!&quot;,
+    attributes: [
+        .foregroundColor: UIColor.red,
+        .font: UIFont.systemFont(ofSize: 20)
+    ]
+)
+</code></pre>
+<p>这种模式的主要优点是，我们不再需要依赖于字符串常量或整数索引来将包含选项的字典传递给API -相反，我们有一组清晰定义的键，可以由编译器进行类型检查。</p>
+<p>假设我们想使用这个模式为应用程序中使用的各种文本样式定义一个字体字典——以便为渲染文本的代码的所有部分提供一个单一的源。我们可以先定义一个枚举来表示所使用的每种文本类型，如下所示:</p>
+<pre><code class="language-swift">enum TextType {
+    case title
+    case subtitle
+    case sectionTitle
+    case body
+    case comment
+}
+</code></pre>
+<p>接下来，我们将使用上面的枚举来创建一个字典，让我们能够为给定的TextType查找UIFont，像这样:</p>
+<pre><code class="language-swift">let fonts: [TextType : UIFont] = [
+    .title : .preferredFont(forTextStyle: .headline),
+    .subtitle : .preferredFont(forTextStyle: .subheadline),
+    .sectionTitle : .preferredFont(forTextStyle: .title2),
+    .comment : .preferredFont(forTextStyle: .footnote)
+]
+</code></pre>
+<p>然而，我们才刚刚开始，但是我们已经引入了一个错误😬。仔细看看上面的字典，我们可以看到我们实际上错过了为.body case添加一个条目，编译器无法帮助我们检测。</p>
+<h2 id="caseiterable">CaseIterable</h2>
+<p>不像上面那样手动定义字体字典，让我们看看Swift 4.2的CaseIterable如何帮助我们避免错误，并使我们的代码在定义枚举键式字典时更加一致。</p>
+<p>我们将首先使TextType符合CaseIterable。就像可编代码、可平等化和可哈希化一样，我们自己不需要编写任何额外的代码 -  相反，CaseIterable充当编译器的标记，告诉编译器为我们合成一个allCases集合:</p>
+<pre><code class="language-swift">enum TextType: CaseIterable {
+    case title
+    case subtitle
+    case sectionTitle
+    case body
+    case comment
+}
+</code></pre>
+<p>通过上面的修改，我们现在可以使用TextType了。按顺序访问所有case的集合，然后我们可以使用它来建立我们的字体字典，而不会有丢失case的风险，像这样:</p>
+<pre><code class="language-swift">var fonts = [TextType : UIFont]()
+
+for type in TextType.allCases {
+    switch type {
+    case .title:
+        fonts[type] = .preferredFont(forTextStyle: .headline)
+    case .subtitle:
+        fonts[type] = .preferredFont(forTextStyle: .subheadline)
+    case .sectionTitle:
+        fonts[type] = .preferredFont(forTextStyle: .title2)
+    case .body:
+        fonts[type] = .preferredFont(forTextStyle: .body)
+    case .comment:
+        fonts[type] = .preferredFont(forTextStyle: .footnote)
+    }
+}
+</code></pre>
+<p>这绝对是一种改进，因为如果我们现在添加一个没有匹配字体定义的新文本类型——我们将得到一个编译器错误👍。</p>
+<p>然而，我们仍然可以进一步改进。不仅上面的代码看起来有点重复——因为我们必须对所有情况执行相同的字体[类型]分配——而且我们在调用站点也有一点问题。</p>
+<p>因为我们使用字典来存储字体，尽管我们现在使用完整的键类型，编译器无法保证我们会为每个键都有一个UIFont值。 所以，即使我们知道下面的内容总是非空的，它仍然是可选的，就类型系统而言:</p>
+<pre><code class="language-swift">// This will be of type UIFont?, which is not always convenient
+let titleFont = fonts[.title]
+</code></pre>
+<p>让我们看看能否同时解决上述两个问题——使用自定义映射类型。</p>
+<h2 id="enum-maps">Enum maps</h2>
+<p>我们的映射类型本质上是对上面写的代码的薄包装，但不必在调用站点建立一个值字典，我们只需将一个resolver闭包传递给我们的map类型——然后它将使用这个闭包遍历所有的情况，并建立我们的值集合，就像这样:</p>
+<pre><code class="language-swift">struct EnumMap&lt;Enum: CaseIterable &amp; Hashable, Value&gt; {
+    private let values: [Enum : Value]
+
+    init(resolver: (Enum) -&gt; Value) {
+        var values = [Enum : Value]()
+
+        for key in Enum.allCases {
+            values[key] = resolver(key)
+        }
+
+        self.values = values
+    }
+
+    subscript(key: Enum) -&gt; Value {
+        // Here we have to force-unwrap, since there's no way
+        // of telling the compiler that a value will always exist
+        // for any given key. However, since it's kept private
+        // it should be fine - and we can always add tests to
+        // make sure things stay safe.
+        return values[key]!
+    }
+}
+</code></pre>
+<p>我们还可以让EnumMap存储它的解析器闭包，并在请求值时延迟执行它，但这要么要求它是一个类 - 因为它需要被改变-或者在每次调用下标时创建一个新值。通过使它成为一个不可变的结构体，查找将会非常快——即使在创建它时需要进行完整的O(n)迭代。</p>
+<p>有了新的EnumMap，我们现在可以用一个非常漂亮的基于闭包的结尾语法简单地定义字体集合:</p>
+<pre><code class="language-swift">let fonts = EnumMap&lt;TextType, UIFont&gt; { type in
+    switch type {
+    case .title:
+        return .preferredFont(forTextStyle: .headline)
+    case .subtitle:
+        return .preferredFont(forTextStyle: .subheadline)
+    case .sectionTitle:
+        return .preferredFont(forTextStyle: .title2)
+    case .body:
+        return .preferredFont(forTextStyle: .body)
+    case .comment:
+        return .preferredFont(forTextStyle: .footnote)
+    }
+}
+</code></pre>
+<p>更好的是，我们所有的字体查找仍然可以使用完全相同的下标语法，但现在结果是非可选的UIFont值:</p>
+<pre><code class="language-swift">let titleFont = fonts[.title]
+let subtitleFont = fonts[.subtitle]
+</code></pre>
+<p>由于我们将EnumMap设为泛型，它现在也可以在许多不同的地方使用，当我们想要在enum和一组值之间创建映射时——而不需要处理任何可选的👍。</p>
+<h2 id="many-cases-for-iterations">Many cases for iterations</h2>
+<p>之所以将CaseIterable添加到Swift 4.2中，是因为在很多情况下遍历枚举的所有情况都是非常有用的操作。 让我们看另一个例子，在这个例子中，我们使用enum来定义基于UITableView的视图控制器的各个部分:</p>
+<pre><code class="language-swift">extension ProductListViewController {
+    enum Section: String, CaseIterable {
+        case featured
+        case onSale
+        case categories
+        case saved
+    }
+}
+</code></pre>
+<p>当使用一个UITableView有几个不同的section(像这个)时，一个常见的样板源是为每个section注册单元类。就像我们的第一个例子，当很容易因为缺少字体而导致错误时， 同样很容易错过为给定的节标识符注册单元类——这(正如我们大多数人经历过的那样)会导致运行时崩溃。</p>
+<p>让我们看看CaseIterable如何帮助我们解决这个问题。就像我们实现上面的EnumMap一样，我们可以定义一个解析器闭包，将给定的section转换成UITableViewCell类，然后使用Section.allCases为每个section注册解析后的类-像这样:</p>
+<pre><code class="language-swift">extension ProductListViewController {
+    func registerCellClasses() {
+        let resolver: (Section) -&gt; UITableViewCell.Type = { section in
+            switch section {
+            case .featured:
+                return FeaturedProductCell.self
+            case .onSale:
+                return ProductCell.self
+            case .categories:
+                return CategoryCell.self
+            case .saved:
+                return BookmarkCell.self
+            }
+        }
+
+        for section in Section.allCases {
+            tableView.register(resolver(section),
+                               forCellReuseIdentifier: section.rawValue)
+        }
+    }
+}
+</code></pre>
+<p>这很好，但我们可能需要在代码库的许多不同部分执行类似的UITableView类注册——所以我们可能想要将我们的解决方案一般化，使其易于重用。好消息是，上面的代码并不需要知道具体的Section类型，所以我们可以很容易地将它移动到UITableView本身的扩展中——像这样:</p>
+<pre><code class="language-swift">extension UITableView {
+    func registerCellClasses&lt;T: CaseIterable &amp; RawRepresentable&gt;(
+        for sectionType: T.Type,
+        using resolver: (T) -&gt; UITableViewCell.Type
+    ) where T.RawValue == String {
+        for section in sectionType.allCases {
+            register(resolver(section), forCellReuseIdentifier: section.rawValue)
+        }
+    }
+}
+</code></pre>
+<p>现在，我们有了一个编译时的保证，所有的单元格类都注册了—并且我们少了一个需要担心的潜在崩溃🎉</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift 4.2是Swift向前迈出的又一大步，它减少了样板文件，并为手工编写时很容易出错的常见任务提供了编译器生成的实现。一般来说，利用编译器动态生成实现是Swift弥补其目前缺乏的动态运行时特性(如全功能的反射API)的好方法。</p>
+<p>当然还有很多其他的方法来解决我们在这篇文章中看到的问题——带或不带枚举——但是CaseIterable确实为一些有趣的新枚举用例打开了一门，结合详尽的(默认免费的)switch语句，我们现在可以使用enum为许多不同的操作添加额外的编译时安全性。</p>
+<p><a href="https://www.swiftbysundell.com/articles/enum-iterations-in-swift-42/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5CEvLT7HIN/" class="tag">
+                    enums
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/model-controllers-in-swift/">
+                  <h3 class="post-title">
+                    Model controllers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

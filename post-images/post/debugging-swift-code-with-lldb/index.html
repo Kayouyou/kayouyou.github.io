@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Debugging Swift code with LLDB | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Debugging Swift code with LLDB
+
+
+1.1. Where should we go first?
+1.2. Explore variables value and state
+1.3. Get over..." />
+    <meta name="keywords" content="advanced,lldb,debugging" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Debugging Swift code with LLDB</h2>
+            <div class="post-date">2021-05-21</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gqpvfypu9hj31jk0nwtb8.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#DebuggingSwiftcodewithLLDB">Debugging Swift code with LLDB</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Whereshouldwegofirst">Where should we go first?</a></li>
+<li>1.2. <a href="#Explorevariablesvalueandstate">Explore variables value and state</a></li>
+<li>1.3. <a href="#Getoverallappsstatelanguagespecificcommands">Get overall app’s state + language specific commands</a></li>
+<li>1.4. <a href="#Controlappsexecutionflow">Control app’s execution flow</a></li>
+<li>1.5. <a href="#Honorablementions">Honorable mentions</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namedebuggingswiftcodewithlldbadebugging-swift-code-with-lldb">1. <a name='DebuggingSwiftcodewithLLDB'></a>Debugging Swift code with LLDB</h2>
+<!-- ![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gqpvfypu9hj31jk0nwtb8.jpg) -->
+<p>作为工程师，我们几乎70%的时间都花在调试上。剩下的20%继续思考架构方法+与团队成员的交流，只有10%真正在写代码。</p>
+<blockquote>
+<p>调试就像是犯罪电影中的侦探，你同时也是凶手。<br>
+— Filipe Fortes via Twitter</p>
+</blockquote>
+<p>所以让这70%的时间尽可能愉快是非常重要的。LLDB来救我们了。奇特的Xcode调试器UI显示了所有可用的信息，而无需键入一个LLDB命令。 然而，控制台仍然是我们工作流程的重要组成部分。让我们来分析一些最有用的LLDB技巧。我个人每天都用它们来调试。</p>
+<h3 id="11-a-namewhereshouldwegofirstawhere-should-we-go-first">1.1. <a name='Whereshouldwegofirst'></a>Where should we go first?</h3>
+<p>LLDB是一个巨大的工具，里面有很多有用的命令。我就不一一描述了。相反，我想带您浏览最有用的命令。这就是我们的计划:</p>
+<ol>
+<li>探索变量值: expression, e, print, po, p</li>
+<li>获取整个应用的状态和语言的特定命令: bugreport, frame, language</li>
+<li>控件APP的执行流程: process, breakpoint, thread, watchpoint</li>
+<li>Honorable mentions: command, platform, gui</li>
+</ol>
+<p>我还准备了有用的LLDB命令的映射以及描述和示例。如果你需要，你可以把它挂在你的Mac上面来记住这些命令 🙂</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvfvhiy9j30v90qogox.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="12-a-nameexplorevariablesvalueandstateaexplore-variables-value-and-state">1.2. <a name='Explorevariablesvalueandstate'></a>Explore variables value and state</h3>
+<p>Commands: <em>expression, e, print, po, p</em></p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvjlm3jtj312w06bmxd.jpg" alt="avatar" loading="lazy"></figure>
+<p>调试器的基本功能是查看和修改变量的值。这就是expression 或 e的含义(实际上更确切地说)。您基本上可以在运行时计算任何表达式或命令。</p>
+<p>让我们假设您正在调试某个函数valueOfLifeWithoutSumOf()，该函数对两个数字求和并从42中提取结果。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvkaof8dj30ha08o0sw.jpg" alt="avatar" loading="lazy"></figure>
+<p>让我们假设你一直得到错误的答案，你不知道为什么。所以要找到一个问题，你可以这样做:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvl3abusj30h4095aaa.jpg" alt="avatar" loading="lazy"></figure>
+<p>或者，最好使用LLDB表达式来代替在运行时更改值。找出问题出在哪里。首先，将断点设置为感兴趣的位置。然后运行应用程序。</p>
+<p>要以LLDB格式打印特定变量的值，你应该调用:</p>
+<pre><code class="language-swift">(lldb) e &lt;variable&gt;
+</code></pre>
+<p>同样的命令用于计算某些表达式:</p>
+<pre><code class="language-swift">(lldb) e &lt;expression&gt;
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvmdveguj30hx0c30t8.jpg" alt="avatar" loading="lazy"></figure>
+<pre><code class="language-swift">(lldb) e sum 
+(Int) $R0 = 6 // You can also use $R0 to refer to this variable in the future (during current debug session)
+(lldb) e sum = 4 // Change value of sum variable
+(lldb) e sum 
+(Int) $R2 = 4 // sum variable will be &quot;4&quot; till the end of debugging session
+</code></pre>
+<p><strong>expression</strong>命令也有一些标志。对于不同的标志和实际表达式，LLDB使用双破折号——在表达式命令之后，像这样:</p>
+<pre><code class="language-swift">(lldb) expression &lt;some flags&gt; -- &lt;variable&gt;
+</code></pre>
+<p><strong>expression</strong>几乎有30种不同的flag。我鼓励你们去探索它们。在终端中编写下面的命令以获得完整的文档:</p>
+<pre><code class="language-swift">&gt; lldb
+&gt; (lldb) help # To explore all available commands
+&gt; (lldb) help expression # To explore all expressions related sub-commands
+</code></pre>
+<p>下面表达式的flags我想停下来:</p>
+<ul>
+<li>-D <count> (--depth <count>) — Set the max recurse depth when dumping aggregate types (default is infinity).</li>
+<li>-O (--object-description) — Display using a language-specific description API, if possible.</li>
+<li>-T (--show-types) — Show variable types when dumping values.</li>
+<li>-f <format> (--format <format>) –– Specify a format to be used for display.</li>
+<li>-i <boolean> (--ignore-breakpoints <boolean>) — Ignore breakpoint hits while running expressions</li>
+</ul>
+<p>假设我们有一个名为logger的对象。这个对象包含一些字符串和结构作为属性。例如，您只想浏览一级属性。只需使用-D标志和适当的深度级别来做到这一点:</p>
+<pre><code class="language-swift">(lldb) e -D 1 -- logger
+(LLDB_Debugger_Exploration.Logger) $R5 = 0x0000608000087e90 {
+  currentClassName = &quot;ViewController&quot;
+  debuggerStruct ={...}
+}
+</code></pre>
+<p>默认情况下，LLDB会无限地查看对象，并向你展示每个嵌套对象的完整描述:</p>
+<pre><code class="language-swift">(lldb) e -- logger
+(LLDB_Debugger_Exploration.Logger) $R6 = 0x0000608000087e90 {
+  currentClassName = &quot;ViewController&quot;
+  debuggerStruct = (methodName = &quot;name&quot;, lineNumber = 2, commandCounter = 23)
+}
+</code></pre>
+<p>你也可以使用e -O来查看对象描述——或者简单地使用别名po，如下面的例子所示</p>
+<pre><code class="language-swift">(lldb) po logger
+&lt;Logger: 0x608000087e90&gt;
+</code></pre>
+<p>不是描述性的，不是吗?要获得人类可读的描述，必须将自定义类应用于CustomStringConvertible协议并实现 var description: String { return ...} property. 只有po返回你可读的描述。</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvsn5em3j312w06b3ys.jpg" alt="avatar" loading="lazy"></figure>
+<p>在本节的开头，我还提到了print命令。 基本上print &lt;expression/variable&gt;和expression - &lt;expression/variable&gt;是一样的。但print命令不接受任何flags或附加arguements。</p>
+<h3 id="13-a-namegetoverallappsstatelanguagespecificcommandsaget-overall-apps-state-language-specific-commands">1.3. <a name='Getoverallappsstatelanguagespecificcommands'></a>Get overall app’s state + language specific commands</h3>
+<p>bugreport, frame, language</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvuj9qa8j312w06bglq.jpg" alt="avatar" loading="lazy"></figure>
+<p>您是否经常将崩溃日志复制、粘贴到任务管理器中，以便稍后研究该问题?LLDB有一个叫做bugreport的命令，它会生成一个完整的当前应用状态报告。如果你遇到了一些问题，但想稍后再解决它，这将非常有帮助。为了恢复你对应用程序状态的理解，你可以使用bugreport生成的报告。</p>
+<pre><code class="language-swift">(lldb) bugreport unwind --outfile &lt;path to output file&gt;
+</code></pre>
+<p>最终的报告如下图所示:</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvx0qzahj310d0b640y.jpg" alt="avatar" loading="lazy"></figure>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvyqtysnj312w06baa6.jpg" alt="avatar" loading="lazy"></figure>
+<p>假设您想快速了解当前线程中的当前堆栈帧。Frame命令可以帮助你:</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpvz7s5zij30ig04ct8u.jpg" alt="avatar" loading="lazy"></figure>
+<p>使用下面的代码片段来快速了解你所在的位置和周围的情况:</p>
+<pre><code class="language-swift">(lldb) frame info
+frame #0: 0x000000010bbe4b4d LLDB-Debugger-Exploration`ViewController.valueOfLifeWithoutSumOf(a=2, b=2, self=0x00007fa0c1406900) -&gt; Int at ViewController.swift:96
+</code></pre>
+<p>这些信息将在本文后面的断点管理中很有用。</p>
+<figure data-type="image" tabindex="11"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpw0c08ctj312w06baa5.jpg" alt="avatar" loading="lazy"></figure>
+<p>LLDB有一些针对特定语言的命令。这里有c++， Objective-C, Swift和RenderScript的命令。 在这种情况下，我们对Swift感兴趣。这里有两个命令: <strong>demangle</strong> and <strong>refcount</strong>.</p>
+<p><strong>demangle</strong>就像它的名字中写的那样，只是demangle混乱的Swift类型名称(这是Swift在编译期间生成的，以避免命名空间问题)。 如果你想了解更多，我建议你观看这次WWDC14会议 — “<a href="https://developer.apple.com/videos/wwdc2014">Advanced Swift Debugging in LLDB</a>”.</p>
+<p><strong>refcount</strong>也是一个非常简单的命令。它显示了特定对象的引用计数。让我们看一下上一节中使用的对象<strong>logger</strong>的输出示例:</p>
+<pre><code class="language-swift">(lldb) language swift refcount logger
+refcount data: (strong = 4, weak = 0)
+</code></pre>
+<p>当然，如果您正在调试一些内存泄漏，这可能非常有用。</p>
+<h3 id="14-a-namecontrolappsexecutionflowacontrol-apps-execution-flow">1.4. <a name='Controlappsexecutionflow'></a>Control app’s execution flow</h3>
+<p>process, breakpoint, thread</p>
+<p>这部分是我最喜欢的。因为使用这些来自LLDB的命令(特别是breakpoint)，您可以在调试过程中自动化许多例行程序。这最终会大大加快您的调试过程。</p>
+<figure data-type="image" tabindex="12"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpw72qlotj312w06bglq.jpg" alt="avatar" loading="lazy"></figure>
+<p>使用<strong>process</strong>你基本上可以控制调试进程，并附加到一个特定的目标或从它分离调试器。但是由于Xcode为我们自动执行进程附件(LLDB是由Xcode每次运行目标附加)，我不会停止在那。 你可以阅读如何使用终端连接到目标在这个苹果指南 — “<a href="https://developer.apple.com/library/archive/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/document/lldb-terminal-workflow-tutorial.html">Using LLDB as a Standalone Debugger</a>”.</p>
+<p>使用<strong>progress status</strong>，你可以查看调试器正在等待你的当前位置:</p>
+<pre><code class="language-swift">(lldb) process status
+Process 27408 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = step over
+frame #0: 0x000000010bbe4889 LLDB-Debugger-Exploration`ViewController.viewDidLoad(self=0x00007fa0c1406900) -&gt; () at ViewController.swift:69
+66
+67           let a = 2, b = 2
+68           let result = valueOfLifeWithoutSumOf(a, and: b)
+-&gt; 69           print(result)
+70
+71
+72
+</code></pre>
+<p>为了继续执行目标，直到出现下一个断点，运行以下命令:</p>
+<pre><code class="language-swift">(lldb) process continue
+(lldb) c // Or just type &quot;c&quot; which is the same as previous command
+</code></pre>
+<figure data-type="image" tabindex="13"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpzmp8ihdj30ie02caa0.jpg" alt="avatar" loading="lazy"></figure>
+<figure data-type="image" tabindex="14"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqpzn1752kj312w06bzkh.jpg" alt="avatar" loading="lazy"></figure>
+<p><strong>breakpoint</strong>命令允许您以任何可能的方式操作断点。让我们跳过最明显的命令，如:<em>breakpoint enable, breakpoint disable和breakpoint delete.</em></p>
+<p>首先，让我们使用如下示例中的<em>list</em>子命令来研究所有断点:</p>
+<pre><code class="language-swift">(lldb) breakpoint list
+
+Current breakpoints:
+1: file = '/Users/Ahmed/Desktop/Recent/LLDB-Debugger-Exploration/LLDB-Debugger-Exploration/ViewController.swift', line = 95, exact_match = 0, locations = 1, resolved = 1, hit count = 1
+
+1.1: where = LLDB-Debugger-Exploration`LLDB_Debugger_Exploration.ViewController.valueOfLifeWithoutSumOf (Swift.Int, and : Swift.Int) -&gt; Swift.Int + 27 at ViewController.swift:95, address = 0x0000000107f3eb3b, resolved, hit count = 1
+
+2: file = '/Users/Ahmed/Desktop/Recent/LLDB-Debugger-Exploration/LLDB-Debugger-Exploration/ViewController.swift', line = 60, exact_match = 0, locations = 1, resolved = 1, hit count = 1
+
+2.1: where = LLDB-Debugger-Exploration`LLDB_Debugger_Exploration.ViewController.viewDidLoad () -&gt; () + 521 at ViewController.swift:60, address = 0x0000000107f3e609, resolved, hit count = 1
+</code></pre>
+<p>列表中的第一个数字是断点ID，您可以使用它来引用任何特定的断点。让我们直接从控制台设置一些新的断点</p>
+<pre><code class="language-swift">(lldb) breakpoint set -f ViewController.swift -l 96
+Breakpoint 3: where = LLDB-Debugger-Exploration`LLDB_Debugger_Exploration.ViewController.valueOfLifeWithoutSumOf (Swift.Int, and : Swift.Int) -&gt; Swift.Int + 45 at ViewController.swift:96, address = 0x0000000107f3eb4d
+</code></pre>
+<p>在本例中-f是要放置断点的文件的名称。-l是新断点的行号。有一个更短的方法来设置相同的断点用 b 快捷方式:</p>
+<pre><code class="language-swift">(lldb) b ViewController.swift:96
+</code></pre>
+<p>你也可以使用下面的命令用一个特定的正则表达式(例如函数名)来设置断点:</p>
+<pre><code class="language-swift">(lldb) breakpoint set --func-regex valueOfLifeWithoutSumOf
+(lldb) b -r valueOfLifeWithoutSumOf // Short version of the command above
+</code></pre>
+<p>有时，为只命中一次而设置断点是有用的。然后指示断点立即删除自己。当然，这是一个标志:</p>
+<pre><code class="language-swift">(lldb) breakpoint set --one-shot -f ViewController.swift -l 90
+(lldb) br s -o -f ViewController.swift -l 91 // Shorter version of the command above
+</code></pre>
+<p>现在让我们处理最有趣的部分-断点自动化。您知道您可以设置一个特定的操作，该操作将在断点发生时立即执行吗? 是的,你可以!您是否在代码中使用print()来探索您感兴趣的用于调试的值?别这么做，有更好的办法。🙂</p>
+<p>使用breakpoint命令，您可以设置命令，这些命令将在碰到断点时立即执行。您甚至可以创建“不可见”的断点，它不会中断执行。 从技术上讲，这些“看不见的”断点会中断执行，但是如果在命令链的末尾添加continue命令，您就不会注意到它。</p>
+<pre><code class="language-swift">(lldb) b ViewController.swift:96 // Let's add a breakpoint first
+Breakpoint 2: where = LLDB-Debugger-Exploration`LLDB_Debugger_Exploration.ViewController.valueOfLifeWithoutSumOf (Swift.Int, and : Swift.Int) -&gt; Swift.Int + 45 at ViewController.swift:96, address = 0x000000010c555b4d
+(lldb) breakpoint command add 2 // Setup some commands 
+Enter your debugger command(s).  Type 'DONE' to end.
+&gt; p sum // Print value of &quot;sum&quot; variable
+&gt; p a + b // Evaluate a + b
+&gt; DONE
+</code></pre>
+<p>要确保您添加了正确的命令，请使用断点命令列表<breakpoint id>子命令:</p>
+<pre><code class="language-swift">(lldb) breakpoint command list 2
+Breakpoint 2:
+Breakpoint commands:
+p sum
+p a + b
+</code></pre>
+<p>下次当这个断点到达时，我们将在控制台中得到以下输出:</p>
+<pre><code class="language-swift">Process 36612 resuming
+p sum
+(Int) $R0 = 6
+p a + b
+(Int) $R1 = 4
+</code></pre>
+<p>太棒了!这正是我们要找的。通过在命令链的末尾添加continue命令，可以使它更加流畅。所以你甚至不会在这个断点上停下来。</p>
+<pre><code class="language-swift">(lldb) breakpoint command add 2 // Setup some commands
+Enter your debugger command(s).  Type 'DONE' to end.
+&gt; p sum // Print value of &quot;sum&quot; variable
+&gt; p a + b // Evaluate a + b
+&gt; continue // Resume right after first hit
+&gt; DONE
+</code></pre>
+<p>所以结果是:</p>
+<pre><code class="language-swift">p sum
+(Int) $R0 = 6
+p a + b
+(Int) $R1 = 4
+continue
+Process 36863 resuming
+Command #3 'continue' continued the target.
+</code></pre>
+<figure data-type="image" tabindex="15"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqq0r3leonj312w06bglq.jpg" alt="avatar" loading="lazy"></figure>
+<p>通过线程命令及其子命令，您可以完全控制执行流程:单步、步进、步出和继续。这相当于Xcode调试器工具栏上的流程控制按钮。<br>
+<img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqq0rmjma6j30ie02caa0.jpg" alt="avatar" loading="lazy"></p>
+<p>对于这些特定的命令，还有一个预定义的LLDB快捷方式:</p>
+<pre><code class="language-swift">(lldb) thread step-over
+(lldb) next // The same as &quot;thread step-over&quot; command
+(lldb) n // The same as &quot;next&quot; command
+(lldb) thread step-in
+(lldb) step // The same as &quot;thread step-in&quot;
+(lldb) s // The same as &quot;step&quot;
+</code></pre>
+<p>为了获得更多关于当前线程的信息，只需调用info子命令:</p>
+<pre><code class="language-swift">(lldb) thread info 
+thread #1: tid = 0x17de17, 0x0000000109429a90 LLDB-Debugger-Exploration`ViewController.sumOf(a=2, b=2, self=0x00007fe775507390) -&gt; Int at ViewController.swift:90, queue = 'com.apple.main-thread', stop reason = step in
+</code></pre>
+<p>要查看当前所有活动线程的列表，请使用list子命令:</p>
+<pre><code class="language-swift">(lldb) thread list
+Process 50693 stopped
+* thread #1: tid = 0x17de17, 0x0000000109429a90 LLDB-Debugger-Exploration`ViewController.sumOf(a=2, b=2, self=0x00007fe775507390) -&gt; Int at ViewController.swift:90, queue = 'com.apple.main-thread', stop reason = step in
+  thread #2: tid = 0x17df4a, 0x000000010daa4dc6  libsystem_kernel.dylib`kevent_qos + 10, queue = 'com.apple.libdispatch-manager'
+  thread #3: tid = 0x17df4b, 0x000000010daa444e libsystem_kernel.dylib`__workq_kernreturn + 10
+  thread #5: tid = 0x17df4e, 0x000000010da9c34a libsystem_kernel.dylib`mach_msg_trap + 10, name = 'com.apple.uikit.eventfetch-thread'
+</code></pre>
+<h3 id="15-a-namehonorablementionsahonorable-mentions">1.5. <a name='Honorablementions'></a>Honorable mentions</h3>
+<p>command, platform, gui</p>
+<figure data-type="image" tabindex="16"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqq0ywxv54j312w06bq31.jpg" alt="avatar" loading="lazy"></figure>
+<p>在LLDB中可以找到管理其他命令的命令。听起来很奇怪，但实际上，这是非常有用的小工具。 首先，它允许您直接从文件中执行一些LLDB命令。因此，您可以使用一些有用的命令创建一个文件，并立即执行它们，就像它是一个单一的LLDB命令一样。 下面是一个简单的文件示例:</p>
+<pre><code class="language-swift">thread info // Show current thread info
+br list // Show all breakpoints
+</code></pre>
+<p>下面是实际命令的样子:</p>
+<pre><code class="language-swift">(lldb) command source /Users/Ahmed/Desktop/lldb-test-script
+Executing commands in '/Users/Ahmed/Desktop/lldb-test-script'.
+
+thread info
+thread #1: tid = 0x17de17, 0x0000000109429a90 LLDB-Debugger-Exploration`ViewController.sumOf(a=2, b=2, self=0x00007fe775507390) -&gt; Int at ViewController.swift:90, queue = 'com.apple.main-thread', stop reason = step in
+
+br list
+Current breakpoints:
+1: file = '/Users/Ahmed/Desktop/Recent/LLDB-Debugger-Exploration/LLDB-Debugger-Exploration/ViewController.swift', line = 60, exact_match = 0, locations = 1, resolved = 1, hit count = 0
+1.1: where = LLDB-Debugger-Exploration`LLDB_Debugger_Exploration.ViewController.viewDidLoad () -&gt; () + 521 at ViewController.swift:60, address = 0x0000000109429609, resolved, hit count = 0
+</code></pre>
+<p>不幸的是，也有一个缺点，您不能向源文件传递任何参数(除非您将在脚本文件本身中创建一个有效的变量)。</p>
+<p>如果你需要更高级的东西，你总是可以使用脚本子命令。这将允许您管理(添加、删除、导入和列出)自定义Python脚本。有了这个脚本，真正的自动化就成为可能。 请查看这个关于LLDB的<a href="http://www.fabianguerra.com/ios/introduction-to-lldb-python-scripting/">Python脚本的很好的指南</a>。为了演示，让我们创建一个脚本文件script.py，并编写一个简单的命令print_hello()，它将打印“Hello调试器!”&quot;在控制台中:</p>
+<pre><code class="language-swift">import lldb
+
+def print_hello(debugger, command, result, internal_dict):
+	print &quot;Hello Debugger!&quot;
+    
+def __lldb_init_module(debugger, internal_dict):
+	debugger.HandleCommand('command script add -f script.print_hello print_hello') // Handle script initialization and add command from this module
+	print 'The &quot;print_hello&quot; python command has been installed and is ready for use.' // Print confirmation that everything works
+view raw
+</code></pre>
+<p>然后我们需要导入一个Python模块，并开始正常使用script命令:</p>
+<pre><code class="language-swift">(lldb) command import ~/Desktop/script.py
+The &quot;print_hello&quot; python command has been installed and is ready for use.
+(lldb) print_hello
+Hello Debugger!
+</code></pre>
+<figure data-type="image" tabindex="17"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqq13j52gtj312w06bmx9.jpg" alt="avatar" loading="lazy"></figure>
+<p>您可以使用状态子命令快速检查当前平台信息。状态会告诉你:SDK路径，处理器架构，操作系统版本，甚至是这个SDK可用设备的列表。</p>
+<pre><code class="language-swift">(lldb) platform status
+Platform: ios-simulator
+Triple: x86_64-apple-macosx
+OS Version: 10.12.5 (16F73)
+Kernel: Darwin Kernel Version 16.6.0: Fri Apr 14 16:21:16 PDT 2017; root:xnu-3789.60.24~6/RELEASE_X86_64
+Hostname: 127.0.0.1
+WorkingDir: /
+SDK Path: &quot;/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk&quot;
+Available devices:
+614F8701-3D93-4B43-AE86-46A42FEB905A: iPhone 4s
+CD516CF7-2AE7-4127-92DF-F536FE56BA22: iPhone 5
+0D76F30F-2332-4E0C-9F00-B86F009D59A3: iPhone 5s
+3084003F-7626-462A-825B-193E6E5B9AA7: iPhone 6
+...
+</code></pre>
+<figure data-type="image" tabindex="18"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqq1tu3dbpj312w06baa2.jpg" alt="avatar" loading="lazy"></figure>
+<p>你不能在Xcode中使用LLDB GUI模式，但你总是可以在终端上做。</p>
+<pre><code class="language-swift">(lldb) gui
+// You'll see this error if you try to execute gui command in Xcode
+error: the gui command requires an interactive terminal.
+</code></pre>
+<figure data-type="image" tabindex="19"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqq1uu0tsbj30v60u0gnf.jpg" alt="avatar" loading="lazy"></figure>
+<p>Conclusion:</p>
+<p>在本文中，我只是触及了LLDB真正威力的皮毛。虽然LLDB已经存在了很长时间，但仍然有很多人没有充分利用它的潜力。我简要介绍了基本功能，以及LLDB如何实现自动调试过程。我希望它有用。</p>
+<p>如此多的LLDB函数被抛在了后面。还有一些视图调试技术，我甚至没有提到。如果你对这个话题感兴趣，请在下面留言。我很乐意把它写下来。</p>
+<p>我强烈建议您打开一个终端，启用LLDB并输入help。这将向您展示完整的文档。你可以花几个小时阅读它。  但我保证这是一个合理的时间投资。因为了解你的工具是工程师真正变得高效的唯一途径。</p>
+<hr>
+<p>有关LLDB的参考资料及有用文章</p>
+<ul>
+<li>
+<p><a href="https://lldb.llvm.org">Official LLDB site</a> — 你会在这里找到所有可能与LLDB有关的材料。文档、指南、教程、资源等等。</p>
+</li>
+<li>
+<p><a href="https://developer.apple.com/library/archive/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/document/Introduction.html#//apple_ref/doc/uid/TP40012917-CH1-SW1">LLDB Quick Start Guide by Apple</a> — 和往常一样，苹果有很好的文档。本指南将帮助您快速地开始使用LLDB。此外，他们还描述了如何在没有Xcode的情况下使用LLDB进行调试。</p>
+</li>
+<li>
+<p><a href="https://eli.thegreenplace.net/2011/01/23/how-debuggers-work-part-1">How debuggers work: Part 1</a> — 基础——我非常喜欢这个系列的文章。这只是调试器如何工作的奇妙概述。这篇文章描述了使用用c编写的手工调试器代码的所有基本原则。我强烈建议您阅读这些伟大系列的所有部分(第2部分、第3部分)。</p>
+</li>
+<li>
+<p><a href="https://developer.apple.com/videos/wwdc2014">WWDC14 Advanced Swift Debugging in LLDB</a> —  很好的概述了在Swift调试方面LLDB的新特性。以及LLDB如何通过使用内置函数和特性的整体调试过程帮助您提高生产率。</p>
+</li>
+<li>
+<p><a href="http://www.fabianguerra.com/ios/introduction-to-lldb-python-scripting/">Introduction To LLDB Python Scripting</a> — LLDB的Python脚本指南，它允许你快速入门。</p>
+</li>
+<li>
+<p><a href="http://www.fabianguerra.com/ios/introduction-to-lldb-python-scripting/">Dancing in the Debugger. A Waltz with LLDB</a> — 对一些LLDB基础知识的巧妙介绍。有些信息有点过时(例如(lldb)线程返回命令)。不幸的是，它不能与Swift正常工作，因为它可能会给引用计数带来一些潜在的损害)。  尽管如此，这是一篇开启LLDB之旅的好文章。</p>
+</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/TDh4b4Zil/" class="tag">
+                    advanced
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EqdSC9CQU/" class="tag">
+                    lldb
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VadC328gp/" class="tag">
+                    debugging
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/bi-mian-zai-swiftui-shi-tu-zhong-chong-xin-ji-suan-zhi/">
+                  <h3 class="post-title">
+                    避免在SwiftUI视图中重新计算值
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

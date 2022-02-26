@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Building an Observable type for SwiftUI views | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Building an Observable type for SwiftUI views
+SwiftUI附带了许多工具来将视图连接到状态块，这反过来又使框架在状态被修改时自动重新呈现该视图。
+例如，@State属性包装器可用于跟踪视图的内..." />
+    <meta name="keywords" content="combine,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Building an Observable type for SwiftUI views</h2>
+            <div class="post-date">2020-05-14</div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="building-an-observable-type-for-swiftui-views">Building an Observable type for SwiftUI views</h2>
+<p>SwiftUI附带了许多工具来将视图连接到状态块，这反过来又使框架在状态被修改时自动重新呈现该视图。<br>
+例如，@State属性包装器可用于跟踪视图的内部本地状态——而@Binding使我们能够在不同的视图之间传递可变的状态。还有@ObservedObject，它和它的ObservableObject协议对应，使我们能够构造视图可以观察的自定义对象。<br>
+下面是我们如何实现一个视图模型作为一个观察对象，它使用一个联合发布者来订阅其底层数据模型中的更改——在本例中是Podcast类型:</p>
+<pre><code class="language-swift">class PodcastViewModel: ObservableObject {
+    @Published private(set) var podcast: Podcast
+    private var cancellable: AnyCancellable?
+
+    init&lt;T: Publisher&gt;(
+        podcast: Podcast,
+        publisher: T
+    ) where T.Output == Podcast, T.Failure == Never {
+        self.podcast = podcast
+        self.cancellable = publisher.assign(to: \.podcast, on: self)
+    }
+}
+</code></pre>
+<p>然后我们可以建立一个相应的PodcastView，使用上面的PodcastViewModel作为它的数据源，像这样:</p>
+<pre><code class="language-swift">struct PodcastView: View {
+    @ObservedObject var viewModel: PodcastViewModel
+
+    var body: some View {
+        HStack {
+            Image(uiImage: viewModel.podcast.image)
+            VStack(alignment: .leading) {
+                Text(viewModel.podcast.name)
+                    .bold()
+                Text(viewModel.podcast.creator)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+</code></pre>
+<p>而视图模型可以非常有用之处在于封装了架起视图与其数据模型之间的桥梁的逻辑(同时还在这两个层之间强制执行一些关注点分离),在上述情况下,我们认为模型仅仅作为一个我们的播客模型的可观测的包装,进而要求我们总是使用viewModel.podcast访问模型。</p>
+<p>因为我们的视图模型实现并不是播客模型特有的——让我们看看我们是否可以将它一般化，这样做也可以使它更容易使用。为了做到这一点，让我们把它重命名为Observable，并让它成为所有值的泛型——还有一点很重要:我们还将让它支持动态成员查找，就像这样:</p>
+<pre><code class="language-swift">@dynamicMemberLookup
+final class Observable&lt;Value&gt;: ObservableObject {
+    @Published private(set) var value: Value
+    private var cancellable: AnyCancellable?
+
+    init&lt;T: Publisher&gt;(
+        value: Value,
+        publisher: T
+    ) where T.Output == Value, T.Failure == Never {
+        self.value = value
+        self.cancellable = publisher.assign(to: \.value, on: self)
+    }
+
+    subscript&lt;T&gt;(dynamicMember keyPath: KeyPath&lt;Value, T&gt;) -&gt; T {
+        value[keyPath: keyPath]
+    }
+}
+</code></pre>
+<p>上述方法的一大好处(除了我们现在有了一个完全可重用的类型，可以用来观察任何模型之外)是我们现在可以直接访问播客模型的每个属性，这要感谢@dynamicMemberLookup:</p>
+<pre><code class="language-swift">struct PodcastView: View {
+    @ObservedObject var podcast: Observable&lt;Podcast&gt;
+
+    var body: some View {
+        HStack {
+            Image(uiImage: podcast.image)
+            VStack(alignment: .leading) {
+                Text(podcast.name)
+                    .bold()
+                Text(podcast.creator)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+</code></pre>
+<p>好得多!现在是奖金环节。由于我们的新可观察对象类型非常类似于Combine的内置的CurrentValuesSubject(它会跟踪最新发出的值)，让我们也创建一个方便的API，让我们可以轻松地将任何这样的对象转换为可观察对象:</p>
+<pre><code class="language-swift">extension CurrentValueSubject where Failure == Never {
+    func asObservable() -&gt; Observable&lt;Output&gt; {
+        Observable(value: value, publisher: self)
+    }
+}
+</code></pre>
+<p>有了上面的这些，我们现在可以很容易地从一个currentvaluessubject创建我们的PodcastView实例，它会在播客更新时发出新的值:</p>
+<pre><code class="language-swift">func makePodcastView(
+    with subject: CurrentValueSubject&lt;Podcast, Never&gt;
+) -&gt; some View {
+    PodcastView(podcast: subject.asObservable())
+}
+</code></pre>
+<p>虽然有一些其他方法可以用来更新SwiftUI视图当它们的模型变化时(包括使用内置的.onReceive视图修改器让视图直接订阅结合出版商),我觉得上面的可观察到的类型提供了一种非常简洁的方式来让一个视图订阅一个模型以只读的方式,不需要包含任何形式的订阅逻辑视图。</p>
+<p><a href="https://www.swiftbysundell.com/tips/building-an-observable-type-for-swiftui-views/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/propagating-user-facing-errors-in-swift/">
+                  <h3 class="post-title">
+                    Propagating user-facing errors in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

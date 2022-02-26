@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Building DSLs in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="DSL是领域特定语言(Domain Specific Language)的缩写，可以解释为一种特殊的API，它专注于提供一种针对特定领域工作的简单语法。 DSL不是完全独立的语言——就像Swift一样——它通常托管在其他语言中，因此，需要使..." />
+    <meta name="keywords" content="code structure,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Building DSLs in Swift</h2>
+            <div class="post-date">2018-10-14</div>
+            
+            <div class="post-content" v-pre>
+              <p>DSL是领域特定语言(Domain Specific Language)的缩写，可以解释为一种特殊的API，它专注于提供一种针对特定领域工作的简单语法。 DSL不是完全独立的语言——就像Swift一样——它通常托管在其他语言中，因此，需要使用在其宿主语言中完全有效的语法。</p>
+<p>领域特定语言在可定制开发工具中尤其流行——CocoaPods、fastlane和Swift Package Manager都使用领域特定语言，让用户能够轻松设置他们想要的工具的工作方式。 但是，DSL也可以用来使处理更多种类的领域变得更容易-如查询数据库，定义布局，或设置某种形式的路由。</p>
+<p>虽然历史上DSL通常是用更动态的语言编写的，比如Ruby(因为它们提供了很多创建自定义语法的方法) - Swift的类型推断和重载能力也使它成为构建DSL的一个非常棒的语言——本周，让我们这样做吧!</p>
+<h2 id="lightweight-syntax">Lightweight syntax</h2>
+<p>使用DSL的一个主要优势是，它为我们提供了比使用标准api时更轻量级的语法。例如，在使用CocoaPods时，我们使用一个Podfile来定义如何配置项目的依赖项，最初可能会使用串行格式:</p>
+<pre><code class="language-swift">pod &quot;Unbox&quot;
+pod &quot;Files&quot;, &quot;~&gt; 2.2&quot;
+</code></pre>
+<p>但事实证明，上面的代码实际上是完全可执行的Ruby代码，而且pod实际上是一个函数，而不仅仅是一个简单的标记。 这看起来像是某种形式的魔法，但就像其他任何技术魔法一样——它只是隐藏在底层的代码。</p>
+<p>所以，让我们创建自己的DSL吧!  让我们以一个常见的任务为例，它通常需要相当冗长的语法，并尝试将其提炼为几乎像CocoaPods允许我们做的那样轻量级的内容。</p>
+<p>一个完全符合这个描述的任务是使用自动布局定义布局约束。虽然Auto Layout的API在过去几年里有了很大的改进——特别是在ios9中引入了布局锚——但它仍然非常冗长和沉重， 即使是简单的任务，如定义一个UILabel的位置和宽度基于一个按钮兄弟和它的父视图:</p>
+<pre><code class="language-swift">label.translatesAutoresizingMaskIntoConstraints = false
+
+NSLayoutConstraint.activate([
+    label.topAnchor.constraint(
+        equalTo: button.bottomAnchor,
+        constant: 20
+    ),
+    label.leadingAnchor.constraint(
+        equalTo: button.leadingAnchor
+    ),
+    label.widthAnchor.constraint(
+        lessThanOrEqualTo: view.widthAnchor,
+        constant: -40
+    )
+])
+</code></pre>
+<p>让我们看看是否可以将上面的代码，并为其构建DSL，将其转换成以下内容:</p>
+<pre><code class="language-swift">label.layout {
+    $0.top == button.bottomAnchor + 20
+    $0.leading == button.leadingAnchor
+    $0.width &lt;= view.widthAnchor - 40
+}
+</code></pre>
+<p>这样我们就可以更容易地定义布局约束，并消除许多“语法混乱”。实现上面的目标似乎是一项艰巨的任务，但一旦我们开始把它分解成更小的构建块，它实际上是相当简单的。让我们一步一步地完成这个过程。</p>
+<h2 id="laying-the-ground-work">Laying the ground work</h2>
+<p>让我们从构建基础开始，稍后我们将在此基础上构建DSL。我们真正想做的是将Auto Layout默认的基于布局锚的API封装到一个“DSL外壳”中，这样在调用时仍然会产生完全正常的布局约束。</p>
+<p>所有的布局锚都是使用NSLayoutAnchor类实现的——这是一个通用的类，因为不同的锚的作用不同，取决于它们是用于定位还是大小。由于Objective-C泛型不像Swift泛型那么强大，让我们先定义一个协议，让我们把NSLayoutAnchor当作原生Swift类型来对待。</p>
+<p>我们将通过使用我们感兴趣的方法来定义我们的协议，并将它们添加为需求，如下所示:</p>
+<pre><code class="language-swift">protocol LayoutAnchor {
+    func constraint(equalTo anchor: Self,
+                    constant: CGFloat) -&gt; NSLayoutConstraint
+    func constraint(greaterThanOrEqualTo anchor: Self,
+                    constant: CGFloat) -&gt; NSLayoutConstraint
+    func constraint(lessThanOrEqualTo anchor: Self,
+                    constant: CGFloat) -&gt; NSLayoutConstraint
+}
+</code></pre>
+<p>由于NSLayoutAnchor已经实现了上述方法，所以我们需要做的就是让它符合我们的新协议，只需要添加一个空扩展名:</p>
+<pre><code class="language-swift">extension NSLayoutAnchor: LayoutAnchor {}
+</code></pre>
+<p>上面的技术，本质上是在我们控制的协议后面隐藏了一个系统类型，与“用系统单例的3个简单步骤测试Swift代码”中使用的技术相同，使我们能够轻松地测试依赖于系统提供的单例的代码。</p>
+<p>接下来，我们需要一种以更简单的方式引用单个锚的方法。为此，我们将定义一个LayoutProperty类型，我们将能够在DSL中使用它来为top、leading、width等属性设置约束。</p>
+<p>这个新类型将只是一个锚的包装器，因为我们不想为了让我们的DSL工作而“污染”NSLayoutAnchor类型本身。 既然我们现在有了一个协议，允许我们以类型安全的方式引用布局锚点，我们将使用它作为新类型的通用约束，如下所示:</p>
+<pre><code class="language-swift">struct LayoutProperty&lt;Anchor: LayoutAnchor&gt; {
+    fileprivate let anchor: Anchor
+}
+</code></pre>
+<p>我们将上面的锚属性filprivate设置为，这样它只能在定义布局DSL的文件中访问，这样我们就不会把实现细节泄露给外界。</p>
+<p>现在我们有了处理锚点和属性的方法——让我们进入DSL的核心，它是一个对象，它将充当我们当前正在为其定义布局的视图的代理。 该对象将包含所有布局属性，并将成为我们在使用DSL时将与之交互的关键对象。 让我们把它叫做LayoutProxy，并从定义一些常见锚点的属性开始——比如leading、top和width:</p>
+<pre><code class="language-swift">class LayoutProxy {
+    lazy var leading = property(with: view.leadingAnchor)
+    lazy var trailing = property(with: view.trailingAnchor)
+    lazy var top = property(with: view.topAnchor)
+    lazy var bottom = property(with: view.bottomAnchor)
+    lazy var width = property(with: view.widthAnchor)
+    lazy var height = property(with: view.heightAnchor)
+
+    private let view: UIView
+
+    fileprivate init(view: UIView) {
+        self.view = view
+    }
+
+    private func property&lt;A: LayoutAnchor&gt;(with anchor: A) -&gt; LayoutProperty&lt;A&gt; {
+        return LayoutProperty(anchor: anchor)
+    }
+}
+</code></pre>
+<p>上面，我们将所有的布局属性设置为惰性，以便只在需要时才构造它们。特别是如果我们继续增加对更多类型锚的支持，这可以帮助我们的代码更快和更少的浪费。</p>
+<p>我们已经基本完成了DSL的基础工作。最后，我们需要一个API来使用布局属性添加约束。为此，我们将在LayoutProperty上使用一个扩展，并添加对最初从NSLayoutAnchor提取到LayoutAnchor协议中的三种约束关系的支持:</p>
+<pre><code class="language-swift">extension LayoutProperty {
+    func equal(to otherAnchor: Anchor, offsetBy constant: CGFloat = 0) {
+        anchor.constraint(equalTo: otherAnchor,
+                          constant: constant).isActive = true
+    }
+
+    func greaterThanOrEqual(to otherAnchor: Anchor,
+                            offsetBy constant: CGFloat = 0) {
+        anchor.constraint(greaterThanOrEqualTo: otherAnchor,
+                          constant: constant).isActive = true
+    }
+
+    func lessThanOrEqual(to otherAnchor: Anchor,
+                         offsetBy constant: CGFloat = 0) {
+        anchor.constraint(lessThanOrEqualTo: otherAnchor,
+                          constant: constant).isActive = true
+    }
+}
+</code></pre>
+<p>有了这些，我们就可以开始使用我们新的自动布局API了!👍</p>
+<h2 id="from-api-to-dsl">From API to DSL</h2>
+<p>我们可能还没有一个完整的DSL，但是在我们的基础工作完成之后，我们已经可以像使用“普通”API一样使用我们的代码了。我们需要做的就是手动为我们想要定义布局的视图创建一个LayoutProxy实例，然后调用布局属性的方法来添加约束，如下所示:</p>
+<pre><code class="language-swift">let proxy = LayoutProxy(view: label)
+proxy.top.equal(to: button.bottomAnchor, offsetBy: 20)
+proxy.leading.equal(to: button.leadingAnchor)
+proxy.width.lessThanOrEqual(to: view.widthAnchor, offsetBy: -40)
+</code></pre>
+<p>与默认的自动布局API相比，这已经大大减少了冗长! 然而，虽然我们的方法在上面使用时读起来很好，但整个代码看起来有点不合适。仅仅为了定义布局而构造一个代理对象感觉有点奇怪，在不了解API的实现细节的情况下，调用proxy.top.equal并没有多大意义。</p>
+<p>因此，让我们更进一步，将上面的代码用作正确的DSL。我们首先需要的是执行上下文。DSL能够消除如此多的冗长和繁琐的原因之一是，它们是在非常特定的上下文中使用的，其本身已经提供了理解代码的功能所需的许多信息。当我们在Podfile中看到pod“Unbox”时，我们立即明白我们正在将pod Unbox添加到我们的项目中，因为我们知道我们目前处于CocoaPods DSL的上下文中。</p>
+<p>对于我们的上下文，我们将从UIView中获得一些灵感。动画API，并使用一个闭包来封装我们DSL的使用。我们需要让它发生的是UIView上的一个简单扩展，它添加了一个反过来调用context closure的方法。我们还将利用这个机会自动将translatesAutoresizingMaskIntoConstraints设置为false，这进一步使我们的API更容易使用，如下所示:</p>
+<pre><code class="language-swift">extension UIView {
+    func layout(using closure: (LayoutProxy) -&gt; Void) {
+        translatesAutoresizingMaskIntoConstraints = false
+        closure(LayoutProxy(view: self))
+    }
+}
+</code></pre>
+<p>通过这个小小的改变，当我们在特定的上下文中执行所有的布局操作时，我们现在在定义布局时有了更“类似dsl”的体验。下面是我们之前的代码:</p>
+<pre><code class="language-swift">label.layout {
+    $0.top.equal(to: button.bottomAnchor, offsetBy: 20)
+    $0.leading.equal(to: button.leadingAnchor)
+    $0.width.lessThanOrEqual(to: view.widthAnchor, offsetBy: -40)
+}
+</code></pre>
+<p>很甜!🍭如果我们愿意，我们可以停在这里，仍然对结果感到非常满意。从本质上讲，我们只用了60行代码就构建了一个非常好用的自动布局库——与我们最初的布局代码相比，上面的代码更简洁，也更便于阅读。</p>
+<p>但我们玩得很开心，为什么现在就停呢?让我们看看我们能不能更进一步!😉</p>
+<h2 id="hello-operator">Hello, Operator!</h2>
+<p>Swift允许我们定义自定义操作符这一事实可能是一把双刃剑，但当涉及到领域特定语言时，自定义操作符——或者在这种情况下，操作符重载——可能是一个奇妙的工具。仔细想想，dsl经常被用来执行和计算表达式——比如定义依赖项的最小版本，向数据库查询添加过滤器，或者(就像我们的例子一样)计算布局——表达式正是操作符最常用的用途。</p>
+<p>让我们看看如何使用操作符来改进DSL——首先重载加号和减号操作符，使我们能够将一个布局锚和一个常量组合到一个元组中——稍后我们将把它们作为一个单元来使用:</p>
+<pre><code class="language-swift">func +&lt;A: LayoutAnchor&gt;(lhs: A, rhs: CGFloat) -&gt; (A, CGFloat) {
+    return (lhs, rhs)
+}
+
+func -&lt;A: LayoutAnchor&gt;(lhs: A, rhs: CGFloat) -&gt; (A, CGFloat) {
+    return (lhs, -rhs)
+}
+</code></pre>
+<p>有关元组的更多信息，请参阅“在Swift中使用元组作为轻量级类型”。</p>
+<p>接下来，让我们添加重载，让我们实际定义约束——从equals操作符开始。我们需要两个重载，一个只接受右边的锚，另一个接受前面两个重载生成的元组中的一个——如下所示:</p>
+<pre><code class="language-swift">func ==&lt;A: LayoutAnchor&gt;(lhs: LayoutProperty&lt;A&gt;,
+                         rhs: (A, CGFloat)) {
+    lhs.equal(to: rhs.0, offsetBy: rhs.1)
+}
+
+func ==&lt;A: LayoutAnchor&gt;(lhs: LayoutProperty&lt;A&gt;, rhs: A) {
+    lhs.equal(to: rhs)
+}
+</code></pre>
+<p>正如您在上面看到的，我们使用这些操作符所做的一切都是在我们之前的布局API的基础上使用它们作为语法糖。 让我们对大于或等于和小于或等于操作符也做同样的操作:</p>
+<pre><code class="language-swift">func &gt;=&lt;A: LayoutAnchor&gt;(lhs: LayoutProperty&lt;A&gt;,
+                         rhs: (A, CGFloat)) {
+    lhs.greaterThanOrEqual(to: rhs.0, offsetBy: rhs.1)
+}
+
+func &gt;=&lt;A: LayoutAnchor&gt;(lhs: LayoutProperty&lt;A&gt;, rhs: A) {
+    lhs.greaterThanOrEqual(to: rhs)
+}
+
+func &lt;=&lt;A: LayoutAnchor&gt;(lhs: LayoutProperty&lt;A&gt;,
+                         rhs: (A, CGFloat)) {
+    lhs.lessThanOrEqual(to: rhs.0, offsetBy: rhs.1)
+}
+
+func &lt;=&lt;A: LayoutAnchor&gt;(lhs: LayoutProperty&lt;A&gt;, rhs: A) {
+    lhs.lessThanOrEqual(to: rhs)
+}
+</code></pre>
+<p>有了这个谜题的最后一部分，我们的DSL就完成了，现在我们可以使用新的操作符重载来简单地使用表达式定义所有的布局约束:</p>
+<pre><code class="language-swift">label.layout {
+    $0.top == button.bottomAnchor + 20
+    $0.leading == button.leadingAnchor
+    $0.width &lt;= view.widthAnchor - 40
+}
+</code></pre>
+<p>将其与原始代码示例相比较——在冗长方面的差异是巨大的!😮</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>领域特定语言是使用轻量级语法建模一个狭窄问题的好方法。虽然它们需要一些设置，并且在冗长的代码和容易理解的代码之间找到合适的平衡确实很困难，但它们可以在某些情况下极大地提高生产率。</p>
+<p>特别是当与声明性的、基于规则的系统(如自动布局)结合使用时，dsl非常强大，因为它们基本上让我们把代码写成纯逻辑表达式，而不必构造完整的方法调用。 然而，重要的是要确保我们的领域特定语言仍然被限制在特定的上下文中，因为它们的低冗长语法实际上取决于它的环境，以便易于理解。</p>
+<p>另一件需要考虑的重要事情是编译时间。 特别是当使用重载操作符并依赖类型推断来减少冗长时，编译时间有时会大幅增加。 像往常一样，在进行过程中进行度量成为关键，因为大多数情况下，要在低冗长和快速编译时间之间找到一个折中办法。</p>
+<p>如果你有兴趣看一看更完整的自动布局dsl，这里有一些流行的(我推荐比较它们不同的方法来解决这个问题，看到每个实现中做出的不同权衡真的很有趣):</p>
+<pre><code class="language-swift">SnapKit
+Cartography
+Stevia
+</code></pre>
+<p>您也可以在GitHub上找到本文中的所有代码。如果您希望构建自己的DSL，它可以作为一个很好的起点，而且它已经非常强大，尽管它不到100行代码。</p>
+<p><a href="https://www.swiftbysundell.com/articles/building-dsls-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/constructing-urls-in-swift/">
+                  <h3 class="post-title">
+                    Constructing URLs in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

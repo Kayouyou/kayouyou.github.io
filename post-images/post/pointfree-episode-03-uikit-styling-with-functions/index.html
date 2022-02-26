@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 03: UIKit Styling with Functions | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+UIAppearance
+
+
+
+
+Subclassing
+
+
+
+
+Object Composition
+
+
+
+
+Functions
+
+
+
+
+Function Composition
+
+
+
+
+What..." />
+    <meta name="keywords" content="PointFree,functions" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 03: UIKit Styling with Functions</h2>
+            <div class="post-date">2021-10-21</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#UIAppearance">UIAppearance</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Subclassing">Subclassing</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#ObjectComposition">Object Composition</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Functions">Functions</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#FunctionComposition">Function Composition</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 03: UIKit Styling with Functions -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>过去的两集有点抽象。 我们一直在日常代码中以一种看似无关的方式探索合成。让我们看看如何将合成应用到更具体的东西上:UIKit。</p>
+<pre><code class="language-swift">import UIKit
+
+final class SignInViewController: UIViewController {
+  override func viewDidLoad() {
+    super.viewDidLoad()
+
+    self.view.backgroundColor = .white
+
+    let gradientView = GradientView()
+    gradientView.fromColor = UIColor(red: 0.5, green: 0.85, blue: 1, alpha: 0.85)
+    gradientView.toColor = .white
+    gradientView.translatesAutoresizingMaskIntoConstraints = false
+
+    let logoImageView = UIImageView(image: UIImage(named: &quot;logo&quot;))
+    logoImageView.widthAnchor.constraint(equalTo: logoImageView.heightAnchor, multiplier: logoImageView.frame.width / logoImageView.frame.height).isActive = true
+
+    let gitHubButton = UIButton(type: .system)
+    gitHubButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+    gitHubButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+    gitHubButton.clipsToBounds = true
+    gitHubButton.layer.cornerRadius = 6
+    gitHubButton.backgroundColor = .black
+    gitHubButton.tintColor = .white
+    gitHubButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 16)
+    gitHubButton.setImage(UIImage(named: &quot;github&quot;), for: .normal)
+    gitHubButton.setTitle(&quot;Sign in with GitHub&quot;, for: .normal)
+
+    let orLabel = UILabel()
+    orLabel.font = .systemFont(ofSize: 14, weight: .medium)
+    orLabel.textAlignment = .center
+    orLabel.textColor = UIColor(white: 0.625, alpha: 1)
+    orLabel.text = &quot;or&quot;
+
+    let emailField = UITextField()
+    emailField.clipsToBounds = true
+    emailField.layer.cornerRadius = 6
+    emailField.layer.borderColor = UIColor(white: 0.75, alpha: 1).cgColor
+    emailField.layer.borderWidth = 1
+    emailField.borderStyle = .roundedRect
+    emailField.heightAnchor.constraint(equalToConstant: 44).isActive = true
+    emailField.keyboardType = .emailAddress
+    emailField.placeholder = &quot;blob@pointfree.co&quot;
+
+    let passwordField = UITextField()
+    passwordField.clipsToBounds = true
+    passwordField.layer.cornerRadius = 6
+    passwordField.layer.borderColor = UIColor(white: 0.75, alpha: 1).cgColor
+    passwordField.layer.borderWidth = 1
+    passwordField.borderStyle = .roundedRect
+    passwordField.heightAnchor.constraint(equalToConstant: 44).isActive = true
+    passwordField.isSecureTextEntry = true
+    passwordField.placeholder = &quot;••••••••••••••••&quot;
+
+    let signInButton = UIButton(type: .system)
+    signInButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+    signInButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+    signInButton.clipsToBounds = true
+    signInButton.layer.cornerRadius = 6
+    signInButton.layer.borderColor = UIColor.black.cgColor
+    signInButton.layer.borderWidth = 2
+    signInButton.setTitleColor(.black, for: .normal)
+    signInButton.setTitle(&quot;Sign in&quot;, for: .normal)
+
+    let forgotPasswordButton = UIButton(type: .system)
+    forgotPasswordButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+    forgotPasswordButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+    forgotPasswordButton.setTitleColor(.black, for: .normal)
+    forgotPasswordButton.setTitle(&quot;I forgot my password&quot;, for: .normal)
+
+    let legalLabel = UILabel()
+    legalLabel.font = .systemFont(ofSize: 11, weight: .light)
+    legalLabel.numberOfLines = 0
+    legalLabel.textAlignment = .center
+    legalLabel.textColor = UIColor(white: 0.5, alpha: 1)
+    legalLabel.text = &quot;By signing into Point-Free you agree to our latest terms of use and privacy policy.&quot;
+
+    let rootStackView = UIStackView(arrangedSubviews: [
+      logoImageView,
+      gitHubButton,
+      orLabel,
+      emailField,
+      passwordField,
+      signInButton,
+      forgotPasswordButton,
+      legalLabel,
+      ])
+
+    rootStackView.axis = .vertical
+    rootStackView.isLayoutMarginsRelativeArrangement = true
+    rootStackView.layoutMargins = UIEdgeInsets(top: 32, left: 16, bottom: 32, right: 16)
+    rootStackView.spacing = 16
+    rootStackView.translatesAutoresizingMaskIntoConstraints = false
+
+    self.view.addSubview(gradientView)
+    self.view.addSubview(rootStackView)
+
+    NSLayoutConstraint.activate([
+      gradientView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
+      gradientView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+      gradientView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+      gradientView.bottomAnchor.constraint(equalTo: self.view.centerYAnchor),
+
+      rootStackView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
+      rootStackView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+      rootStackView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+      ])
+  }
+}
+</code></pre>
+<p>我们在构建UI时遇到的一个常见问题是可重用样式。这段代码还没有尝试让样式可重用。它只是在实例化后内联地配置每个视图。 很多组件都有重叠的样式，所以让我们尝试找到一种更好的方式来样式化组件，而不会有太多重复。</p>
+<h2 id="2-a-nameuiappearanceauiappearance">2. <a name='UIAppearance'></a>UIAppearance</h2>
+<p>首先，让我们探讨一下<em>UIAppearance</em>和<em>Apple</em>提供的帮助解决可重用样式的API。<em>UIAppearance</em>是一个带有一些静态方法的协议，主要是一个叫做<em>appearance</em>的方法。这些方法返回一个可以像配置常规视图一样配置的代理视图。一旦配置了这个代理，添加到视图层次结构中的任何同类视图都将以同样的方式进行配置。</p>
+<p>我们所有的按钮都有相同的内容边框<em>insets</em>和字体，所以让我们尝试移动这个配置来使用<em>UIAppearance</em>。</p>
+<pre><code class="language-swift">UIButton.appearance().contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+UIButton.appearance().titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+</code></pre>
+<p>如果我们从按钮配置中删除相应的行，事情看起来基本上是一样的。</p>
+<pre><code class="language-swift">let gitHubButton = UIButton(type: .system)
+// gitHubButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+// gitHubButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+
+// …
+
+let loginButton = UIButton(type: .system)
+// loginButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+// loginButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+
+// …
+</code></pre>
+<p>但是我们注意到一个区别:字体小了一点。 这是怎么了? 我们使用.<em>system</em>按钮类型，它为按钮标题提供了一些很好的样式，这可能会碍事。 不过，仔细检查一下，我们通过代理对象深入了两层，试图通过<em>titlelabel</em>标签更新字体。<em>UIAppearance</em>的改变只对直接视图的属性起作用。 一个解决方案是扩展我们的视图并将此配置作为一个新属性公开，但这需要一点工作。</p>
+<p><em>UIAppearance</em>的另一个问题是它在类级别上工作。 我们已经达到了UIButton可重用配置的极限，所以为了构建更多种类的可重用按钮，我们的主要路径是子类化。</p>
+<h2 id="3-a-namesubclassingasubclassing">3. <a name='Subclassing'></a>Subclassing</h2>
+<p>子类化是在整个应用程序中管理可重用样式的流行方法。让我们首先定义一个基按钮类，并覆盖它的初始化式来样式化它。</p>
+<pre><code class="language-swift">class BaseButton: UIButton {
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    self.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+    self.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+  }
+
+  required init?(coder aDecoder: NSCoder) {
+    fatalError(&quot;init(coder:) has not been implemented&quot;)
+  }
+}
+</code></pre>
+<p>编译器还强迫我们定义那个额外的初始化式。</p>
+<p>现在我们可以将按钮实例化为<em>BaseButton</em></p>
+<pre><code class="language-swift">let gitHubButton = BaseButton(type: .system)
+// …
+
+let loginButton = BaseButton(type: .system)
+// …
+</code></pre>
+<p>但是字体看起来又不对了。按钮子类和.<em>system</em>类型不兼容，所以我们现在要放弃从那个按钮类型得到的东西。</p>
+<pre><code class="language-swift">let gitHubButton = BaseButton()
+// …
+
+let loginButton = BaseButton()
+// …
+</code></pre>
+<p>现在字体已经正常呈现了。</p>
+<p>我们现在直接使用这个<em>BaseButton</em>类，但每当我们在类名前加上<em>Base</em>前缀时，我们通常是在处理一些抽象的功能，这些功能会进一步子类化以供实际使用。</p>
+<p>我们在屏幕上看到的更直接的按钮样式是什么? 我们有一个“填充”按钮样式，一个“边框”按钮样式，和一个“文本”按钮样式。让我们从定义一个<em>fillledbutton</em>子类开始。</p>
+<pre><code class="language-swift">class FilledButton: BaseButton {
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    self.backgroundColor = .black
+    self.tintColor = .white
+  }
+
+  required init?(coder aDecoder: NSCoder) {
+    fatalError(&quot;init(coder:) has not been implemented&quot;)
+  }
+}
+</code></pre>
+<p>同样，我们需要提供额外的*init(coder:)*初始化式来满足编译器的要求，但是现在我们有了一个可以使用的新类。</p>
+<pre><code class="language-swift">let gitHubButton = FilledButton()
+// gitHubButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+// gitHubButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+gitHubButton.clipsToBounds = true
+gitHubButton.layer.cornerRadius = 6
+// gitHubButton.backgroundColor = .black
+// gitHubButton.tintColor = .white
+</code></pre>
+<p>这些样式通过重用被组合在一起，看起来我们在这里跳过了。 我们有几行环绕按钮边缘的线，与登录按钮共享。听起来我们需要另一个子类。</p>
+<pre><code class="language-swift">class RoundedButton: BaseButton {
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    self.clipsToBounds = true
+    self.layer.cornerRadius = 6
+  }
+
+  required init?(coder aDecoder: NSCoder) {
+    fatalError(&quot;init(coder:) has not been implemented&quot;)
+  }
+}
+</code></pre>
+<p>现在我们不得不考虑操作的顺序。<em>Fillledbutton</em>和<em>RoundedButton</em>都继承自<em>BaseButton</em>。现在，<em>Fillledbutton</em>应该继承<em>RoundedButton</em>以确保填充的按钮是圆角的。</p>
+<pre><code class="language-swift">class FilledButton: RoundedButton {
+  // …
+}
+</code></pre>
+<p>我们可以继续沿着这些行定义<em>BorderButton</em>和<em>TextButton</em>子类，并找出它们在层次结构中的位置。在这个小屏幕上很容易找到它们的位置，但随着时间的推移，我们会发现我们有需要共享相同逻辑的分离的子类。</p>
+<p>这就是菱形继承问题:给定一个有两个子类的基类，我们可能想要另一个继承这两个子类的子类。 Swift不支持菱形继承，所以让我们探索一些其他共享逻辑的替代方法。</p>
+<h2 id="4-a-nameobjectcompositionaobject-composition">4. <a name='ObjectComposition'></a>Object Composition</h2>
+<p>在我们的行业里有句古老的格言:“比起继承，更喜欢组合。（<em>prefer composition over inheritance</em>）”在这个意义上，“合成”是什么意思?</p>
+<p>我们不使用子类，而是定义一个静态属性来创建具有基样式的按钮。</p>
+<pre><code class="language-swift">extension UIButton {
+  static var base: UIButton {
+    let button = UIButton()
+    button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+    button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+    return button
+  }
+}
+</code></pre>
+<p>我们可以为填充按钮样式创建另一个helper。</p>
+<pre><code class="language-swift">extension UIButton {
+  static var filled: UIButton {
+    let button = self.base
+    button.backgroundColor = .black
+    button.tintColor = .white
+    return button
+  }
+}
+</code></pre>
+<p>这就是“<em>composition</em>”的作用所在。我们在进一步应用<em>filled</em> 样式之前，可以调用<em>self.base</em>使用我们的基本样式派生一个按钮。</p>
+<p>然后我们可以添加一个圆形样式。</p>
+<pre><code class="language-swift">extension UIButton {
+  static var rounded: UIButton {
+    let button = self.filled
+    button.clipsToBounds = true
+    button.layer.cornerRadius = 6
+    return button
+  }
+}
+</code></pre>
+<p>现在我们的GitHub按钮可以使用这些静态属性之一而不是子类。</p>
+<pre><code class="language-swift">let gitHubButton = UIButton.filled
+</code></pre>
+<p>哎呀! 我们的按钮是填充的，但不是四舍五入的。发生了什么事? 看来我们的行动顺序错了。看起来这个版本有与继承相同的问题，尽管它仍然更好一些。直接在<em>UIButton</em>上定义样式绝对更简洁，我们不需要定义那些嘈杂的*init(coder:)*初始化器。让我们看看是否能找到一种不那么混乱的方式来构建我们的样式。</p>
+<h2 id="5-a-namefunctionsafunctions">5. <a name='Functions'></a>Functions</h2>
+<p>让我们回到我们熟悉的老朋友，函数。我们可以定义一个<em>baseButtonStyle</em>函数，用我们的基样式给给定的按钮设置样式。</p>
+<pre><code class="language-swift">func baseButtonStyle(_ button: UIButton) {
+  button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+  button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+}
+</code></pre>
+<p>又好又简洁。</p>
+<p>What about a filledButtonStyle?</p>
+<pre><code class="language-swift">func filledButtonStyle(_ button: UIButton)  {
+  button.backgroundColor = .black
+  button.tintColor = .white
+}
+</code></pre>
+<p>现在我们的填充样式不需要继承或调用基样式。</p>
+<p>How about a roundedButtonStyle?</p>
+<pre><code class="language-swift">func roundedButtonStyle(_ button: UIButton)  {
+  button.clipsToBounds = true
+  button.layer.cornerRadius = 6
+}
+</code></pre>
+<p>我们有! 三个样式函数不需要担心它们之间的继承或调用层次结构。他们只做一件事，而且做得很好。让我们使用它们。</p>
+<pre><code class="language-swift">let gitHubButton = UIButton(type: .system)
+baseButtonStyle(gitHubButton)
+roundedButtonStyle(gitHubButton)
+filledButtonStyle(gitHubButton)
+</code></pre>
+<p>这看起来有点乱。在这个配置中有很多活动部件，似乎很容易错过一个步骤。我们还直接应用了<em>baseButtonStyle</em>，这看起来像是我们想让其他样式使用的东西。如果能够将这些风格组合成不那么随意的单位就好了。</p>
+<h2 id="6-a-namefunctioncompositionafunction-composition">6. <a name='FunctionComposition'></a>Function Composition</h2>
+<p>在我们的“<em>Side Effects</em>”一集中，我们介绍了&lt;&gt;用于单一类型的合成。我们定义了两次:一次用于接受As作为输入并返回As作为输出的函数，一次用于从inout A到Void的值突变函数。</p>
+<pre><code class="language-swift">func &lt;&gt; &lt;A&gt;(f: @escaping (A) -&gt; A, g: @escaping (A) -&gt; A) -&gt; (A) -&gt; A {
+  return f &gt;&gt;&gt; g
+}
+func &lt;&gt; &lt;A&gt;(f: @escaping (inout A) -&gt; Void, g: @escaping (inout A) -&gt; Void) -&gt; (inout A) -&gt; Void {
+  return { a in
+    f(&amp;a)
+    g(&amp;a)
+  }
+}
+</code></pre>
+<p>我们的样式函数生活在引用类型突变的世界里，所以让我们看看是否可以重用这个*(inout A) -&gt; Void*形状。</p>
+<pre><code class="language-swift">func &lt;&gt; &lt;A: AnyObject&gt;(f: @escaping (A) -&gt; Void, g: @escaping (A) -&gt; Void) -&gt; (A) -&gt; Void {
+  return { a in
+    f(a)
+    g(a)
+  }
+}
+</code></pre>
+<p>我们将泛型A限制为AnyObject，这是所有引用类型都遵循的协议。在这个过程中，我们可以删除<em>inout</em>注释。</p>
+<p>现在我们可以从我们的<em>baseButtonStyle</em>组合我们的<em>fillledbuttonstyle</em>。</p>
+<pre><code class="language-swift">let filledButtonStyle =
+  baseButtonStyle
+    &lt;&gt; {
+      $0.backgroundColor = .black
+      $0.tintColor = .white
+}
+</code></pre>
+<p>让我们对<em>roundedButtonStyle</em>做同样的事情</p>
+<pre><code class="language-swift">let roundedButtonStyle =
+  baseButtonStyle
+    &lt;&gt; {
+      $0.clipsToBounds = true
+      $0.layer.cornerRadius = 6
+}
+</code></pre>
+<p>我们的GitHub按钮不再需要配置<em>baseButtonStyle</em>。 让我们最终决定样式的层次结构，让<em>fillledbuttonstyle</em>由<em>roundedButtonStyle</em>组成。</p>
+<pre><code class="language-swift">let filledButtonStyle =
+  roundedButtonStyle
+    &lt;&gt; {
+      $0.backgroundColor = .black
+      $0.tintColor = .white
+}
+</code></pre>
+<p>这种构图感觉起来灵活多了。我们可以快速混合、匹配和提取样式，每个函数本身只负责它的样式，不需要调用其他样式函数: 我们通过函数组合来组合样式。</p>
+<p>我们现在还可以探索可重用的样式，这在类和静态属性世界中是不可能的! 我们的<em>roundedButtonStyle</em>是一个函数，它可以修改存在于所有<em>UIView</em>上的属性，而不仅仅是按钮。事实上，我们的<em>UITextFields</em>也是以同样的方式配置的。</p>
+<p>我们现在可以编写一个在所有<em>UIView</em>上工作的<em>rounddedstyle</em>。</p>
+<pre><code class="language-swift">let roundedStyle: (UIView) -&gt; Void = {
+  $0.clipsToBounds = true
+  $0.layer.cornerRadius = 6
+}
+</code></pre>
+<p>而我们的<em>roundedButtonStyle</em>只需要用这个更可重用的功能来组合。</p>
+<pre><code class="language-swift">let roundedButtonStyle =
+  baseButtonStyle
+    &lt;&gt; roundedStyle
+</code></pre>
+<p>我们可以通过创建<em>baseTextFieldStyle</em>来重用这个<em>roundedStyle</em>。</p>
+<pre><code class="language-swift">let baseTextFieldStyle: (UITextField) -&gt; Void =
+  roundedStyle
+    &lt;&gt; {
+      $0.layer.borderColor = UIColor(white: 0.75, alpha: 1).cgColor
+      $0.layer.borderWidth = 1
+      $0.borderStyle = .roundedRect
+      $0.heightAnchor.constraint(equalToConstant: 44).isActive = true
+}
+</code></pre>
+<p>我们可以把这个样式应用到两个文本框中，然后去掉很多代码。</p>
+<pre><code class="language-swift">let emailTextField = UITextField()
+baseTextFieldStyle(emailTextField)
+// …
+
+let passwordTextField = UITextField()
+baseTextFieldStyle(passwordTextField)
+// …
+</code></pre>
+<p>更多的重用是通过观察来实现的:我们的<em>baseTextFieldStyle</em>以与边框按钮相同的方式配置边框。 我们应该能够编写一个双方都可以使用的<em>borderStyle</em>。</p>
+<p>如果我们以非常基本的方式编写样式函数，就会遇到一个问题:</p>
+<pre><code class="language-swift">let borderStyle: (UIView) -&gt; Void = {
+  $0.layer.borderColor = // ???
+  $0.layer.borderWidth = // ???
+}
+</code></pre>
+<p>这里的配置在每种情况下都是不同的:我们的边框按钮有一个粗的黑色边框，而文本框有一个细的灰色边框。 让我们把这个配置带入函数。</p>
+<pre><code class="language-swift">func borderStyle(color: UIColor, width: CGFloat) -&gt; (UIView) -&gt; Void {
+  return { view in
+    view.layer.borderColor = color.cgColor
+    view.layer.borderWidth = width
+  }
+}
+</code></pre>
+<p>为了进行组合，我们需要我们的函数先进行配置，然后返回一个全新的函数来样式化视图。</p>
+<p>让我们试着用<em>baseTextFieldStyle</em>:</p>
+<pre><code class="language-swift">let baseTextFieldStyle: (UITextField) -&gt; Void =
+  roundedStyle
+    &lt;&gt; borderStyle(color: UIColor(white: 0.75, alpha: 1), width: 1)
+    &lt;&gt; {
+      $0.borderStyle = .roundedRect
+      $0.heightAnchor.constraint(equalToConstant: 44).isActive = true
+}
+</code></pre>
+<p>我们有个小问题。</p>
+<pre><code class="language-swift">Value of type 'UIView' has no member 'borderStyle'
+</code></pre>
+<p>我们组合了一堆小函数，这些小函数通常会将<em>UIView</em>样式转换成一个函数，该函数特别需要<em>UITextFields</em>，类型系统已经达到了子类型、超类型和多行闭包之间的推断限制。这种错误应该很少见，但很容易修复。我们需要显式地使用闭包的类型签名。</p>
+<pre><code class="language-swift">let baseTextFieldStyle: (UITextField) -&gt; Void =
+  roundedStyle
+    &lt;&gt; borderStyle(color: UIColor(white: 0.75, alpha: 1), width: 1)
+    &lt;&gt; { (tf: UITextField) in
+      tf.borderStyle = .roundedRect
+      tf.heightAnchor.constraint(equalToConstant: 44).isActive = true
+}
+</code></pre>
+<p>这很有效。</p>
+<p>现在我们有了一个<em>borderStyle</em>，可以很容易地创建一个<em>borderButtonStyle</em>!</p>
+<pre><code class="language-swift">let borderButtonStyle =
+  roundedStyle
+    &lt;&gt; borderStyle(color: .black, width: 2)
+</code></pre>
+<p>这是在任何<em>UIView</em>上流畅地使用样式函数的另一个例子。我们已经能够用diamond &lt;&gt;来解决我们的diamond继承问题。</p>
+<p>如果我们进一步为所有东西编写样式函数，它会是什么样子?</p>
+<pre><code class="language-swift">// base
+
+func autolayoutStyle&lt;V: UIView&gt;(_ view: V) -&gt; Void {
+  view.translatesAutoresizingMaskIntoConstraints = false
+}
+
+func aspectRatioStyle&lt;V: UIView&gt;(size: CGSize) -&gt; (V) -&gt; Void {
+  return {
+    $0.widthAnchor
+      .constraint(equalTo: $0.heightAnchor, multiplier: size.width / size.height)
+      .isActive = true
+  }
+}
+
+func implicitAspectRatioStyle&lt;V: UIView&gt;(_ view: V) -&gt; Void {
+  aspectRatioStyle(size: view.frame.size)(view)
+}
+
+func roundedRectStyle&lt;View: UIView&gt;(_ view: View) {
+  view.clipsToBounds = true
+  view.layer.cornerRadius = 6
+}
+
+// buttons
+
+let baseButtonStyle: (UIButton) -&gt; Void = {
+  $0.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+  $0.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+}
+
+let roundedButtonStyle =
+  baseButtonStyle
+    &lt;&gt; roundedRectStyle
+
+let filledButtonStyle =
+  roundedButtonStyle
+    &lt;&gt; {
+      $0.backgroundColor = .black
+      $0.tintColor = .white
+}
+
+let borderButtonStyle =
+  roundedButtonStyle
+    &lt;&gt; {
+      $0.layer.borderColor = UIColor.black.cgColor
+      $0.layer.borderWidth = 2
+      $0.setTitleColor(.black, for: .normal)
+}
+
+let textButtonStyle =
+  baseButtonStyle &lt;&gt; {
+    $0.setTitleColor(.black, for: .normal)
+}
+
+let imageButtonStyle: (UIImage?) -&gt; (UIButton) -&gt; Void = { image in
+  return {
+    $0.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 16)
+    $0.setImage(image, for: .normal)
+  }
+}
+
+let gitHubButtonStyle =
+  filledButtonStyle
+    &lt;&gt; imageButtonStyle(UIImage(named: &quot;github&quot;))
+
+// text fields
+
+let baseTextFieldStyle: (UITextField) -&gt; Void =
+  roundedRectStyle
+    &lt;&gt; {
+      $0.borderStyle = .roundedRect
+      $0.heightAnchor.constraint(equalToConstant: 44).isActive = true
+      $0.layer.borderColor = UIColor(white: 0.75, alpha: 1).cgColor
+      $0.layer.borderWidth = 1
+}
+
+let emailTextFieldStyle =
+  baseTextFieldStyle
+    &lt;&gt; {
+      $0.keyboardType = .emailAddress
+      $0.placeholder = &quot;blob@pointfree.co&quot;
+}
+
+let passwordTextFieldStyle =
+  baseTextFieldStyle
+    &lt;&gt; {
+      $0.isSecureTextEntry = true
+      $0.placeholder = &quot;••••••••••••••••&quot;
+}
+
+// labels
+
+func fontStyle(ofSize size: CGFloat, weight: UIFont.Weight) -&gt; (UILabel) -&gt; Void {
+  return {
+    $0.font = .systemFont(ofSize: size, weight: weight)
+  }
+}
+
+func textColorStyle(_ color: UIColor) -&gt; (UILabel) -&gt; Void {
+  return {
+    $0.textColor = color
+  }
+}
+
+let centerStyle: (UILabel) -&gt; Void = {
+  $0.textAlignment = .center
+}
+
+// hyper-local
+
+let orLabelStyle: (UILabel) -&gt; Void =
+  centerStyle
+    &lt;&gt; fontStyle(ofSize: 14, weight: .medium)
+    &lt;&gt; textColorStyle(UIColor(white: 0.625, alpha: 1))
+
+let finePrintStyle: (UILabel) -&gt; Void =
+  centerStyle
+    &lt;&gt; fontStyle(ofSize: 14, weight: .medium)
+    &lt;&gt; textColorStyle(UIColor(white: 0.5, alpha: 1))
+    &lt;&gt; {
+      $0.font = .systemFont(ofSize: 11, weight: .light)
+      $0.numberOfLines = 0
+}
+
+let gradientStyle: (GradientView) -&gt; Void =
+  autolayoutStyle &lt;&gt; {
+    $0.fromColor = UIColor(red: 0.5, green: 0.85, blue: 1, alpha: 0.85)
+    $0.toColor = .white
+}
+
+// stack views
+
+let rootStackViewStyle: (UIStackView) -&gt; Void =
+  autolayoutStyle
+    &lt;&gt; {
+      $0.axis = .vertical
+      $0.isLayoutMarginsRelativeArrangement = true
+      $0.layoutMargins = UIEdgeInsets(top: 32, left: 16, bottom: 32, right: 16)
+      $0.spacing = 16
+}
+
+final class SignInViewController: UIViewController {
+  override func viewDidLoad() {
+    super.viewDidLoad()
+
+    self.view.backgroundColor = .white
+
+    let gradientView = GradientView()
+    gradientStyle(gradientView)
+
+    let logoImageView = UIImageView(image: UIImage(named: &quot;logo&quot;))
+    implicitAspectRatioStyle(logoImageView)
+
+    baseButtonStyle(.appearance())
+
+    let gitHubButton = UIButton(type: .system)
+    gitHubButton.setTitle(&quot;Sign in with GitHub&quot;, for: .normal)
+    gitHubButtonStyle(gitHubButton)
+
+    let orLabel = UILabel()
+    orLabelStyle(orLabel)
+    orLabel.text = &quot;or&quot;
+
+    let emailField = UITextField()
+    emailTextFieldStyle(emailField)
+
+    let passwordField = UITextField()
+    passwordTextFieldStyle(passwordField)
+
+    let signInButton = UIButton(type: .system)
+    signInButton.setTitle(&quot;Sign in&quot;, for: .normal)
+    borderButtonStyle(signInButton)
+
+    let forgotPasswordButton = UIButton(type: .system)
+    forgotPasswordButton.setTitle(&quot;I forgot my password&quot;, for: .normal)
+    textButtonStyle(forgotPasswordButton)
+
+    let legalLabel = UILabel()
+    legalLabel.text = &quot;By signing into Point-Free you agree to our latest terms of use and privacy policy.&quot;
+    finePrintStyle(legalLabel)
+
+    let rootStackView = UIStackView(arrangedSubviews: [
+      logoImageView,
+      gitHubButton,
+      orLabel,
+      emailField,
+      passwordField,
+      signInButton,
+      forgotPasswordButton,
+      legalLabel,
+      ])
+    rootStackViewStyle(rootStackView)
+
+    self.view.addSubview(gradientView)
+    self.view.addSubview(rootStackView)
+
+    NSLayoutConstraint.activate([
+      gradientView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
+      gradientView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+      gradientView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+      gradientView.bottomAnchor.constraint(equalTo: self.view.centerYAnchor),
+
+      rootStackView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
+      rootStackView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+      rootStackView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+      ])
+  }
+}
+</code></pre>
+<p>我们能够衍生出许多有趣的、可重用的风格! 我们有一个<em>autolayoutStyle</em>，它可能比<em>translatesAutoresizingMaskIntoConstraints = false</em>更容易阅读和记忆。我们有一个<em>aspectRatioStyle</em>维护图像视图的纵横比与自动布局。</p>
+<p>我们有一个<em>imageButtonStyle</em>，它可以根据我们的需要用<em>borderButtonStyle</em>或<em>fillledbuttonstyle</em>来组合。</p>
+<p>我们也有一个<em>rootStackViewStyle</em>，允许我们保持一致的边距和间距在我们的应用程序。</p>
+<p>所有这些样式函数都存在于控制器之外，可以在任何地方自由使用和重用。</p>
+<p>我们的视图控制器呢?嗯，它变得非常简洁! 每个视图都被实例化，然后在一行中设置样式。</p>
+<h2 id="7-a-namewhatsthepointawhats-the-point">7. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>看一个真实世界的例子会让我们更容易地问自己:这有什么意义? 我们已经在日常用例中利用了&lt;&gt;，并且能够以一种真正强大而灵活的方式解决UIKit样式化的问题。我们的函数没有与UIKit战斗。事实上，他们玩得还不错!]</p>
+<p>我们甚至可以使用带有样式功能的<em>UIAppearance</em> !</p>
+<pre><code class="language-swift">baseButtonStyle(UIButton.appearance())
+</code></pre>
+<p>或者，如果你感觉不错:</p>
+<pre><code class="language-swift">baseButtonStyle(.appearance())
+</code></pre>
+<p>这就是简单函数的美妙之处。它们是灵活的，让我们可以随意使用它们。我们并不是在用一层抽象来阻止我们看到正在发生的事情。</p>
+<p>这是我们一直在用的东西。您可以简单地将它引入到代码库中，而无需依赖。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L76CX3exv/" class="tag">
+                    functions
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-02-side-effects/">
+                  <h3 class="post-title">
+                    PointFree Episode 02: Side Effects
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

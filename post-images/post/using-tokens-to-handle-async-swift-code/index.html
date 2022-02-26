@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using tokens to handle async Swift code | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="以一种可预测、可读和易于调试的方式处理异步代码确实具有挑战性。这也是一种非常普遍的现象，几乎所有的现代代码库都有高度异步的部件-无论是通过网络加载数据，本地处理大数据集还是其他任何计算密集型的操作。
+因此，在大多数语言中，都创建了一些抽象来..." />
+    <meta name="keywords" content="concurrency,networking" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using tokens to handle async Swift code</h2>
+            <div class="post-date">2017-10-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>以一种可预测、可读和易于调试的方式处理异步代码确实具有挑战性。这也是一种非常普遍的现象，几乎所有的现代代码库都有高度异步的部件-无论是通过网络加载数据，本地处理大数据集还是其他任何计算密集型的操作。</p>
+<p>因此，在大多数语言中，都创建了一些抽象来尝试简化异步任务的处理，这并不奇怪。我们已经在以前的文章中看过一些这样的技术和抽象——包括使用GCD和future &amp; Promises。本周，让我们来看看另一种技术，它可以使管理异步调用变得更简单，也更不容易出错——使用令牌。</p>
+<h2 id="token-based-apis">Token-based APIs</h2>
+<p>基于令牌的api的核心思想是，启动异步或延迟操作的函数返回令牌。 然后可以使用该令牌来管理和取消该操作。这样一个函数的签名可以是这样的:</p>
+<pre><code class="language-swift">func loadData(from url: URL, completion: @escaping (Result) -&gt; Void) -&gt; Token
+</code></pre>
+<p>令牌要比Futures和Promises等轻量级得多——因为令牌只是作为一种跟踪请求的方式，而不是包含整个请求本身。 这也使它们更容易添加到现有的代码库中，而不必使用不同的模式重写大量异步代码，或者必须公开实现细节。</p>
+<p>那么，让上面的函数返回令牌有什么好处呢?  让我们看一个例子，在这个例子中，我们正在构建一个视图控制器，允许用户在我们的应用程序中搜索其他用户:</p>
+<pre><code class="language-swift">class UserSearchViewController: UIViewController, UISearchBarDelegate {
+    private let userLoader: UserLoader
+    private lazy var searchBar = UISearchBar()
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        userLoader.loadUsers(matching: searchText) { [weak self] result in
+            switch result {
+            case .success(let users):
+                self?.reloadResultsView(with: users)
+            case .error(let error):
+                self?.handle(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>正如您在上面看到的，这些看起来都很标准，但是如果您曾经实现过这种“随类型搜索”功能，那么您可能知道其中隐藏着一个bug。问题是，在搜索字段中输入字符的速度不一定与请求完成的速度相匹配。这将导致一个非常常见的问题，即当前一个请求在后一个请求之后完成时，意外地呈现旧的结果。</p>
+<p>让我们看看token如何帮助我们解决上述问题👍</p>
+<h2 id="a-token-for-every-request">A token for every request</h2>
+<p>让我们先仔细看看UserLoader。它目前是这样实现的:</p>
+<pre><code class="language-swift">class UserLoader {
+    private let urlSession: URLSession
+
+    func loadUsers(matching query: String,
+                   completionHandler: @escaping (Result&lt;[User]&gt;) -&gt; Void) {
+        let url = requestURL(forQuery: query)
+
+        let task = urlSession.dataTask(with: url) { (data, _, error) in
+            // Pattern match on the returned data and error to determine
+            // the outcome of the operation
+            switch (data, error) {
+            case (_, let error?):
+                completionHandler(.error(error))
+            case (let data?, _):
+                do {
+                    let users: [User] = try unbox(data: data)
+                    completionHandler(.success(users))
+                } catch {
+                    completionHandler(.error(error))
+                }
+            case (nil, nil):
+                completionHandler(.error(Error.missingData))
+            }
+        }
+
+        task.resume()
+    }
+}
+</code></pre>
+<p>为了避免UserSearchViewController中的错误，我们需要做的是取消任何正在进行的任务。 有几种方法可以达到这个目的。一种方法是让UserLoader自己跟踪它当前的数据任务，并在新任务启动时取消它:</p>
+<pre><code class="language-swift">class UserLoader {
+    private let urlSession: URLSession
+    private weak var currentTask: URLSessionDataTask?
+
+    func loadUsers(matching query: String,
+                   completionHandler: @escaping (Result&lt;[User]&gt;) -&gt; Void) {
+        currentTask?.cancel()
+
+        let url = requestURL(forQuery: query)
+
+        let task = urlSession.dataTask(with: url) { (data, _, error) in
+            ...
+        }
+
+        task.resume()
+        currentTask = task
+    }
+}
+</code></pre>
+<p>上面的方法是有效的，而且是完全有效的方法。 然而，它确实让API变得不那么明显了——因为取消现在是强制性的，并且已经融入到实现中。 如果UserLoader在不应该被取消的旧的请求的一个上下文中使用，这可能会在将来引起潜在的错误。</p>
+<p>另一个选项是当loadUsers被调用时返回data任务本身:</p>
+<pre><code class="language-swift">class UserLoader {
+    private let urlSession: URLSession
+
+    func loadUsers(matching query: String,
+                   completionHandler: @escaping (Result&lt;[User]&gt;) -&gt; Void) -&gt; URLSessionDataTask {
+        let url = requestURL(forQuery: query)
+
+        let task = urlSession.dataTask(with: url) { (data, _, error) in
+           ...
+        }
+
+        task.resume()
+
+        return task
+    }
+}
+</code></pre>
+<p>这也是一种有效的方法，但缺点是我们会泄漏作为API一部分的实现细节。没有理由(除了允许取消)其他使用UserLoader的代码必须知道它在底层使用URLSessionDataTask - 这应该保留一个私有的实现细节，使测试和重构更容易。</p>
+<p>最后，让我们尝试使用基于令牌的API来解决这个问题。要做到这一点，我们首先要创建一个令牌类型，然后在执行请求时返回它:</p>
+<pre><code class="language-swift">class RequestToken {
+    private weak var task: URLSessionDataTask?
+
+    init(task: URLSessionDataTask) {
+        self.task = task
+    }
+
+    func cancel() {
+        task?.cancel()
+    }
+}
+</code></pre>
+<p>正如您在上面看到的，我们的RequestToken非常简单，实际上只包含一个可以取消的任务的引用。真的没有理由让它变得更复杂，它持有对任务本身的引用完全没有问题，只要我们不公开它。</p>
+<p>让我们继续使用RequestToken作为UserLoader中的返回类型</p>
+<pre><code class="language-swift">class UserLoader {
+    private let urlSession: URLSession
+
+    @discardableResult
+    func loadUsers(matching query: String,
+                   completionHandler: @escaping (Result&lt;[User]&gt;) -&gt; Void) -&gt; RequestToken {
+        let url = requestURL(forQuery: query)
+
+        let task = urlSession.dataTask(with: url) { (data, _, error) in
+            ...
+        }
+
+        task.resume()
+
+        return RequestToken(task: task)
+    }
+}
+</code></pre>
+<p>注意，我们还向该方法添加了@discardableResult属性，这样在不需要令牌时就不会强制API用户使用令牌。</p>
+<p>其结果是一个简洁抽象的API，可以在不引入额外状态的情况下取消操作——非常棒!🍭</p>
+<h2 id="using-a-token-to-cancel-an-ongoing-task">Using a token to cancel an ongoing task</h2>
+<p>现在是最后一步了——当用户在视图控制器的搜索栏中输入一个新字符时，使用这个令牌来取消之前未完成的请求。</p>
+<p>要做到这一点，我们将添加一个属性来存储当前请求令牌，并且在开始一个新请求之前，我们只需对它调用cancel()。最后，由于引入了取消，我们可能需要更新处理结果代码来处理URLError.cancelled，这样我们在取消旧请求时就不会显示一个错误视图。</p>
+<p>下面是最终实现的样子:</p>
+<pre><code class="language-swift">class UserSearchViewController: UIViewController, UISearchBarDelegate {
+    private let userLoader: UserLoader
+    private lazy var searchBar = UISearchBar()
+    private var requestToken: RequestToken?
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        requestToken?.cancel()
+
+        requestToken = userLoader.loadUsers(matching: searchText) { [weak self] result in
+            switch result {
+            case .success(let users):
+                self?.reloadResultsView(with: users)
+            case .error(URLError.cancelled):
+                // Request was cancelled, no need to do any handling
+                break
+            case .error(let error):
+                self?.handle(error)
+            }
+        }
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>将令牌添加到现有的异步api是一种很好的添加取消支持的方法，而不必完全重写实现。而其他更复杂的异步抽象(如期货/承诺、RxSwift、操作等)提供了比简单令牌更强大的功能——如果你所需要的只是取消，令牌可能是一个很好的选择。</p>
+<p>我们还可以更进一步，让RequestToken更一般化，让它接受一个符合可取消协议的对象，而不是一个具体的URLSessionDataTask对象。但总的来说，我建议让代币保持超级简单，以避免让它们成长为看起来更像Futures/Promises的东西。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-tokens-to-handle-async-swift-code/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ArhVOQ_GL/" class="tag">
+                    concurrency
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EV0rk5a8R1/" class="tag">
+                    networking
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/capturing-objects-in-swift-closures/">
+                  <h3 class="post-title">
+                    Capturing objects in Swift closures
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Separation of concerns using protocols in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在设计易于维护的架构和系统时，关注点分离是一个核心原则。它的理念是，每种物体或类型对其周围环境的了解仅够完成其工作，仅此而已。
+然而，即使这是大多数程序员在他们的职业生涯早期学习的原则，在实践中应用它并不总是很容易的。本周，让我们看看如何使..." />
+    <meta name="keywords" content="protocols,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Separation of concerns using protocols in Swift</h2>
+            <div class="post-date">2017-12-24</div>
+            
+            <div class="post-content" v-pre>
+              <p>在设计易于维护的架构和系统时，关注点分离是一个核心原则。它的理念是，每种物体或类型对其周围环境的了解仅够完成其工作，仅此而已。</p>
+<p>然而，即使这是大多数程序员在他们的职业生涯早期学习的原则，在实践中应用它并不总是很容易的。本周，让我们看看如何使用协议更容易地分离Swift中不同类型的关注点。</p>
+<h2 id="lets-start-with-an-example">Let's start with an example</h2>
+<p>假设我们正在构建一个ContactSearchViewController让我们的用户搜索本地保存在应用中的联系人。应用程序目前正在使用Core Data进行持久化，所以我们最初的解决方案可能是简单地将应用程序的Core Data context (NSManagedObjectContext)作为依赖注入到我们的新视图控制器中</p>
+<pre><code class="language-swift">class ContactSearchViewController: UIViewController {
+    private let coreDataContext: NSManagedObjectContext
+
+    init(coreDataContext: NSManagedObjectContext) {
+        self.coreDataContext = coreDataContext
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>像上面这样的做法是一个非常常见的解决方案，也是完全有效的，但它有两个问题:</p>
+<p>我们的视图控制器知道我们的应用程序正在使用Core Data。虽然这很方便，但它也使我们的代码变得不那么灵活(例如，如果我们想把我们的数据库解决方案更改为其他的东西——比如Realm)。 它还使测试变得非常困难(即使我们使用依赖项注入)，因为模拟像NSManagedObjectContext这样的系统类是困难的，而且经常会导致不稳定的测试。</p>
+<p>因为我们的视图控制器可以完全访问我们的数据库，它可以对它做任何它想做的事情。 它可以读和写，这在这种情况下真的是不必要的-视图控制器将只搜索联系人，这只需要读访问。如果我们能把读写分离开来，只给给定的视图控制器提供它需要的功能，那就更好了</p>
+<h2 id="another-abstraction">Another abstraction</h2>
+<p>当面对具有可测试性和关注点分离的问题时，最经常需要的是另一种形式的抽象。就像我在“每个人都是API设计师”的演讲中提到的，协议是定义这种抽象的好方法。</p>
+<p>我们不需要让视图控制器直接访问数据库的具体实现，我们可以创建一个协议，定义应用程序加载和保存对象所需的所有api，就像这样:</p>
+<pre><code class="language-swift">protocol Database {
+    func loadObjects&lt;T: Model&gt;(matching query: Query) -&gt; [T]
+    func loadObject&lt;T: Model&gt;(withID id: String) -&gt; T?
+    func save&lt;T: Model&gt;(_ object: T)
+}
+</code></pre>
+<p>我们现在可以在初始化ContactSearchViewController时使用新的数据库协议，而不是直接注入核心数据上下文:</p>
+<pre><code class="language-swift">class ContactSearchViewController: UIViewController {
+    private let database: Database
+
+    init(database: Database) {
+        self.database = database
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>上面的做法解决了第一个问题——我们的代码现在更灵活，更容易测试。在我们的测试中，我们现在可以通过实现数据库协议来创建模拟，如果我们想要迁移到一个新的数据库解决方案(甚至使用一个特殊的解决方案，如UI测试)，我们可以通过添加新的数据库实现来轻松实现</p>
+<pre><code class="language-swift">extension NSManagedObjectContext: Database {
+    ...
+}
+
+extension Realm: Database {
+    ...
+}
+
+extension MockedDatabase: Database {
+    ...
+}
+
+extension UITestingDatabase: Database {
+    ...
+}
+</code></pre>
+<p>但是第二个问题——解耦读写呢?🤔</p>
+<h2 id="protocol-composition">Protocol composition</h2>
+<p>我们不再为所有数据库功能使用单一协议，而是使用协议组合来分割内容。 在本例中，我们将创建一个用于读取的协议和一个用于写入的协议。相同的api，只是分成了两个协议而不是一个:</p>
+<pre><code class="language-swift">protocol ReadableDatabase {
+    func loadObjects&lt;T: Model&gt;(matching query: Query) -&gt; [T]
+    func loadObject&lt;T: Model&gt;(withID id: String) -&gt; T?
+}
+
+protocol WritableDatabase {
+    func save&lt;T: Model&gt;(_ object: T)
+}
+
+typealias Database = ReadableDatabase &amp; WritableDatabase
+</code></pre>
+<p>我喜欢协议组合的原因是，根据不同类型的需求，可以更容易地混合和匹配不同的功能。 它还使测试变得更加容易，因为您可以通过简单地实现少量方法来创建模拟，而不必遵从一个大型协议。</p>
+<p>对于像数据库这样的东西，它还让我们可以更细粒度地控制数据在应用程序中的流动方式。 我们现在可以限制只需要读取的视图控制器的数据库访问，给它们只读协议而不是完整的数据库:</p>
+<pre><code class="language-swift">class ContactSearchViewController: UIViewController {
+    private let database: ReadableDatabase
+
+    init(database: ReadableDatabase) {
+        self.database = database
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>好的方面是，当需要完全访问时，我们仍然可以很容易地有一个数据库类型，通过使用Swift的协议组合操作符和一个类型别名:</p>
+<pre><code class="language-swift">typealias Database = ReadableDatabase &amp; WritableDatabase
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>当您希望更细粒度地控制给定对象可以访问哪些功能时，协议可以是一个很好的工具。 通常情况下，一个对象需要关注的内容越少，缺陷的表面积就越小。通过保持你的类型的简单、小和尽可能少的关注，你通常会得到更容易测试和维护的系统。</p>
+<p>上面的技术在为框架设计api时也非常有用——无论是内部的还是开源的。与包含大量功能的大型协议不同，您可以更容易地选择将哪些内容作为公共API的一部分共享，并避免泄露实现细节。 我将在接下来的文章中写更多关于框架API设计的内容。</p>
+<p><a href="https://www.swiftbysundell.com/articles/separation-of-concerns-using-protocols-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/different-flavors-of-dependency-injection-in-swift/">
+                  <h3 class="post-title">
+                    Different flavors of dependency injection in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

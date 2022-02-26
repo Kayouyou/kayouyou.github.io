@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Different flavors of view models in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="大多数应用程序都倾向于围绕少数核心机型。例如，导航应用可能有路线和目的地等模型，而社交网络应用可能处理朋友、帖子和评论等类型。但即使应用程序的数据域相对较小，整个应用程序中数据的使用方式往往会根据数据显示在哪个视图中而变化很大。
+正因为如此..." />
+    <meta name="keywords" content="view models,different flavors,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Different flavors of view models in Swift</h2>
+            <div class="post-date">2018-09-30</div>
+            
+            <div class="post-content" v-pre>
+              <p>大多数应用程序都倾向于围绕少数核心机型。例如，导航应用可能有路线和目的地等模型，而社交网络应用可能处理朋友、帖子和评论等类型。但即使应用程序的数据域相对较小，整个应用程序中数据的使用方式往往会根据数据显示在哪个视图中而变化很大。</p>
+<p>正因为如此，我们经常发现自己在编写特定于视图的模型逻辑——这种逻辑本质上是将模型转换为可以显示给用户的内容，或者将用户输入转换为模型更新，然后传播到应用程序的其他部分。</p>
+<p>视图模型是微软作为MVVM(模型-视图-视图模型)设计模式的一部分而推广的一个概念，它试图通过引入专门的类型使编写和维护这样的逻辑变得更容易。 其理念是，通过将视图模型置于数据模型和表示它们的视图之间，我们可以消除视图和模型之间的大量强耦合，并减少视图控制器包含模型逻辑的需求。</p>
+<p>虽然用“纯”MVVM为苹果平台编写应用程序是完全可能的，但本周，让我们看看如何使用视图模型作为标准MVC设计模式的补充-以及不同风格的视图模型如何帮助我们实现不同的任务。</p>
+<h2 id="model-transformations">Model transformations</h2>
+<p>假设我们正在构建一个让用户浏览和购买书籍的应用程序。我们的一个视图控制器——BookDetailsViewController——被用来显示给定书的详细信息， 并且目前从注入的Book实例中获取信息(这是我们的核心模型之一):</p>
+<pre><code class="language-swift">class BookDetailsViewController: UIViewController {
+    private let model: Book
+
+    init(model: Book) {
+        self.model = model
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>然而，我们不能简单地直接渲染所有的书籍属性——其中一些属性需要特定于我们的细节视图的逻辑，有些需要转换才能显示。:例如，这里我们把书名和作者的名字结合起来，形成我们视图的标题，并根据书的可用性呈现不同的副标题:</p>
+<pre><code class="language-swift">override func viewDidLoad() {
+    super.viewDidLoad()
+
+    // Setup title label
+    let titleLabel = UILabel()
+    titleLabel.text = &quot;\(model.name), by \(model.author.name)&quot;
+    ...
+
+    // Setup subtitle label
+    let subtitleLabel = UILabel()
+
+    if model.isAvailable {
+        subtitleLabel.text = &quot;Available now for \(model.price)&quot;
+    } else {
+        subtitleLabel.text = &quot;Coming soon&quot;
+    }
+
+    ...
+}
+</code></pre>
+<p>从UI的角度来看，上面的代码没有什么问题，但它都是非常棘手的测试(因为我们必须依赖于视图控制器的私有子视图进行验证)，如果我们添加更多的属性或条件，上面的viewDidLoad实现也会变得非常混乱和难以遵循。</p>
+<p>相反，让我们看看如何在视图模型中封装上述模型转换逻辑。</p>
+<h2 id="read-only-structs">Read-only structs</h2>
+<p>让我们从一个简单的视图模型开始， 这本质上给了我们的视图控制器一个专用的模型来工作，通过将数据模型包装在视图模型中来获取信息——像这样:</p>
+<pre><code class="language-swift">struct BookDetailsViewModel {
+    private let model: Book
+
+    init(model: Book) {
+        self.model = model
+    }
+}
+</code></pre>
+<p>注意底层的Book模型是如何保持私有的，这将防止我们的视图控制器直接访问它。相反，视图控制器将为每个用例使用专用的属性来询问我们新的BookDetailsViewModel所需的所有信息。在每个属性实现中，我们可以使用之前在视图控制器中执行的相同的模型转换逻辑:</p>
+<pre><code class="language-swift">extension BookDetailsViewModel {
+    var title: String {
+        return &quot;\(model.name), by \(model.author.name)&quot;
+    }
+
+    var subtitle: String {
+        guard model.isAvailable else {
+            return &quot;Coming soon&quot;
+        }
+
+        return &quot;Available now for \(model.price)&quot;
+    }
+}
+</code></pre>
+<p>有了上面这些，让我们更新我们的视图控制器来使用我们的新视图模型，而不是直接给我们一个Book模型，这给了我们一个更简单的viewDidLoad实现——因为我们现在可以直接显示视图模型给我们的数据:</p>
+<pre><code class="language-swift">class BookDetailsViewController: UIViewController {
+    private let viewModel: BookDetailsViewModel
+
+    init(viewModel: BookDetailsViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        let titleLabel = UILabel()
+        titleLabel.text = viewModel.title
+        ...
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = viewModel.subtitle
+        ...
+    }
+}
+</code></pre>
+<p>上述基于结构的视图模型风格通常适用于对数据有只读关系的视图控制器。 尽管以这种方式引入视图模型似乎是一个小的改变，但它可以为关注点的分离和可测试性创造奇迹 -因为我们现在可以通过针对BookDetailsViewModel编写单元测试，完全独立地验证我们的模型转换逻辑。</p>
+<h2 id="performing-updates">Performing updates</h2>
+<p>然而，许多视图控制器也需要能够更新它们使用的数据，所以让我们看看另一种视图模型风格，它能让我们做到这一点。</p>
+<p>这里我们有一个BookEditorViewController，它允许一些用户修改BookDetailsViewController中被认为是只读的细节。在用户完成编辑后，我们希望调用一个方法来保存更新后的数据到服务器，如下所示:</p>
+<pre><code class="language-swift">extension BookEditorViewController {
+    func save(title: String, price: Price, isAvailable: Bool)  {
+        // Send the updated book data to the server
+    }
+}
+</code></pre>
+<p>同样，这是我们可以内联放到BookEditorViewController中的逻辑，但是如果我们稍微修改一下我们以前的视图模型方法，一个BookEditorViewModel将是封装这种逻辑的好地方-让我们的视图控制器专注于它做得最好的事情——控制视图。</p>
+<p>这一次，我们使用类而不是结构来实现我们的视图模型(因为我们希望能够异步地改变它)，并使用BookSyncService以及要使用的底层模型初始化它:</p>
+<pre><code class="language-swift">class BookEditorViewModel {
+    private var model: Book
+    private let syncService: BookSyncService
+
+    init(model: Book, syncService: BookSyncService) {
+        self.model = model
+        self.syncService = syncService
+    }
+}
+</code></pre>
+<p>为了使我们的视图控制器能够更新底层模型，并将更改同步到我们的服务器，我们将添加一个API，它包含一个元组，包含所做的更改，并在更新操作完成后调用一个闭包:</p>
+<pre><code class="language-swift">extension BookEditorViewModel {
+    typealias Changes = (name: String, price: Price, isAvailable: Bool)
+
+    func update(with changes: Changes,
+                then handler: @escaping (Outcome) -&gt; Void) {
+        // Apply changes
+        var updatedModel = model
+        updatedModel.name = changes.name
+        updatedModel.price = changes.price
+        updatedModel.isAvailable = changes.isAvailable
+
+        // Sync changes with the server
+        syncService.sync(updatedModel) { [weak self] result in
+            switch result {
+            case .success(let newModel):
+                self?.model = newModel
+                handler(.success)
+            case .failure(let error):
+                handler(.failure(error))
+            }
+        }
+    }
+}
+</code></pre>
+<p>要了解更多关于使用元组的信息，就像我们上面所做的那样，将更改分组在一起，请查看“在Swift中使用元组作为轻量级类型”。</p>
+<p>最后，让我们更新我们的编辑器视图控制器来使用它的新视图模型。就像之前一样，我们会注入视图模型而不是底层数据模型，并改变一些东西以便我们的视图控制器能从它的视图模型中获得它需要的所有信息。然后，我们将使用视图模型的update API实现save方法，如下所示:</p>
+<pre><code class="language-swift">extension BookEditorViewController {
+    func save(title: String, price: Price, isAvailable: Bool)  {
+        let changes = (title, price, isAvailable)
+
+        viewModel.update(with: changes) { [weak self] outcome in
+            switch outcome {
+            case .success:
+                self?.showUpdateSuccessNotification()
+            case .failure(let error):
+                self?.showUpdateError(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>这种风格的视图模型非常类似于逻辑控制器的思想——因为我们使用专用类型来封装数据转换的方式，以及它是如何被保存或行动的。两种技术都旨在解决相同的问题，主要的区别是逻辑控制器往往总是返回视图控制器然后呈现的新状态，而在这里，视图控制器自己仍然会从它的视图模型中拉出它需要的信息。</p>
+<h2 id="a-two-way-street">A two-way street</h2>
+<p>让我们来看看最后一种视图模型风格，它在我们需要实现双向绑定时非常有用 - 视图模型可以被它的视图控制器更新，还能通知视图控制器它也被外部更新了。</p>
+<p>就像Swift中的许多东西一样，视图控制器和它的视图模型之间的双向绑定有很多不同的实现方式。 我们可以使用观察模式，通知，函数反应式编程和RxSwift这样的框架，以及其他一些技术(所有这些技术都有自己的优点)——但是对于这个示例，我们将使用一个简单的闭包。</p>
+<p>假设我们正在为我们的书店应用程序构建一个新功能，它允许用户评论书籍。当用户正在查看评论列表时，可能会出现新的评论，我们希望当它发生时，我们的列表能够动态更新。我们将从实现我们的视图模型开始，它将在创建BookReviewManager后开始观察它的更新，如下所示:</p>
+<pre><code class="language-swift">class BookReviewsViewModel {
+    // The closure that will gets called every time the
+    // view model was updated
+    var updateHandler: () -&gt; Void = {}
+
+    private let book: Book
+    private let manager: BookReviewManager
+    private var reviews: [Book.Review]
+
+    init(book: Book, manager: BookReviewManager) {
+        self.book = book
+        self.manager = manager
+        self.reviews = manager.reviewsForBook(withID: book.id)
+
+        startManagerObservation()
+    }
+
+    deinit {
+        endManagerObservation()
+    }
+}
+</code></pre>
+<p>然后，当我们的BookReviewManager观察被触发时，我们将更新视图模型的本地评论数据并调用更新处理程序:</p>
+<pre><code class="language-swift">private extension BookReviewsViewModel {
+    func startManagerObservation() {
+        manager.addObserver(self, forBookWithID: book.id) {
+            viewModel, reviews in
+            viewModel.reviews = reviews
+            viewModel.updateHandler()
+        }
+    }
+}
+</code></pre>
+<p>关于实现类似于我们上面使用的观察API的更多信息，请查看“Swift中的观察者”。</p>
+<p>就像我们前面的两个视图模型风格一样，我们的bookviewsviewmodel将包含视图特定的属性，我们的视图控制器将读取这些属性来渲染它的评论列表，还将包括一个API，用于添加新的审查。所有这些都是在不公开底层Book.Review 数据模型数据的情况下完成的.</p>
+<pre><code class="language-swift">extension BookReviewsViewModel {
+    var numberOfReviews: Int {
+        return reviews.count
+    }
+
+    func titleForReview(at index: Int) -&gt; String {
+        let review = reviews[index]
+        let stars = String(repeating: &quot;⭐️&quot;, count: review.numberOfStars)
+        return &quot;\(stars) \&quot;\(review.title)\&quot;&quot;
+    }
+
+    func addReview(withTitle title: String,
+                   text: String,
+                   numberOfStars: Int) throws {
+        let review = Review(
+            title: title,
+            text: text,
+            numberOfStars: numberOfStars
+        )
+
+        try manager.add(review, forBookWithID: book.id)
+    }
+}
+</code></pre>
+<p>有了上面的内容，让我们来实现我们的视图控制器-通过将表视图的reloadData方法绑定到视图模型的updateHandler属性，这将导致每次添加或删除一个review时都会调用它:</p>
+<pre><code class="language-swift">class BookReviewsViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        viewModel.updateHandler = tableView.reloadData
+    }
+}
+</code></pre>
+<p>接下来，让我们添加一个新的评审。一旦用户点击了submit按钮，我们将使用addReview方法将用户输入发送到视图模型(在数据无效的情况下会抛出):</p>
+<pre><code class="language-swift">extension BookReviewsViewController {
+    func submitReview() throws {
+        try viewModel.addReview(withTitle: titleView.text,
+                                text: textView.text,
+                                numberOfStars: starsView.value)
+    }
+}
+</code></pre>
+<p>最后，我们将使用我们的视图模型来实现UITableViewDataSource，要求它为每个单元格提供标题和副标题:</p>
+<pre><code class="language-swift">extension BookReviewsViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView,
+                   numberOfRowsInSection section: Int) -&gt; Int {
+        return viewModel.numberOfReviews
+    }
+
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: &quot;review&quot;, for: indexPath)
+
+        cell.textLabel?.text = viewModel.titleForReview(at: indexPath.row)
+        cell.detailTextLabel?.text = viewModel.subtitleForReview(at: indexPath.row)
+
+        return cell
+    }
+}
+</code></pre>
+<p>上面我们让视图控制器本身成为它的表视图的数据源。另一种选择是实现专用的数据源对象(也可以在其他上下文中重用)。有关这方面的更多信息，请查看“Swift中的可重用数据源”。</p>
+<p>我们现在有了一个不断更新的视图控制器，所有这些都不需要它知道它所渲染的模型的任何细节——非常酷!👍</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>视图模型在许多不同的情况下都是非常强大的工具，因为它们让我们在视图代码和模型代码之间放置一个层， 为我们提供了放置特定于视图的模型转换和更新逻辑的专用位置。</p>
+<p>就像导入其他概念时，苹果的sdk并没有真正为之设计，视图模型在Swift中有许多不同的实现方式 -每种口味都有其优点和缺点。</p>
+<p>当然，对于任何给定的项目，哪种口味是正确的选择在很大程度上取决于项目的需求，以及团队的偏好。甚至可以在同一个代码库中使用多个样式，例如用于只读视图的简单的基于结构的样式-而另一种更强大的口味用于动态口味。</p>
+<p><a href="https://www.swiftbysundell.com/articles/different-flavors-of-view-models-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/mZkzzlA2ig/" class="tag">
+                    view models
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/wBXIGknAly/" class="tag">
+                    different flavors
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/reusable-data-sources-in-swift/">
+                  <h3 class="post-title">
+                    Reusable data sources in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

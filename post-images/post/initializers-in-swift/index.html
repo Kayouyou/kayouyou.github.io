@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Initializers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管Swift的整体设计包含了几种不同的编程范式，并且可以使用许多不同的风格来编写代码，但它仍然本质上植根于面向对象的世界。
+从对象和值的构造方式，到继承和引用在苹果框架的设计中仍然扮演着重要角色，面向对象的概念是Swift的关键部分-尽管..." />
+    <meta name="keywords" content="initializers,code structure,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Initializers in Swift</h2>
+            <div class="post-date">2019-12-22</div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管Swift的整体设计包含了几种不同的编程范式，并且可以使用许多不同的风格来编写代码，但它仍然本质上植根于面向对象的世界。</p>
+<p>从对象和值的构造方式，到继承和引用在苹果框架的设计中仍然扮演着重要角色，面向对象的概念是Swift的关键部分-尽管它们经常受到其他范例(如函数式编程)的影响。</p>
+<p>本周，让我们来看看面向对象编程的一个核心方面——初始化，这是准备一个对象或值以供使用的行为。 理想的初始化器应该具有哪些特征?为了保持初始化器的简单和可预测，哪些技术和模式是有用的?让我们开始吧。</p>
+<h2 id="the-simplicity-of-structs">The simplicity of structs</h2>
+<p>可以说，我们在初始化器中寻找的最重要的特征之一是简单性。 毕竟，一个对象或value的创建方式通常是我们对它的API的第一印象——所以使这个过程尽可能简单和容易理解是非常重要的。</p>
+<p>Swift帮助我们实现这种简单性的一种方式是通过结构体的工作方式——特别是它们的成员初始化器使我们能够轻松地创建给定类型的新实例，而不需要任何自定义逻辑。</p>
+<p>例如，假设我们的代码库包含一个用户类型，该类型具有以下属性——其中一些是必需的，一些是可选的:</p>
+<pre><code class="language-swift">struct User {
+    let id = ID()
+    var name: String
+    var address: String?
+    var cityName: String?
+    var emailAddress: String?
+}
+</code></pre>
+<p>虽然Swift总是能够自动生成与结构体的属性列表匹配的初始值，这些初始化器不再要求我们传递可选(或有默认值)的属性值——使我们能够像这样创建一个新的用户实例:</p>
+<pre><code class="language-swift">let user = User(id: User.ID(), name: &quot;John&quot;)
+</code></pre>
+<p>这不仅是一种极大的便利，并帮助保持我们的调用站点干净和简单，它还提供了另一个重要的功能——它鼓励我们保持我们的初始化程序不受逻辑和自定义设置代码的约束。</p>
+<p>通过使用编译器为我们生成的初始化式，我们将自动保持这些初始化式简单而无副作用， 因为将传递的值赋给类型的各种属性是它们将执行的唯一工作。</p>
+<p>值得注意的是，memberwise初始化器仅在定义每个给定结构的模块内部可用。虽然乍一看这似乎是一种不便(甚至是疏忽)，但好处是它“迫使”我们考虑我们想要的每种类型的公共API是什么，如果我们修改了给定类型的属性集，API就不会隐式地改变——这对我们的API用户来说很可能是一个破坏性的改变。</p>
+<h2 id="ready-from-the-start">Ready from the start</h2>
+<p>由于初始化器的主要工作是准备它的实例以供使用，所以我们的设置过程越完整、越彻底，我们的类型就可能变得越健壮。在初始化后需要分配额外的数据或依赖项通常会导致误解和无意的结果，因为在大多数情况下，假定一个实例在初始化之后就完全可以使用是公平的。</p>
+<p>假设我们正在开发一个应用程序，它包含某种形式的音频处理，并且我们已经构建了一个AudioProcessor类来执行该工作。 目前，该类型使用委托模式使其所有者能够决定是否应该实际处理给定的文件-像这样:</p>
+<pre><code class="language-swift">protocol AudioProcessingDelegate: AnyObject {
+    func audioProcessor(_ processor: AudioProcessor,
+                        shouldProcessFile file: File) -&gt; Bool
+}
+
+class AudioProcessor {
+    weak var delegate: AudioProcessingDelegate?
+
+    func processAudioFiles(_ files: [File]) throws {
+        for file in files {
+            guard let delegate = delegate else {
+                // This code path should ideally never be entered
+                try process(file)
+                continue
+            }
+
+            let shouldProcess = delegate.audioProcessor(self,
+                shouldProcessFile: file
+            )
+
+            if shouldProcess {
+                try process(file)
+            }
+        }
+    }
+    
+    ...
+}
+</code></pre>
+<p>虽然委托模式在许多不同的情况下都非常有用，但我们上面实现它的方式确实有一个相当显著的缺点。 由于我们不能保证在processAudioFiles方法被调用时委托已经被分配，我们被迫包含一个代码路径，当一个委托丢失时，它将导致所有文件被处理-这很可能会导致意想不到的结果，至少在某些情况下。</p>
+<p>值得庆幸的是，就像我们在“Swift中的委托”中看到的那样，使用弱引用协议并不是实现委托模式的唯一方法。当我们处理需要委托逻辑来执行对象工作的情况时，理想情况下，它不应该被分配为post-init—而是作为初始化器本身的一部分。这样，我们就可以100%地确定我们所需的所有依赖项从一开始就是可用的。</p>
+<p>在这种情况下，一种方法是将之前基于协议的方法改为基于闭包的方法——这也会导致更紧凑的实现:</p>
+<pre><code class="language-swift">class AudioProcessor {
+    private let predicate: (File) -&gt; Bool
+
+    init(predicate: @escaping (File) -&gt; Bool) {
+        self.predicate = predicate
+    }
+
+    func processAudioFiles(_ files: [File]) throws {
+        for file in files where predicate(file) {
+            try process(file)
+        }
+    }
+    
+    ...
+}
+</code></pre>
+<p>在上述情况下，一个简单的闭包可能就是我们所需要的全部，但如果我们想更进一步，我们还可以选择更强大的谓词实现——比如“Swift中的谓词”。</p>
+<p>无论我们选择的是协议、闭包还是其他形式的抽象，目标都是一样的——能够保证在对象的初始化器返回时，对象已经被尽可能充分地配置好了。我们越能避免任何形式的post-init设置，通常就越容易理解类型。</p>
+<h2 id="avoiding-complexity-and-side-effects">Avoiding complexity and side effects</h2>
+<p>另一个经常对我们的类型的易用性产生巨大影响的因素是它们的底层实现的可预测性。如果我们能够使调用api的结果符合用户的期望，那么我们就可以避免误解，并最终避免错误。</p>
+<p>特别是对于初始化器，避免各种各样的副作用通常是保持高度可预测性的关键。例如，下面的请求类型的初始化器不仅建立了它的实例，它还启动了底层的URLSessionDataTask——这可能是非常出乎意料的:</p>
+<pre><code class="language-swift">class Request&lt;Value: Codable&gt; {
+    private let task: URLSessionDataTask
+
+    init(url: URL,
+         session: URLSession = .shared,
+         handler: @escaping (Result&lt;Value, Error&gt;) -&gt; Void) {
+        task = session.dataTask(with: url) {
+            data, response, error in
+            ...
+            handler(result)
+        }
+
+        task.resume()
+    }
+
+    ...
+}
+</code></pre>
+<p>当我们必须使用“and”这个词来解释我们的一个初始化器的作用时，它很有可能导致某种形式的副作用。例如，上面的初始化程序可以描述为“设置并执行给定的请求”。-虽然这在一开始似乎是完全无害的，但它很可能会使我们的初始化方式过于复杂，缺乏灵活性 -因为我们让我们的API用户无法控制何时以及如何执行每个请求。</p>
+<p>相反，让我们的初始化器只设置一个带有所需属性值的请求实例，然后创建一个新的、专用的方法来执行它——像这样:</p>
+<pre><code class="language-swift">class Request&lt;Value: Codable&gt; {
+    private let url: URL
+    private let session: URLSession
+    private var task: URLSessionDataTask?
+
+    init(url: URL, session: URLSession = .shared) {
+        self.url = url
+        self.session = session
+    }
+
+    func perform(then handler: @escaping (Result&lt;Value, Error&gt;) -&gt; Void) {
+        task?.cancel()
+
+        let task = session.dataTask(with: url) {
+            [weak self] data, _, error in
+            ...
+            handler(result)
+            self?.task = nil
+        }
+
+        self.task = task
+        task.resume()
+    }
+
+    ...
+}
+</code></pre>
+<p>上面的更改不仅赋予每个调用站点自由决定何时执行它们创建的请求的权力，我们还使在每个给定上下文中重用单个请求实例成为可能-因为每次调用我们的执行方法都会创建一个新的任务(和之前的任务取消)。</p>
+<p>另一个潜在的不可预测性来源是当给定类型的初始化器执行某种形式的内部设置时，这些设置在复杂性和执行时间方面有所不同。例如，下面的TagIndex类型是用一个注释值数组初始化的，然后它会遍历这些值，以便根据它们被分配的标记建立索引:</p>
+<pre><code class="language-swift">struct TagIndex {
+    private var notes = [Tag : [Note]]()
+
+    init(notes: [Note]) {
+        for note in notes {
+            for tag in note.tags {
+                self.notes[tag, default: []].append(note)
+            }
+        }
+    }
+
+    ...
+}
+</code></pre>
+<p>同样，上面的方法似乎没有什么问题——但事实上，我们将一个O(n)迭代隐藏在一个看起来像常量时间初始化器的后面并不是一个真正伟大的设计-因为在关键路径的某种形式中调用大量的notes很可能会把它变成一个瓶颈。</p>
+<p>就像我们之前将请求类型的主工作从它的初始化器中移出来一样，让我们在这里做同样的事情，并定义一个单独的方法来执行索引工作:</p>
+<pre><code class="language-swift">struct TagIndex {
+    private var notes = [Tag : [Note]]()
+
+    mutating func index(_ notes: [Note]) {
+        for note in notes {
+            for tag in note.tags {
+                self.notes[tag, default: []].append(note)
+            }
+        }
+    }
+    
+    ...
+}
+</code></pre>
+<p>这是一个微妙的变化，但现在很清楚，调用index方法会导致执行索引，而不是使索引成为初始化类型的隐式副作用。</p>
+<p>然而，就像我们之前希望避免为了使类型可用而要求任何post-init调用一样，如果我们能找到一种既自动又可预测的方法来执行索引过程，那就太好了。</p>
+<p>一种方法是使用静态工厂方法，我们可以用一种很明显的方式来命名它，调用该方法不仅会创建一个新的TagIndex实例，也要对传递到它里面的注释进行索引:</p>
+<pre><code class="language-swift">extension TagIndex {
+    static func makeByIndexing(_ notes: [Note]) -&gt; Self {
+        var instance = Self()
+        instance.index(notes)
+        return instance
+    }
+}
+</code></pre>
+<p>使用静态工厂方法可以让我们保持初始化器实现的简单性，同时仍然尽可能容易地创建和配置类型的新实例。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>通过使我们的初始化器免于副作用，通过使配置类型的过程尽可能简单和可预测，我们不仅使类型更容易理解，而且还为它们提供了更大程度的灵活性。</p>
+<p>然而，如果我们把初始化器做得太简单，有时会导致相当模糊的设置，需要大量的post-init配置——这不是理想的。就像很多其他事情一样，编写好的初始化器需要在简单性和完整性之间取得平衡 - 通过使用像闭包和静态工厂方法这样的技术，我们常常可以更接近于达到完美的平衡。</p>
+<p><a href="https://www.swiftbysundell.com/articles/initializers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/HC1sNXqZXU/" class="tag">
+                    initializers
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/maintaining-model-consistency-in-swift/">
+                  <h3 class="post-title">
+                    Maintaining model consistency in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

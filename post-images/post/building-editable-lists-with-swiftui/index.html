@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Building editable lists with SwiftUI | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Building editable lists with SwiftUI
+
+Moving and deleting
+A reusable abstraction
+Conclusion
+
+
+
+
+
+说SwiftUI的List相当于UIKit..." />
+    <meta name="keywords" content="list,foreach,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Building editable lists with SwiftUI</h2>
+            <div class="post-date">2021-10-27</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#building-editable-lists-with-swiftui">Building editable lists with SwiftUI</a>
+<ul>
+<li><a href="#moving-and-deleting">Moving and deleting</a></li>
+<li><a href="#a-reusable-abstraction">A reusable abstraction</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<!-- # Building editable lists with SwiftUI -->
+<p>说SwiftUI的List相当于UIKit的UITableView，这是既真又假。List确实提供了一种内置的方法来构造基于列表的ui，这些ui使用与UITableView相同的整体外观来呈现 - 然而，当涉及到变化时，我们不得不转而使用SwiftUI的核心引擎来构建和管理基于数据集合的视图——ForEach类型。</p>
+<h2 id="moving-and-deleting">Moving and deleting</h2>
+<p>一般来说，列表编辑通常涉及两种不同的编辑——特定于项目的编辑和列表范围的编辑。从第一个变体开始，这里有一个使用Swift 5.5中引入的列表绑定语法的示例 - 我们正在渲染一个<strong>TodoList</strong>视图，用户可以使用<strong>TextField</strong>直接编辑每个项目的文本:</p>
+<pre><code class="language-swift">struct TodoItem: Identifiable {
+    let id: UUID
+    var title: String
+}
+
+struct TodoList: View {
+    @Binding var items: [TodoItem]
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                List {
+                    ForEach($items) { $item in
+                        TextField(&quot;Title&quot;, text: $item.title)
+                    }
+                }
+                TodoItemAddButton { newItem in
+                    items.append(newItem)
+                }
+            }
+            .navigationTitle(&quot;Todo list&quot;)
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>在本例中，我们的TodoItem模型数组存储在视图之外，然后使用Binding传入。</p>
+</blockquote>
+<p>现在让我们假设我们也想添加对列表范围的变化的支持——特别是移动和删除。好消息是，<em>SwiftUI</em>为这两个任务提供了内置的修饰符，但事实证明它们在List类型本身中不可用，而只能在<strong>ForEach</strong>中可用。</p>
+<p>这是因为在<em>SwiftUI</em>中，<strong>List</strong>更像是一个样式组件，而不是一个负责管理子视图集合的视图。因此，每当我们希望改变这样的集合时，我们需要直接使用<strong>ForEach</strong>——像这样:</p>
+<pre><code class="language-swift">struct TodoList: View {
+    @Binding var items: [TodoItem]
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                List {
+                    ForEach($items) { $item in
+                        TextField(&quot;Title&quot;, text: $item.title)
+                    }
+                    .onMove { indexSet, offset in
+                        items.move(fromOffsets: indexSet, toOffset: offset)
+                    }
+                    .onDelete { indexSet in
+                        items.remove(atOffsets: indexSet)
+                    }
+                }
+                ...
+            }
+            .navigationTitle(&quot;Todo list&quot;)
+        }
+    }
+}
+</code></pre>
+<p>然而，即使我们的列表现在在技术上支持移动和删除，目前还没有办法让用户进入“编辑模式”来开始移动项目。为了解决这个问题，让我们使用工具栏修饰符将<em>SwiftUI</em>的内置<strong>EditButton</strong>的一个实例插入到应用程序的导航栏中:</p>
+<pre><code class="language-swift">struct TodoList: View {
+    @Binding var items: [TodoItem]
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                ...
+            }
+            .navigationTitle(&quot;Todo list&quot;)
+            .toolbar { EditButton() }
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>注意，如果你正在开发一个需要支持iOS 13的iOS应用程序，你需要使用现在已经弃用的navigationBarItems修饰符，因为工具栏API已经在iOS 14(以及苹果2020年的其他操作系统)中引入。</p>
+</blockquote>
+<p>有了这个更改，我们现在就有了一个完全可编辑的列表，它既支持内联项编辑，也支持列表范围内的移动和删除。真的很不错!</p>
+<h2 id="a-reusable-abstraction">A reusable abstraction</h2>
+<p>根据我们正在开发的应用程序的类型，我们可能需要构建多个列表，每个列表都应该支持上述编辑功能集 -当然，只要简单地复制和粘贴我们刚刚添加到<strong>TodoList</strong>的修改器和<strong>EditButton</strong>代码，就可以实现这一点，可以证明，使用某种形式的可编辑列表会更好，这样我们就可以轻松地在代码库中重用它。</p>
+<p>所以，让我们建造一个! 幸运的是，由于<strong>SwiftUI</strong>的设计非常强调组合，实现一个完全可重用的<strong>editableelist</strong>类型只需要将之前的编辑代码移到新视图的<strong>body</strong>中，然后添加一个初始化器，让我们注入我们想要呈现的数据，以及一个闭包，为列表中的每一项构造视图:</p>
+<pre><code class="language-swift">struct EditableList&lt;Element: Identifiable, Content: View&gt;: View {
+    @Binding var data: [Element]
+    var content: (Binding&lt;Element&gt;) -&gt; Content
+
+    init(_ data: Binding&lt;[Element]&gt;,
+         content: @escaping (Binding&lt;Element&gt;) -&gt; Content) {
+        self._data = data
+        self.content = content
+    }
+
+    var body: some View {
+        List {
+            ForEach($data, content: content)
+                .onMove { indexSet, offset in
+                    data.move(fromOffsets: indexSet, toOffset: offset)
+                }
+                .onDelete { indexSet in
+                    data.remove(atOffsets: indexSet)
+                }
+        }
+        .toolbar { EditButton() }
+    }
+}
+</code></pre>
+<blockquote>
+<p>注意，我们不需要严格地为上面的类型实现自定义初始化式(除非我们想在定义它的模块外部将它作为public)，但这样做的好处是，我们的<strong>editableelist API</strong>现在的工作方式与<strong>SwiftUI</strong>的内置<strong>List</strong>相同，这将使两者之间的切换更加容易。</p>
+</blockquote>
+<p>有了上面的新类型，当我们想要渲染一个可编辑列表时，我们现在要做的就是用我们想让用户编辑的数组创建一个<strong>editableelist</strong>实例——像这样:</p>
+<pre><code class="language-swift">struct TodoList: View {
+    @Binding var items: [TodoItem]
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                EditableList($items) { $item in
+                    TextField(&quot;Title&quot;, text: $item.title)
+                }
+                TodoItemAddButton { newItem in
+                    items.append(newItem)
+                }
+            }
+            .navigationTitle(&quot;Todo list&quot;)
+        }
+    }
+}
+</code></pre>
+<p>真的整洁! 将列表编辑代码封装在独立类型中的另一个好处是，现在我们可以在单个位置中不断添加编辑功能，然后我们所有的可编辑列表将免费获得这些功能。例如，我们可能想要添加对拖放、排序等的支持。</p>
+<p>好了，现在是奖励时间! 只要我们的列表数据总是以数组的形式出现，那么上面的<strong>EditableList</strong>实现就可以很好地工作，当然也可以让它支持list和ForEach能够使用的任何<strong>Collection</strong>类型(包括自定义集合)。</p>
+<p>为了实现这一点，我们必须更改泛型<strong>Element</strong>类型，使其引用任何符合SwiftUI要求的标准库协议集的<strong>Data</strong>集合，以使列表可编辑。 不过，这个实现需要ios15，因为<strong>SwiftUI</strong>的<strong>Binding</strong>类型在那个OS版本中获得了对标准库<strong>RandomAccessCollection</strong>协议的支持:</p>
+<pre><code class="language-swift">@available(iOS 15, *)
+struct EditableList&lt;
+    Data: RandomAccessCollection &amp; MutableCollection &amp; RangeReplaceableCollection,
+    Content: View
+&gt;: View where Data.Element: Identifiable {
+    @Binding var data: Data
+    var content: (Binding&lt;Data.Element&gt;) -&gt; Content
+
+    init(_ data: Binding&lt;Data&gt;,
+         content: @escaping (Binding&lt;Data.Element&gt;) -&gt; Content) {
+        self._data = data
+        self.content = content
+    }
+
+    var body: some View {
+        List {
+            ForEach($data, content: content)
+                .onMove { indexSet, offset in
+                    data.move(fromOffsets: indexSet, toOffset: offset)
+                }
+                .onDelete { indexSet in
+                    data.remove(atOffsets: indexSet)
+                }
+        }
+        .toolbar { EditButton() }
+    }
+}
+</code></pre>
+<p>我们现在有了一个完全通用的<strong>editableelist</strong>实现，可以用于任何兼容的集合——但要注意的是，它只兼容iOS 15及以后版本。但是，如果我们还需要支持早期的iOS版本，我们可能只需要使用之前的基于数组的版本，这是完全向后兼容的。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>List</strong>可以说是<em>SwiftUI</em>上最两极分化的观点之一。一方面，它提供了许多内置功能，使我们能够相对容易地构建列表，这些列表的外观和行为与苹果自己的应用程序以及iOS本身的列表完全相同。</p>
+<p>然而，尽管<strong>List</strong>自2019年推出以来变得更加灵活，但使用它构建完全自定义外观的列表仍然相当困难。因此，对于这些用例，我们可能不得不退回到UIKit或AppKit，这取决于我们的目标平台。不过，尽管在视觉效果方面可能有限，<strong>List</strong>仍然是<em>SwiftUI</em>非常有用和强大的一部分。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L1vzCArSF/" class="tag">
+                    list
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/z-c94xUYAu/" class="tag">
+                    foreach
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/specialized-extensions-using-generic-type-constraints/">
+                  <h3 class="post-title">
+                    Specialized extensions using generic type constraints
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

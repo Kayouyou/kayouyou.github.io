@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift中类型安全的UserDefaults | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Swift中类型安全的UserDefaults
+
+
+1.1. Wrong key ⚠️
+1.2. Wrong type ⚠️
+1.3. Keys overlapping ⚠️
+1.4. A safer way
+1.5. What i..." />
+    <meta name="keywords" content="type safety,userdefaults" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift中类型安全的UserDefaults</h2>
+            <div class="post-date">2021-05-13</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#SwiftUserDefaults">Swift中类型安全的UserDefaults</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Wrongkey">Wrong key ⚠️</a></li>
+<li>1.2. <a href="#Wrongtype">Wrong type ⚠️</a></li>
+<li>1.3. <a href="#Keysoverlapping">Keys overlapping ⚠️</a></li>
+<li>1.4. <a href="#Asaferway">A safer way</a></li>
+<li>1.5. <a href="#Whatisfunction">What is #function?</a></li>
+<li>1.6. <a href="#Test">Test 🔨</a></li>
+<li>1.7. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameswiftuserdefaultsaswift中类型安全的userdefaults">1. <a name='SwiftUserDefaults'></a>Swift中类型安全的UserDefaults</h2>
+<p>作为一名iOS开发者，你可能总是使用UserDefaults来保存和检索本地数据。</p>
+<pre><code class="language-swift">// This is how you save a value
+UserDefaults.standard.set(&quot;123&quot;, forKey: &quot;userID&quot;)
+// This is how you read it
+let userID = UserDefaults.standard.string(forKey: &quot;userID&quot;)
+</code></pre>
+<p>然而，在一个大项目中与UserDefaults交互是有风险的，可能会发生以下错误:</p>
+<ul>
+<li>Wrong key</li>
+<li>Wrong type</li>
+<li>Keys overlapping(重叠)</li>
+</ul>
+<h3 id="11-a-namewrongkeyawrong-key-️">1.1. <a name='Wrongkey'></a>Wrong key ⚠️</h3>
+<p>我们可以用一个键保存一个值，然后尝试用另一个键读取它。</p>
+<pre><code class="language-swift">UserDefaults.standard.set(&quot;123&quot;, forKey: &quot;userID&quot;)
+...
+let userID = UserDefaults.standard.string(forKey: &quot;UserID&quot;)
+</code></pre>
+<p>因为键是大小写敏感的**userID不同于userID **。这似乎是一个很容易避免的错误，但在一个有很多键的大项目中，这是可能发生的。</p>
+<h3 id="12-a-namewrongtypeawrong-type-️">1.2. <a name='Wrongtype'></a>Wrong type ⚠️</h3>
+<p>每次我们与UserDefaults交互时，我们必须记住我们保存和加载的值的类型。</p>
+<p>下面的示例包含一个错误，因为我们将userID保存为String，但随后试图将其检索为Int。</p>
+<pre><code class="language-swift">UserDefaults.standard.set(&quot;123&quot;, forKey: &quot;userID&quot;)
+...
+let userID = UserDefaults.standard.int(forKey: &quot;userID&quot;)
+</code></pre>
+<p>同样，这似乎很容易在代码中发现，但在大型项目中，这是可能发生的。</p>
+<h3 id="13-a-namekeysoverlappingakeys-overlapping-️">1.3. <a name='Keysoverlapping'></a>Keys overlapping ⚠️</h3>
+<p>我们可能会忘记在项目的另一部分中为某个值使用了一个给定的键，而决定为另一个值使用相同的键。</p>
+<pre><code class="language-swift">let currentUserID = &quot;123&quot;
+UserDefaults.standard.set(currentUserID, forKey: &quot;userID&quot;)
+// and then in another file of our project 👇
+let messageRecipientUserID = &quot;456&quot;
+UserDefaults.standard.set(messageRecipientUserID, forKey: &quot;userID&quot;)
+</code></pre>
+<h3 id="14-a-nameasaferwayaa-safer-way">1.4. <a name='Asaferway'></a>A safer way</h3>
+<p>我们可以改进UserDefaults来解决上面讨论的三个问题吗?</p>
+<p>这是一个我们可以用Computed Properties解决的问题。</p>
+<blockquote>
+<p><em>除了存储属性之外，类、结构和枚举还可以定义计算属性，计算属性实际上并不存储值。相反，它们提供了一个getter和一个可选setter来间接地检索和设置其他属性和值</em>. — The Swift Programming Language</p>
+</blockquote>
+<p>Let’s add the following extension to our project</p>
+<pre><code class="language-swift">extension UserDefaults {
+    var userID: String? {
+        get {
+            return string(forKey: #function)
+        }
+        set {
+            set(newValue, forKey: #function)
+        }
+    }
+}
+</code></pre>
+<p>userID计算属性不会在UserDefaults的当前实例中存储任何值。相反，它提供了一个getter(从本地存储检索值)和一个setter(将值写入本地存储)。</p>
+<h3 id="15-a-namewhatisfunctionawhat-is-function">1.5. <a name='Whatisfunction'></a>What is #function?</h3>
+<p>It is a special keyword and is automatically replaced with the name of the function that contains it.</p>
+<p>E.g., in our example, it is replaced with the String userID.</p>
+<p>这将确保我们用来保存(和检索)UserDefaults值的键是我们定义的属性的名称。</p>
+<h3 id="16-a-nametestatest">1.6. <a name='Test'></a>Test 🔨</h3>
+<p>Let’s run a quick test</p>
+<pre><code class="language-swift">UserDefaults.standard.userID = &quot;123&quot;
+if let userID = UserDefaults.standard.userID {
+    print(userID)
+}
+&gt; 123
+</code></pre>
+<p>Cool right? 🎉</p>
+<p>如果我们为每个键/值定义一个计算属性，我们希望将其存储到UserDefaults中，那么就自动解决了上面讨论的三个问题。</p>
+<ol>
+<li>Wrong key: ✅ fixed 编译器不允许我们使用未定义的属性。</li>
+<li>Wrong type: ✅  fixed 因为每个计算属性都有一个类型。</li>
+<li>Keys overlapping: ✅ fixed 因为现在键是计算属性的名称，Swift编译器将确保UserDefaults中定义的每个属性都是唯一的。</li>
+</ol>
+<h3 id="17-a-nameconclusionaconclusion">1.7. <a name='Conclusion'></a>Conclusion</h3>
+<p>这种方法还有最后一个好处:封装。我们现在隐藏(到我们的扩展)一些关于如何保存值的细节。任何调用者都可以简单地使用此属性，而不必担心底层细节。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/MOO0pS2XVp/" class="tag">
+                    type safety
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/OMzhOR1No/" class="tag">
+                    userdefaults
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/property-wrappers-in-swift-explained-with-code-examples/">
+                  <h3 class="post-title">
+                    Property Wrappers in Swift explained with code examples
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using an AppDelegate with the new SwiftUI-based app lifecycle | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Xcode 12引入了使用SwiftUI从上到下编写整个应用程序的选项，而不仅仅是视图。尽管我们仍然可能需要在某些地方混合和匹配使用UIKit构建的SwiftUI视图，但现在我们可以开始使用一个简单的APP结构体定义来构建一个新的基于Swi..." />
+    <meta name="keywords" content="swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using an AppDelegate with the new SwiftUI-based app lifecycle</h2>
+            <div class="post-date">2020-07-06</div>
+            
+            <div class="post-content" v-pre>
+              <p>Xcode 12引入了使用SwiftUI从上到下编写整个应用程序的选项，而不仅仅是视图。尽管我们仍然可能需要在某些地方混合和匹配使用UIKit构建的SwiftUI视图，但现在我们可以开始使用一个简单的APP结构体定义来构建一个新的基于SwiftUI的应用:</p>
+<pre><code class="language-swift">@main
+struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            RootView()
+        }
+    }
+}
+</code></pre>
+<p>然而，尽管上面的应用程序API非常简洁和轻量级，但它不支持与UIKit对应的UIApplicationDelegate一样的功能和灵活性，而UIKit是iOS和tvOS应用程序之前的入口点:</p>
+<pre><code class="language-swift">@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    ...
+}
+</code></pre>
+<p>但这里有一个好消息:我们实际上仍然可以使用一个老式的AppDelegate，即使是在构建一个基于SwiftUI的应用程序时，通过使用UIApplicationDelegateAdapter属性包装器。我们所要做的就是在我们的应用结构的任何地方声明这样一个属性，使用任何我们想要的名称，然后SwiftUI会自动检测它，并使用指定的类型作为应用的委托:</p>
+<pre><code class="language-swift">@main
+struct MyApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+
+    var body: some Scene {
+        ...
+    }
+}
+</code></pre>
+<p>很酷的!值得记住的是，如果我们正在以这种方式调整一个现有的应用程序委托，我们将需要从它那里删除@UIApplicationMain属性(作为一个程序不能有两个主要入口点):</p>
+<pre><code class="language-swift">class AppDelegate: UIResponder, UIApplicationDelegate {
+    ...
+}
+</code></pre>
+<p>最后，如果我们希望使用应用委托来处理url(例如深层链接)，那么SwiftUI现在也提供了一个内置的API来完成这一任务。要使用它，我们只需要将onOpenURL修饰符应用到我们的层次结构中的任何视图，例如我们应用的根视图:</p>
+<pre><code class="language-swift">@main
+struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            RootView().onOpenURL { url in
+                // URL handling
+            }
+        }
+    }
+}
+</code></pre>
+<p>SwiftUI与UIKit和AppKit的强大互操作性无疑是其主要优势之一，因为它使我们能够以一种更零散的方式来采用它——我很高兴看到这一趋势在App和UIApplicationDelegate上继续发展。</p>
+<p><a href="https://www.swiftbysundell.com/tips/using-an-app-delegate-with-swiftui-app-lifecycle/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-guide-to-swiftuis-state-management-system/">
+                  <h3 class="post-title">
+                    A guide to SwiftUI’s state management system
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

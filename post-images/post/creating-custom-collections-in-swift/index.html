@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Creating custom collections in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在Swift中创建对象或值的集合时，我们通常使用标准库提供的数据结构——例如Array、Dictionary和Set。 虽然这三种方法涵盖了大多数用例，但有时创建自定义包装器集合可以使您的代码更容易预测，更不易出错。
+本周，让我们来看看作为..." />
+    <meta name="keywords" content="collections" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Creating custom collections in Swift</h2>
+            <div class="post-date">2017-09-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>在Swift中创建对象或值的集合时，我们通常使用标准库提供的数据结构——例如Array、Dictionary和Set。 虽然这三种方法涵盖了大多数用例，但有时创建自定义包装器集合可以使您的代码更容易预测，更不易出错。</p>
+<p>本周，让我们来看看作为应用开发者的我们如何在Swift中定义这样的定制集合，以及如何结合枚举的强大功能来为自己创建一些漂亮的api。</p>
+<h2 id="removing-optionals">Removing optionals</h2>
+<p>就像我们在“处理Swift中的非可选选项”中看到的那样，当你正在寻找的值实际上是必需的时，减少使用可选选项的需要确实可以帮助我们避免错误，并使我们的代码更容易处理。</p>
+<p>总的来说，集合的问题是，你通常不能保证它们是否包含某个值， 因此，您往往会得到大量的可选项和逻辑，需要以一种或另一种方式展开它们。</p>
+<p>假设我们正在为一个杂货店构建一个应用程序，我们希望有一个UI让用户按类别显示所有产品。要为这样的UI创建模型，我们可以使用字典，它使用Category作为键类型，[Product]作为值类型，如下所示:</p>
+<pre><code class="language-swift">let products: [Category : [Product]] = [
+    .dairy: [
+        Product(name: &quot;Milk&quot;, category: .dairy),
+        Product(name: &quot;Butter&quot;, category: .dairy)
+    ],
+    .vegetables: [
+        Product(name: &quot;Cucumber&quot;, category: .vegetables),
+        Product(name: &quot;Lettuce&quot;, category: .vegetables)
+    ]
+]
+</code></pre>
+<p>虽然上面的工作，它将要求我们写这样的代码，以-例如-只显示所有的乳制品:</p>
+<pre><code class="language-swift">if let dairyProducts = products[.dairy] {
+    guard !dairyProducts.isEmpty else {
+        renderEmptyView()
+        return
+    }
+
+    render(dairyProducts)
+} else {
+    renderEmptyView()
+}
+</code></pre>
+<p>很好，但还可以更好。然而，插入新产品变得更加麻烦:</p>
+<pre><code class="language-swift">class ShoppingCart {
+    private(set) var products = [Category : [Product]]()
+
+    func add(_ product: Product) {
+        if var productsInCategory = products[product.category] {
+            productsInCategory.append(product)
+            products[product.category] = productsInCategory
+        } else {
+            products[product.category] = [product]
+        }
+    }
+}
+</code></pre>
+<p>好消息是，通过创建我们自己的自定义集合，我们可以使上述两个示例变得更好、更简洁。更好的消息是——多亏了Swift面向协议的设计——创建这样的集合实际上相当容易!</p>
+<h2 id="to-be-a-collection">To be a collection</h2>
+<p>Swift标准库中的所有集合都遵循Collection协议，而集合协议又继承了Sequence协议。通过使自定义集合符合这两个协议，它可以完全免费地利用所有标准集合操作——比如迭代和过滤。</p>
+<p>让我们从定义定制ProductCollection的基础开始，这将使我们能够以一种更好的方式处理产品和类别。</p>
+<pre><code class="language-swift">struct ProductCollection {
+    typealias DictionaryType = [Category : [Product]]
+
+    // Underlying, private storage, that is the same type of dictionary
+    // that we previously was using at the call site
+    private var products = DictionaryType()
+
+    // Enable our collection to be initialized with a dictionary
+    init(products: DictionaryType) {
+        self.products = products
+    }
+}
+</code></pre>
+<p>接下来，我们将通过实现协议需求使其符合集合。我们要做的大部分工作就是简单地将调用转发到底层products字典，并让它来做“繁重的工作”:</p>
+<pre><code class="language-swift">extension ProductCollection: Collection {
+    // Required nested types, that tell Swift what our collection contains
+    typealias Index = DictionaryType.Index
+    typealias Element = DictionaryType.Element
+
+    // The upper and lower bounds of the collection, used in iterations
+    var startIndex: Index { return products.startIndex }
+    var endIndex: Index { return products.endIndex }
+
+    // Required subscript, based on a dictionary index
+    subscript(index: Index) -&gt; Iterator.Element {
+        get { return products[index] }
+    }
+
+    // Method that returns the next index when iterating
+    func index(after i: Index) -&gt; Index {
+        return products.index(after: i)
+    }
+}
+</code></pre>
+<p>上面的代码使用的是Swift 4，它使得定义自定义集合变得非常简单，这要归功于通用约束的改进(我们将在以后的帖子中更仔细地研究这些改进以及如何使用类型约束)。</p>
+<p>现在我们有了一个定制集合，它可以作为内置集合之一使用。例如，我们可以遍历它:</p>
+<pre><code class="language-swift">for (category, productsInCategory) in products {
+    ...
+}
+</code></pre>
+<p>或者使用类似map的操作</p>
+<pre><code class="language-swift">let categories = productCollection.map { $0.key }
+</code></pre>
+<h2 id="custom-collection-apis">Custom collection APIs</h2>
+<p>现在我们已经为我们的集合奠定了基础，让我们开始添加一些api，这些api将使我们的产品处理代码变得更好。我们将从自定义下标重载开始，它允许我们获取或设置一个产品数组，而不必处理可选项:</p>
+<pre><code class="language-swift">extension ProductCollection {
+    subscript(category: Category) -&gt; [Product] {
+        get { return products[category] ?? [] }
+        set { products[category] = newValue }
+    }
+}
+</code></pre>
+<p>让我们再添加一个方便的API，方便地将新产品插入到我们的集合中:</p>
+<pre><code class="language-swift">extension ProductCollection {
+    mutating func insert(_ product: Product) {
+        var productsInCategory = self[product.category]
+        productsInCategory.append(product)
+        self[product.category] = productsInCategory
+    }
+}
+</code></pre>
+<p>现在我们可以回到最初的产品处理代码，并将其更新得更好。阅读:</p>
+<pre><code class="language-swift">let dairyProducts = products[.dairy]
+
+if dairyProducts.isEmpty {
+    renderEmptyView()
+} else {
+    render(dairyProducts)
+}
+
+
+&lt;!-- And writing: --&gt;
+
+class ShoppingCart {
+    private(set) var products = ProductCollection()
+
+    func add(product: Product) {
+        products.insert(product)
+    }
+}
+</code></pre>
+<h2 id="becoming-expressible-by-a-literal">Becoming expressible by a literal</h2>
+<p>好了，奖金环节到了! 因为我们的自定义集合基本上只是一个字典的包装器，所以我们可以很容易地添加对使用字典字面量初始化一个字典的支持。这样做可以让我们写出这样的代码:</p>
+<pre><code class="language-swift">let products: ProductCollection = [
+    .dairy: [
+        Product(name: &quot;Milk&quot;, category: .dairy),
+        Product(name: &quot;Butter&quot;, category: .dairy)
+    ],
+    .vegetables: [
+        Product(name: &quot;Cucumber&quot;, category: .vegetables),
+        Product(name: &quot;Lettuce&quot;, category: .vegetables)
+    ]
+]
+</code></pre>
+<p>很酷!这不仅有助于减少生产代码中的冗长，而且还可以简化测试中产品集合模拟的设置。</p>
+<p>为了实现上述情况，我们所要做的就是遵循ExpressibleByDictionaryLiteral，这就要求我们实现一个以字面量为参数的初始化式，如下所示:</p>
+<pre><code class="language-swift">extension ProductCollection: ExpressibleByDictionaryLiteral {
+    typealias Key = Category
+    typealias Value = [Product]
+
+    init(dictionaryLiteral elements: (Category, [Product])...) {
+        for (category, productsInCategory) in elements {
+            products[category] = productsInCategory
+        }
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用自定义集合是一种非常强大的工具，可以以一种更可预测和易于使用的方式处理一组值。当您处理多个值时，它可能不应该总是您的首选解决方案，但在正确的情况下，它确实可以帮助您编写更清晰的代码。</p>
+<p>在调试时，理解像集合这样的东西是如何工作的也非常有帮助，或者让您了解如何优化处理集合的代码。<br>
+还有什么比建立自己的Collections更好的方式来学习更多关于Collections的知识呢?😄</p>
+<p><a href="https://www.swiftbysundell.com/articles/creating-custom-collections-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/J3hVc8gY-/" class="tag">
+                    collections
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-the-factory-pattern-to-avoid-shared-state-in-swift/">
+                  <h3 class="post-title">
+                    Using the factory pattern to avoid shared state in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

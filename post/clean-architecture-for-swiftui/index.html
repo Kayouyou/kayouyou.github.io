@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Clean Architecture for SwiftUI | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+What are the conceptual changes?
+
+
+
+
+MVVM is the new standard architecture
+
+
+
+
+Under the hood, SwiftUI is based on E..." />
+    <meta name="keywords" content="clean-architecture,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Clean Architecture for SwiftUI</h2>
+            <div class="post-date">2021-08-29</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Whataretheconceptualchanges">What are the conceptual changes?</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#MVVMisthenewstandardarchitecture">MVVM is the new standard architecture</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#UnderthehoodSwiftUIisbasedonELM">Under the hood, SwiftUI is based on ELM</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#CoordinatorisSwiftUI">Coordinator is SwiftUI</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#AreVIPERRIBsandVIPapplicableforSwiftUI">Are VIPER, RIBs and VIP applicable for SwiftUI?</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#CleanArchitecture">Clean Architecture</a></li>
+</ol>
+<ul>
+<li>6.1. <a href="#AppState">AppState</a></li>
+<li>6.2. <a href="#View">View</a></li>
+<li>6.3. <a href="#Interactor">Interactor</a></li>
+<li>6.4. <a href="#Repository">Repository</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>你能想象吗，UIKit已经有11年历史了! 自从2008年iOS SDK发布以来，我们就一直在使用它开发应用。在这段时间里，开发人员一直在为他们的应用程序寻找最佳的架构。从MVC开始，后来我们看到了MVP、MVVM、VIPER、RIBs、VIP的崛起。</p>
+<p>但是最近发生了一些事情。 这个“东西”是如此重要，以至于大多数用于iOS的架构模式将很快成为历史。</p>
+<p>我说的是SwiftUI。它哪儿也去不了。不管你喜不喜欢，这就是iOS开发的未来。它改变了我们在设计架构时所面临的挑战。</p>
+<h2 id="1-a-namewhataretheconceptualchangesawhat-are-the-conceptual-changes">1. <a name='Whataretheconceptualchanges'></a>What are the conceptual changes?</h2>
+<p>UIKit是一个命令式的、事件驱动的框架。我们可以引用层次结构中的每个视图，当视图被加载时更新它的外观，或者作为对事件的反应(按钮的触摸或新的数据在UITableView中显示)。 我们使用**回调、委托、目标操作（callbacks, delegates, target-actions）**来处理这些事件。</p>
+<p>现在，一切都过去了。SwiftUI是一个声明式的、状态驱动的框架。我们不能引用层次结构中的任何视图，也不能直接改变视图作为对事件的反应。相反，我们改变绑定到视图的状态。委托、目标-动作、响应链、KVO——所有的回调技术都被闭包和绑定所取代。</p>
+<p>SwiftUI中的每个视图都是一个<strong>Struct</strong>，其创建速度比类似的UIView后代要快很多倍。该结构保持对它为呈现UI而提供给<strong>body</strong>函数的状态的引用。</p>
+<p>SwiftUI中的视图只是一个编程函数。您为它提供输入(状态)——它绘制输出。而改变输出的唯一方法就是改变输入:我们不能通过添加或删除子视图来触及算法(body函数) - UI显示的所有可能的改变都必须在body中声明，不能在运行时更改。</p>
+<p>在SwiftUI方面，我们没有添加或删除子视图，而是在预定义的流程图算法中启用或禁用UI的不同部分。</p>
+<h2 id="2-a-namemvvmisthenewstandardarchitectureamvvm-is-the-new-standard-architecture">2. <a name='MVVMisthenewstandardarchitecture'></a>MVVM is the new standard architecture</h2>
+<p>SwiftUI天生契合MVVM。</p>
+<p>在最简单的情况下，<strong>View</strong>不依赖于任何外部状态，它的本地@<strong>State</strong>变量充当<strong>ViewModel</strong>的角色，提供了订阅机制(<strong>Binding</strong>)，以便在状态更改时刷新UI。</p>
+<p>对于更复杂的场景，视图可以引用一个外部的<strong>ObservableObject</strong>，在这种情况下，它可以是一个不同的<strong>ViewModel</strong>。</p>
+<p>无论如何，<strong>SwiftUI</strong>视图处理状态的方式非常类似于经典的MVVM(除非我们引入更复杂的编程实体图)。</p>
+<p>让我们考虑一下这个针对SwiftUI应用程序的MVVM模块的快速示例。</p>
+<ul>
+<li>Model: a data container</li>
+</ul>
+<pre><code class="language-swift">struct Country {
+    let name: String
+}
+</code></pre>
+<ul>
+<li>View: a SwiftUI view</li>
+</ul>
+<pre><code class="language-swift">struct CountriesList: View {
+    
+    @ObservedObject var viewModel: ViewModel
+    
+    var body: some View {
+        List(viewModel.countries) { country in
+            Text(country.name)
+        }
+        .onAppear {
+            self.viewModel.loadCountries()
+        }
+    }
+}
+</code></pre>
+<ul>
+<li>ViewModel: an ObservableObject that encapsulates the business logic and allows the View to observe changes of the state</li>
+</ul>
+<pre><code class="language-swift">extension CountriesList {
+    class ViewModel: ObservableObject {
+        @Published private(set) var countries: [Country] = []
+        
+        private let service: WebService
+        
+        func loadCountries() {
+            service.getCountries { [weak self] result in
+                self?.countries = result.value ?? []
+            }
+        }
+    }
+}
+</code></pre>
+<p>在这个简化的例子中，当视图出现在屏幕上时，onAppear回调调用ViewModel上的<strong>loadCountries()</strong>，触发网络调用来加载<strong>WebService</strong>中的数据。ViewModel接收回调中的数据，并通过视图观察的@Published变量<strong>countries</strong>推送更新</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtvcb5g3dxj60pu09j74y02.jpg" alt="avatar" loading="lazy"></figure>
+<p>虽然这篇文章是关于<strong>Clean Architecture</strong>的，但是我收到了很多关于在SwiftUI中应用MVVM的问题，所以我把最初的样例项目移植到MVVM的一个单独的分支中。你可以比较两者，选择最适合你需要的。项目的主要特点:</p>
+<ul>
+<li>香草SwiftUI + Combine实现</li>
+<li>解耦表示层、业务逻辑和数据访问层</li>
+<li>完整的测试覆盖范围，包括UI(多亏了ViewInspector)</li>
+<li>类似于redux的集中式AppState作为单一的真相来源</li>
+<li>程序化导航(支持深度链接)</li>
+<li>基于泛型的简单而灵活的网络层</li>
+<li>处理系统事件(当应用程序处于非活动状态时模糊视图层次)</li>
+</ul>
+<h2 id="3-a-nameunderthehoodswiftuiisbasedonelmaunder-the-hood-swiftui-is-based-on-elm">3. <a name='UnderthehoodSwiftUIisbasedonELM'></a>Under the hood, SwiftUI is based on ELM</h2>
+<p>我在ELM语言的网站上查看了ELM Architecture的描述，没有发现什么新的东西。SwiftUI基于与ELM相同的本质:</p>
+<ul>
+<li>模型-应用程序的状态</li>
+<li>一种将你的状态转换成HTML的方法</li>
+<li>更新-一种基于消息更新你的状态的方法</li>
+</ul>
+<p>我们在哪儿见过，不是吗?</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtvcr8nh10j60h70b9q3902.jpg" alt="avatar" loading="lazy"></figure>
+<p>我们已经有了模型，视图从模型中自动生成，我们唯一能调整的是更新交付的方式。们可以采用<strong>REDUX</strong>的方式，使用<strong>Command</strong>模式来改变状态，而不是让SwiftUI的视图和其他模块直接写入状态。<br>
+虽然我更喜欢在我之前的UIKit项目中使用REDUX (ReSwift❤)，但对于swifti应用程序是否需要REDUX还是有疑问的——数据流已经在控制之下，而且很容易追踪。</p>
+<h2 id="4-a-namecoordinatorisswiftuiacoordinator-is-swiftui">4. <a name='CoordinatorisSwiftUI'></a>Coordinator is SwiftUI</h2>
+<p><strong>Coordinator</strong>(也就是<strong>Router</strong>)是VIPER、RIBs和MVVM-R体系结构的重要组成部分。为屏幕导航分配一个单独的模块在UIKit应用程序中是很合理的——从一个ViewController到另一个ViewController的直接路由导致了它们的紧密耦合，更不用说在ViewController层次结构中深入链接到屏幕的代码地狱了。</p>
+<p>在UIKit中添加一个协调器是相当容易的，因为UIView(和UIViewController)是环境独立的实例，你可以随时从层次结构中添加/删除它们。</p>
+<p>对于SwiftUI来说，这样的动态在设计上是不可能的:层次结构是静态的，所有可能的导航都在编译时定义和固定。没有办法在运行时调整层次结构:相反，导航完全由通过<strong>Bindings</strong>改变的状态控制:看看你的NavigationView, TabView或.sheet()，每次你都会看到一个<strong>init</strong>，它接受路由的<strong>Binding</strong>参数。</p>
+<p>&quot;视图是状态的函数&quot;还记得吗? 这里的关键词是<strong>function</strong>,一种将状态数据转换为渲染图像的算法。</p>
+<p>这就解释了为什么从SwiftUI视图中提取路由是一个相当大的挑战:<strong>路由(routing)是绘图算法的一个组成部分</strong>。</p>
+<p>Coordinator的目标是解决两个问题:</p>
+<ol>
+<li>将ViewControllers彼此解耦</li>
+<li>程序化的导航</li>
+</ol>
+<p>SwiftUI有一个内置的机制，可以通过前面提到的<strong>Bindings</strong>进行程序化导航。我有一篇专门的文章。</p>
+<p>至于SwiftUI中视图的脱钩，这很容易实现。如果你不希望视图A直接引用视图B，你可以简单地将B转换为A的泛型参数，然后就结束了。</p>
+<p>你也可以使用相同的方法来抽象视图A可以打开B的事实方式(使用TabView, NavigationView等)，尽管我不认为在你的视图中陈述这一点有什么问题。如果需要，您可以轻松地就地更改路由模型，而无需接触视图B。</p>
+<p>不要忘记@<strong>ViewBuilder和AnyView</strong> -另外两种方法使类型B对A来说是隐藏的。</p>
+<p>鉴于上述情况，我认为SwiftUI让<strong>Coordinator</strong>变得不必要了:我们可以使用<strong>泛型参数或@ViewBuilder</strong>隔离视图，并使用标准工具实现编程导航。</p>
+<p><strong>quickbirdstudios</strong>有一个在SwiftUI中使用coordinator的实际例子，然而，在我看来，这有点过头了。另外，这种方法有几个缺点，比如授予<strong>Coordinators对所有ViewModels</strong>的完全访问权，但是您应该检查一下并自己决定。</p>
+<h2 id="5-a-nameareviperribsandvipapplicableforswiftuiaare-viper-ribs-and-vip-applicable-for-swiftui">5. <a name='AreVIPERRIBsandVIPapplicableforSwiftUI'></a>Are VIPER, RIBs and VIP applicable for SwiftUI?</h2>
+<p>我们可以从这些架构中借鉴很多伟大的想法和概念，但最终任何一种架构的规范实现对SwiftUI应用都没有意义。</p>
+<ul>
+<li>首先，正如我刚才所阐述的，实际上并不需要有一个<strong>Coordinator</strong>。</li>
+<li>其次，SwiftUI中数据流的全新设计，加上对视图状态绑定的本地支持，将所需的设置代码压缩到Presenter变成了一个愚蠢的实体的程度，不做任何有用的事情。</li>
+<li>随着模式中模块数量的减少，我们发现我们也不需要<strong>Builder</strong>。 所以基本上，整个模式就分崩离析了，因为它旨在解决的问题不再存在了。</li>
+<li>SwiftUI在系统设计中引入了自己的一套挑战，所以我们必须从头开始重新设计UIKit的模式。</li>
+</ul>
+<p>无论如何，都有人试图坚持心爱的架构，但请不要这样做。</p>
+<h2 id="6-a-namecleanarchitectureaclean-architecture">6. <a name='CleanArchitecture'></a>Clean Architecture</h2>
+<p>让我们参考<strong>Uncle Bob的Clean Architecture</strong>，即VIP的前身。</p>
+<blockquote>
+<p>通过将软件分层，并遵循依赖规则，您将创建一个本质上可测试的系统，并具有它所暗示的所有好处。</p>
+</blockquote>
+<p><strong>Clean Architecture</strong>对于我们应该引入的层的数量非常自由，因为这取决于应用程序。</p>
+<p>但对于手机应用来说，最常见的情况是，我们需要有三个层:</p>
+<ul>
+<li>Presentation layer （呈现层）</li>
+<li>Business Logic layer(业务层)</li>
+<li>Data Access layer   (数据层)</li>
+</ul>
+<p>因此，如果我们通过SwiftUI的特性来提炼Clean架构的需求，我们会得出如下结论:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtvdhgryhcj60le08wdge02.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="61-a-nameappstateaappstate">6.1. <a name='AppState'></a>AppState</h3>
+<p><strong>AppState</strong>是模式中唯一需要是对象(特别是<strong>ObservableObject</strong>)的实体。 或者，它可以是一个封装在来自<strong>Combine的CurrentValueSubject</strong>中的结构。</p>
+<p>就像<strong>Redux</strong>一样，<strong>AppState</strong>作为唯一的真相来源，并保存整个应用的状态，包括用户数据、认证令牌、屏幕导航状态(选中的选项卡、呈现的表单)和系统状态(是活动的/是后台的，等等)。</p>
+<p><strong>AppState</strong>不知道任何其他层，也不包含任何业务逻辑。</p>
+<p>国家演示项目中的AppState示例:</p>
+<pre><code class="language-swift">class AppState: ObservableObject, Equatable {
+    @Published var userData = UserData()
+    @Published var routing = ViewRouting()
+    @Published var system = System()
+}
+</code></pre>
+<h3 id="62-a-nameviewaview">6.2. <a name='View'></a>View</h3>
+<p>这是SwiftUI的常识。它可以是无状态的，也可以有本地的@<strong>State</strong>变量。</p>
+<p>没有其他层知道<strong>View</strong>层的存在，所以没有必要将它隐藏在协议后面。</p>
+<p>当视图被初始化时，它通过SwiftUI的标准依赖注入来接收<strong>AppState和Interactor</strong>，注入的变量是@<strong>Environment， @EnvironmentObject或@ observetobject</strong>。</p>
+<p>副作用是由用户的操作(如点击按钮)或视图生命周期事件<strong>onAppear</strong>触发的，并被转发到<strong>Interactor</strong>。</p>
+<pre><code class="language-swift">struct CountriesList: View {
+    
+    @EnvironmentObject var appState: AppState
+    @Environment(\.interactors) var interactors: InteractorsContainer
+    
+    var body: some View {
+        ...
+        .onAppear {
+            self.interactors.countriesInteractor.loadCountries()
+        }
+    }
+}
+</code></pre>
+<h3 id="63-a-nameinteractorainteractor">6.3. <a name='Interactor'></a>Interactor</h3>
+<p><strong>Interactor</strong>(交互器)封装特定视图或一组视图的业务逻辑。 与<strong>AppState</strong>一起形成业务逻辑层，它完全独立于表示层和外部资源。</p>
+<p>它是完全无状态的，作为构造函数参数注入的，只引用<strong>AppState</strong>对象。</p>
+<p><strong>Interactor</strong>应该用协议“伪装”，以便视图可以在测试中与模拟交互者对话。</p>
+<p><strong>Interactor</strong>接收执行工作的请求，例如从外部源获取数据或进行计算，但它们从不直接返回数据，例如在闭包中。</p>
+<p>相反，它们将结果转发给<strong>AppState</strong>或视图提供的<strong>Binding</strong>。</p>
+<p>当工作结果(数据)在本地属于一个视图而不属于中心的<strong>AppState</strong>时，<strong>Binding</strong>被使用，也就是说，它不需要被持久化或与应用程序的其他屏幕共享。</p>
+<p>演示项目中的<strong>CountriesInteractor</strong>:</p>
+<pre><code class="language-swift">protocol CountriesInteractor {
+    func loadCountries()
+    func load(countryDetails: Binding&lt;Loadable&lt;Country.Details&gt;&gt;, country: Country)
+}
+
+// MARK: - Implemetation
+
+struct RealCountriesInteractor: CountriesInteractor {
+    
+    let webRepository: CountriesWebRepository
+    let appState: AppState
+    
+    init(webRepository: CountriesWebRepository, appState: AppState) {
+        self.webRepository = webRepository
+        self.appState = appState
+    }
+
+    func loadCountries() {
+        appState.userData.countries = .isLoading(last: appState.userData.countries.value)
+        weak var weakAppState = appState
+        _ = webRepository.loadCountries()
+            .sinkToLoadable { weakAppState?.userData.countries = $0 }
+    }
+
+    func load(countryDetails: Binding&lt;Loadable&lt;Country.Details&gt;&gt;, country: Country) {
+        countryDetails.wrappedValue = .isLoading(last: countryDetails.wrappedValue.value)
+        _ = webRepository.loadCountryDetails(country: country)
+            .sinkToLoadable { countryDetails.wrappedValue = $0 }
+    }
+}
+</code></pre>
+<h3 id="64-a-namerepositoryarepository">6.4. <a name='Repository'></a>Repository</h3>
+<p><strong>Repository</strong>(存储库)是一个用于读写数据的抽象网关。提供对单个数据服务的访问，无论是web服务器还是本地数据库。</p>
+<p>我有一篇专门的文章解释为什么<a href="https://nalexn.github.io/separation-of-concerns/">提取存储库</a>是必要的。</p>
+<p>例如，如果应用程序使用它的后端，<strong>Google Maps APIs</strong>并写入一些到本地数据库，将有三个存储库:两个用于不同的web API提供商，一个用于数据库IO操作。</p>
+<p>存储库也是无状态的，没有对<strong>AppState</strong>的写访问权，只包含与处理数据相关的逻辑。<strong>它对View或Interactor一无所知</strong>。</p>
+<p>实际的存储库应该隐藏在协议后面，以便<strong>Interactor</strong>可以在测试中与模拟的存储库对话。</p>
+<p>来自演示项目的国家webrepository:</p>
+<pre><code class="language-swift">protocol CountriesWebRepository: WebRepository {
+    func loadCountries() -&gt; AnyPublisher&lt;[Country], Error&gt;
+    func loadCountryDetails(country: Country) -&gt; AnyPublisher&lt;Country.Details.Intermediate, Error&gt;
+}
+
+// MARK: - Implemetation
+
+struct RealCountriesWebRepository: CountriesWebRepository {
+    
+    let session: URLSession
+    let baseURL: String
+    let bgQueue = DispatchQueue(label: &quot;bg_parse_queue&quot;)
+    
+    init(session: URLSession, baseURL: String) {
+        self.session = session
+        self.baseURL = baseURL
+    }
+    
+    func loadCountries() -&gt; AnyPublisher&lt;[Country], Error&gt; {
+        return call(endpoint: API.allCountries)
+    }
+
+    func loadCountryDetails(country: Country) -&gt; AnyPublisher&lt;Country.Details, Error&gt; {
+        return call(endpoint: API.countryDetails(country))
+    }
+}
+
+// MARK: - API
+
+extension RealCountriesWebRepository {
+    enum API: APICall {
+        case allCountries
+        case countryDetails(Country)
+        
+        var path: String { ... }
+        var httpMethod: String { ... }
+        var headers: [String: String]? { ... }
+    }
+}
+</code></pre>
+<p>因为<strong>WebRepository</strong>将<strong>URLSession</strong>作为构造函数参数，所以很容易通过使用定制的<strong>URLProtocol</strong>模拟网络调用来测试它</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/x8zmsnSGl/" class="tag">
+                    clean-architecture
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-static-protocol-apis-to-create-conforming-instances/">
+                  <h3 class="post-title">
+                    Using static protocol APIs to create conforming instances
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

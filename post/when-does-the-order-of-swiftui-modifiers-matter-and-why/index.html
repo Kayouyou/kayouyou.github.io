@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>When does the order of SwiftUI modifiers matter, and why? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="SwiftUI和苹果之前的UI框架的主要区别之一是视图的配置方式。我们不需要直接修改各种属性，而是可以将修饰符应用到我们声明的视图上，从而分配我们想要添加的样式和行为。
+有时，我们应用这些修饰符的顺序完全无关紧要。例如，这里我们创建了一个专..." />
+    <meta name="keywords" content="Q&A,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">When does the order of SwiftUI modifiers matter, and why?</h2>
+            <div class="post-date">2020-10-28</div>
+            
+            <div class="post-content" v-pre>
+              <p>SwiftUI和苹果之前的UI框架的主要区别之一是视图的配置方式。我们不需要直接修改各种属性，而是可以将修饰符应用到我们声明的视图上，从而分配我们想要添加的样式和行为。</p>
+<p>有时，我们应用这些修饰符的顺序完全无关紧要。例如，这里我们创建了一个专门的标签来显示某个项目已经被验证过——它使用了iOS 14和macOS Big Sur中引入的内置标签视图，以及三个修饰符来应用我们想要的样式到标签的背景和文本:</p>
+<pre><code class="language-swift">struct VerifiedLabel: View {
+    var body: some View {
+        Label(&quot;Verified&quot;, systemImage: &quot;checkmark.seal.fill&quot;)
+            .background(Color.green)
+            .foregroundColor(.white)
+            .font(.callout)
+    }
+}
+</code></pre>
+<p>因为上面我们使用的任何修饰符都不会影响视图的布局或位置，而只是修改它自己的内部外观和它将被渲染的环境，我们可以任意改变它们的顺序，我们仍然会得到相同的结果。</p>
+<p>然而，如果我们应用一个修饰符来包装一个给定的视图，例如为了修改它的布局，那么我们修饰符的顺序最终可能会对我们最终的UI产生很大的影响。</p>
+<p>作为一个例子，让我们现在说，我们想要添加一点填充到我们的veriedlabel，可以这样做:</p>
+<pre><code class="language-swift">struct VerifiedLabel: View {
+    var body: some View {
+        Label(&quot;Verified&quot;, systemImage: &quot;checkmark.seal.fill&quot;)
+            .background(Color.green)
+            .foregroundColor(.white)
+            .font(.callout)
+            .padding()
+    }
+}
+</code></pre>
+<p>上面代码的结果(您可以通过使用PREVIEW按钮看到)一开始可能会非常令人惊讶。它看起来不像我们的视图有任何填充! 为了解释这里发生了什么，让我们快速看一下我们的视图层次结构在构造时最终是什么样子的-可以使用type(of:)函数完成，像这样:</p>
+<pre><code class="language-swift">let label = VerifiedLabel()
+print(type(of: label.body))
+</code></pre>
+<p>直观地说，我们可能期望上面的表达式只是简单地打印我们自己的视图类型的名称- veriedlabel -但实际上最终打印的是:</p>
+<pre><code class="language-swift">ModifiedContent&lt;
+    ModifiedContent&lt;
+        ModifiedContent&lt;
+            ModifiedContent&lt;
+                Label&lt;Text, Image&gt;,
+                _BackgroundModifier&lt;Color&gt;
+            &gt;,
+            _EnvironmentKeyWritingModifier&lt;
+                Optional&lt;Color&gt;
+            &gt;
+        &gt;,
+        _EnvironmentKeyWritingModifier&lt;
+            Optional&lt;Font&gt;
+        &gt;
+    &gt;,
+    _PaddingLayout
+&gt;
+</code></pre>
+<p>上面显示的是，每次我们应用一个修饰符，实际上我们最终创建了一个全新的视图(至少大多数时候)，这反过来解释了为什么我们添加的填充在渲染我们的veriedlabel时似乎丢失了。</p>
+<p>结果填充确实在那里，只是因为我们在应用背景颜色之后应用了它，我们看不到它，因为背景颜色只会应用到标签本身而不是填充修饰符添加的包装填充视图。如果我们在添加填充后再添加边框，情况就更加明显了，这会导致边框和标签之间出现间隙:</p>
+<pre><code class="language-swift">struct VerifiedLabel: View {
+    var body: some View {
+        Label(&quot;Verified&quot;, systemImage: &quot;checkmark.seal.fill&quot;)
+            .background(Color.green)
+            .foregroundColor(.white)
+            .font(.callout)
+            .padding()
+            .border(Color.red)
+    }
+}
+</code></pre>
+<p>现在要解决这个问题并得到我们最初想要的内边距，我们所要做的就是移动我们的背景修饰符，这样它就可以在我们的内边距被添加之后应用——像这样:</p>
+<pre><code class="language-swift">struct VerifiedLabel: View {
+    var body: some View {
+        Label(&quot;Verified&quot;, systemImage: &quot;checkmark.seal.fill&quot;)
+            .foregroundColor(.white)
+            .font(.callout)
+            .padding()
+            .background(Color.green)
+    }
+}
+</code></pre>
+<p>同样的事情也适用于其他类型的包装修饰符，例如cornerRadius，它使用一个剪切蒙版来包装一个给定的视图，以便给它一个圆角:</p>
+<pre><code class="language-swift">struct VerifiedLabel: View {
+    var body: some View {
+        Label(&quot;Verified&quot;, systemImage: &quot;checkmark.seal.fill&quot;)
+            .foregroundColor(.white)
+            .font(.callout)
+            .padding()
+            .background(Color.green)
+            .cornerRadius(10)
+    }
+}
+</code></pre>
+<p>修饰符的顺序非常重要的另一种情况是，当使用特定于特定类型的修饰符时。例如，粗体修饰符只能直接应用于文本值，这意味着如果我们想改变我们的veriedlabel为粗体文本而不是图标，我们需要直接应用该修饰符到我们的文本本身:</p>
+<pre><code class="language-swift">struct VerifiedLabel: View {
+    var body: some View {
+        Text(&quot;Verified&quot;)
+            .bold()
+            .foregroundColor(.white)
+            .font(.callout)
+            .padding()
+            .background(Color.green)
+            .cornerRadius(10)
+    }
+}
+</code></pre>
+<p>然而，由于前两个修饰符(foregroundColor和font)只修改我们的文本环境，我们也可以在它们之后应用我们的粗体修饰符，只要我们不断从这些调用中获得文本值。另一方面，如果我们试图在添加视图的填充后应用bold修饰符，那么我们会得到一个编译器错误，说我们的视图没有这样的方法，因为我们不再直接处理Text实例:</p>
+<pre><code class="language-swift">struct VerifiedLabel: View {
+    var body: some View {
+        Text(&quot;Verified&quot;)
+            .foregroundColor(.white)
+            .font(.callout)
+            .padding()
+            .bold()
+            .background(Color.green)
+            .cornerRadius(10)
+    }
+}
+</code></pre>
+<p>所以，总结一下，在使用SwiftUI修饰符时，有一些事情需要记住:</p>
+<p>*When a modifier just changes the environment that its target view will be rendered in, then the order often doesn’t matter. 当一个修饰符只是改变它的目标视图将在其中呈现的环境时，那么顺序通常无关紧要。</p>
+<p>*However, if that modifier can only be applied to a specific type of view, then we can only apply it as long as we’re dealing with that kind of view directly. 然而，如果这个修饰符只能应用于特定类型的视图，那么我们只能应用它，只要我们直接处理这种视图。</p>
+<p>*The order of modifiers that wrap their target view, on the other hand, often matters quite a lot, and a different modifier order can end up yielding a very different result. 另一方面，包装目标视图的修饰符的顺序通常很重要，不同的修饰符顺序最终会产生非常不同的结果。</p>
+<p><a href="https://www.swiftbysundell.com/questions/swiftui-modifier-order/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Ei6A0dFu0G/" class="tag">
+                    Q&amp;A
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/connecting-and-merging-combine-publishers-in-swift/">
+                  <h3 class="post-title">
+                    Connecting and merging Combine publishers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

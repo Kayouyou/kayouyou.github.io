@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Expert Swift - Chapter 1: Introduction | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Expert Swift Chapter 1: Introduction
+
+Swift released
+Easy onboarding
+Multi-paradigm
+The Swift compiler
+The magic of SI..." />
+    <meta name="keywords" content="expert swift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Expert Swift - Chapter 1: Introduction</h2>
+            <div class="post-date">2021-08-13</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gtejeta9ccj61900u0gpx02.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#expert-swift-chapter-1-introduction">Expert Swift Chapter 1: Introduction</a>
+<ul>
+<li><a href="#swift-released">Swift released</a></li>
+<li><a href="#easy-onboarding">Easy onboarding</a></li>
+<li><a href="#multi-paradigm">Multi-paradigm</a></li>
+<li><a href="#the-swift-compiler">The Swift compiler</a></li>
+<li><a href="#the-magic-of-sil">The magic of SIL</a>
+<ul>
+<li><a href="#overflow-detection">Overflow detection</a></li>
+<li><a href="#definite-initialization">Definite initialization</a></li>
+<li><a href="#allocation-and-devirtualization">Allocation and devirtualization</a></li>
+<li><a href="#raw-sil">Raw SIL</a></li>
+<li><a href="#canonical-sil">Canonical SIL</a></li>
+</ul>
+</li>
+<li><a href="#implementing-a-language-feature">Implementing a language feature</a>
+<ul>
+<li><a href="#building-ifelse">Building ifelse</a></li>
+<li><a href="#deferring-execution">Deferring execution</a></li>
+<li><a href="#using-expressions-that-can-fail">Using expressions that can fail</a></li>
+<li><a href="#performance">Performance</a></li>
+</ul>
+</li>
+<li><a href="#key-points">Key points</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="expert-swift-chapter-1-introduction">Expert Swift Chapter 1: Introduction</h1>
+<p>2010年，克里斯·拉特纳(Chris Lattner)在他的笔记本电脑上输入了mkdir Shiny，最终成为Swift语言的东西就这样诞生了。Shiny最初是一个他在晚上和周末进行的个人项目。</p>
+<p>该项目有许多雄心勃勃的目标。拉特纳在访谈和播客中提到了其中一些，包括:</p>
+<ul>
+<li>采用允许新的编程范例的现代语言特性。</li>
+<li>使用自动内存管理来避免垃圾收集的开销。</li>
+<li>在库中定义尽可能多的语言，而不是在编译器中。</li>
+<li>使语言默认安全，以避免昂贵的未定义行为。</li>
+<li>使它易于初学者学习。</li>
+</ul>
+<p>但也许最重要的是，他希望这种新语言是“real”。 使用它应该像使用脚本语言，但适用于从应用程序开发到系统级开发的所有内容。他半开玩笑地称其为“世界统治”。</p>
+<h2 id="swift-released">Swift released</h2>
+<p>在2014年夏天的苹果全球开发者大会(WWDC)上，“Shiny”转变为“Swift”，并正式成为现实。在某种意义上，它是真实的，开箱即用的，它与Objective-C具有完全的互操作性，并可以利用UIKit等久经沙场测试的框架来构建应用。</p>
+<p>第二年的全球开发者大会(WWDC)上又发布了一项重大声明。Swift将成为一个开源项目，并扩展到苹果平台之外。<strong>Swift.org</strong>建立了一个语言进化进程，在这个过程中，社区可以提出并实现对语言的改变。到目前为止，已经提出了311个修改建议，所有的(接受或不接受)都推动了语言的发展。</p>
+<h2 id="easy-onboarding">Easy onboarding</h2>
+<p>这一行代码必须作为一个有效的程序进行编译和运行，这对Swift的设计至关重要:</p>
+<pre><code class="language-swift">print(&quot;Hello, world!&quot;)
+</code></pre>
+<p>尽管是一种强类型语言，可以在编译时捕获所有类型的错误，但您可以编写这样的程序。 健壮的类型推断和缺少样板文件使得它使用起来很愉快，感觉几乎像一种脚本语言。</p>
+<p>Swift信奉渐进式揭示的哲学，这意味着你只接触到你需要的语言复杂性。 您可以了解诸如模块(modules)、访问控制(access control)、对象(objects)、静态方法(static methods)、协议(protocols)、泛型和转义字符(generics and escaped characters)之类的东西，因为它们对您正在尝试做的事情是必要的。</p>
+<p>此外，Swift允许这一功能开箱即用:</p>
+<pre><code class="language-swift">let pointer = malloc(100)
+defer {
+  free(pointer)
+}
+// work with raw memory
+</code></pre>
+<p>Swift努力成为一种“language without borders”或“infinitely hackable”，以支持底层C和脚本环境(如Python)之间的无缝互操作性。随着语言的发展，与其他环境的互操作性仍然是一个主题。你将在第12章“Objective-C Interoperability”中学习Objective-C的互操作性。</p>
+<h2 id="multi-paradigm">Multi-paradigm</h2>
+<p>在第一次全球开发者大会上，苹果展示了Swift的现代语言功能。在第一个现场演示中，他们功能性地将字符串映射到SpriteKit图像。除了处理复杂的大型、遗留的面向对象框架，如UIKit、CoreData和SpriteKit, Swift还可以使用map、reduce和filter使用序列值进行功能对话。第10章“高阶函数”将详细介绍这些内容。</p>
+<p>考虑您想要添加的数字序列的问题，以便您可以使用命令式和函数式风格进行比较。</p>
+<p>你可以跟随starter playground Multi-paradigm.playground。这包括一个example()函数，用于限定示例的范围，以便您可以在相同的playground中重复使用相同的变量名。</p>
+<p>首先添加并运行以下代码:</p>
+<pre><code class="language-swift">let numbers = [1, 2, 4, 10, -1, 2, -10]
+
+example(&quot;imperative&quot;) {
+  var total = 0
+  for value in numbers {
+    total += value
+  }
+  print(total)
+}
+</code></pre>
+<p>如示例标题所示，这将以命令式样式将数字相加，并将结果存储在可变变量total中。</p>
+<p>现在，添加一个函数式的版本:</p>
+<pre><code class="language-swift">example(&quot;functional&quot;) {
+  let total = numbers.reduce(0, +)
+  print(total)
+}
+</code></pre>
+<p>这个版本非常简单。该方法是描述性的，它允许total是一个不可变的值，您不需要担心以后在代码中更改它。经验表明，函数化对代码是有益的。你将在第十章“高阶函数”中学习更多关于这些技术的知识。</p>
+<p>假设任务是从左到右添加一个数字序列，但在出现负数时停止。一个可能的函数版本可能是这样的:</p>
+<pre><code class="language-swift">example(&quot;functional, early-exit&quot;) {
+  let total = numbers.reduce((accumulating: true, total: 0)) 
+    { (state, value) in
+      if state.accumulating &amp;&amp; value &gt;= 0 {
+        return (accumulating: true, state.total + value)
+      }
+      else {
+        return (accumulating: false, state.total)
+      }
+    }.total
+  print(total)
+}
+</code></pre>
+<p>这段代码更复杂，但调用相同的reduce函数，并使用一个元组来控制值是否累计和保持运行总数。它可以工作，尽管编译器需要努力工作来确定提前退出是可能的。</p>
+<p>虽然你可以用其他方法来解决这个问题(比如找到子序列然后求和)，但你可以直接命令式地解决它:</p>
+<pre><code class="language-swift">example(&quot;imperative, early-exit&quot;) {
+  var total = 0
+  for value in numbers {
+    guard value &gt;= 0 else { break }
+    total += value
+  }
+  print(total)
+}
+</code></pre>
+<p>这段代码很容易理解，因为它更直接地描述了问题语句。它还可以直接映射到实际的计算机硬件，所以优化器不需要那么辛苦地工作。</p>
+<p>上述代码的一个缺点是，total 泄漏作为一个可变变量。然而，多亏了Swift的mutation模型（突变模型），你可以解决这个问题:</p>
+<pre><code class="language-swift">example(&quot;imperative, early-exit with just-in-time mutability&quot;) {
+  let total: Int = {
+    // same-old imperative code
+    var total = 0
+    for value in numbers {
+      guard value &gt;= 0 else { break }
+      total += value
+    }
+    return total
+  }()
+  print(total)
+}
+</code></pre>
+<p>这段代码将命令式代码包装在一个闭包中，并调用它来赋值外部不可变total。 通过这种方式，Swift让你“在需要的时候变异”。它允许你用局部变异来表达算法，当这是最自然的解决方案时。</p>
+<h2 id="the-swift-compiler">The Swift compiler</h2>
+<p>Swift工具链的中心是Swift编译器。它负责将源代码转换为可以链接到可执行文件中的目标代码。它运行在LLVM编译器基础架构上，数据流看起来像这样:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtef6yklecj60fm13u3zr02.jpg" alt="avatar" loading="lazy"></figure>
+<p>将诸如Swift这样的高级语言转换成能够在实际硬件上高效运行的机器码的过程称为<strong>lowering</strong>。上面显示的圆角矩形是矩形所代表的相位的输入或输出数据。从更高的层次去理解每一个步骤是值得的:</p>
+<ol>
+<li>
+<p><strong>Parse</strong>: Swift源代码首先被解析为tokens，并放入<strong>抽象语法树(abstract syntax tree)<strong>或</strong>AST</strong>中。您可以将其视为一个树，其中每个表达式都是一个节点。这些节点还保存源位置信息，因此，如果检测到错误，该节点可以准确地告诉您问题发生的位置。</p>
+</li>
+<li>
+<p><strong>Semantic Analysis</strong>: 在这一步中，编译器使用AST来分析程序的含义。这就是进行类型检查的地方。它将类型检查的AST传递给<strong>SILGen</strong>阶段。</p>
+</li>
+<li>
+<p><strong>SILGen</strong>: 这个阶段与以前的编译器管道(如<strong>Clang</strong>)不同，后者没有这个步骤。 AST被降低为<strong>Swift Intermediate Language</strong>(SIL，中间件)。SIL包含基本的计算块，理解Swift类型、引用计数和调度规则。 SIL有两种口味:原始的和规范的。 原始SIL通过一组最小的优化过程运行而产生规范SIL(即使关闭了所有优化)。 SIL还包含源位置信息，因此可能产生有意义的错误。</p>
+</li>
+<li>
+<p><strong>IRGen</strong>: 该工具将SIL降低为LLVM的中间表示形式。在这一点上，指令不再是Swift特有的。 (每个基于llvm的都使用这种表示。)  IR仍然很抽象。像SIL一样，IR也是静态单一分配(SSA)形式。 它将机器建模为具有无限数量的寄存器，从而更容易找到优化。 它对Swift类型一无所知。</p>
+</li>
+<li>
+<p><strong>LLVM</strong>: 最后一步优化IR，并将其降低为特定平台的机器指令。 后端(输出机器指令)包括ARM, x86, Wasm等。</p>
+</li>
+</ol>
+<p>上图显示了Swift编译器如何生成目标代码。 其他工具，如源代码格式化器、重构工具、文档生成器和语法高亮显示器可以利用中间结果(如AST)，使最终结果更加健壮和一致。</p>
+<blockquote>
+<p>历史注释:  在苹果采用LLVM和Clang作为Xcode的编译器技术之前，语法高亮、文档生成、调试和编译都使用了不同的解析器。大多数时候，这种方法都很有效。但如果他们不同步，事情也会变得奇怪。</p>
+</blockquote>
+<h2 id="the-magic-of-sil">The magic of SIL</h2>
+<p>随着Swift的发展，创建一种保留源语言所有类型语义的中间语言的想法是新的。其他LLVM编译器需要采取非常迂回的方式来显示特定的诊断并执行更高级别的优化，与之不同的是，SILGen可以以可测试的方式直接生成它们。</p>
+<h3 id="overflow-detection">Overflow detection</h3>
+<p>检查SIL的工作功率。考虑以下playground错误:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtegmmxobwj60tu02et8y02.jpg" alt="avatar" loading="lazy"></figure>
+<p>多亏了SILGen通行证，编译器静态分析(在编译时检查)您的源代码，并看到数字130不能装入只能达到127的Int8中。</p>
+<h3 id="definite-initialization">Definite initialization</h3>
+<p>Swift是一种安全的语言，默认情况下很难访问未初始化的内存。SILGen通过一个称为确定初始化的检查过程提供保证。考虑一下这个例子:</p>
+<pre><code class="language-swift">final class Printer {
+  var value: Int
+  init(value: Int) { self.value = value }
+  func print() { Swift.print(value) }
+}
+
+func printTest() {
+  var printer: Printer
+  if .random() {
+    printer = Printer(value: 1)
+  }
+  else {
+    printer = Printer(value: 2)
+  }
+  printer.print()
+}
+
+printTest()
+</code></pre>
+<p>这段代码编译并运行良好。但是，如果您注释掉else子句，编译器会正确地标记一个错误(变量' printer '在初始化之前使用)，这要感谢SIL。这个错误是可能的，因为SIL理解对Printer的方法调用的语义。</p>
+<h3 id="allocation-and-devirtualization">Allocation and devirtualization</h3>
+<p>SILGen帮助优化内存分配和方法调用。使用你最喜欢的纯文本编辑器，将下面的代码放入一个名为magic.swift的文件中:</p>
+<pre><code class="language-swift">class Magic {
+  func number() -&gt; Int { return 0 }
+}
+
+final class SpecialMagic: Magic {
+  override func number() -&gt; Int { return 42 }
+}
+
+public var number: Int = -1
+
+func magicTest() {
+  let specialMagic = SpecialMagic()
+  let magic: Magic = specialMagic
+  number = magic.number()
+}
+</code></pre>
+<p>这段代码可能是您所见过的设置数字的最做作的示例。在函数magicTest中，您创建一个SpecialMagic类型，然后将其分配给基类引用和调用number()，以设置全局编号。 从概念上讲，它使用类的 <strong>virtual table</strong> 查找正确的函数，该函数返回值42。</p>
+<h3 id="raw-sil">Raw SIL</h3>
+<p>从终端窗口，切换到magic.swift所在的源目录，并运行以下命令:</p>
+<pre><code class="language-swift">swiftc -O -emit-silgen magic.swift &gt; magic.rawsil
+</code></pre>
+<p>这将运行优化的Swift编译器，并创建原始SIL，将其输出到文件<strong>magic.rawsil</strong>。</p>
+<p>深呼吸，不要惊慌，在你的文本编辑器打开magic.rawsil 如果你向下滚动到底部，你会发现函数magicTest()的定义如下:</p>
+<pre><code class="language-swift">// magicTest()
+sil hidden [ossa] @$s5magic0A4TestyyF : $@convention(thin) () -&gt; () {
+bb0:
+  %0 = global_addr @$s5magic6numberSivp : $*Int   // user: %14
+  %1 = metatype $@thick SpecialMagic.Type         // user: %3
+  // function_ref SpecialMagic.__allocating_init()
+  %2 = function_ref @$s5magic12SpecialMagicCACycfC : $@convention(method) (@thick SpecialMagic.Type) -&gt; @owned SpecialMagic // user: %3
+  %3 = apply %2(%1) : $@convention(method) (@thick SpecialMagic.Type) -&gt; @owned SpecialMagic // users: %18, %5, %4
+  debug_value %3 : $SpecialMagic, let, name &quot;specialMagic&quot; // id: %4
+  %5 = begin_borrow %3 : $SpecialMagic            // users: %9, %6
+  %6 = copy_value %5 : $SpecialMagic              // user: %7
+  %7 = upcast %6 : $SpecialMagic to $Magic        // users: %17, %10, %8
+  debug_value %7 : $Magic, let, name &quot;magic&quot;      // id: %8
+  end_borrow %5 : $SpecialMagic                   // id: %9
+  %10 = begin_borrow %7 : $Magic                  // users: %13, %12, %11
+  %11 = class_method %10 : $Magic, #Magic.number : (Magic) -&gt; () -&gt; Int, $@convention(method) (@guaranteed Magic) -&gt; Int // user: %12
+  %12 = apply %11(%10) : $@convention(method) (@guaranteed Magic) -&gt; Int // user: %15
+  end_borrow %10 : $Magic                         // id: %13
+  %14 = begin_access [modify] [dynamic] %0 : $*Int // users: %16, %15
+  assign %12 to %14 : $*Int                       // id: %15
+  end_access %14 : $*Int                          // id: %16
+  destroy_value %7 : $Magic                       // id: %17
+  destroy_value %3 : $SpecialMagic                // id: %18
+  %19 = tuple ()                                  // user: %20
+  return %19 : $()                                // id: %20
+} // end sil function '$s5magic0A4TestyyF'
+</code></pre>
+<p>这段摘录是三行函数magicTest()的SIL定义。 标签bb0代表基本块0，是一个计算单位。 (如果你有一个If /else语句，就会有两个基本块，为每个可能的路径创建bb1和bb2。) %1、%2等值是虚拟寄存器。 SIL是单一静态赋值形式，所以寄存器是无限的，永远不会被重用。 还有很多小细节对这里的讨论并不重要。通读它，您应该大致了解它是如何分配、赋值、调用和释放对象的。这表达了Swift语言的全部语义。</p>
+<h3 id="canonical-sil">Canonical SIL</h3>
+<p>Canonical SIL包括优化，包括使用-Onone关闭优化时的一组最小的优化过程。运行Terminal命令:</p>
+<pre><code class="language-swift">swiftc -O -emit-sil magic.swift &gt; magic.sil
+</code></pre>
+<p>这个命令创建了文件<strong>magic.sil</strong>，包含标准sil。滚动到文件的末尾，找到magicTest():</p>
+<pre><code class="language-swift">// magicTest()
+sil hidden @$s5magic0A4TestyyF : $@convention(thin) () -&gt; () {
+bb0:
+  %0 = global_addr @$s5magic6numberSivp : $*Int   // user: %3
+  %1 = integer_literal $Builtin.Int64, 42         // user: %2
+  %2 = struct $Int (%1 : $Builtin.Int64)          // user: %4
+  %3 = begin_access [modify] [dynamic] [no_nested_conflict] %0 : $*Int // users: %4, %5
+  store %2 to %3 : $*Int                          // id: %4
+  end_access %3 : $*Int                           // id: %5
+  %6 = tuple ()                                   // user: %7
+  return %6 : $()                                 // id: %7
+} // end sil function '$s5magic0A4TestyyF'
+</code></pre>
+<p>这段摘录比原始的SIL要简洁得多，尽管它表示的是相同的东西。 主要工作是将整数字面值42存储到全局地址位置存储%2到%3:$*Int。没有初始化或反初始化类，也没有调用任何虚方法。 当您听到结构体使用堆栈而类使用堆时，请记住这是一种泛化。</p>
+<p>In Swift，所有的东西都开始在堆上初始化，SIL分析可以将内存分配移动到栈，甚至完全摆脱它。虚函数调用也可以通过优化过程去虚拟化，直接调用甚至内联调用。</p>
+<h2 id="implementing-a-language-feature">Implementing a language feature</h2>
+<p>Swift将尽可能多的功能实现从编译器推送到库中。例如，您可能意识到Optional只是一个通用枚举。 事实上，大多数基本类型都是标准库的一部分，而不是编译器的一部分。这包括Bool, Int, Double, String, Array, Set, Dictionary, Range等等。在2020年10月Lex Fridman的采访中，Lattner表示，他认为这种富有表现力的库设计是编程语言最美丽的特性。</p>
+<p>要了解Swift的一些更深奥的特性或更好地了解一些基本特性，最好的方法是自己构建一个类似于语言的特性。你现在就去做。</p>
+<h3 id="building-ifelse">Building ifelse</h3>
+<p>对于这个编码实验，您将实现一个ifelse()语句，类似于统计编程语言R使用的。函数是这样的:</p>
+<pre><code class="language-swift">ifelse(condition, valueTrue, valueFalse)
+</code></pre>
+<p>它和Swift三元运算符条件是一样的吗?valueTrue: valueFalse，有些人不喜欢，因为审美上的异议。</p>
+<p>首先把这个输入playground:</p>
+<pre><code class="language-swift">func ifelse(condition: Bool, 
+            valueTrue: Int, 
+            valueFalse: Int) -&gt; Int {
+  if condition {
+    return valueTrue
+  } else {
+    return valueFalse
+  }
+}
+let value = ifelse(condition: Bool.random(), 
+                   valueTrue: 100, 
+                   valueFalse: 0)
+</code></pre>
+<p>这个解决方案有什么问题?也许什么都没有。如果它解决了您的问题，并且您只使用Int，那么这可能是一个很好的停止的地方。  但是由于您试图为每个人创建一个通用的语言特性，因此可以进行一些改进。首先，稍微改进一下接口:</p>
+<pre><code class="language-swift">func ifelse(_ condition: Bool, 
+            _ valueTrue: Int, 
+            _ valueFalse: Int) -&gt; Int {
+  condition ? valueTrue : valueFalse
+}
+
+let value = ifelse(.random(), 100, 0)
+</code></pre>
+<p>对于经常使用的语言构造，删除参数标签是有意义的。 通配符标签_使您能够删除它们。为简洁起见，使用不那么冗长的三元运算符实现该特性。(您可能想知道为什么不应该使用大小写相似的名称ifElse。 有过关键字是简单连接的先例，比如<strong>typealias</strong>和<strong>associatedtype</strong>，所以保持原始的R语言命名。)</p>
+<p>下一个明显的问题是，这只对Int类型有效。你可以用很多重载替换你想要的重要类型:</p>
+<pre><code class="language-swift">func ifelse(_ condition: Bool, 
+            _ valueTrue: Int, 
+            _ valueFalse: Int) -&gt; Int {
+  condition ? valueTrue : valueFalse
+}
+func ifelse(_ condition: Bool, 
+            _ valueTrue: String, 
+            _ valueFalse: String) -&gt; String {
+  condition ? valueTrue : valueFalse
+}
+func ifelse(_ condition: Bool, 
+            _ valueTrue: Double, 
+            _ valueFalse: Double) -&gt; Double {
+  condition ? valueTrue : valueFalse
+}
+func ifelse(_ condition: Bool, 
+            _ valueTrue: [Int], 
+            _ valueFalse: [Int]) -&gt; [Int] {
+  condition ? valueTrue : valueFalse
+}
+</code></pre>
+<p>很容易看出这是不成比例的。一旦你认为你完成了，还有另一种类型的用户需要支持。而且每次重载都重复实现，这不是很好。</p>
+<p>作为替代，你可以使用类型Any，一种类型擦除，代替任何Swift类型:</p>
+<pre><code class="language-swift">func ifelse(_ condition: Bool,
+            _ valueTrue: Any,
+            _ valueFalse: Any) -&gt; Any {
+  condition ? valueTrue : valueFalse
+}
+
+let value = ifelse(.random(), 100, 0) as! Int
+</code></pre>
+<p>这段代码适用于任何类型，但有一个重要的警告，您必须强制转换回您想要的原始类型。使用Any类型并不能保护你避免像这样混合类型的情况:</p>
+<pre><code class="language-swift">let value = ifelse(.random(), &quot;100&quot;, 0) as! Int
+</code></pre>
+<p>该语句在测试中可能有效，但在生产中如果随机数为真则会崩溃。Any超级通用，但在使用时也容易出错。</p>
+<p>您可能已经猜到，更好的答案是使用泛型。将代码改为:</p>
+<pre><code class="language-swift">func ifelse&lt;V&gt;(_ condition: Bool,
+               _ valueTrue: V,
+               _ valueFalse: V) -&gt; V {
+  condition ? valueTrue : valueFalse
+}
+
+// let value = ifelse(.random(), &quot;100&quot;, 0)  // doesn’t compile anymore
+let value = ifelse(.random(), 100, 0)
+</code></pre>
+<p>这种设计既保留类型信息，又约束实参为与返回类型相同的类型。泛型是Swift语言中非常重要的一部分，因此第4章“泛型”专门针对它们。您将在整本书中使用泛型。</p>
+<blockquote>
+<p>Note:  Swift标准库广泛使用泛型来消除代码重复，如上例所示。 在一些泛型系统还不够强大的情况下，该库使用python脚本gyb(或generate-your-boilerplate)为一系列类型生成代码。</p>
+</blockquote>
+<h3 id="deferring-execution">Deferring execution</h3>
+<p>这个功能看起来不错，但还没有完成。考虑这个用法:</p>
+<pre><code class="language-swift">func expensiveValue1() -&gt; Int {
+  print(&quot;side-effect-1&quot;)
+  return 2
+}
+
+func expensiveValue2() -&gt; Int {
+  print(&quot;side-effect-2&quot;)
+  return 1729
+}
+
+let taxicab = ifelse(.random(), 
+                     expensiveValue1(), 
+                     expensiveValue2())
+</code></pre>
+<p>如果你运行这个，你会看到这两个函数总是被调用。作为一种语言特性，您可能希望只计算您使用的表达式。你可以通过传递一个延迟执行的闭包来解决这个问题:</p>
+<pre><code class="language-swift">func ifelse&lt;V&gt;(_ condition: Bool,
+               _ valueTrue: () -&gt; V,
+               _ valueFalse: () -&gt; V) -&gt; V {
+  condition ? valueTrue() : valueFalse()
+}
+</code></pre>
+<p>这段代码延迟了执行，但改变了调用函数的方式。现在，你必须这样调用它:</p>
+<pre><code class="language-swift">let value = ifelse(.random(), { 100 }, { 0 })
+
+let taxicab = ifelse(.random(),
+                     { expensiveValue1() },
+                     { expensiveValue2() })
+</code></pre>
+<p>只调用一个函数，但是必须在闭包中包装参数是非常烦人的。幸运的是，Swift有办法解决这个问题:</p>
+<pre><code class="language-swift">func ifelse&lt;V&gt;(_ condition: Bool,
+               _ valueTrue: @autoclosure () -&gt; V,
+               _ valueFalse: @autoclosure () -&gt; V) -&gt; V {
+  condition ? valueTrue() : valueFalse()
+}
+
+let value = ifelse(.random(), 100, 0 )
+
+let taxicab = ifelse(.random(),
+                     expensiveValue1(),
+                     expensiveValue2())
+</code></pre>
+<p>使用@autoclosure修饰形参类型会导致编译器自动将实参包装在闭包中。这个更改将调用站点恢复到以前的状态，并且仍然延迟执行，因此只有真正被使用的参数计算。</p>
+<h3 id="using-expressions-that-can-fail">Using expressions that can fail</h3>
+<p>一切都很顺利，但还有一个小问题。如果您想使用可能失败的表达式，该怎么办?</p>
+<p>考虑下面例子</p>
+<pre><code class="language-swift">func expensiveFailingValue1() throws -&gt; Int {
+  print(&quot;side-effect-1&quot;)
+  return 2
+}
+
+func expensiveFailingValue2() throws -&gt; Int {
+  print(&quot;side-effect-2&quot;)
+  return 1729
+}
+
+let failableTaxicab = ifelse(.random(),
+                             try expensiveFailingValue1(),
+                             try expensiveFailingValue2())
+</code></pre>
+<p>这无法编译，因为自动闭包不期望闭包抛出。如果没有编译器的任何特殊帮助，你可能会想通过创建另一个函数版本来解决这个问题:</p>
+<pre><code class="language-swift">func ifelseThrows&lt;V&gt;(_ condition: Bool,
+               _ valueTrue: @autoclosure () throws -&gt; V,
+               _ valueFalse: @autoclosure () throws -&gt; V) throws -&gt; V {
+  condition ? try valueTrue() : try valueFalse()
+}
+
+let taxicab2 = try ifelseThrows(.random(),
+                                try expensiveFailingValue1(),
+                                try expensiveFailingValue2())
+</code></pre>
+<p>这段代码可以工作，但情况比最初描述的更糟。 假设只有第一个表达式抛出或者只有第二个抛出。 你是否需要为同一个功能制作四个版本来处理所有的情况? 因为关键字throws并不包含在Swift函数的签名中，所以您需要有四种ifelse，它们的名称略有不同。</p>
+<p>幸运的是，还有更好的方法。你可以编写一个版本的函数来处理所有这些情况:</p>
+<pre><code class="language-swift">func ifelse&lt;V&gt;(_ condition: Bool,
+               _ valueTrue: @autoclosure () throws -&gt; V,
+               _ valueFalse: @autoclosure () throws -&gt; V) rethrows -&gt; V {
+  condition ? try valueTrue() : try valueFalse()
+}
+</code></pre>
+<p>关键是使用rethrow将任何失败闭包的错误传播给调用者。如果闭包参数没有抛出，则推断该函数是非抛出的，不需要用try标记。</p>
+<p>使用这个单一版本，所有这些变体都能正常工作:</p>
+<pre><code class="language-swift">let value = ifelse(.random(), 100, 0 )
+let taxicab = ifelse(.random(),
+                     expensiveValue1(),
+                     expensiveValue2())                     
+let taxicab2 = try ifelse(.random(),
+                          try expensiveFailingValue1(),
+                          try expensiveFailingValue2())
+let taxicab3 = try ifelse(.random(),
+                           expensiveValue1(),
+                           try expensiveFailingValue2())
+let taxicab4 = try ifelse(.random(),
+                          try expensiveFailingValue1(),
+                          expensiveValue2())
+</code></pre>
+<p>你就快完成了ifelse。您不想为额外的抽象层付出代价，而且实现永远不会改变，因此将函数标记为@inlinable是有意义的。 这个添加的关键字向编译器提示，方法的主体应该直接包含在客户端代码中，而不需要调用函数。</p>
+<pre><code class="language-swift">@inlinable
+func ifelse&lt;V&gt;(_ condition: Bool,
+               _ valueTrue: @autoclosure () throws -&gt; V,
+               _ valueFalse: @autoclosure () throws -&gt; V) rethrows -&gt; V {
+  condition ? try valueTrue() : try valueFalse()
+}
+</code></pre>
+<blockquote>
+<p>Note: 私下里还有更强大的@inlinable。如果你浏览Swift的源代码，你会看到这些。其中一个属性是@_transparent，它总是“看穿”底层的实现。它将内联，甚至与-Onone，不包括堆栈帧调试。 点击这里查看详情:<a href="https://github.com/apple/swift/blob/main/docs/TransparentAttr.md">https://github.com/apple/swift/blob/main/docs/TransparentAttr.md</a></p>
+</blockquote>
+<h3 id="performance">Performance</h3>
+<p>使用优化编译器编写程序的一个很酷的事情是，使代码清晰和可维护的抽象成本通常不需要或几乎不需要。</p>
+<p>要查看这里是如何做到的，请将这段代码放入一个名为ifelse.swift的文本文件中:</p>
+<pre><code class="language-swift">@inlinable
+func ifelse&lt;V&gt;(_ condition: Bool,
+               _ valueTrue: @autoclosure () throws -&gt; V,
+               _ valueFalse: @autoclosure () throws -&gt; V) rethrows -&gt; V {
+  condition ? try valueTrue() : try valueFalse()
+}
+
+func ifelseTest1() -&gt; Int {
+  if .random() {
+      return 100
+  } else {
+      return 200
+  }
+}
+
+func ifelseTest2() -&gt; Int {
+  Bool.random() ? 300 : 400
+}
+
+func ifelseTest3() -&gt; Int {
+  ifelse(.random(), 500, 600)
+}
+</code></pre>
+<p>获取这段代码，并使用下面的命令直接运行编译器:</p>
+<pre><code class="language-swift"> swiftc -O -emit-assembly ifelse.swift &gt; ifelse.asm
+</code></pre>
+<p>再做一次深呼吸，打开程序集文件。请记住，这些程序集文件包含大量关于调用约定和入口点的样板仪式。不要因此而放弃寻找。除去不必要的东西，以下是好的部分:</p>
+<pre><code class="language-swift">_$s6ifelse0A5Test1SiyF:
+    :
+    callq   _swift_stdlib_random
+    testl   $131072, -8(%rbp)
+    movl    $100, %ecx
+    movl    $200, %eax
+    cmoveq  %rcx, %rax
+    :
+
+_$s6ifelse0A5Test2SiyF:
+    :
+    callq   _swift_stdlib_random
+    testl   $131072, -8(%rbp)
+    movl    $300, %ecx
+    movl    $400, %eax
+    cmoveq  %rcx, %rax
+    :
+
+_$s6ifelse0A5Test3SiyF:    
+    :    
+    callq   _swift_stdlib_random
+    testl   $131072, -8(%rbp)
+    movl    $500, %ecx
+    movl    $600, %eax
+    cmoveq  %rcx, %rax
+    :
+</code></pre>
+<p>这是三个测试函数的组装说明。 你可能觉得这是胡言乱语。重要的是，对于ifelseTest1()、ifelseTest2()和ifelseTest3()来说，这是同样的胡言乱语。 换句话说，这三种编写代码的方法没有任何抽象损失。选择你认为最美丽的。</p>
+<p>现在，揭开上面程序集的神秘面纱，callq指令调用该函数来获得一个随机数。 接下来，testl指令获取随机数返回值(位于64位基指针所指向的地址- 8)。它根据131072进行检查，131072是0x20000或第17位。如果你看一下Bool.random的Swift源码，你会发现:</p>
+<pre><code class="language-swift">@inlinable
+public static func random&lt;T: RandomNumberGenerator&gt;(
+  using generator: inout T
+) -&gt; Bool {
+  return (generator.next() &gt;&gt; 17) &amp; 1 == 0
+}
+</code></pre>
+<p>这就解释了131072之谜:它移动了17位，掩盖了它，并在一条指令中测试它。 接下来，将函数的两个可能的结果值移动(使用movl指令)到寄存器cx和ax中。前缀“e”表示扩展的32位版本的寄存器。 其余的位进行零扩展以填充所有的64位。最后，&quot; conditional move if equal &quot;或cmoveq指令使用前面的测试指令的结果将cx寄存器移动到ax寄存器。 在rcx和rax上的前缀r表示您使用完整的64位寄存器。</p>
+<blockquote>
+<p>Note: The mangled symbol _$s6ifelse0A5Test1SiyF: is the unique symbol name for the ifelse.ifelseTest1() -&gt; Int. (The leading “ifelse.” is the module name, or in this case, the filename.) 链接器需要为程序中的所有外部符号提供简短、有保证的唯一名称。 你可以在这里找到mangling的规格: <a href="https://github.com/apple/swift/blob/main/docs/ABI/Mangling.rst.">https://github.com/apple/swift/blob/main/docs/ABI/Mangling.rst.</a>您也可以运行命令行工具swift-demangle found in /Library/Developer/CommandLineTools/usr/bin/. For example, swift-demangle _$s6ifelseAAyxSb_xyKXKxyKXKtKlF corresponds to the symbol ifelse.ifelse<A>(Swift.Bool, @autoclosure () throws -&gt; A, @autoclosure () throws -&gt; A) throws -&gt; A.</p>
+</blockquote>
+<p>这就完成了ifelse的讨论和实现。 你最好问一下Swift核心团队成员John McCall提出的问题:“Is this an abstraction that pays for itself？” 在这种情况下，可能不会。 三元运算符已经存在了，它做的事情本质上是一样的。 尽管如此，通过这个示例，您还是有希望了解Swift在作为库的一部分构建类语言特性时提供的一些功能。</p>
+<h2 id="key-points">Key points</h2>
+<p>本章讨论了构建Swift语言的一些动机，以及Swift的库和编译器如何协同工作以实现强大的抽象。以下是一些关键的启示:</p>
+<ul>
+<li>Swift是一种多范式语言，支持多种编程风格，包括命令式、函数式、面向对象、面向协议和泛型范式。</li>
+<li>Swift的目标是选择合理的默认值，使未定义的行为难以触发。</li>
+<li>Swift赞同渐进呈现的观点。您只需要在需要时学习更高级的语言特性。</li>
+<li>Swift是一种通用编程语言，具有强大的类型系统和类型推断功能。</li>
+<li>Swift的大部分内容都是在其富有表现力的标准库中定义的，而不是编译器的一部分。</li>
+<li>Swift编译器阶段包括词法解析、语义分析、SILGen、IRGen和LLVM。</li>
+<li>源位置信息驻留在AST和SIL中，使更好的错误报告成为可能。</li>
+<li>SIL是一种使用以SSA形式编写的基本指令块的低级描述。它理解Swift类型的语义，这使得许多纯LLVM IR无法实现的优化成为可能。</li>
+<li>SIL帮助支持明确的初始化、内存分配优化和去虚拟化。</li>
+<li>在Swift中，Any是最终的类型擦除，但在使用时很容易出错。泛型通常是更好的选择。</li>
+<li>将闭包作为参数传递，该闭包返回一个值，将实参的计算推迟到函数体中。</li>
+<li>@autoclosure是一种实现短路行为的方法，因为它推迟了表达式参数的执行。</li>
+<li>rethrow是一种从闭包传播错误的方法，这些错误可能被标记为抛出，也可能不被标记为抛出。</li>
+<li>@inlinable提示编译器函数的指令应该被发送到调用站点。</li>
+<li>编译器删除了源代码的大部分(如果不是全部的话)抽象成本。如果不同的源代码具有相同的语义，编译器可能会发出相同的机器指令。</li>
+<li>抽象应该为自己买单。在创建新的语言特性之前要仔细考虑。</li>
+</ul>
+<p>相关外链：<br>
+<a href="https://swift.org/">https://swift.org/</a><br>
+<a href="https://github.com/apple/swift">https://github.com/apple/swift</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fhJM3gN7U/" class="tag">
+                    expert swift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/mutating-and-non-mutating-swift-contexts/">
+                  <h3 class="post-title">
+                    Mutating and non-mutating Swift contexts
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

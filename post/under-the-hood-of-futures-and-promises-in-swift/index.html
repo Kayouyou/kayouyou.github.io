@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Under the hood of Futures and Promises in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="异步编程可以说是构建现代应用程序最困难的部分之一。无论是处理诸如网络请求这样的后台任务，跨多个线程并行执行繁重的操作，还是执行有延迟的代码，异步代码通常都很难编写和调试。
+正因为如此，围绕异步编程创建了许多不同的抽象，试图使这些代码更容易理..." />
+    <meta name="keywords" content="under the hood,concurrency" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Under the hood of Futures and Promises in Swift</h2>
+            <div class="post-date">2020-01-23</div>
+            
+            <div class="post-content" v-pre>
+              <p>异步编程可以说是构建现代应用程序最困难的部分之一。无论是处理诸如网络请求这样的后台任务，跨多个线程并行执行繁重的操作，还是执行有延迟的代码，异步代码通常都很难编写和调试。</p>
+<p>正因为如此，围绕异步编程创建了许多不同的抽象，试图使这些代码更容易理解和推理。对于大多数解决方案来说，它们提供了更整齐地构造嵌套异步调用的方法， 而不是构建一个越来越嵌套的闭包的“末日金字塔”。</p>
+<p>本周，让我们来看看一个这样的解决方案——Futures和Promises——不仅在表面上，而且在“内部”，看看它们是如何完全从头开始构建实现的。</p>
+<h2 id="a-promise-about-the-future">A promise about the future</h2>
+<p>当谈到Futures和Promises的概念时，人们通常会问的第一件事是“二者到底有什么区别?”在我看来，最简单的思考方法是这样的</p>
+<p>Promise是你对别人做出的承诺。<br>
+Future你可以选择履行(决心)这个承诺，或者拒绝它。</p>
+<p>如果我们用上面的定义，Future和Promise就成了一枚硬币的两面。构造promise，然后作为future返回，在以后的时候可以使用它来提取信息。</p>
+<p>这在代码中是怎样的呢?让我们来看看异步操作，在该操作中，我们通过网络加载用户模型的数据，将其转换为实例，最后将其保存到本地数据库。使用基于闭包的“老式方法”，这样做看起来像这样:</p>
+<pre><code class="language-swift">class UserLoader {
+    typealias Handler = (Result&lt;User, Error&gt;) -&gt; Void
+    ...
+    func loadUser(withID id: User.ID, completionHandler: @escaping Handler) {
+        let url = urlForLoadingUser(withID: id)
+        
+        let task = urlSession.dataTask(with: url) { [weak self] data, _, error in
+            if let error = error {
+                completionHandler(.failure(error))
+            } else {
+                do {
+                    let decoder = JSONDecoder()
+                    let user = try decoder.decode(User.self, from: data ?? Data())
+                    
+                    self?.database.save(user) {
+                        completionHandler(.success(user))
+                    }
+                } catch {
+                    completionHandler(.failure(error))
+                }
+            }
+        }
+        
+        task.resume()
+    }
+}
+</code></pre>
+<p>如上例所示，即使使用一组非常简单(且非常常见)的异步操作，在使用完成处理程序闭包时，也会产生多层嵌套代码。 让我们将其与上面使用期货和承诺的例子进行比较:</p>
+<pre><code class="language-swift">class UserLoader {
+    ...
+
+    func loadUser(withID id: User.ID) -&gt; Future&lt;User&gt; {
+        urlSession
+            .request(url: urlForLoadingUser(withID: id))
+            .decoded()
+            .saved(in: database)
+    }
+}
+</code></pre>
+<p>像future和promise这样的抽象的美妙之处在于，它们允许我们将所有嵌套的异步操作组合成一个单一的操作，这反过来又使我们能够使用单个闭包来处理最终结果——像这样:</p>
+<pre><code class="language-swift">let userLoader = UserLoader()
+
+userLoader.loadUser(withID: userID).observe { result in
+    // Handle result
+}
+</code></pre>
+<p>乍一看，上面的内容似乎有点神奇(我们的代码都到哪里去了?)，所以让我们更深入地研究一下这些内容是如何实现的。</p>
+<p>像编程中的大多数事情一样，有许多不同的方法来实现future和promise。在本文中，我们将构建一个简单的(但仍然具有完整功能的)实现，最后将提供一些提供更多功能的流行开源库的链接。</p>
+<h2 id="looking-into-the-future">Looking into the future</h2>
+<p>让我们先仔细看看Future实现，它是我们将从异步操作公开返回的值类型。它提供了一种只读的方式，当一个值被赋给它时，它就可以进行观察，并维护了一个观察回调列表，如下所示:</p>
+<pre><code class="language-swift">class Future&lt;Value&gt; {
+    typealias Result = Swift.Result&lt;Value, Error&gt;
+    
+    fileprivate var result: Result? {
+        // Observe whenever a result is assigned, and report it:
+        didSet { result.map(report) }
+    }
+    private var callbacks = [(Result) -&gt; Void]()
+    
+    func observe(using callback: @escaping (Result) -&gt; Void) {
+        // If a result has already been set, call the callback directly:
+        if let result = result {
+            return callback(result)
+        }
+        
+        callbacks.append(callback)
+    }
+    
+    private func report(result: Result) {
+        callbacks.forEach { $0(result) }
+        callbacks = []
+    }
+}
+</code></pre>
+<p>接下来，让我们看看硬币的反面。我们的Promise类型将是Future的子类，它添加了用于解析和拒绝Promise的api。解析promise会在未来成功完成一个值，而拒绝它会导致一个错误。下面是这个实现的样子:</p>
+<pre><code class="language-swift">class Promise&lt;Value&gt;: Future&lt;Value&gt; {
+    init(value: Value? = nil) {
+        super.init()
+        
+        // If the value was already known at the time the promise
+        // was constructed, we can report it directly:
+        result = value.map(Result.success)
+    }
+    
+    func resolve(with value: Value) {
+        result = .success(value)
+    }
+    
+    func reject(with error: Error) {
+        result = .failure(error)
+    }
+}
+</code></pre>
+<p>看看以上两种类型，期货和承诺的基本实现其实相当简单。</p>
+<p>然而，使用它们所涉及的许多“神奇”来自于扩展，这些扩展添加了链接和转换Futures的方法——使我们能够构建操作链，就像我们在前面的UserLoader示例中所做的那样。</p>
+<h2 id="making-a-promise">Making a promise</h2>
+<p>在继续添加任何链接和转换api之前，我们已经可以构建用户加载链的第一部分——使用URLSession执行网络请求。 在构建可重用的抽象时，通常的做法是在Foundation和Swift标准库的基础上提供方便的API，所以这也是我们在这里要做的——通过使用基于Future/ promise的请求(url:) API扩展URLSession:</p>
+<pre><code class="language-swift">extension URLSession {
+    func request(url: URL) -&gt; Future&lt;Data&gt; {
+        // We'll start by constructing a Promise, that will later be
+        // returned as a Future:
+        let promise = Promise&lt;Data&gt;()
+        
+        // Perform a data task, just like we normally would:
+        let task = dataTask(with: url) { data, _, error in
+            // Reject or resolve the promise, depending on the result:
+            if let error = error {
+                promise.reject(with: error)
+            } else {
+                promise.resolve(with: data ?? Data())
+            }
+        }
+        
+        task.resume()
+        
+        return promise
+    }
+}
+</code></pre>
+<p>有了上面这些，我们现在可以像这样轻松地执行一个标准的GET network请求:</p>
+<pre><code class="language-swift">URLSession.shared.request(url: url).observe { result in
+    // Handle result
+}
+</code></pre>
+<p>当只执行一个操作时，使用基于闭包的API和使用基于future / promise的API之间并没有太大的区别，但是当我们开始将多个操作链接在一起时，情况就会发生巨大的变化。</p>
+<h2 id="chaining">Chaining</h2>
+<p>链接涉及到提供一个闭包，如果得到一个成功的结果，该闭包将为一个新值返回另一个future。这将使我们能够从一个操作中获取结果，并将其传递给另一个操作，然后返回最终结果。让我们一起来看看:</p>
+<pre><code class="language-swift">extension Future {
+    func chained&lt;T&gt;(
+        using closure: @escaping (Value) throws -&gt; Future&lt;T&gt;
+    ) -&gt; Future&lt;T&gt; {
+        // We'll start by constructing a &quot;wrapper&quot; promise that will be
+        // returned from this method:
+        let promise = Promise&lt;T&gt;()
+        
+        // Observe the current future:
+        observe { result in
+            switch result {
+            case .success(let value):
+                do {
+                    // Attempt to construct a new future using the value
+                    // returned from the first one:
+                    let future = try closure(value)
+                    
+                    // Observe the &quot;nested&quot; future, and once it
+                    // completes, resolve/reject the &quot;wrapper&quot; future:
+                    future.observe { result in
+                        switch result {
+                        case .success(let value):
+                            promise.resolve(with: value)
+                        case .failure(let error):
+                            promise.reject(with: error)
+                        }
+                    }
+                } catch {
+                    promise.reject(with: error)
+                }
+            case .failure(let error):
+                promise.reject(with: error)
+            }
+        }
+        
+        return promise
+    }
+}
+</code></pre>
+<p>使用上面的方法，我们现在可以继续构建更高级的扩展和实用程序，例如，可以让我们很容易地将任何未来的结果保存到数据库中。</p>
+<pre><code class="language-swift">extension Future where Value: Saveable {
+    func saved(in database: Database) -&gt; Future&lt;Value&gt; {
+        chained { value in
+            let promise = Promise&lt;Value&gt;()
+            
+            database.save(value) {
+                promise.resolve(with: value)
+            }
+            
+            return promise
+        }
+    }
+}
+</code></pre>
+<p>现在我们开始挖掘Future和promise的真正潜力，我们可以看到它们是多么容易扩展，因为我们可以通过对Future类型使用不同的泛型约束，为各种值和操作添加各种方便的api。</p>
+<h2 id="transforms">Transforms</h2>
+<p>虽然链接提供了一种非常强大的方式来顺序执行多个异步操作，但有时我们只是想对一个值应用一个简单的同步转换，-让我们也添加一个API来做这个。我们将调用它transform()，并且就像之前的chained()方法一样，我们将使用Future的扩展来添加它，就像这样:</p>
+<pre><code class="language-swift">extension Future {
+    func transformed&lt;T&gt;(
+        with closure: @escaping (Value) throws -&gt; T
+    ) -&gt; Future&lt;T&gt; {
+         chained { value in
+             try Promise(value: closure(value))
+        }
+    }
+}
+</code></pre>
+<p>正如我们在上面看到的，转换实际上只是链接操作的同步版本，而且由于它的值是直接计算的——我们可以简单地将该值传递给一个新的Promise，然后返回该Promise。使用我们新的转换API，我们现在可以添加对将数据的Future转换为可解码类型的Future的支持,我们可以在任何我们想要解码任何下载数据到模型的地方使用:</p>
+<pre><code class="language-swift">extension Future where Value == Data {
+    func decoded&lt;T: Decodable&gt;(
+        as type: T.Type = T.self,
+        using decoder: JSONDecoder = .init()
+    ) -&gt; Future&lt;T&gt; {
+        transformed { data in
+            try decoder.decode(T.self, from: data)
+        }
+    }
+}
+</code></pre>
+<p>很酷的!利用Swift的类型系统的强大功能，我们可以用任何类型或协议的通用约束来扩展Future，我们可以继续构建一个丰富的扩展库，让我们可以立即执行项目所需的各种转换和链接操作。</p>
+<h2 id="putting-everything-together">Putting everything together</h2>
+<p>现在，我们已经有了将用户加载器升级为使用future和promise而不是嵌套闭包所需的所有部分。 让我们从在单独的一行上定义每个必需的操作开始，这样可以更容易地看到每一步中发生了什么:</p>
+<pre><code class="language-swift">class UserLoader {
+    ...
+
+    func loadUser(withID id: User.ID) -&gt; Future&lt;User&gt; {
+        let url = urlForLoadingUser(withID: id)
+        
+        // Request the URL, returning data:
+        let requestFuture = urlSession.request(url: url)
+        
+        // Transform the loaded data into a User model:
+        let decodedFuture = requestFuture.decoded(as: User.self)
+        
+        // Save the user in our database:
+        let savedFuture = decodedFuture.saved(in: database)
+        
+        // Return the last future, as it marks the end of our chain:
+        return savedFuture
+    }
+}
+</code></pre>
+<p>这已经比之前的基于闭包的实现更加紧凑和可读，但是我们当然也可以像之前的例子中那样，将所有未来的调用链在一起——这也让我们可以利用Swift的类型推断功能:</p>
+<pre><code class="language-swift">class UserLoader {
+    ...
+
+    func loadUser(withID id: User.ID) -&gt; Future&lt;User&gt; {
+        urlSession
+            .request(url: urlForLoadingUser(withID: id))
+            .decoded()
+            .saved(in: database)
+    }
+}
+</code></pre>
+<p>除了上面的方法返回一个Future之外，几乎很难区分它是同步的还是异步的，这乍一看可能不是一件好事 -但它确实使我们能够将异步代码推断为更简单的操作序列，这通常使它更容易读和写。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>future和promise在编写异步代码时可能会非常强大，特别是当我们需要将多个操作和转换链接在一起时。 它几乎使我们能够像编写同步代码一样编写异步代码，这确实能够提高可读性，并在需要时更容易移动内容。</p>
+<p>然而——就像在使用大多数抽象时一样——我们实际上是在“埋葬”相当多的复杂性，让我们Future的类型及其相关的扩展来做大部分繁重的工作。因此，虽然urlssession .request(url:) API从外部看起来很好，但有时很难理解和调试内部发生的事情。</p>
+<p>我建议任何人使用期货和承诺是尽量保持所有链尽可能简短,并记住,良好的文档和一个坚实的单元测试套件可以帮助我们在未来避免很多头痛和棘手的调试(没有双关)。</p>
+<p>以下是一些在Swift中使用期货和承诺的流行开源框架:</p>
+<ol>
+<li>PromiseKit</li>
+<li>BrightFutures</li>
+<li>When</li>
+<li>Then</li>
+</ol>
+<p><a href="https://www.swiftbysundell.com/articles/under-the-hood-of-futures-and-promises-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/dslpS7yA0/" class="tag">
+                    under the hood
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ArhVOQ_GL/" class="tag">
+                    concurrency
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/property-wrappers-in-swift/">
+                  <h3 class="post-title">
+                    Property wrappers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

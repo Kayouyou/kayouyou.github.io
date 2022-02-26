@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Chapter 5: Filtering Operators | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Chapter 5: Filtering Operators
+
+Getting started
+Ignoring operators
+Skipping operators
+Taking operators
+Distinct operat..." />
+    <meta name="keywords" content="filter,rxswift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Chapter 5: Filtering Operators</h2>
+            <div class="post-date">2021-05-24</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#chapter-5-filtering-operators">Chapter 5: Filtering Operators</a>
+<ul>
+<li><a href="#getting-started">Getting started</a></li>
+<li><a href="#ignoring-operators">Ignoring operators</a></li>
+<li><a href="#skipping-operators">Skipping operators</a></li>
+<li><a href="#taking-operators">Taking operators</a></li>
+<li><a href="#distinct-operators">Distinct operators</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="chapter-5-filtering-operators">Chapter 5: Filtering Operators</h2>
+<p>学习一项新技术堆栈有点像建造摩天大楼。在你能到达天空之前，你必须建立一个坚实的基础。到目前为止，您已经建立了对RxSwift的基本理解，现在是时候开始建立您的知识库和技能集了，一次一个水平。</p>
+<p>这一章将告诉你RxSwift的过滤操作符，你可以用它来对发出的事件应用条件约束，这样订阅者就只接收到它想要处理的元素。如果你曾经在Swift标准库中使用过filter(_:)方法，那么你已经成功了一半。如果没有，没有烦恼;在这一章结束时，你将成为这方面的专家。</p>
+<h3 id="getting-started">Getting started</h3>
+<p>本章的初始项目名为RxPlayground。在project文件夹中运行./bootstrap.sh后，Xcode会打开。在项目导航器中选择RxSwiftPlayground，你就可以开始操作了。</p>
+<h3 id="ignoring-operators">Ignoring operators</h3>
+<p>您将直接进入并查看RxSwift中一些有用的过滤操作符，从ignoreElements开始。如下面的弹珠图所示，ignoreElements将忽略所有接下来的事件。但是，它将允许停止事件通过，例如已完成或错误事件。</p>
+<p>允许停止事件通过通常是在所有弹珠图中隐含的。这次它被显式地调用了，因为所有的ignoreElements都会让它通过。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtkyl7ks6j30og0be74v.jpg" alt="avatar" loading="lazy"></figure>
+<blockquote>
+<p>注意:到目前为止，您已经看到了用于类型的弹珠图。这种弹珠图的形式可以帮助您可视化操作人员是如何工作的。最上面一行是被订阅的可观察对象。框表示操作符及其参数，底线是订阅者，或者更具体地说，订阅者在操作符完成其工作后将接收到的内容。</p>
+</blockquote>
+<p>要查看ignoreElements的实际作用，请将这个例子添加到你的游乐场:</p>
+<pre><code class="language-swift">example(of: &quot;ignoreElements&quot;) {
+  // 1
+  let strikes = PublishSubject&lt;String&gt;()
+
+  let disposeBag = DisposeBag()
+
+  // 2
+  strikes
+    .ignoreElements()
+    .subscribe { _ in
+      print(&quot;You're out!&quot;)
+    }
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>你是这样做的:</p>
+<ol>
+<li>Create a strikes subject.</li>
+<li>Subscribe to all strikes’ events, but ignore all next events by using ignoreElements.</li>
+</ol>
+<blockquote>
+<p>注意:如果您不太了解击球、击球手和棒球游戏，那么当您决定从编程中休息一下时，您可以阅读以下内容:https://simple.wikipedia.org/wiki/Baseball。</p>
+</blockquote>
+<p>如果你只希望在可观察对象结束时(通过完成或错误事件)得到通知，那么ignoreElements操作符非常有用。将以下代码添加到示例中:</p>
+<pre><code class="language-swift">strikes.onNext(&quot;X&quot;)
+strikes.onNext(&quot;X&quot;)
+strikes.onNext(&quot;X&quot;)
+</code></pre>
+<p>尽管这个击球手似乎不能击中谷仓的大侧面，显然已经出局了，但什么也没打印出来，因为你忽略了接下来的所有事件。您可以自行向该主题添加一个已完成的事件，以便通知订阅者。添加以下代码:</p>
+<pre><code class="language-swift">strikes.onCompleted()
+</code></pre>
+<p>现在订阅者将收到已完成的事件，并打印出任何击球手都不想听到的口号:</p>
+<pre><code class="language-swift">--- Example of: ignoreElements ---
+You're out!
+</code></pre>
+<p>善于发现的读者可能会注意到ignoreElements实际上返回一个Completable，这很有意义，因为它只会发出一个完成或错误事件。</p>
+<p>有时候，你可能只想处理由可观察对象发出的第n(序数)个元素，比如第三次攻击。为此，您可以使用<strong>elementAt</strong>，它接受您想要接收的元素的索引，并忽略其他一切。在弹珠图中，<strong>elementAt</strong>被传递了索引1，所以它只允许通过第二个元素。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtl5phd1dj30og0bi3z7.jpg" alt="avatar" loading="lazy"></figure>
+<p>添加这个新示例:</p>
+<pre><code class="language-swift">example(of: &quot;elementAt&quot;) {
+
+  // 1
+  let strikes = PublishSubject&lt;String&gt;()
+
+  let disposeBag = DisposeBag()
+
+  //  2
+  strikes
+    .elementAt(2)
+    .subscribe(onNext: { _ in
+      print(&quot;You're out!&quot;)
+    })
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>比赛详情:</p>
+<ol>
+<li>You create a subject.</li>
+<li>You subscribe to the next events, ignoring all but the 3rd next event, found at index 2.</li>
+</ol>
+<p>现在您可以简单地在主题中添加新的打击，您的订阅会让您知道击球手何时三振出局。添加此代码:</p>
+<pre><code class="language-swift">strikes.onNext(&quot;X&quot;)
+strikes.onNext(&quot;X&quot;)
+strikes.onNext(&quot;X&quot;)
+</code></pre>
+<p>“Hey batta, batta, batta — swing batta!”</p>
+<pre><code class="language-swift">--- Example of: elementAt ---
+You're out!
+</code></pre>
+<p>关于元素(at:)的一个有趣事实是:一旦元素在提供的索引处发出，订阅就终止。</p>
+<p>ignoreElements和elementAt过滤由可观察对象发出的元素。当您的过滤需要超过全部或一个时，请使用<strong>filter</strong>作符。它接受一个谓词闭包并将其应用于发出的每个元素，只允许通过谓词解析为true的元素。</p>
+<p>查看这个弹珠图，其中只有1和2允许通过，因为过滤器的谓词只允许小于3的元素。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtlfd9pu8j30og0bimy0.jpg" alt="avatar" loading="lazy"></figure>
+<p>将这个例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;filter&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  Observable.of(1, 2, 3, 4, 5, 6)
+    // 2
+    .filter { $0.isMultiple(of: 2) }
+    // 3
+    .subscribe(onNext: {
+      print($0)
+    })
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>从头再来:</p>
+<ol>
+<li>You create an observable of some predefined integers.</li>
+<li>You use the filter operator to apply a conditional constraint to prevent odd numbers from getting through.</li>
+<li>You subscribe and print out the elements that pass the filter predicate.</li>
+</ol>
+<p>应用这个过滤器的结果是只打印偶数:</p>
+<pre><code class="language-swift">--- Example of: filter ---
+2
+4
+6
+</code></pre>
+<h3 id="skipping-operators">Skipping operators</h3>
+<p>如果想要跳过特定数量的元素，请使用<strong>skip</strong>操作符。它允许您忽略前n个元素，其中n是作为参数传递的数字。这个弹珠图显示skip被传递为2，因此它忽略了前2个元素。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtlid8y3bj30og0bimxu.jpg" alt="avatar" loading="lazy"></figure>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;skip&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  Observable.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;, &quot;F&quot;)
+    // 2
+    .skip(3)
+    .subscribe(onNext: {
+      print($0)
+    })
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>有了这个代码，你:</p>
+<ol>
+<li>Create an observable of letters.</li>
+<li>Use skip to skip the first 3 elements and subscribe to next events.</li>
+</ol>
+<p>跳过前3个元素后，只打印D、E和F:</p>
+<pre><code class="language-swift">--- Example of: skip ---
+D
+E
+F
+</code></pre>
+<p>skip操作符有一小家族。与filter类似，<strong>skipWhile</strong>允许包含一个谓词来确定跳过了什么。但是，与筛选订阅生命周期元素的filter不同，skipWhile只会跳过某些内容，然后让其他内容从该点开始通过。</p>
+<p>对于skipWhile，返回true将导致跳过元素，返回false将允许它通过。它是filter的反义词。</p>
+<p>在这个弹球图中，1被阻止，因为1% % 2等于1，但是2被允许通过，因为它失败了谓词，而3(以及其他所有内容)通过了，因为skipWhile不再跳过。</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtllakqqkj30og0biab1.jpg" alt="avatar" loading="lazy"></figure>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;skipWhile&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  Observable.of(2, 2, 3, 4, 4)
+    // 2
+    .skipWhile { $0.isMultiple(of: 2) }
+    .subscribe(onNext: {
+      print($0)
+    })
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>Here’s what you did:</p>
+<ol>
+<li>Create an observable of integers.</li>
+<li>Use skipWhile with a predicate that skips elements until an odd integer is emitted.</li>
+</ol>
+<p>记住，skip只会跳过元素，直到第一个元素被允许通过，然后剩下的所有元素都被允许通过。这个例子输出:</p>
+<pre><code class="language-swift">--- Example of: skipWhile ---
+3
+4
+4
+</code></pre>
+<p>例如，如果您正在开发一个保险索赔应用程序，您可以使用skipWhile来拒绝承保，直到满足免赔额。</p>
+<p>到目前为止，您已经根据静态条件进行了过滤。如果你想根据另一个可观察对象动态地过滤元素呢?有几个操作符可供选择。</p>
+<p>第一个是skipUntil，它将继续跳过源可观察对象(你正在订阅的对象)中的元素，直到其他触发可观察对象发出。在这个弹珠图中，skipUntil忽略顶部一行的源可观察对象发出的元素，直到第二行的触发器可观察对象发出下一个事件。然后它会停止skipping，从那一刻开始让所有的东西都通过。</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtloedna4j30og0fw3zk.jpg" alt="avatar" loading="lazy"></figure>
+<p>添加这个例子来看看skipUntil是如何在代码中工作的:</p>
+<pre><code class="language-swift">example(of: &quot;skipUntil&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  let subject = PublishSubject&lt;String&gt;()
+  let trigger = PublishSubject&lt;String&gt;()
+
+  // 2
+  subject
+    .skipUntil(trigger)
+    .subscribe(onNext: {
+      print($0)
+    })
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>In this code, you:</p>
+<ol>
+<li>Create a subject to model the data you want to work with, and another subject to act as a trigger.</li>
+<li>Use skipUntil and pass the trigger subject. When trigger emits, skipUntil stops skipping.</li>
+</ol>
+<p>在主题上添加几个接下来的事件:</p>
+<pre><code class="language-swift">subject.onNext(&quot;A&quot;)
+subject.onNext(&quot;B&quot;)
+</code></pre>
+<p>没有打印，因为你跳过了。现在在触发器上添加一个新的next事件:</p>
+<pre><code class="language-swift">trigger.onNext(&quot;X&quot;)
+</code></pre>
+<p>这将导致skipUntil停止跳过。从这一点开始，所有的元素都可以通过。添加下一个事件到主题:</p>
+<pre><code class="language-swift">subject.onNext(&quot;C&quot;)
+</code></pre>
+<p>果然，它被打印出来了:</p>
+<pre><code class="language-swift">--- Example of: skipUntil ---
+C
+</code></pre>
+<h3 id="taking-operators">Taking operators</h3>
+<p>Taking是skipping的反义词。当你想获取元素时，RxSwift可以满足你的需求。您将学习的第一个取操作符是take，正如此弹珠图所描述的，它将取指定的元素数中的第一个。</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtluwqyb2j30og0biwf9.jpg" alt="avatar" loading="lazy"></figure>
+<p>将这个示例添加到您的游乐场中，以探索第一个take操作符:</p>
+<pre><code class="language-swift">example(of: &quot;take&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  Observable.of(1, 2, 3, 4, 5, 6)
+    // 2
+    .take(3)
+    .subscribe(onNext: {
+      print($0)
+    })
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>With this code, you:</p>
+<ol>
+<li>Create an observable of integers.</li>
+<li>Take the first 3 elements using take.</li>
+</ol>
+<p>What you take is what you get. The output is:</p>
+<pre><code class="language-swift">--- Example of: take ---
+1
+2
+3
+</code></pre>
+<p>takeWhile操作符的工作原理与skipWhile类似，只是您使用的是taking而不是skipping。</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtlweyc92j30of0beq3n.jpg" alt="avatar" loading="lazy"></figure>
+<p>此外，如果希望引用要发出的元素的索引，可以使用enumerated操作符。它生成包含可观察对象中每个被触发元素的索引和元素的元组，类似于Swift标准库中的enumerated方法的工作方式。</p>
+<p>在你的操场上输入这个新例子:</p>
+<pre><code class="language-swift">example(of: &quot;takeWhile&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  Observable.of(2, 2, 4, 4, 6, 6)
+    // 2
+    .enumerated()
+    // 3
+    .takeWhile { index, integer in
+      // 4
+      integer.isMultiple(of: 2) &amp;&amp; index &lt; 3
+    }
+    // 5
+    .map(\.element)
+    // 6
+    .subscribe(onNext: {
+      print($0)
+    })
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>From the top, you:</p>
+<ol>
+<li>Create an observable of integers.</li>
+<li>Use the enumerated operator to get tuples containing the index and value of each element emitted.</li>
+<li>Use the takeWhile operator, and destructure the tuple into individual arguments.</li>
+<li>Pass a predicate that will take elements until the condition fails.</li>
+<li>Use map — which works just like the Swift Standard Library map — to reach into the tuple returned from takeWhile and get the element.</li>
+<li>Subscribe to and print out next elements.</li>
+</ol>
+<p>结果是，您只接收到整数为偶数的元素，直到元素的索引为3或更大。</p>
+<pre><code class="language-swift">--- Example of: takeWhile ---
+2
+2
+4
+</code></pre>
+<p>与takeWhile相反，有一个takeUntil操作符，该操作符接受元素，直到满足谓词。它的第一个参数还接受一个behavior参数，该参数指定您是希望包含还是排除与谓词匹配的最后一个元素。</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtm0sgkekj30og0bijs9.jpg" alt="avatar" loading="lazy"></figure>
+<p>将这个新例子添加到你的操场，看看它是如何工作的:</p>
+<pre><code class="language-swift">example(of: &quot;takeUntil&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  Observable.of(1, 2, 3, 4, 5)
+    // 2
+    .takeUntil(.inclusive) { $0.isMultiple(of: 4) }
+    .subscribe(onNext: {
+      print($0)
+    })
+  .disposed(by: disposeBag)
+}
+</code></pre>
+<p>With this code, you:</p>
+<ol>
+<li>Create an Observable of sequential integers.</li>
+<li>Use the takeUntil operator with inclusive behavior.</li>
+</ol>
+<p>这段代码输出传递谓词的元素之前的元素，并包括这些元素:</p>
+<pre><code class="language-swift">--- Example of: takeUntil ---
+1
+2
+3
+4
+</code></pre>
+<p>现在，将行为从.包容性(.inclusive )改为.排他性(.exclusive)，再次运行游乐场。这一次，传递谓词的元素被排除了:</p>
+<pre><code class="language-swift">--- Example of: takeUntil ---
+1
+2
+3
+</code></pre>
+<p>和skipUntil一样，还有一个变种的takeUntil也适用于触发器可观察对象。下面的弹珠图显示了takeUntil从源可观察对象中提取，直到触发可观察对象发出一个元素。</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtm5mw83fj30og0fwgmm.jpg" alt="avatar" loading="lazy"></figure>
+<p>添加这个新示例，就像前面创建的skipUntil示例一样:</p>
+<pre><code class="language-swift">example(of: &quot;takeUntil trigger&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  let subject = PublishSubject&lt;String&gt;()
+  let trigger = PublishSubject&lt;String&gt;()
+
+  // 2
+  subject
+    .takeUntil(trigger)
+    .subscribe(onNext: {
+      print($0)
+    })
+    .disposed(by: disposeBag)
+
+  // 3
+  subject.onNext(&quot;1&quot;)
+  subject.onNext(&quot;2&quot;)
+}
+</code></pre>
+<p>Here’s what you did:</p>
+<ol>
+<li>Create a primary subject and a trigger subject.</li>
+<li>Use takeUntil, passing the trigger that will cause takeUntil to stop taking once it emits.</li>
+<li>Add a couple of elements onto subject.</li>
+</ol>
+<p>元素会被打印出来，因为takeUntil处于taking模式:</p>
+<pre><code class="language-swift">--- Example of: takeUntil trigger ---
+1
+2
+</code></pre>
+<p>现在在触发器上添加一个元素，然后在主题上添加另一个元素:</p>
+<pre><code class="language-swift">trigger.onNext(&quot;X&quot;)
+
+subject.onNext(&quot;3&quot;)
+</code></pre>
+<p>X停止抓取，所以3不允许通过，没有更多的打印。</p>
+<p>有一种方法可以使用takeUntil和RxCocoa库中的API来释放订阅，而不是将其添加到一个释放包中。你将在第三节学习RxCocoa，“iOS Apps with RxCocoa”一般来说，避免内存泄漏的安全方法是总是将订阅添加到一个释放包中。然而，为了完整起见，这里有一个你如何在RxCocoa中使用takeUntil的例子——不要把这个带入你的操场，因为它无法编译:</p>
+<pre><code class="language-swift">_ = someObservable
+    .takeUntil(self.rx.deallocated)
+    .subscribe(onNext: {
+        print($0)
+    })
+</code></pre>
+<p>在上面的代码中，self的释放是导致takeUntil停止taking的触发器，self通常是一个视图控制器或视图模型。</p>
+<h3 id="distinct-operators">Distinct operators</h3>
+<p>接下来的两个操作符可以防止重复的连续项通过。如图所示，distinctUntilChanged只能防止相邻的重复项，所以第二个1可以通过。</p>
+<figure data-type="image" tabindex="11"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtm9ufmwjj30og0bimyc.jpg" alt="avatar" loading="lazy"></figure>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;distinctUntilChanged&quot;) {
+  let disposeBag = DisposeBag()
+
+  // 1
+  Observable.of(&quot;A&quot;, &quot;A&quot;, &quot;B&quot;, &quot;B&quot;, &quot;A&quot;)
+    // 2
+    .distinctUntilChanged()
+    .subscribe(onNext: {
+      print($0)
+    })
+    .disposed(by: disposeBag)
+}
+</code></pre>
+<p>What you do with this code:</p>
+<ol>
+<li>Create an observable of letters.</li>
+<li>Use distinctUntilChanged to prevent sequential duplicates from getting through.</li>
+</ol>
+<p>distinctUntilChanged操作符只能防止连续的重复，所以第二个A和第二个B会被阻止，因为它们与前一个元素相等。但是，第三个A被允许通过，因为它不等于它的前一个元素。打印结果如下:</p>
+<pre><code class="language-swift">--- Example of: distinctUntilChanged ---
+A
+B
+A
+</code></pre>
+<p>这些是String的实例，它们符合Equatable。但是，你可以选择使用distinctUntilChanged(_:)来提供你自己的自定义逻辑来测试是否相等;传递的参数是比较器。</p>
+<p>在下面的弹珠图中，将比较具有名为value属性的对象是否基于value进行相等性。</p>
+<figure data-type="image" tabindex="12"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqtmdmz6bjj30og0foq45.jpg" alt="avatar" loading="lazy"></figure>
+<p>将这个稍微复杂一点的例子添加到你的操场上:</p>
+<pre><code class="language-swift">example(of: &quot;distinctUntilChanged(_:)&quot;) {
+ let disposeBag = DisposeBag()
+ 
+ // 1
+ let formatter = NumberFormatter()
+ formatter.numberStyle = .spellOut
+
+ // 2
+ Observable&lt;NSNumber&gt;.of(10, 110, 20, 200, 210, 310)
+   // 3
+   .distinctUntilChanged { a, b in
+     // 4
+     guard
+       let aWords = formatter
+         .string(from: a)?
+         .components(separatedBy: &quot; &quot;),
+       let bWords = formatter
+         .string(from: b)?
+         .components(separatedBy: &quot; &quot;)
+       else {
+         return false
+     }
+
+     var containsMatch = false
+
+     // 5
+     for aWord in aWords where bWords.contains(aWord) {
+       containsMatch = true
+       break
+     }
+
+     return containsMatch
+   }
+   // 6
+   .subscribe(onNext: {
+     print($0)
+   })
+   .disposed(by: disposeBag)
+}
+</code></pre>
+<p>From the top, you:</p>
+<ol>
+<li>创建一个数字格式化程序来拼写出每个数字。</li>
+<li>创建一个NSNumbers的可观察对象，而不是int，这样你就不必在接下来使用formatter时转换整数。</li>
+<li>使用distinctUntilChanged(_😃，它接受一个接收每个序列元素对的谓词闭包。</li>
+<li>使用guard有条件地绑定由一个空格分隔的元素组件，否则返回false。</li>
+<li>迭代第一个数组中的每个单词，看看它是否包含在第二个数组中。</li>
+<li>根据您提供的比较逻辑订阅并打印出被认为是不同的元素。</li>
+</ol>
+<p>因此，只打印不同的整数，考虑到在每对整数中，一个不包含另一个的任何单词组成部分。</p>
+<pre><code class="language-swift">--- Example of: distinctUntilChanged(_:) ---
+10
+20
+200
+</code></pre>
+<p>distinctUntilChanged(_:)操作符在你想清楚地防止不符合Equatable类型的重复时也很有用。</p>
+<p><a href="https://e.coding.net/kayouyou/rxswift-books/RxSwift.git">代码地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/AuD7wLAF3/" class="tag">
+                    filter
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/chapetr-4observables-and-subjects-in-practice/">
+                  <h3 class="post-title">
+                    Chapetr 4：Observables &amp; Subjects in Practice
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

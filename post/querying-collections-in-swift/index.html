@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Querying collections in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在处理集合(如数组或字典)时，通常希望查询它们以获得关于它们所包含的值的信息。 我们可能需要找到与给定的一组标准匹配的第一个元素，根据一组需求验证所有的值，等等。
+在这种情况下，一开始我们似乎总是需要编写专门构建的算法，使用经典的for或w..." />
+    <meta name="keywords" content="collections" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Querying collections in Swift</h2>
+            <div class="post-date">2020-04-26</div>
+            
+            <div class="post-content" v-pre>
+              <p>在处理集合(如数组或字典)时，通常希望查询它们以获得关于它们所包含的值的信息。 我们可能需要找到与给定的一组标准匹配的第一个元素，根据一组需求验证所有的值，等等。</p>
+<p>在这种情况下，一开始我们似乎总是需要编写专门构建的算法，使用经典的for或while循环执行每个查询，虽然在某些情况下这确实是一种很好的方法，但通常情况下，编写这样的手工迭代是非常不必要的。</p>
+<p>本周，让我们来探究一下为什么会这样——看看Swift标准库的一些用于查询集合的内置算法，以及我们如何组合和组合它们来形成几乎无限多个不同的查询。</p>
+<h2 id="searching-for-a-match">Searching for a match</h2>
+<p>让我们首先来看一种非常常见的情况，在这种情况下，我们想查询一个集合，以便找到与给定谓词匹配的第一个元素。</p>
+<p>举个例子，假设我们正在开发一款电影推荐应用程序，当用户点击一个按钮，显示给定类型的下一部电影时，我们搜索一个movieQueue数组并显示第一个匹配-像这样:</p>
+<pre><code class="language-swift">func showNextMovie(inGenre genre: Genre) {
+    var match: Movie?
+
+    for movie in movieQueue {
+        if movie.genre == genre {
+            // We've found our match, so we'll break the iteration
+            match = movie
+            break
+        }
+    }
+
+    guard let movie = match else {
+        return showNoMovieFoundView()
+    }
+
+    showMovieView(for: movie)
+}
+</code></pre>
+<p>虽然上面的代码可以工作，但它肯定可以以更紧凑的方式实现，在这种情况下，这也应该提高它的可读性。</p>
+<p>首先，让我们通过将For循环移动到它自己的专用函数中，来摆脱局部匹配变量。就像我们在“Swift中的纯函数”中看到的那样，将逻辑结构化为简单地在输入/输出基础上操作的函数通常可以改进我们的代码-无论是阅读的难易程度，还是整个系统的可测试性。</p>
+<p>虽然我们的新函数不会完全“纯粹”(因为它仍然依赖于我们的movieQueue数组的状态)，它现在将简单地返回找到的第一个匹配影片，而不是将它赋值给一个局部变量:</p>
+<pre><code class="language-swift">func nextMovie(inGenre genre: Genre) -&gt; Movie? {
+    for movie in movieQueue {
+        if movie.genre == genre {
+            return movie
+        }
+    }
+    return nil
+}
+</code></pre>
+<p>有了上面的内容，我们就可以从以前开始简化showNextMovie函数了-因为它现在只需要包含逻辑来决定哪个视图应该为应用程序的当前状态显示:</p>
+<pre><code class="language-swift">func showNextMovie(inGenre genre: Genre) {
+    guard let movie = nextMovie(inGenre: genre) else {
+        return showNoMovieFoundView()
+    }
+    showMovieView(for: movie)
+}
+</code></pre>
+<p>然而，使用Swift标准库的强大功能，我们可以进一步简化代码。如果我们仔细看看我们的nextMovie函数和它包含的for循环，就会发现它并没有什么是特定于电影的 - 它简单地遍历一个数组并返回与给定谓词匹配的第一个元素。</p>
+<p>稍微改变一下经典的App Store口号:“有一个用于收集的API”。 在这种情况下，我们可以简单地用调用内置的first(where:)方法来替换自定义的nextMovie函数， 这让我们可以传递一个要匹配的谓词。将它与可选类型的map方法结合起来，我们就可以像这样实现完整的showNextMovie函数了:</p>
+<pre><code class="language-swift">func showNextMovie(inGenre genre: Genre) {
+    let movie = movieQueue.first(where: { $0.genre == genre })
+    movie.map(showMovieView) ?? showNoMovieFoundView()
+}
+</code></pre>
+<p>就像这样，通过利用标准库的内置api和算法，我们基本上将10行以上的算法简化为两行代码。很好!</p>
+<p>还有一个与上面使用的API等价的last(where:)，以及返回索引而不是元素的firstIndex(where:)和lastIndex(where:)变体。然而，“last”变体仅适用于符合BidirectionalCollection协议的集合，如Array。</p>
+<h2 id="verifying-requirements">Verifying requirements</h2>
+<p>但是，并不是所有的集合查询都是关于检索元素的——有时我们可能只是想验证一系列值是否满足特定的要求。</p>
+<p>例如，现在假设我们正在开发一个用于计划和管理事件的应用程序，该应用程序包括一个功能，允许每个参与者标记他们是否准备好开始事件。然后，我们扩展了我们的应用程序的事件模型，使用一个方法，让我们可以很容易地检查是否所有参与者都将自己标记为ready -目前看起来像这样:</p>
+<pre><code class="language-swift">extension Event {
+    func isReadyToBegin() -&gt; Bool {
+        for participant in participants {
+            guard participant.isReady else {
+                return false
+            }
+        }
+        return true
+    }
+}
+</code></pre>
+<p>之所以将上面的API实现为方法而不是计算属性，是因为它的时间复杂度不是O(1)。要了解更多关于这一理念的信息，请查看“Swift中的计算属性”。</p>
+<p>然而，就像以前一样，有一种更简单的方法来实现上述功能——这次是利用标准库的allSatisfy API， 它(顾名思义)使我们能够检查集合的所有元素是否满足给定的谓词。再加上键路径现在可以作为函数传递，我们可以用一行代码来替换整个实现，就像这样:</p>
+<pre><code class="language-swift">extension Event {
+    func isReadyToBegin() -&gt; Bool {
+        participants.allSatisfy(\.isReady)
+    }
+}
+</code></pre>
+<p>更改完成后，问题是我们是否还需要保留上面的方法，因为它现在只是包含了对另一个API的调用。如果我们只希望在一个地方使用它，那么我们不妨直接在调用站点内联对allSatisfy的调用-然而，我们上面的方法确实添加了一些额外的上下文，因为它的名字清楚地表明我们正在检查一个事件是否准备好开始，所以保留它还是有意义的。</p>
+<h2 id="minimum-and-maximum-values">Minimum and maximum values</h2>
+<p>接下来，让我们看看另一种常见的查询类型——从一系列元素中计算最小值和最大值。这一次，假设我们正在构建一款游戏，我们希望添加一个方便的API来计算给定关卡的玩家数组的最大得分。 如果我们再次从手动实现的算法开始，我们可能会这样写:</p>
+<pre><code class="language-swift">extension Level {
+    func maximumPlayerScore() -&gt; Int {
+        var maximumScore = 0
+
+        for player in players {
+            maximumScore = max(maximumScore, player.score)
+        }
+
+        return maximumScore
+    }
+}
+</code></pre>
+<p>虽然我们上面使用的max函数(及其等价的min函数)非常常见，在很多编程语言中都可以找到，Swift还包括它的一个变种，可以在集合上直接调用。使用它所要做的就是传递一个闭包，该闭包按升序对集合的元素进行排序，就像这样:</p>
+<pre><code class="language-swift">extension Level {
+    func maximumPlayerScore() -&gt; Int {
+        // Note that we need to sort the collection in ascending
+        // order, which is why we use &lt; to perform our comparsion:
+        let winningPlayer = players.max { $0.score &lt; $1.score }
+        return winningPlayer?.score ?? 0
+    }
+}
+</code></pre>
+<p>上述方法的另一种方法是，首先根据每个玩家的score属性对玩家数组进行排序，然后简单地选择第一个元素。 但是这样做在时间复杂度方面会更糟，因为min和max都可以在纯线性(O(n))时间内执行，而sort的时间复杂度是O(n log n)。</p>
+<h2 id="composing-custom-algorithms">Composing custom algorithms</h2>
+<p>到目前为止，在本文中，我们主要关注的是用标准库API调用替换自定义集合算法， 尽管在任何可能的情况下这样做肯定是有益的，但并不总是这样。</p>
+<p>让我们回到之前的事件模型，并看看另一个同样实现为集合查询的API。 这个检查一组用户是否都出现在当前事件的参与者列表中，当前看起来是这样的:</p>
+<pre><code class="language-swift">extension Event {
+    func participantsContain(_ users: Set&lt;User&gt;) -&gt; Bool {
+        for user in users {
+            guard participants.contains(where: { $0.userID == user.id }) else {
+                return false
+            }
+        }
+
+        return true
+    }
+}
+</code></pre>
+<p>虽然在这种情况下没有等价的标准库API，我们可以简单地替换上面的代码，但仍然有一个方法可以改进它。</p>
+<p>作为标准库的一部分内置的算法的美妙之处在于它们都非常集中和狭窄 -这又意味着它们可以被组合起来形成更高级的逻辑。 因此，我们不需要找到一个单独的API来匹配一个整体的算法，我们只需要为每个组件找到一个匹配即可。</p>
+<p>看看上面的算法，我们已经使用contains(where:) API来形成内部循环，而外部迭代仍然使用经典的for循环。 然而，如果我们仔细观察，就会发现外部循环的形状与我们最初在isReadyToBegin方法中使用的形状完全相同 -它检查传递的用户集合中的所有元素是否满足给定的需求。</p>
+<p>虽然我们现在可以回到我们的participant include方法并重构代码，但是在这个例子中，让我们将逻辑实现为通用算法-通过将allsatisfy和contains(where:)组合到序列协议的新方法中(所有集合和其他序列都符合该方法):</p>
+<pre><code class="language-swift">extension Sequence {
+    func contains&lt;T: Sequence&gt;(
+        _ values: T,
+        matchedBy matcher: (Element, T.Element) -&gt; Bool
+    ) -&gt; Bool {
+        values.allSatisfy { value in
+            contains(where: { matcher($0, value) })
+        }
+    }
+}
+</code></pre>
+<p>有了上面的这些，我们现在可以回到我们的事件类型，简单地让它的participantsContain方法通过将它的谓词作为闭包传递来调用我们的新API——像这样:</p>
+<pre><code class="language-swift">extension Event {
+    func participantsContain(_ users: Set&lt;User&gt;) -&gt; Bool {
+        participants.contains(users, matchedBy: {
+            $0.userID == $1.id
+        })
+    }
+}
+</code></pre>
+<p>选择是将逻辑实现为通用算法还是为给定用例专门编写的东西有时会非常困难。然而，要记住的一条经验法则是，当我们的逻辑只是其他泛型算法的组合时——新算法也是泛型可能是有意义的。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift标准库包含大量非常有用的算法、函数和其他api——充分利用它们不仅减少了我们需要维护的代码数量， 它还允许我们在共享代码的基础上构建逻辑，这些代码经过了良好的测试，并部署在这个星球上的每一个Swift程序中。</p>
+<p><a href="https://www.swiftbysundell.com/articles/querying-collections-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/J3hVc8gY-/" class="tag">
+                    collections
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/mixing-enums-with-other-swift-types/">
+                  <h3 class="post-title">
+                    Mixing enums with other Swift types
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

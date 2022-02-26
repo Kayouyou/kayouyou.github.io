@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Handling loading states within SwiftUI views | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在构建任何现代应用时，我们都很有可能需要异步加载某种形式的数据。它可以通过网络获取给定视图的内容，通过在后台线程上读取文件，或者通过执行数据库操作，仅举几个例子。
+这种异步工作最重要的方面之一，至少在构建基于ui的应用时， 就是找出如何根据..." />
+    <meta name="keywords" content="combine,state management,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Handling loading states within SwiftUI views</h2>
+            <div class="post-date">2020-10-11</div>
+            
+            <div class="post-content" v-pre>
+              <p>在构建任何现代应用时，我们都很有可能需要异步加载某种形式的数据。它可以通过网络获取给定视图的内容，通过在后台线程上读取文件，或者通过执行数据库操作，仅举几个例子。</p>
+<p>这种异步工作最重要的方面之一，至少在构建基于ui的应用时， 就是找出如何根据将要执行的后台操作的当前状态可靠地更新我们的各种视图。所以这周，让我们看看在使用SwiftUI构建视图时，如何做到这一点的几个不同选项。</p>
+<h2 id="self-loading-views">Self-loading views</h2>
+<p>当使用苹果之前的UI框架，UIKit和AppKit时，在组成应用程序整体UI结构的视图控制器中执行与视图相关的加载任务是很常见的。因此，当转换到SwiftUI时，最初的想法可能是遵循相同的模式，并让每个顶级视图类型负责加载自己的数据。</p>
+<p>例如，下面的ArticleView被注入了它应该显示的文章的ID，然后使用一个ArticleLoader实例来加载这个模型——结果存储在一个本地@State属性中:</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    var articleID: Article.ID
+    var loader: ArticleLoader
+    
+    @State private var result: Result&lt;Article, Error&gt;?
+
+    var body: some View {
+        ...
+    }
+    
+    private func loadArticle() {
+        loader.loadArticle(withID: articleID) {
+            result = $0
+        }
+    }
+}
+</code></pre>
+<p>在上述视图的body属性中，我们可以打开当前的结果值，并相应地构造我们的UI——这给了我们以下实现:</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    var articleID: Article.ID
+    var loader: ArticleLoader
+    
+    @State private var result: Result&lt;Article, Error&gt;?
+
+    var body: some View {
+        switch result {
+        case .success(let article):
+            // Rendering our article content within a scroll view:
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text(article.title).font(.title)
+                    Text(article.body)
+                }
+                .padding()
+            }
+        case .failure(let error):
+            // Showing any error that was encountered using a
+            // dedicated ErrorView, which runs a given closure
+            // when the user tapped an embedded &quot;Retry&quot; button:
+            ErrorView(error: error, retryHandler: loadArticle)
+        case nil:
+            // We display a classic loading spinner while we're
+            // waiting for our content to load, and we start our
+            // loading operation once that view appears:
+            ProgressView().onAppear(perform: loadArticle)
+        }
+    }
+
+    private func loadArticle() {
+        loader.loadArticle(withID: articleID) {
+            result = $0
+        }
+    }
+}
+</code></pre>
+<p>可以肯定地说，上面的模式对于更简单的视图来说是完美的——然而，将视图代码与数据加载和网络等任务混合起来并不是一个好的做法，随着时间的推移，这样做往往会导致相当混乱和相互交织的实现。</p>
+<h2 id="view-models">View models</h2>
+<p>所以，让我们把这些关注点分开来看。这样做的一种方法是在上面的ArticleView中引入一个视图模型，它可以承担数据加载和状态管理等任务，让我们的视图仍然专注于视图做得最好的事情——渲染我们的UI。</p>
+<p>在这个例子中，我们来实现一个ArticleViewModel，它将通过发布一个state属性来充当一个observable对象。我们将重用之前已有的ArticleLoader来执行实际的加载，这将在一个专用的加载方法中实现(因为我们不希望初始化器触发副作用，如联网):</p>
+<pre><code class="language-swift">class ArticleViewModel: ObservableObject {
+    enum State {
+        case idle
+        case loading
+        case failed(Error)
+        case loaded(Article)
+    }
+
+    @Published private(set) var state = State.idle
+    
+    private let articleID: Article.ID
+    private let loader: ArticleLoader
+
+    init(articleID: Article.ID, loader: ArticleLoader) {
+        self.articleID = articleID
+        self.loader = loader
+    }
+
+    func load() {
+        state = .loading
+
+        loader.loadArticle(withID: articleID) { [weak self] result in
+            switch result {
+            case .success(let article):
+                self?.state = .loaded(article)
+            case .failure(let error):
+                self?.state = .failed(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以让我们的ArticleView只包含一个属性-它的视图模型-通过使用@ObservedObject属性来观察它，然后，我们可以简单地在视图主体中切换它的state属性，以便根据当前的状态来渲染我们的UI:</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    @ObservedObject var viewModel: ArticleViewModel
+
+    var body: some View {
+        switch viewModel.state {
+        case .idle:
+            // Render a clear color and start the loading process
+            // when the view first appears, which should make the
+            // view model transition into its loading state:
+            Color.clear.onAppear(perform: viewModel.load)
+        case .loading:
+            ProgressView()
+        case .failed(let error):
+            ErrorView(error: error, retryHandler: viewModel.load)
+        case .loaded(let article):
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text(article.title).font(.title)
+                    Text(article.body)
+                }
+                .padding()
+            }
+        }
+    }
+}
+</code></pre>
+<p>当涉及到关注点分离和代码封装时，这已经是一个相当实质性的改进，因为我们现在可以继续迭代我们的模型和网络逻辑，而不必更新我们的视图，反之亦然。</p>
+<p>但让我们看看我们能不能做得更深入一点，好吗?</p>
+<h2 id="a-generic-concept">A generic concept</h2>
+<p>根据我们正在开发的应用程序的类型，我们不可能只有一个依赖于异步加载数据的视图。相反，它很可能是一个在我们的代码库中重复出现的模式，这反过来又使它成为泛化的理想候选对象。</p>
+<p>仔细想想，我们之前在ArticleViewModel中嵌套的State enum实际上与加载文章没有多大关系，而是对各种状态的相当通用的封装，任何异步加载操作都可能在这些状态中结束。那么，让我们把它变成这样，首先从我们的视图模型中提取出来，然后把它转换成一个通用的LoadingState类型——像这样：</p>
+<pre><code class="language-swift">enum LoadingState&lt;Value&gt; {
+    case idle
+    case loading
+    case failed(Error)
+    case loaded(Value)
+}
+</code></pre>
+<p>同样的，如果我们最终遵循了我们在ArticleView中开始使用的基于视图模型的架构，然后，我们很可能最终得到许多不同的视图模型实现，它们都有一个published state属性和一个load方法。所以，让我们也把这些方面变成一个更通用的API——这次通过创建一个名为LoadableObject的协议，我们可以使用它作为这些功能的共享抽象:</p>
+<pre><code class="language-swift">protocol LoadableObject: ObservableObject {
+    associatedtype Output
+    var state: LoadingState&lt;Output&gt; { get }
+    func load()
+}
+</code></pre>
+<p>注意，我们不能严格要求上述协议的每个实现都用@Published注解其state属性，但是我们可以要求每个符合标准的类型都是一个observable对象。</p>
+<p>有了上述内容，我们现在就具备了创建用于加载和显示异步加载内容的真正通用视图所需的一切。让我们把它称为AsyncContentView，并让它使用LoadableObject实现作为它的源，然后让它调用一个注入的内容闭包，以便将这个可加载对象的输出转换为SwiftUI视图——像这样:</p>
+<pre><code class="language-swift">struct AsyncContentView&lt;Source: LoadableObject, Content: View&gt;: View {
+    @ObservedObject var source: Source
+    var content: (Source.Output) -&gt; Content
+
+    var body: some View {
+        switch source.state {
+        case .idle:
+            Color.clear.onAppear(perform: source.load)
+        case .loading:
+            ProgressView()
+        case .failed(let error):
+            ErrorView(error: error, retryHandler: source.load)
+        case .loaded(let output):
+            content(output)
+        }
+    }
+}
+</code></pre>
+<p>尽管上面的实现可以很好地工作，只要我们总是在每个内容闭包中返回一个视图表达式，如果我们愿意，我们也可以用SwiftUI的@ViewBuilder属性来注释这个闭包——这将使我们能够在这样的闭包中使用SwiftUI DSL的全部功能:</p>
+<pre><code class="language-swift">struct AsyncContentView&lt;Source: LoadableObject, Content: View&gt;: View {
+    @ObservedObject var source: Source
+    var content: (Source.Output) -&gt; Content
+
+    init(source: Source,
+         @ViewBuilder content: @escaping (Source.Output) -&gt; Content) {
+        self.source = source
+        self.content = content
+    }
+    
+    ...
+}
+</code></pre>
+<p>请注意，如果我们希望向闭包添加视图构建功能，我们(目前)需要实现一个专用的初始化器，因为它不能直接应用到基于闭包的属性。要了解更多关于添加这些功能能让我们做什么，请查阅《为函数添加SwiftUI的ViewBuilder属性》和《Swift 5.3如何增强SwiftUI的DSL》等文章。</p>
+<p>AsyncContentView完成后，现在让我们从使用它之前的ArticleView中创建它——这再次让我们简化了它的实现，将其所需的部分工作移交给其他专用类型:</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    @ObservedObject var viewModel: ArticleViewModel
+
+    var body: some View {
+        AsyncContentView(source: viewModel) { article in
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text(article.title).font(.title)
+                    Text(article.body)
+                }
+                .padding()
+            }
+        }
+    }
+}
+</code></pre>
+<p>真的很不错!有了上面的改变，我们的ArticleView现在只专注于一个任务——呈现文章模型。</p>
+<h2 id="connecting-combine-publishers-to-views">Connecting Combine publishers to views</h2>
+<p>采用SwiftUI通常也为开始采用Combine提供了很好的机会，因为这两种框架都遵循非常相似的声明式和数据驱动设计。</p>
+<p>因此，与其让每个视图都遵循经典的一次性加载-呈现模式，或许我们更希望能够随着应用程序整体状态的变化不断地向各种视图提供新数据。</p>
+<p>为了更新我们当前的加载状态管理系统来支持这种方法，让我们首先创建一个LoadableObject实现，它接受一个合并的发布者，然后使用它来加载和更新其发布的状态——像这样:</p>
+<pre><code class="language-swift">class PublishedObject&lt;Wrapped: Publisher&gt;: LoadableObject {
+    @Published private(set) var state = LoadingState&lt;Wrapped.Output&gt;.idle
+
+    private let publisher: Wrapped
+    private var cancellable: AnyCancellable?
+
+    init(publisher: Wrapped) {
+        self.publisher = publisher
+    }
+
+    func load() {
+        state = .loading
+
+        cancellable = publisher
+            .map(LoadingState.loaded)
+            .catch { error in
+                Just(LoadingState.failed(error))
+            }
+            .sink { [weak self] state in
+                self?.state = state
+            }
+    }
+}
+</code></pre>
+<p>然后，使用Swift的高级泛型系统的强大功能，我们可以用一个类型约束的方法来扩展AsyncContentView，该方法可以自动将任何Publisher转换为上述publhedobject类型的实例，这使得我们可以直接将任何发布者作为视图的源传递:</p>
+<pre><code class="language-swift">extension AsyncContentView {
+    init&lt;P: Publisher&gt;(
+        source: P,
+        @ViewBuilder content: @escaping (P.Output) -&gt; Content
+    ) where Source == PublishedObject&lt;P&gt; {
+        self.init(
+            source: PublishedObject(publisher: source),
+            content: content
+        )
+    }
+}
+</code></pre>
+<p>上面的方法使用了Swift 5.3中的一个新特性，它允许我们将基于封装类型的泛型约束附加到单个方法声明中。</p>
+<p>上面的方法为我们增加了很多灵活性，因为我们现在能够让任何视图直接使用发布者，而不是经过抽象，比如视图模型。虽然这可能不是我们希望每个视图都能做到的，但对于仅仅呈现值流的视图来说，这可能是一个很好的选择。</p>
+<p>例如，下面是我们的ArticleView在使用该模式时的样子</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    var publisher: AnyPublisher&lt;Article, Error&gt;
+
+    var body: some View {
+        AsyncContentView(source: publisher) { article in
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text(article.title).font(.title)
+                    Text(article.body)
+                }
+                .padding()
+            }
+        }
+    }
+}
+</code></pre>
+<p>当给定的视图主要充当某种列表的详细视图时，上述模式可能会非常有用，其中，列表本身只包含完整数据的一个子集，当打开每个细节视图时，这些数据将被惰性加载。</p>
+<p>作为一个具体的例子，下面是我们的ArticleView现在如何在ArticleListView中使用，而ArticleListView有一个视图模型，为列表包含的每个预览创建一个文章发布者:</p>
+<pre><code class="language-swift">struct ArticleListView: View {
+    @ObservedObject var viewModel: ArticleListViewModel
+    
+    var body: some View {
+        List(viewModel.articlePreviews) { preview in
+            NavigationLink(preview.title
+                destination: ArticleView(
+                    publisher: viewModel.publisher(for: preview.id)
+                )
+            )
+        }
+    }
+}
+</code></pre>
+<p>然而，当使用上述模式时，重要的是要确保我们的发布者只有在订阅附加到他们之后才开始加载数据—— 因为如果不这样做，我们就需要预先加载所有的数据，这可能是非常不必要的。。</p>
+<p>由于基于组合的数据管理的主题比本文要大得多，所以在以后的文章中，我们将更仔细地研究管理这些类型的数据管道的各种方法。</p>
+<h2 id="supporting-custom-loading-views">Supporting custom loading views</h2>
+<p>最后，让我们看看如何扩展我们的AsyncContentView，使其不仅支持不同类型的数据源，而且还支持完全自定义的加载视图。因为在加载数据时，我们可能并不总是想要显示一个简单的加载旋转器——有时我们可能想要显示一个定制的占位符视图。</p>
+<p>为了实现这一点，让我们先让AsyncContentView能够使用任何符合视图类型的视图作为它的加载视图，而不是总是在这种情况下渲染ProgressView:</p>
+<pre><code class="language-swift">struct AsyncContentView&lt;Source: LoadableObject,
+                        LoadingView: View,
+                        Content: View&gt;: View {
+    @ObservedObject var source: Source
+    var loadingView: LoadingView
+    var content: (Source.Output) -&gt; Content
+
+    init(source: Source,
+         loadingView: LoadingView,
+         @ViewBuilder content: @escaping (Source.Output) -&gt; Content) {
+        self.source = source
+        self.loadingView = loadingView
+        self.content = content
+    }
+
+    var body: some View {
+        switch source.state {
+        case .idle:
+            Color.clear.onAppear(perform: source.load)
+        case .loading:
+            loadingView
+        case .failed(let error):
+            ErrorView(error: error, retryHandler: source.load)
+        case .loaded(let output):
+            content(output)
+        }
+    }
+}
+</code></pre>
+<p>然而，虽然上面的更改确实成功地给了我们使用自定义加载视图的选项，但现在它也要求我们在创建AsyncContentView实例时总是手动传递一个加载视图，这在方便方面是一个相当实质性的回归。</p>
+<p>为了解决这个问题，让我们再一次使用泛型类型约束的强大功能，这一次通过添加一个便利初始化器，让我们创建一个带有ProgressView的AsyncContentView作为它的加载视图，只需要省略这个参数:</p>
+<pre><code class="language-swift">typealias DefaultProgressView = ProgressView&lt;EmptyView, EmptyView&gt;
+
+extension AsyncContentView where LoadingView == DefaultProgressView {
+    init(
+        source: Source,
+        @ViewBuilder content: @escaping (Source.Output) -&gt; Content
+    ) {
+        self.init(
+            source: source,
+            loadingView: ProgressView(),
+            content: content
+        )
+    }
+}
+</code></pre>
+<p>上面的模式在SwiftUI自己的公共API中也被大量使用，它让我们可以使用字符串作为标签来创建Button和NavigationLink实例，而不必总是注入一个合适的视图实例。</p>
+<p>以上都做好了，现在让我们回到我们的ArticleView，首先提取我们用来渲染实际内容的部分，然后我们将使用SwiftUI的新编校API来实现一个占位符类型:</p>
+<pre><code class="language-swift">extension ArticleView {
+    struct ContentView: View {
+        var article: Article
+
+        var body: some View {
+            VStack(spacing: 20) {
+                Text(article.title).font(.title)
+                Text(article.body)
+            }
+            .padding()
+        }
+    }
+
+    struct Placeholder: View {
+        var body: some View {
+            ContentView(article: Article(
+                title: &quot;Title&quot;,
+                body: String(repeating: &quot;Body&quot;, count: 100)
+            )).redacted(reason: .placeholder)
+        }
+    }
+}
+</code></pre>
+<p>然后，让我们把我们的ArticleView转换成它的最终形式——一个视图，在它的内容异步加载时呈现一个自定义占位符，所有这些都通过一个非常紧凑的实现，利用共享的抽象来执行它的大部分工作:</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    var publisher: AnyPublisher&lt;Article, Error&gt;
+
+    var body: some View {
+        ScrollView {
+            AsyncContentView(
+                source: publisher,
+                loadingView: Placeholder(),
+                content: ContentView.init
+            )
+        }
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>在很多方面，充分利用SwiftUI所提供的功能，确实需要我们打破许多在使用UIKit和AppKit等框架时可能建立起来的惯例和假设。这并不是说SwiftUI比那些老的框架更好，但它确实是不同的——这反过来又保证了在处理数据加载和状态管理等任务时采用不同的模式和方法。</p>
+<p><a href="https://www.swiftbysundell.com/articles/handling-loading-states-in-swiftui/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EWN51MbzW/" class="tag">
+                    state management
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/encapsulating-swiftui-view-styles/">
+                  <h3 class="post-title">
+                    Encapsulating SwiftUI view styles
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

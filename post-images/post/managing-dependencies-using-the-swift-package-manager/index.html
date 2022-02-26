@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Managing dependencies using the Swift Package Manager | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="当Swift在2015年底开放源代码时，随之而来的最令人惊讶和有趣的新项目之一就是Swift包管理器。虽然这不是Swift项目的第一个依赖管理器，但却是第一个由苹果正式提供并支持的，很多开发者都认为这是一个好消息。
+然而，尽管服务器端Swi..." />
+    <meta name="keywords" content="developer tools" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Managing dependencies using the Swift Package Manager</h2>
+            <div class="post-date">2019-09-15</div>
+            
+            <div class="post-content" v-pre>
+              <p>当Swift在2015年底开放源代码时，随之而来的最令人惊讶和有趣的新项目之一就是Swift包管理器。虽然这不是Swift项目的第一个依赖管理器，但却是第一个由苹果正式提供并支持的，很多开发者都认为这是一个好消息。</p>
+<p>然而，尽管服务器端Swift社区很快接受了Swift包管理器，将其作为构建服务器应用程序时管理依赖关系的首选工具， 它花了很长时间才完全融入到苹果的其他开发者工具链中。</p>
+<p>但现在，从Xcode 11开始，Swift包管理器终于成为了苹果开发工具套件中的一个真正的一流公民 - 所以这周，让我们来看看如何使用它来管理一个项目的各种依赖关系——包括内部的和外部的。</p>
+<h2 id="the-anatomy-of-a-swift-package">The anatomy of a Swift package</h2>
+<p>Swift包本质上是一组Swift源文件，它们被编译在一起形成一个模块 - 然后可以作为一个单元共享并导入到其他项目中。包可以是使用GitHub等服务共享的公共库，也可以是只在少数项目中共享的内部工具和框架。</p>
+<p>包的内容使用package. swift清单文件声明，该文件位于每个包的根目录中 。Swift包清单文件不是使用JSON或XML之类的数据格式，而是使用实际的Swift代码编写的——使用一个Package实例来表示Package的声明。</p>
+<p>举个例子，假设我们正在开发一个todo list应用程序，我们想为应用程序中共享的所有核心逻辑创建一个TodoKit包——包括我们的数据库层、模型代码等。首先，我们将创建一个新文件夹(名称与我们想要的包名称相匹配)，然后在其中运行swift package init来创建我们的包:</p>
+<pre><code class="language-swift">$ mkdir TodoKit
+$ cd TodoKit
+$ swift package init
+</code></pre>
+<p>在Xcode 11中，我们也可以使用文件&gt; New &gt; Swift Package menu命令执行上述设置。</p>
+<p>通过执行上述操作，Swift包管理器现在已经为我们的新包创建了一个初始结构——其中包括一个Package. Swift清单文件，如下所示:</p>
+<pre><code class="language-swift">// swift-tools-version:5.1
+
+import PackageDescription
+
+let package = Package(
+    name: &quot;TodoKit&quot;,
+    products: [
+        // The external product of our package is an importable
+        // library that has the same name as the package itself:
+        .library(
+            name: &quot;TodoKit&quot;,
+            targets: [&quot;TodoKit&quot;]
+        )
+    ],
+    targets: [
+        // Our package contains two targets, one for our library
+        // code, and one for our tests:
+        .target(name: &quot;TodoKit&quot;),
+        .testTarget(
+            name: &quot;TodoKitTests&quot;,
+            dependencies: [&quot;TodoKit&quot;]
+        )
+    ]
+)
+</code></pre>
+<p>文件顶部的Swift -tools-version注释不仅仅是一个注释，它还告诉Swift包管理器在构建我们的包时使用Swift工具链的哪个版本。</p>
+<p>默认情况下，Swift包管理器会将清单文件中定义的目标的名称与磁盘上相应的文件夹进行匹配，以确定哪些Swift文件属于每个目标。这种行为以及其他默认值(如构建设置、目标平台等)可以通过向上面使用的api传递额外参数来覆盖。</p>
+<h2 id="adding-remote-dependencies">Adding remote dependencies</h2>
+<p>除了促进包的创建，Swift包管理器的核心用例之一是启用远程依赖—如第三方库—待添加到项目中。任何可以通过Git获取的包都可以通过指定它的URL以及我们希望应用到它的版本约束来添加:</p>
+<pre><code class="language-swift">let package = Package(
+    ...
+    dependencies: [
+        // Here we define our package's external dependencies
+        // and from where they can be fetched:
+        .package(
+            url: &quot;https://github.com/johnsundell/files.git&quot;, 
+            from: &quot;4.0.0&quot;
+        )
+    ],
+    targets: [
+        .target(
+            name: &quot;TodoKit&quot;,
+            // Here we add our new dependency to our main target,
+            // which lets us import it within that target's code:
+            dependencies: [&quot;Files&quot;]
+        ),
+        .testTarget(
+            name: &quot;TodoKitTests&quot;,
+            dependencies: [&quot;TodoKit&quot;]
+        )
+    ]
+)
+</code></pre>
+<p>上面我们导入了4.0.0到5.0.0之间的文件包的任何版本-把它留给Swift包管理器来解决最合适的版本，满足我们的整体依赖关系图，而默认为在该范围内的最新版本。</p>
+<p>使用这样一个广泛的版本约束是非常强大的，因为如果我们要添加另一个需要特定版本文件的依赖，包管理器可以自由选择那个版本(只要它在我们允许的版本范围内)——这样我们就不太可能最终得到一个无法解析的依赖关系图。</p>
+<p>然而，有时我们可能想要锁定某个依赖项的特定版本——也许是为了避免在以后的版本中引入的回归，或者是为了能够继续使用后来被删除的API。为此，我们可以将上面的from:参数替换为.exact版本需求——像这样:</p>
+<pre><code class="language-swift">.package(
+    url: &quot;https://github.com/johnsundell/files.git&quot;,
+    .exact(&quot;4.0.0&quot;)
+)
+</code></pre>
+<p>另一方面，我们可能希望使用一个比最新官方版本更超前的依赖修订 -例如修复bug或者一个新的API还没有被正确发布。要做到这一点，我们有两个选择。</p>
+<p>第一个选择是将我们的依赖指向特定的Git分支(如果该分支正在快速变化，这可能相当危险)， 或者锁定一个特定的提交散列(风险较小，但灵活性也较低，因为我们必须在每次更新依赖时手动更改该散列):</p>
+<pre><code class="language-swift">// Depending on a branch (master in this case):
+.package(
+    url: &quot;https://github.com/johnsundell/files.git&quot;,
+    .branch(&quot;master&quot;)
+)
+
+// Depending on an exact commit:
+.package(
+    url: &quot;https://github.com/johnsundell/files.git&quot;,
+    .revision(&quot;0e0c6aca147add5d5750ecb7810837ef4fd10fc2&quot;)
+)
+</code></pre>
+<p>不仅可以根据版本来指定依赖项，还可以根据Git修订来指定依赖项，这对于临时从分支存储库(而不是原始存储库)获取依赖项非常有用。</p>
+<p>例如，假设我们在一个外部依赖项中发现了一个错误，并且我们已经在该项目的分支中实现了对它的修复。而不是等待修复被合并到原始存储库中，然后发布 -我们可以简单地把这个依赖指向我们的分支的URL，然后指定master作为我们的分支目标，这样就可以直接使用我们的补丁版本。</p>
+<h2 id="using-local-packages">Using local packages</h2>
+<p>当并行处理几个不同的包时，例如，当将一个项目拆分为多个较小的库时，使用本地依赖关系有时真的很有用——并且大大提高了迭代时间。</p>
+<p>不是从URL下载，而是直接从磁盘上的文件夹添加本地包依赖项-这既可以让我们导入自己的包，而不必担心版本控制，也可以让我们在使用依赖的项目中直接编辑源文件。</p>
+<p>例如，下面是我们如何将本地的CalendarKit包作为TodoKit的依赖项添加到TodoKit—只需指定它的相对文件夹路径:</p>
+<pre><code class="language-swift">let package = Package(
+    ...
+    dependencies: [
+        .package(
+            url: &quot;https://github.com/johnsundell/files.git&quot;,
+            .exact(&quot;4.0.0&quot;)
+        ),
+        // Using 'path', we can depend on a local package that's
+        // located at a given path relative to our package's folder:
+        .package(path: &quot;../CalendarKit&quot;)
+    ],
+    targets: [
+        .target(
+            name: &quot;TodoKit&quot;,
+            dependencies: [&quot;Files&quot;, &quot;CalendarKit&quot;]
+        ),
+        .testTarget(
+            name: &quot;TodoKitTests&quot;,
+            dependencies: [&quot;TodoKit&quot;]
+        )
+    ]
+)
+</code></pre>
+<p>除了能够直接编辑依赖项外，本地包引用在构建自定义开发人员工具时也非常有用。例如，我们可以使用Swift包管理器在应用程序的存储库中构建一个命令行工具，然后使用本地依赖将我们的一些应用代码导入到这个工具中——比如我们的模型或网络代码。</p>
+<h2 id="platform-and-os-version-constraints">Platform and OS version constraints</h2>
+<p>除了我们明确添加到项目中的内部包和第三方库之外，我们的代码也很可能依赖于特定范围的平台和操作系统版本——为了能够访问正确的api和系统框架。</p>
+<p>虽然所有Swift包默认情况下都假定是跨平台(和版本无关)的，但通过在清单文件中初始化包时添加platform参数，我们可以约束我们的代码只支持给定的平台和操作系统版本——就像这样，如果我们想要构建一个包含iOS 13特定代码的包:</p>
+<pre><code class="language-swift">// swift-tools-version:5.1
+
+import PackageDescription
+
+let package = Package(
+    name: &quot;TodoSwiftUIComponents&quot;,
+    platforms: [.iOS(.v13)],
+    ...
+)
+</code></pre>
+<p>就像在Xcode中为应用程序选择最小部署目标一样，使用平台参数可以让我们使用只在平台或操作系统版本的子集上可用的api—如SwiftUI、Combine等。当然，我们也可以指定多个平台和版本—例如，我们可以将.macOS(.v10_15)附加到上述数组中，以添加对macOS Catalina的支持。</p>
+<h2 id="adding-packages-to-an-xcode-project">Adding packages to an Xcode project</h2>
+<p>从Xcode 11开始，Swift包现在可以通过Xcode的新Swift包选项直接添加和导入到应用项目中，该选项位于File菜单中。使用这个新的集成，我们可以轻松地将第三方库作为Swift包导入，还可以利用Swift包管理器的强大功能来改进代码库的模块化。</p>
+<p>通过为代码库的不同部分创建单独的包——就像之前的TodoKit、CalendarKit和todoswiftuiccomponents示例一样-我们可以在我们的应用程序中改善关注点的分离，也使我们的代码可以在不同的平台或扩展中轻松重用。</p>
+<p>例如，通过在与模型代码分离的包中定义UI组件，就不会有意外地将视图代码与模型代码混合在一起的风险 - 随着时间的推移，这可以帮助我们维护一个更加稳固的架构，而且它也可以让我们在多个目标之间轻松共享我们的核心UI组件。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然Swift软件包管理器不再是一个全新的工具，但它现在可以用于所有苹果平台上的应用程序，这一事实让它具有了更广泛的吸引力——而且感觉像是Swift软件包这个概念的“新开始”。能够使用相同的包管理器构建从服务器端应用程序、命令行工具和脚本，到iOS应用程序的任何东西，这也是令人难以置信的强大——并可能使我们的部分代码在更多的环境中重用。</p>
+<p><a href="https://www.swiftbysundell.com/articles/managing-dependencies-using-the-swift-package-manager/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EwwtnDOTL/" class="tag">
+                    developer tools
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/reducers-in-swift/">
+                  <h3 class="post-title">
+                    Reducers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

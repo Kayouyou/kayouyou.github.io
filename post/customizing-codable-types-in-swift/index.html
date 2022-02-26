@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Customizing Codable types in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="多数现代应用程序的一个共同点是，它们需要对各种形式的数据进行编码或解码。无论是通过网络下载的JSON数据，还是存储在本地的模型的某种序列化表示形式 - 能够可靠地编码和解码不同的数据片段或多或少是Swift代码库的必要条件。
+这就是为什么S..." />
+    <meta name="keywords" content="codable" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Customizing Codable types in Swift</h2>
+            <div class="post-date">2019-07-07</div>
+            
+            <div class="post-content" v-pre>
+              <p>多数现代应用程序的一个共同点是，它们需要对各种形式的数据进行编码或解码。无论是通过网络下载的JSON数据，还是存储在本地的模型的某种序列化表示形式 - 能够可靠地编码和解码不同的数据片段或多或少是Swift代码库的必要条件。</p>
+<p>这就是为什么Swift的可编码API作为Swift 4.0的一部分被引入时是一个如此重要的新特性-从那时起，它已经成长为一种标准的、健壮的机制，用于多种不同类型的编码和解码——既适用于苹果平台，也适用于服务器端Swift。</p>
+<p>可编代码之所以如此出色，是因为它与Swift工具链紧密集成，使得编译器能够自动合成大量编码和解码各种值所需的代码。 然而，有时候我们确实需要定制我们的值在序列化时是如何表示的——因此，本周，让我们看看几个不同的方法，我们可以调整我们的可编码实现来做到这一点。</p>
+<h2 id="changing-keys">Changing keys</h2>
+<p>让我们从定制类型编码和解码方式的一种基本方法开始——通过修改作为其序列化表示的一部分使用的键。 假设我们正在开发一个阅读文章的应用程序，其中一个核心数据模型是这样的:</p>
+<pre><code class="language-swift">struct Article: Codable {
+    var url: URL
+    var title: String
+    var body: String
+}
+</code></pre>
+<p>我们的模型目前使用的是完全自动合成的可编码实现，这意味着它的所有序列化键都将匹配它的属性名。 然而，我们解码文章值的数据——例如从服务器下载的JSON——可能会使用稍微不同的命名约定，导致默认解码失败。</p>
+<p>谢天谢地，这很容易解决。当解码(或编码)我们的文章类型的实例时，我们需要做的是定义一个CodingKeys枚举，并将自定义原始值分配给匹配我们想要自定义的键的情况-像这样:</p>
+<pre><code class="language-swift">extension Article {
+    enum CodingKeys: String, CodingKey {
+        case url = &quot;source_link&quot;
+        case title = &quot;content_name&quot;
+        case body
+    }
+}
+</code></pre>
+<p>做上面的工作可以让我们继续利用编译器生成的默认实现来进行实际的编码工作，同时仍然允许我们更改用于序列化的键的名称。</p>
+<p>当我们想要使用完全自定义的键名时，上面的技术非常有用，如果我们只想让coable使用我们属性名的snake_case版本(例如将backgroundColor转换为background_color)-然后我们可以简单地改变我们的JSON解码器的keydecodingStrategy代替:</p>
+<pre><code class="language-swift">var decoder = JSONDecoder()
+decoder.keyDecodingStrategy = .convertFromSnakeCase
+</code></pre>
+<p>以上两个api的伟大之处在于，它们使我们能够解决Swift模型和数据之间的不匹配问题，而不需要我们修改属性的名称。</p>
+<h2 id="ignoring-keys">Ignoring keys</h2>
+<p>虽然能够自定义编码键的名称确实很有用，但有时我们可能希望完全忽略某些键。例如，我们现在正在开发一个笔记应用程序，我们允许用户将不同的笔记组合在一起，形成一个笔记集，它可以包括本地草稿:</p>
+<pre><code class="language-swift">struct NoteCollection: Codable {
+    var name: String
+    var notes: [Note]
+    var localDrafts = [Note]()
+}
+</code></pre>
+<p>然而，虽然让localDrafts成为我们的NoteCollection模型的一部分真的很方便-假设我们不希望在序列化或反序列化这样一个集合时包含这些草稿。这样做的一个原因可能是让用户在每次启动应用时都有一个干净的记录，或者因为我们的服务器不支持草稿。</p>
+<p>幸运的是，这也可以很容易地完成，而不必更改NoteCollection的实际可编码实现。如果像前面一样定义CodingKeys枚举，并简单地省略localDrafts——那么在编码或解码一个NoteCollection值时，这个属性将不会被考虑:</p>
+<pre><code class="language-swift">extension NoteCollection {
+    enum CodingKeys: CodingKey {
+        case name
+        case notes
+    }
+}
+</code></pre>
+<p>为了实现上述功能，我们要省略的属性必须有一个默认值——在本例中localDrafts已经有了这个值。</p>
+<h2 id="creating-matching-structures">Creating matching structures</h2>
+<p>到目前为止，我们只调整了一个类型的编码键——虽然我们经常仅仅这样做就可以走得很远，但有时我们需要在可编码定制方面走得更远。</p>
+<p>假设我们正在构建一个应用程序，包括一个货币转换功能-我们下载当前汇率的给定货币作为JSON数据，看起来像这样:</p>
+<pre><code class="language-swift">{
+    &quot;currency&quot;: &quot;PLN&quot;,
+    &quot;rates&quot;: {
+        &quot;USD&quot;: 3.76,
+        &quot;EUR&quot;: 4.24,
+        &quot;SEK&quot;: 0.41
+    }
+}
+</code></pre>
+<p>在我们的Swift代码中，我们想要将这样的JSON响应转换为CurrencyConversion实例——每个实例都包含一个exchange条目数组——一个对应于每种货币:</p>
+<pre><code class="language-swift">struct CurrencyConversion {
+    var currency: Currency
+    var exchangeRates: [ExchangeRate]
+}
+
+struct ExchangeRate {
+    let currency: Currency
+    let rate: Double
+}
+</code></pre>
+<p>然而，如果我们只是继续前进，并使上述两个模型都符合可编码，我们将再次在Swift代码和我们想要解码的JSON数据之间出现不匹配。但这一次，这不仅仅是键名的问题——在结构上有一个根本的不同。</p>
+<p>当然，我们可以修改Swift模型的结构，使其与JSON数据的结构完全匹配——但这并不总是实用的。虽然拥有正确的序列化代码很重要，但是拥有一个适合我们实际代码库的模型结构也同样重要。</p>
+<p>相反，让我们创建一个新的专用类型——它将充当JSON数据中使用的格式和Swift代码结构之间的桥梁。在这种类型中，我们将能够封装所有需要的逻辑，将一个包含汇率的JSON字典转换为一个exchange模型数组-像这样:</p>
+<pre><code class="language-swift">private extension ExchangeRate {
+    struct List: Decodable {
+        let values: [ExchangeRate]
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let dictionary = try container.decode([String : Double].self)
+
+            values = dictionary.map { key, value in
+                ExchangeRate(currency: Currency(key), rate: value)
+            }
+        }
+    }
+}
+</code></pre>
+<p>使用上述类型，我们现在可以定义一个私有属性，其名称与用于其数据的JSON键匹配-让我们的exchangeRates充当私有属性的公共代理:</p>
+<pre><code class="language-swift">struct CurrencyConversion: Decodable {
+    var currency: Currency
+    var exchangeRates: [ExchangeRate] {
+        return rates.values
+    }
+    
+    private var rates: ExchangeRate.List
+}
+</code></pre>
+<p>上述方法之所以有效，是因为在对值进行编码或解码时，从不考虑计算属性。</p>
+<p>当我们想让Swift代码与JSON API兼容的时候，上面的技术可以是一个很好的工具，它使用了一个非常不同的结构——再次，而不必完全从头开始实现可编程。</p>
+<h2 id="transforming-values">Transforming values</h2>
+<p>当涉及到解码时，一个非常常见的问题是，特别是当使用我们无法控制的外部JSON api时，类型编码的方式与Swift的严格类型系统不兼容。例如，我们要解码的JSON数据可能使用字符串来表示整数或其他类型的数字。</p>
+<p>让我们看看一种方法，它可以让我们处理这些值，同样是一种自包含的方式，不需要我们编写完全自定义的可编码实现。</p>
+<p>我们在这里要做的本质是将字符串值转换为另一种类型——让我们以Int为例。我们首先定义一个协议，该协议允许我们将任何类型标记为stringrepresentation -这意味着它既可以从字符串表示形式转换为，也可以转换为字符串表示:</p>
+<pre><code class="language-swift">protocol StringRepresentable: CustomStringConvertible {
+    init?(_ string: String)
+}
+
+extension Int: StringRepresentable {}
+</code></pre>
+<p>我们将上述协议建立在标准库的CustomStringConvertible之上，因为它已经包含了将值描述为字符串的属性要求。关于将协议定义为其他协议的专门化的更多信息，请查看“Swift中的专门化协议”。</p>
+<p>接下来，让我们创建另一个专用类型——这一次是用于任何可以由字符串支持的值——并让它包含所有需要解码和编码一个值到字符串和从字符串:</p>
+<pre><code class="language-swift">struct StringBacked&lt;Value: StringRepresentable&gt;: Codable {
+    var value: Value
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let string = try container.decode(String.self)
+        
+        guard let value = Value(string) else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: &quot;&quot;&quot;
+                Failed to convert an instance of \(Value.self) from &quot;\(string)&quot;
+                &quot;&quot;&quot;
+            )
+        }
+        
+        self.value = value
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(value.description)
+    }
+}
+</code></pre>
+<p>就像我们之前为json兼容的底层存储创建了一个私有属性一样，我们现在可以对编码时由字符串作为后端的任何属性进行同样的操作 -同时仍然将数据暴露给Swift代码的其余部分作为其正确的类型。下面是一个视频类型numberOfLikes属性的例子:</p>
+<pre><code class="language-swift">struct Video: Codable {
+    var title: String
+    var description: String
+    var url: URL
+    var thumbnailImageURL: URL
+    
+    var numberOfLikes: Int {
+        get { return likes.value }
+        set { likes.value = newValue }
+    }
+    
+    private var likes: StringBacked&lt;Int&gt;
+}
+</code></pre>
+<p>在手工为属性定义setter和getter的复杂性之间肯定存在权衡，以及退回到完全定制的可编码实现的复杂性——但是对于像上面的视频结构这样的类型，它只有一个属性需要定制，使用私有后台属性是一个很好的选择。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>尽管编译器能够自动合成所有不需要任何形式自定义的可编码的一致性，这真的很神奇- 事实上，我们能够在需要的时候定制东西，这也是非常棒的。</p>
+<p>更好的是，这样做实际上并不要求我们完全放弃自动生成的代码，而选择手动实现-很多时候可以稍微调整类型的编码或解码方式，同时仍然让编译器做大部分繁重的工作。</p>
+<p><a href="https://www.swiftbysundell.com/articles/customizing-codable-types-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Q_Pnv_k3a/" class="tag">
+                    codable
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/configurable-types-in-swift/">
+                  <h3 class="post-title">
+                    Configurable types in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

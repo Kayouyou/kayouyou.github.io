@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>How to use the rethrows keyword in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+How to use the rethrows keyword in Swift
+
+
+1.1. How to use the rethrows keyword
+1.2. A real case example
+1.3. Using ..." />
+    <meta name="keywords" content="rethrows" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">How to use the rethrows keyword in Swift</h2>
+            <div class="post-date">2021-05-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#HowtousetherethrowskeywordinSwift">How to use the rethrows keyword in Swift</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Howtousetherethrowskeyword">How to use the rethrows keyword</a></li>
+<li>1.2. <a href="#Arealcaseexample">A real case example</a></li>
+<li>1.3. <a href="#Usingrethrowstowraperrors">Using rethrows to wrap errors</a></li>
+<li>1.4. <a href="#Overridingmethodswiththerethrowskeyword">Overriding methods with the rethrows keyword</a></li>
+<li>1.5. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namehowtousetherethrowskeywordinswiftahow-to-use-the-rethrows-keyword-in-swift">1. <a name='HowtousetherethrowskeywordinSwift'></a>How to use the rethrows keyword in Swift</h2>
+<p>Swift中的rethrows允许通过给定的函数参数转发抛出的错误。它在map、filter和forEach等方法中大量使用，并帮助编译器确定是否需要try前缀。</p>
+<p>根据我的经验，您不必经常编写rethrows方法。但是，一旦您了解了它是如何工作的，您就会开始看到更多rethrows方法有意义的情况。</p>
+<h3 id="11-a-namehowtousetherethrowskeywordahow-to-use-the-rethrows-keyword">1.1. <a name='Howtousetherethrowskeyword'></a>How to use the rethrows keyword</h3>
+<p>rethrows关键字用于函数本身不抛出错误，而是通过其函数参数转发错误的函数中。它还允许编译器仅在给定的回调实际上抛出错误时才需要try关键字。</p>
+<p>下面是一个带有throwing回调的rethrowing方法的例子:</p>
+<pre><code class="language-swift">func rethrowingFunction(throwingCallback: () throws -&gt; Void) rethrows {
+     try throwingCallback()
+} 
+</code></pre>
+<p>如果我们传入的回调函数没有抛出错误，我们可以如下方式调用该方法:</p>
+<pre><code class="language-swift">rethrowingFunction {
+     print(&quot;I'm not throwing errors&quot;)
+} 
+</code></pre>
+<p>然而，一旦回调可能抛出错误，编译器就要求我们使用try来重新抛出方法:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqa0a7fjhij31440bon1g.jpg" alt="avatar" loading="lazy"></figure>
+<p>这很好，因为它允许我们只在body真正抛出错误时使用try关键字。如果不可能接收到错误，就没有必要将我们的方法封装在try-catch中。</p>
+<p>如果我们要编写相同的方法而不重新抛出，我们最终将不得不在所有情况下使用try:</p>
+<pre><code class="language-swift">func rethrowingFunction(throwingCallback: () throws -&gt; Void) throws {
+     try throwingCallback()
+}
+
+try rethrowingFunction {
+    print(&quot;I'm not throwing errors&quot;)
+} 
+</code></pre>
+<p>换句话说，只有当重新抛出方法的函数参数可能抛出错误时，才需要将其标记为try。</p>
+<h3 id="12-a-namearealcaseexampleaa-real-case-example">1.2. <a name='Arealcaseexample'></a>A real case example</h3>
+<p>现在我们知道了rethrow关键字是如何工作的，接下来来看一个实际的例子。在下面的代码中，我们为字符串数组创建了一个包装器方法，在这个方法中，我们基于predicate连接元素:</p>
+<pre><code class="language-swift"> extension Array  where Self.Element == String {
+    func joined(separator: String, where predicate: (Element) throws -&gt; Bool) rethrows {
+        try filter(predicate)
+            .joined(separator: separator)
+    }
+}
+</code></pre>
+<p>默认情况下，标准filter方法是rethrowing错误。但是，如果我们想从包装连接方法中的这种行为中获益，我们也需要使自定义方法rethrowing。否则，就不能在predicate中抛出任何错误。</p>
+<p>用法示例如下:</p>
+<pre><code class="language-swift"> enum Error: Swift.Error {
+     case numbersNotAllowed
+ }
+ 
+ var names = [&quot;Antoine&quot;, &quot;Maaike&quot;, &quot;Bernie&quot;, &quot;Angi3&quot;]
+ do {
+     try names.joined(separator: &quot;, &quot;, where: { name -&gt; Bool in
+         guard name.rangeOfCharacter(from: .decimalDigits) == nil else {
+             throw Error.numbersNotAllowed
+         }
+         return true
+     })
+ } catch {
+     print(error) // Prints: `numbersNotAllowed`
+ }
+</code></pre>
+<p>由于名称中包含数字3，因此join方法将抛出一个错误。</p>
+<h3 id="13-a-nameusingrethrowstowraperrorsausing-rethrows-to-wrap-errors">1.3. <a name='Usingrethrowstowraperrors'></a>Using rethrows to wrap errors</h3>
+<p>另一个常见的用例是将其他错误封装到本地定义的错误类型中。在下面的例子中，我们定义了一个存储控制器，它返回一个带有强类型StorageError的Result enum。但是，我们的FileManager方法可以抛出任何我们想要在StorageError.otherError中封装的其他错误情况。</p>
+<p>在给定的回调中使用rethrowing perform方法，我们可以捕获任何发生的错误:</p>
+<pre><code class="language-swift">struct StorageController {
+     
+     enum StorageError: Swift.Error {
+         case fileDoesNotExist
+         case otherError(error: Swift.Error)
+     }
+     
+     let destinationURL: URL
+     
+     func store(_ url: URL, completion: (Result&lt;URL, StorageError&gt;) -&gt; Void) throws {
+         guard FileManager.default.fileExists(atPath: url.path) else {
+             completion(.failure(StorageError.fileDoesNotExist))
+             return
+         }
+         try perform {
+             try FileManager.default.moveItem(at: url, to: destinationURL) 
+             completion(.success(destinationURL)) 
+         }
+     }
+     
+     private func perform(_ callback: () throws -&gt; Void) rethrows {
+         do {
+             try callback()
+         } catch {
+             throw StorageError.otherError(error: error)
+         }
+     }
+ } 
+</code></pre>
+<h3 id="14-a-nameoverridingmethodswiththerethrowskeywordaoverriding-methods-with-the-rethrows-keyword">1.4. <a name='Overridingmethodswiththerethrowskeyword'></a>Overriding methods with the rethrows keyword</h3>
+<p>重要的是要理解，throwing方法不能用于覆盖rethrowing方法，因为它会突然将“可能抛出”方法变成“抛出”方法。出于同样的原因，throwing方法也不能满足rethrowing方法的协议要求。</p>
+<p>另一方面，一个rethrowing方法可以覆盖一个throwing方法，就像在最后，一个抛出方法也是一个'可能抛出函数。这也意味着您可以使用rethrowing方法来满足throwing方法的协议要求。</p>
+<h3 id="15-a-nameconclusionaconclusion">1.5. <a name='Conclusion'></a>Conclusion</h3>
+<p>在Swift中rethrowing可以很好地防止无缘无故使用try关键字。如果内部方法没有抛出错误，则rethrows关键字确保编译器知道不需要尝试。rethrowing方法转发由其函数参数抛出的任何错误。</p>
+<p><a href="https://www.avanderlee.com/swift/rethrows/">原文地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pQ1MYc-VU/" class="tag">
+                    rethrows
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/practical-mvvm-rxswift/">
+                  <h3 class="post-title">
+                    Practical MVVM + RxSwift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

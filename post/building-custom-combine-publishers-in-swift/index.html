@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Building custom Combine publishers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Apple的Combine框架为异步编程提供了一个通用的抽象，允许随时间发出、转换和观察各种值和事件。
+在Combine的世界中，发出这种异步值和事件的对象被称为发布者，尽管该框架确实附带了大量的内置发布者实现，有时，为了处理特定的情况，我..." />
+    <meta name="keywords" content="concurrency,combine" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Building custom Combine publishers in Swift</h2>
+            <div class="post-date">2020-07-26</div>
+            
+            <div class="post-content" v-pre>
+              <p>Apple的Combine框架为异步编程提供了一个通用的抽象，允许随时间发出、转换和观察各种值和事件。</p>
+<p>在Combine的世界中，发出这种异步值和事件的对象被称为发布者，尽管该框架确实附带了大量的内置发布者实现，有时，为了处理特定的情况，我们可能想要建立自己的、定制的系统。</p>
+<p>本周，让我们来看看什么情况下才有可能成为一个自定义发行商，以及一些关于创建一个自定义发行商需要做什么的例子。</p>
+<h2 id="built-in-alternatives">Built-in alternatives</h2>
+<p>但是，在我们开始构建定制发布程序之前，让我们先看看一些内置替代程序。也许目前使用Combine最常见的方式是通过@Published属性包装器，它在SwiftUI的整体状态管理系统中扮演着非常重要的角色。</p>
+<p>不过，该属性包装器也可以在SwiftUI之外使用，它提供了一种自动生成发布者的方法，每当给定的属性发生更改时，发布者就会发出新值。例如，这里我们将这种功能添加到TodoList类中的item属性中:</p>
+<pre><code class="language-swift">class TodoList {
+    @Published private(set) var items: [TodoItem]
+    
+    ...
+
+    func addItem(named name: String) {
+        items.append(TodoItem(name: name))
+    }
+}
+
+</code></pre>
+<p>通过简单地将上述注释添加到我们的items属性中，我们现在可以使用Combine来观察和转换对该属性值的任何更改，因为任何@ published标记的属性都可以很容易地使用其投影值转换为发布者——如下所示:</p>
+<pre><code class="language-swift">let list = TodoList(...)
+
+// Observing our property's value directly:
+let allItemsSubscription = list.$items.sink { items in
+    // Handle new items
+    ...
+}
+
+// Extracting the first element from each emitted array:
+let firstItemSubscription = list.$items
+    .compactMap(\.first)
+    .sink { item in
+        // Handle the first item
+        ...
+    }
+</code></pre>
+<p>让我们再快速看一下主题，它在某种程度上扮演着“可变发布者”的角色，因为它们既可以被观察，也可以被发送值给emit。由于这个可变的方面，仔细考虑将哪些主题作为我们的公共API的一部分公开通常是一个好主意，因为这样做可以使任何外部对象向这些主题发送值。</p>
+<p>例如，下面的CanvasView使用PassthroughSubject在用户使用时发出CGPoint值-但它保持这个主题私有，因为我们只希望画布本身能够发送值给它。 相反，我们使用eraseToAnyPublisher方法将主题转换为只读发布者，这样外部对象就可以观察到:</p>
+<pre><code class="language-swift">class CanvasView: UIView {
+    var tapPublisher: AnyPublisher&lt;CGPoint, Never&gt; {
+        tapSubject.eraseToAnyPublisher()
+    }
+
+    private let tapSubject = PassthroughSubject&lt;CGPoint, Never&gt;()
+    
+    ...
+
+    @objc private func handle(_ recognizer: UITapGestureRecognizer) {
+        let location = recognizer.location(in: self)
+        tapSubject.send(location)
+    }
+}
+</code></pre>
+<p>顾名思义，PassthroughSubject只是将发送给它的任何值传递给它的观察者，而不存储这些值。另一方面，currentvaluessubject存储发送给它的最新值的副本，稍后可以检索该值。</p>
+<p>就像之前的基于@ published的发布者一样，我们上面的tapPublisher可以使用各种Combine提供的操作符来观察和转换——像这样:</p>
+<pre><code class="language-swift">let canvas = CanvasView()
+...
+// Here we're discarding any point that's identical to
+// the one before it:
+let subscription = canvas.tapPublisher
+    .removeDuplicates()
+    .sink { point in
+        // Handle tap
+        ...
+    }
+</code></pre>
+<p>因此，发布属性和主题都是很好的起点，无论何时，我们都希望构建一个组合驱动的API，并使我们能够构建广泛的功能，而不需要编写任何自定义发布代码。但是，在某些情况下，我们可能需要对各种事件如何发出进行一些额外的控制，这可能需要构建一个全新的发布者类型。</p>
+<p>Building a publisher from the ground up</p>
+<p>一种可能保证自定义发布器的情况是，当该发布器绑定到我们不能完全控制的另一个对象时。</p>
+<p>举个例子，假设我们想要构建一个发布者来观察给定的UIControl何时发出一个事件。这些类型的观察通常使用经典的目标/动作模式执行，这是一个Objective-C约定，因此依赖于选择器和引用类型之类的东西。</p>
+<p>虽然这些惯例当然没有错，但在现代的Swift语境中，它们可能有点过时了 - 让我们看看这个概念的“Combine take”会是什么样子。</p>
+<p>在本例中，由于我们希望向任何UIControl添加一个发布者，因此必须构建一个自定义的发布者——因为这将使我们能够正确地将所观察的控件连接到订阅它的对象。 首先，让我们用一个EventPublisher类型来扩展UIControl，它符合Combine的Publisher协议，然后实现附加一个新订阅者所需的逻辑:</p>
+<pre><code class="language-swift">extension UIControl {
+    struct EventPublisher: Publisher {
+        // Declaring that our publisher doesn't emit any values,
+        // and that it can never fail:
+        typealias Output = Void
+        typealias Failure = Never
+
+        fileprivate var control: UIControl
+        fileprivate var event: Event
+
+        // Combine will call this method on our publisher whenever
+        // a new object started observing it. Within this method,
+        // we'll need to create a subscription instance and
+        // attach it to the new subscriber:
+        func receive&lt;S: Subscriber&gt;(
+            subscriber: S
+        ) where S.Input == Output, S.Failure == Failure {
+            // Creating our custom subscription instance:
+            let subscription = EventSubscription&lt;S&gt;()
+            subscription.target = subscriber
+            
+            // Attaching our subscription to the subscriber:
+            subscriber.receive(subscription: subscription)
+
+            // Connecting our subscription to the control that's
+            // being observed:
+            control.addTarget(subscription,
+                action: #selector(subscription.trigger),
+                for: event
+            )
+        }
+    }
+}
+</code></pre>
+<p>接下来，让我们实现上面使用的EventSubscription类型。 我们将再次在UIControl上使用扩展(只是这次我们将保持它的私有)，我们将使我们的新类型符合Combine的订阅协议:</p>
+<pre><code class="language-swift">private extension UIControl {
+    class EventSubscription&lt;Target: Subscriber&gt;: Subscription
+        where Target.Input == Void {
+        
+        var target: Target?
+
+        // This subscription doesn't respond to demand, since it'll
+        // simply emit events according to its underlying UIControl
+        // instance, but we still have to implement this method
+        // in order to conform to the Subscription protocol:
+        func request(_ demand: Subscribers.Demand) {}
+
+        func cancel() {
+            // When our subscription was cancelled, we'll release
+            // the reference to our target to prevent any
+            // additional events from being sent to it:
+            target = nil
+        }
+
+        @objc func trigger() {
+            // Whenever an event was triggered by the underlying
+            // UIControl instance, we'll simply pass Void to our
+            // target to emit that event:
+            target?.receive(())
+        }
+    }
+}
+</code></pre>
+<p>完成了自定义发布者和订阅类型之后，我们现在几乎完成了新的组合驱动控件事件API。剩下的就是再一次用一个方法来扩展UIControl，让我们为一个给定的事件创建一个发布者——像这样:</p>
+<pre><code class="language-swift">extension UIControl {
+    func publisher(for event: Event) -&gt; EventPublisher {
+        EventPublisher(
+            control: self,
+            event: event
+        )
+    }
+}
+</code></pre>
+<p>以上所有部分都准备好了，让我们通过创建UIButton来使用我们的新API来旋转，我们现在可以使用Combine将点击观察器附加到这个ui按钮上:</p>
+<pre><code class="language-swift">let button = UIButton()
+...
+
+let subscription = button.publisher(for: .touchUpInside).sink {
+    // Handle tap
+    ...
+}
+</code></pre>
+<p>虽然从技术的角度来看，上面的内容已经很酷了，但问题是，相对于使用内置的target/action API或更简单的基于闭包的扩展，它提供了哪些真正的实用价值。</p>
+<p>这种方法的优点之一是，Combine的各种api被设计成不可思议的可组合性 - 这意味着我们可以使用上面的方法很容易地为特定的控件创建越来越专业化的api。例如，下面是我们如何为UIButton和UITextField创建方便的api，只需将新的publisher和额外的操作符结合起来:</p>
+<pre><code class="language-swift">extension UIButton {
+    var tapPublisher: EventPublisher {
+        publisher(for: .touchUpInside)
+    }
+}
+
+extension UITextField {
+    var textPublisher: AnyPublisher&lt;String, Never&gt; {
+        publisher(for: .editingChanged)
+            .map { self.text ?? &quot;&quot; }
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>但是，我们新的基于发布者的控制事件API的最大优势可能是Combine以真正强大的方式组合各种数据流的能力。 例如，这里我们使用combineLatest操作符自动将三个单独文本字段的最新值组合为一个:</p>
+<pre><code class="language-swift">class ShippingInfoViewController: UIViewController {
+    @Published private(set) var shippingInfo = ShippingInfo()
+
+    private lazy var nameTextField = UITextField()
+    private lazy var addressTextField = UITextField()
+    private lazy var cityTextField = UITextField()
+    private var cancellables = [AnyCancellable]()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        view.addSubview(nameTextField)
+        view.addSubview(addressTextField)
+        view.addSubview(cityTextField)
+
+        // Observe all three of our text fields at once, and
+        // combine all of their values into a ShippingInfo
+        // instance, which we then assign to a published property:
+        nameTextField.textPublisher.combineLatest(
+            addressTextField.textPublisher,
+            cityTextField.textPublisher
+        ).sink { [weak self] name, street, city in
+            self?.shippingInfo = ShippingInfo(
+                name: name,
+                street: street,
+                city: city
+            )
+        }.store(in: &amp;cancellables)
+    }
+}
+</code></pre>
+<p>值得注意的是，当使用combineLatest时，在每个参与发布者发送至少一个值之前，不会发出任何组合值，这在上述情况下是完全正确的。</p>
+<p>现在这真的很酷——但也许更酷的是我们可以继续使我们的上述组合管道更加紧凑，例如通过利用Swift支持第一类函数的事实 - 它允许我们将字符串值的元组直接映射到ShippingInfo类型的初始化式中:</p>
+<pre><code class="language-swift">nameTextField.textPublisher.combineLatest(
+    addressTextField.textPublisher,
+    cityTextField.textPublisher
+)
+.map(ShippingInfo.init)
+.sink { [weak self] in
+    self?.shippingInfo = $0
+}
+.store(in: &amp;cancellables)
+</code></pre>
+<p>但我们不能就此止步，因为一旦我们准备好移植到Xcode 12和iOS 14中引入的新api，我们可以通过使用assign操作符的新变体进一步简化上面的操作——它既允许我们直接将已发布的属性传递给它，又不要求我们跟踪任何可取消的令牌:</p>
+<pre><code class="language-swift">nameTextField.textPublisher.combineLatest(
+    addressTextField.textPublisher,
+    cityTextField.textPublisher
+)
+.map(ShippingInfo.init)
+.assign(to: &amp;$shippingInfo)
+</code></pre>
+<p>总的来说，这就是组合式和反应式编程的美妙之处——利用不同的操作符，结合多个publishers，我们可以创建真正复杂的管道，自动处理对底层数据的任何更改。</p>
+<h2 id="keeping-up-with-demand">Keeping up with demand</h2>
+<p>最后，让我们回到我们前面跳过的构建定制组合发布者的一个方面，那就是需求系统。而我们UIControl。事件发布者不必使用该系统，因为它本质上只是另一种类型事件的包装器，并非所有自定义发布者都需要这样做。</p>
+<p>例如，只要它的提供者闭包不返回nil，下面的Feed发布者就会不断地发出新值:</p>
+<pre><code class="language-swift">struct Feed&lt;Output&gt;: Publisher {
+    typealias Failure = Never
+
+    var provider: () -&gt; Output?
+
+    func receive&lt;S: Subscriber&gt;(
+        subscriber: S
+    ) where S.Input == Output, S.Failure == Never {
+        let subscription = Subscription(feed: self, target: subscriber)
+        subscriber.receive(subscription: subscription)
+    }
+}
+</code></pre>
+<p>要决定由上述发布者创建的订阅实例何时发出其值，我们将使用前面忽略的请求方法，连同它的demand参数——该参数包含一个基于int的值，该值指示当前订阅者希望接收多少个输出值——给了我们一个如下所示的实现:</p>
+<pre><code class="language-swift">private extension Feed {
+    class Subscription&lt;Target: Subscriber&gt;: Combine.Subscription
+        where Target.Input == Output {
+
+        private let feed: Feed
+        private var target: Target?
+
+        init(feed: Feed, target: Target) {
+            self.feed = feed
+            self.target = target
+        }
+
+        func request(_ demand: Subscribers.Demand) {
+            var demand = demand
+
+            // We'll continue to emit new values as long as there's
+            // demand, or until our provider closure returns nil
+            // (at which point we'll send a completion event):
+            while let target = target, demand &gt; 0 {
+                if let value = feed.provider() {
+                    demand -= 1
+                    demand += target.receive(value)
+                } else {
+                    target.receive(completion: .finished)
+                    break
+                }
+            }
+        }
+
+        func cancel() {
+            target = nil
+        }
+    }
+}
+</code></pre>
+<p>上述方法的好处是，我们不会开始加载和释放值，直到有某种形式的需求这些值 - 其中Combine将基于订户自动管理，将最终连接到我们的出版商:，将最终连接到我们的出版商:</p>
+<pre><code class="language-swift">// Simply creating a Feed instance doesn't make it start loading
+// and emitting values:
+let imageFeed = Feed { imageProvider.provideNextImage() }
+
+// Once we start subscribing to our feed, it'll recieve demand,
+// and will start emitting values:
+let subscription = imageFeed.sink { image in
+    ...
+}
+</code></pre>
+<p>所以，一般来说，当我们构建一个自定义发布者它可以自己决定何时发出值， 使用请求方法及其需求参数来决定向给定订阅者发送多少值，并且在有需求之前不要开始发送值，这通常是一个好主意。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>事实上，这种结合使我们能够建立自己的定制发布者、订阅者和订阅者，这是一种难以置信的强大功能——但它仍然是我们只有在需要时才应该做的事情。 毕竟，如果我们能够使用一个内置的发布者，并与Combine结合使用，那么我们最终可能会有更少的代码编写和维护。</p>
+<p>幸运的是，从使用内置publisher迁移到自定义publisher通常很容易， 因为我们最终要构建的任何自定义发布者都可以使用与内置发布者完全相同的功能和操作符——这通常是在Combine之上编写我们自己的异步抽象的一个巨大优势。</p>
+<p><a href="https://www.swiftbysundell.com/articles/building-custom-combine-publishers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ArhVOQ_GL/" class="tag">
+                    concurrency
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/generating-automatic-placeholders-for-swiftui-views/">
+                  <h3 class="post-title">
+                    Generating automatic placeholders for SwiftUI views
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

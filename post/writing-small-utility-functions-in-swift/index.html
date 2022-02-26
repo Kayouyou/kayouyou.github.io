@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Writing small utility functions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="有时，似乎唯一能够真正影响代码库整体状态的方法是进行大规模的更改——比如更改其架构、修改数据和操作在系统中的流动方式，或者采用新的框架。
+然而，尽管这种更大的改变有时很重要，但简单地解决更小的问题，并在日常工作中更顺畅地迭代代码，通常也有大..." />
+    <meta name="keywords" content="code structure,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Writing small utility functions in Swift</h2>
+            <div class="post-date">2020-03-15</div>
+            
+            <div class="post-content" v-pre>
+              <p>有时，似乎唯一能够真正影响代码库整体状态的方法是进行大规模的更改——比如更改其架构、修改数据和操作在系统中的流动方式，或者采用新的框架。</p>
+<p>然而，尽管这种更大的改变有时很重要，但简单地解决更小的问题，并在日常工作中更顺畅地迭代代码，通常也有大量的价值。</p>
+<p>本周，让我们来看看实现这一目的的一种方法——通过编写小的实用函数，使普通任务更容易执行，并使首选模式更容易采用。</p>
+<h2 id="configuration-closures">Configuration closures</h2>
+<p>在任何给定的项目中，相当数量的代码都可能是专门用于配置特定的对象以供使用——特别是在使用面向对象的UI框架(如UIKit)构建视图时。 就像我们在“Swift中封装配置代码”中看到的那样，找到简洁的方法来隔离这些代码可以真正提高我们实际逻辑的整体清晰度，而在这个领域中，实用函数可以变得特别有用。</p>
+<p>举个例子，假设我们正在使用一个非常流行的模式，即使用自执行闭包来构造每个视图的子视图的设置——像这样:</p>
+<pre><code class="language-swift">class HeaderView: UIView {
+    let imageView: UIImageView = {
+        let view = UIImageView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.contentMode = .scaleAspectFit
+        view.image = .placeholder
+        return view
+    }()
+
+    let label: UILabel = {
+        let view = UILabel()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.numberOfLines = 2
+        view.font = .preferredFont(forTextStyle: .headline)
+        return view
+    }()
+    
+    ...
+}
+</code></pre>
+<p>上面的实现并没有什么问题，但是如果我们能够减少与每个属性相关的代码数量，那就太好了——因为我们添加的每一行都将类型的实际实现和逻辑“推”下去。 虽然在这里我们可以采用许多不同的方法，比如使用工厂方法而不是自动执行闭包 -让我们看看我们是否可以写一个简单的实用函数来帮助我们使上面的代码更紧凑，同时仍然使用相同的基本模式。</p>
+<p>让我们首先介绍一个名为configure的函数，它将接受我们希望配置的值，以及一个可以封装所有配置代码的闭包。我们还将用inout关键字标记该闭包的形参，使新函数能够方便地与值类型一起使用:</p>
+<pre><code class="language-swift">func configure&lt;T&gt;(
+    _ value: T,
+    using closure: (inout T) throws -&gt; Void
+) rethrows -&gt; T {
+    var value = value
+    try closure(&amp;value)
+    return value
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以回到HeaderView，让它的子视图配置代码读起来更漂亮:</p>
+<pre><code class="language-swift">class HeaderView: UIView {
+    let imageView = configure(UIImageView()) {
+        $0.translatesAutoresizingMaskIntoConstraints = false
+        $0.contentMode = .scaleAspectFit
+        $0.image = .placeholder
+    }
+
+    let label = configure(UILabel()) {
+         $0.translatesAutoresizingMaskIntoConstraints = false
+        $0.numberOfLines = 2
+        $0.font = .preferredFont(forTextStyle: .headline)
+    }
+    ...
+}
+</code></pre>
+<p>没有了局部变量，也不需要在配置好后返回每个视图——这使得代码更加紧凑，阅读起来也不会更困难。 事实上，甚至可以认为上面的代码更容易阅读，因为我们现在调用的函数显式地命名为“configure”——而不是依赖于约定，就像我们之前使用自执行闭包时那样。</p>
+<p>虽然我们可以采取很多其他方法来达到类似的结果，我们新的configure函数的一个优点是它是完全通用的，并且可以与任何类型一起使用——无论是UIView的子类，任何其他类型的对象，甚至是值类型。</p>
+<p>例如，这里我们使用了完全相同的模式，当设置一个URLRequest值，用于同步数据时，用户是基于wifi连接:</p>
+<pre><code class="language-swift">struct SyncNetworkTask {
+    var request = configure(URLRequest(url: .syncEndpoint)) {
+        $0.httpMethod = &quot;PATCH&quot;
+        $0.addValue(&quot;application/json&quot;,
+            forHTTPHeaderField: &quot;Content-Type&quot;
+        )
+        $0.allowsCellularAccess = false
+    }
+    ...
+}
+</code></pre>
+<p>一般来说，实用函数的美妙之处在于，在许多情况下，它们使我们能够跨每个代码库统一各种代码模式和样式——用正确的方式完成某项任务(或者至少是项目中人们喜欢的方式)也是最简单的方式。</p>
+<h2 id="the-power-of-rethrowing-functions">The power of rethrowing functions</h2>
+<p>上面的configure函数的一个细节很容易被忽略，那就是它是用rethrows关键字标记的。 该关键字所做的是，它告诉Swift编译器，只有当传递给它的闭包也抛出时，才将该函数视为抛出。</p>
+<p>这是非常有用的，因为它既支持像上面那样的非抛出用例(在这些情况下不必使用try关键字)，同时也允许我们在需要时在配置闭包中抛出错误:</p>
+<pre><code class="language-swift">let webView = try configure(WKWebView()) {
+    let html = try loadBundledHTML()
+    try $0.loadHTMLString(html, baseURL: nil)
+    ...
+}
+</code></pre>
+<p>当我们设计任何接受同步闭包的API时，使用rethrow标记函数绝对是值得考虑的 -  这样做使我们可以在需要的时候抛出错误，而不会使我们的非抛出调用站点变得更复杂。</p>
+<h2 id="reducing-boilerplate">Reducing boilerplate</h2>
+<p>除了让我们编写约定之外，实用函数还可以帮助我们避免常见的错误，并使我们能够减少样板 - 即使是更具体的任务，如定义布局和计算颜色。</p>
+<p>特别是在代码中使用自动布局时，有许多事情我们必须牢记在心 - 例如记住告诉每个视图不要将其自动调整大小的掩码转换为约束(至少在大多数情况下)，并激活我们定义的每个布局约束-像这样:</p>
+<pre><code class="language-swift">let label = UILabel()
+label.translatesAutoresizingMaskIntoConstraints = false
+view.addSubview(label)
+
+NSLayoutConstraint.activate([
+    label.topAnchor.constraint(equalTo: view.topAnchor),
+    label.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+    ...
+])
+</code></pre>
+<p>每当我们必须手动地一遍又一遍地记住编写某种设置代码时，这通常是实用函数的最佳选择。对于上面的例子，我们并不是要引入一个全新的UI抽象，或者完全改变我们编写布局代码的方式-我们唯一的目标是让定义约束更容易和更健壮。</p>
+<p>例如，我们可能会选择一些简单的东西，如UIView扩展，自动准备给定的视图与自动布局使用，然后激活一个约束数组:</p>
+<pre><code class="language-swift">extension UIView {
+    func layout(using constraints: [NSLayoutConstraint]) {
+        translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate(constraints)
+    }
+}
+</code></pre>
+<p>有了这个小小的扩展，我们就可以让我们的原始代码读起来更好——现在看起来像这样:</p>
+<pre><code class="language-swift">let label = UILabel()
+view.addSubview(label)
+
+label.layout(using: [
+    label.topAnchor.constraint(equalTo: view.topAnchor),
+    label.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+    ...
+])
+</code></pre>
+<p>这看起来似乎是一个非常小的更改，但是实用函数的好处是它们不需要对我们的代码产生巨大的影响 -简单地删除一些样板文件和潜在的错误对他们来说就足够了。</p>
+<p>沿着同样的思路，让我们看看另一个例子，我们的目标是尽可能容易地定义动态颜色，自动适应用户设备当前运行在光明模式或黑暗模式。这方面的官方iOS API(除了定义资产目录中的颜色)是这样的:</p>
+<pre><code class="language-swift">let backgroundColor = UIColor { traitCollection in
+    switch traitCollection.userInterfaceStyle {
+    case .dark:
+        return UIColor(white: 0.15, alpha: 1)
+    case .light, .unspecified:
+        return UIColor(white: 0.85, alpha: 1)
+    }
+}
+</code></pre>
+<p>这是一个很好的API，但是每次我们想要定义一个动态颜色时，总是必须写一个包含switch语句的闭包，这很快就会变得很烦人-那么让我们再来看看我们是否可以通过使用实用函数来减少上面的一些冗长。</p>
+<p>因为我们想要定义在明暗模式下使用的颜色对，所以我们将新函数命名为colorPair，并让它接受一个UIColor用于光模式，另一个用于暗模式。然后我们会调用官方的UIColor API，并为每个UIUserInterfaceStyle返回合适的颜色——像这样:</p>
+<pre><code class="language-swift">func colorPair(light: UIColor, dark: UIColor) -&gt; UIColor {
+    UIColor { traitCollection -&gt; UIColor in
+        switch traitCollection.userInterfaceStyle {
+        case .dark:
+            return dark
+        case .light, .unspecified:
+            return light
+        }
+    }
+}
+</code></pre>
+<p>值得注意的是，上面的函数要求我们总是同时创建两种颜色，而不是只创建当前模式所需的颜色。 但是，如果需要的话，我们可以使用@autoclosure来解决这个问题。</p>
+<p>有了上面的代码，我们就可以大大减少定义每个颜色对所需的代码量——使上面的backgroundColor声明如下所示:</p>
+<pre><code class="language-swift">let backgroundColor = colorPair(
+    light: UIColor(white: 0.85, alpha: 1),
+    dark: UIColor(white: 0.15, alpha: 1)
+)
+</code></pre>
+<p>将上述方法与另一个快速实用函数(让我们能够使用点语法定义任何灰度UIColor)结合起来，我们便拥有了定义动态颜色的有效方法  -再次强调，没有任何巨大的抽象或重新设计颜色在iOS上的工作方式:</p>
+<pre><code class="language-swift">extension UIColor {
+    static func grayScale(_ white: CGFloat,
+                          alpha: CGFloat = 1) -&gt; UIColor {
+        UIColor(white: white, alpha: alpha)
+    }
+}
+
+let backgroundColor = colorPair(
+    light: .grayScale(0.85),
+    dark: .grayScale(0.15)
+)
+</code></pre>
+<p>在编写上述实用程序函数时，我们可能会开始问自己这样的问题:“为什么默认api不是这样设计的?” 就像编程中的大多数事情一样，设计优秀的api通常需要平衡一些特定的权衡。</p>
+<p>而标准api需要优化灵活性，并与平台SDK的其余部分保持一定程度的一致性 -我们自己的实用功能可以自由地使用一个更轻量级的、特定的设计-同时仍然补充平台的本地api，而不是旨在取代它们。</p>
+<p>这样，我们就可以在任何可能的情况下使用我们的新实用函数，同时在我们需要更强大的功能或定制选项时，也可以轻松地退回到标准平台api。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>实用函数可以帮助我们规范我们的约定，减少样板，并使常见的任务更容易执行。通过不断寻找可以使编写代码更流畅、更愉快的小方法，我们将随着时间的推移使我们的工作逐渐变得更容易——即使每一个改变单独来看都是相对较小的。</p>
+<p>当然，我们不应该走得太远，应该将每个任务都包装在某种形式的便利API中。 在我看来，编写真正伟大的实用函数的过程实际上是确定常见的瓶颈和痛点，然后解决它们——通过补充系统框架的轻量级api，而不是试图取代它们或将它们完全隐藏在抽象后面。</p>
+<p>[原文链接](https://www.swiftbysundell.com/articles/writing-small-utility-functions-in-swift/</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/avoiding-massive-swiftui-views/">
+                  <h3 class="post-title">
+                    Avoiding massive SwiftUI views
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

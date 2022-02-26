@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Exploring Swift 5.2’s new functional features | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="从表面上看，Swift 5.2在新语言特性方面绝对是一个小版本，因为这个新版本的重点是提高Swift底层基础设施的速度和稳定性-例如如何报告编译器错误，以及如何解决构建级依赖。
+然而，虽然Swift 5.2新增的语言特性数量相对较少，但它确..." />
+    <meta name="keywords" content="what's new,functions" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Exploring Swift 5.2’s new functional features</h2>
+            <div class="post-date">2020-02-09</div>
+            
+            <div class="post-content" v-pre>
+              <p>从表面上看，Swift 5.2在新语言特性方面绝对是一个小版本，因为这个新版本的重点是提高Swift底层基础设施的速度和稳定性-例如如何报告编译器错误，以及如何解决构建级依赖。</p>
+<p>然而，虽然Swift 5.2新增的语言特性数量相对较少，但它确实包含了两项新功能，可能会对Swift作为函数式编程语言的整体能力产生相当大的影响。</p>
+<p>本周，让我们来探索这些特性，以及我们如何潜在地利用它们来拥抱函数式编程世界中非常流行的几种不同的范式——在面向对象的Swift代码库中，这种方式可能会让人感觉更加一致和熟悉。</p>
+<h2 id="calling-types-as-functions">Calling types as functions</h2>
+<p>尽管Swift不是严格意义上的函数式编程语言，但毫无疑问，函数在其整体设计和使用中扮演着非常重要的角色。从如何使用闭包作为异步回调，到集合如何大量使用map和reduce等经典函数模式——函数无处不在。</p>
+<p>在这方面，Swift 5.2的有趣之处在于它开始模糊函数和类型之间的界限。尽管我们总是能够将任何给定类型的实例方法作为函数传递(因为Swift支持第一类函数)，但我们现在能够像调用函数一样调用某些类型。</p>
+<p>让我们从一个Cache类型的例子开始，这个类型是我们在“Swift缓存”中内置的——它在封装的NSCache之上提供了一个更“Swift友好”的API:</p>
+<pre><code class="language-swift">class Cache&lt;Key: Hashable, Value&gt; {
+    private let wrapped = NSCache&lt;WrappedKey, Entry&gt;()
+    private let dateProvider: () -&gt; Date
+    private let entryLifetime: TimeInterval
+    ...
+    func insert(_ value: Value, forKey key: Key) {
+        ...
+    }
+}
+</code></pre>
+<p>假设我们想要向上述类型添加一个方便的API——让我们自动使用插入值的id作为其缓存键，以防当前值类型符合标准库的可识别协议。虽然我们也可以简单地为这个新的API insert命名，但我们要给它一个非常特殊的名字——callAsFunction:</p>
+<pre><code class="language-swift">extension Cache where Value: Identifiable, Key == Value.ID {
+    func callAsFunction(_ value: Value) {
+        insert(value, forKey: value.id)
+    }
+}
+</code></pre>
+<p>这可能看起来像是一个奇怪的命名约定，但是通过这样命名我们的新方便方法，我们实际上已经给我们的缓存类型提供了一个有趣的新功能-它现在可能被当作一个函数来调用-像这样:</p>
+<pre><code class="language-swift">let document: Document = ...
+let cache = Cache&lt;Document.ID, Document&gt;()
+
+// We can now call our 'cache' variable as if it was referencing a
+// function or a closure:
+cache(document)
+</code></pre>
+<p>这可以说是既酷又奇怪。 但问题是，它有什么用呢? 让我们以DocumentRenderer协议为例继续探索，该协议为应用程序中渲染文档实例的各种类型定义了一个通用接口:</p>
+<pre><code class="language-swift">protocol DocumentRenderer {
+    func render(_ document: Document,
+                in context: DocumentRenderingContext,
+                enableAnnotations: Bool)
+}
+</code></pre>
+<p>类似于我们之前为缓存类型添加了基于函数的便利API，我们在这里做同样的事情——只是这一次，我们将扩展上述协议，使任何符合标准的类型都可以作为带有默认参数集的函数来调用:</p>
+<pre><code class="language-swift">extension DocumentRenderer {
+    func callAsFunction(_ document: Document) {
+        render(document,
+            in: .makeDefaultContext(),
+            enableAnnotations: false
+        )
+    }
+}
+</code></pre>
+<p>上面的两个更改单独来看可能并不令人印象深刻，但是如果我们把它们放在一起，我们就会开始看到为一些更复杂的类型提供基于函数的便利api的吸引力。例如，这里我们已经构建了一个DocumentViewController——它既使用了我们的缓存类型，也使用了基于核心动画的DocumentRenderer协议实现——现在这两个都可以在文档加载时作为函数调用:</p>
+<pre><code class="language-swift">class DocumentViewController: UIViewController {
+    private let cache: Cache&lt;Document.ID, Document&gt;
+    private let render: CoreAnimationDocumentRenderer
+    
+    ...
+
+    private func documentDidLoad(_ document: Document) {
+        cache(document)
+        render(document)
+    }
+}
+</code></pre>
+<p>这很酷，特别是当我们的目标是更轻量级的API设计，或者我们正在构建某种特定于领域的语言时。 虽然通过像传递闭包一样传递实例方法总是可能达到类似的结果——通过允许直接调用我们的类型，我们都避免了必须手动传递这些方法，我们能够保留api可能使用的任何外部参数标签。</p>
+<p>例如，我们还希望将priceccalculator变成一个可调用类型。为了维护原始API的语义，我们将保留for外部参数标签，即使在声明callAsFunction实现时也是如此——如下所示:</p>
+<pre><code class="language-swift">extension PriceCalculator {
+    func callAsFunction(for product: Product) -&gt; Int {
+        calculatePrice(for: product)
+    }
+}
+</code></pre>
+<p>下面是上面的方法与存储类型的calculatePrice方法的引用的比较 - 注意第一段代码是如何丢弃我们的参数标签的，而第二段代码保留了它:</p>
+<pre><code class="language-swift">// Using a method reference:
+let calculatePrice = PriceCalculator().calculatePrice
+...
+calculatePrice(product)
+
+// Calling our type directly:
+let calculatePrice = PriceCalculator()
+...
+calculatePrice(for: product)
+</code></pre>
+<p>使类型像函数一样被调用是一个非常有趣的概念，但更有趣的是，它还使我们能够朝着相反的方向——将函数转换为合适的类型。</p>
+<h2 id="functional-programming-in-an-object-oriented-way">Functional programming in an object-oriented way</h2>
+<p>尽管函数式编程的概念非常强大，但在使用高度面向对象的框架(就像苹果的大多数框架一样)时，应用这些概念和模式往往非常具有挑战性。 让我们看看Swift 5.2的新可调用类型功能是否能帮助我们改变这一点。</p>
+<p>由于我们现在可以使任何类型都可调用，我们也可以使任何函数转换为类型，同时仍然使该函数可以像正常情况下那样被调用。为了实现这一点，让我们定义一个名为Function的类型，如下所示:</p>
+<pre><code class="language-swift">struct Function&lt;Input, Output&gt; {
+    let raw: (Input) -&gt; Output
+
+    init(_ raw: @escaping (Input) -&gt; Output) {
+        self.raw = raw
+    }
+
+    func callAsFunction(_ input: Input) -&gt; Output {
+        raw(input)
+    }
+}
+</code></pre>
+<p>就像我们前面定义的可调用类型一样，函数实例可以直接调用，这使得它们在大多数情况下的行为与它们的底层函数相同。</p>
+<p>为了使不接受任何输入的函数仍然可以被调用，而不必手工指定Void作为参数，让我们也为输入类型为Void的函数值定义以下扩展:</p>
+<pre><code class="language-swift">extension Function where Input == Void {
+    func callAsFunction() -&gt; Output {
+        raw(Void())
+    }
+}
+</code></pre>
+<p>上述包装器类型最酷的地方在于，它使我们能够以面向对象的方式采用真正强大的函数式编程概念。让我们来看两个这样的概念——部分应用和管道(我们在“Swift的功能性网络”中也使用了这两个概念)。 前者允许我们将一个函数与一个值结合起来生成一个不需要任何输入的新函数，而后者使我们能够将两个函数链接在一起——现在可以像这样实现:</p>
+<pre><code class="language-swift">extension Function {
+    func combined(with value: Input) -&gt; Function&lt;Void, Output&gt; {
+        Function&lt;Void, Output&gt; { self.raw(value) }
+    }
+    
+    func chained&lt;T&gt;(to next: @escaping (Output) -&gt; T) -&gt; Function&lt;Input, T&gt; {
+        Function&lt;Input, T&gt; { next(self.raw($0)) }
+    }
+}
+</code></pre>
+<p>请注意，为了让它们在Swift中更“自在”，我们是如何组合和链接上述两个函数的，而不是使用在更严格的函数式编程语言中常见的名称。</p>
+<p>上面的设置使我们能够以一种仍然感觉非常面向对象的方式使用像基于函数的依赖注入这样的技术。例如，这里我们已经构建了一个用于编辑notes的视图控制器——它接受两个函数，一个用于加载它正在编辑的notes的当前版本，另一个用于提交更新到应用程序的中央数据存储:</p>
+<pre><code class="language-swift">class NoteEditorViewController: UIViewController {
+    private let provideNote: Function&lt;Void, Note&gt;
+    private let updateNote: Function&lt;Note, Void&gt;
+
+    init(provideNote: Function&lt;Void, Note&gt;,
+         updateNote: Function&lt;Note, Void&gt;) {
+        self.provideNote = provideNote
+        self.updateNote = updateNote
+        super.init(nibName: nil, bundle: nil)
+    }
+    ...
+    private func editorTextDidChange(to text: String) {
+        var note = provideNote()
+        note.text = text
+        updateNote(note)
+    }
+}
+</code></pre>
+<p>上述方法的美妙之处在于，它允许我们以一种完全与驱动模型和数据逻辑的具体类型分离的方式构建UI。例如，我们上面的视图控制器实际使用的函数在这个例子中是一个NoteManager类型的方法，看起来像这样:</p>
+<pre><code class="language-swift">class NoteManager {
+    ...
+
+    func loadNote(withID id: Note.ID) -&gt; Note {
+        ...
+    }
+    
+    func updateNote(_ note: Note) {
+        ...
+    }
+}
+</code></pre>
+<p>然后，当我们创建视图控制器的实例时，我们使用函数类型将上述两个方法转换为UI代码可以直接调用的函数——而不必知道任何底层类型或细节:</p>
+<pre><code class="language-swift">func makeEditorViewController(
+    forNoteID noteID: Note.ID
+) -&gt; UIViewController {
+    let provider = Function(noteManager.loadNote).combined(with: noteID)
+    let updater = Function(noteManager.updateNote)
+
+    return NoteEditorViewController(
+        provideNote: provider,
+        updateNote: updater
+    )
+}
+</code></pre>
+<p>上面的方法不仅给我们提供了更大的关注点分离，它还使测试变得轻而易举，因为我们不再需要嘲笑任何协议或对抗基于单例的全局状态-通过传入特定于测试的函数，我们可以简单地注入任何我们想要测试的行为。</p>
+<h2 id="passing-key-paths-as-functions">Passing key paths as functions</h2>
+<p>Swift 5.2中引入的另一个非常有趣的新特性是键路径现在可以作为函数传递。当我们使用闭包简单地从属性中提取一段数据时，这非常方便——因为我们现在可以直接传递该属性的键路径:</p>
+<pre><code class="language-swift">let notes: [Note] = ...
+
+// Before:
+let titles = notes.map { $0.title }
+
+// After:
+let titles = notes.map(\.title)
+</code></pre>
+<p>将该功能与前面的函数类型结合起来，我们现在可以轻松地构建一个函数链，让我们可以加载给定的值，然后从中提取属性。 在这里，我们这样做是为了创建一个函数，让我们很容易地查找与给定的note ID相关联的标签:</p>
+<pre><code class="language-swift">func tagLoader(forNoteID noteID: Note.ID) -&gt; Function&lt;Void, [Tag]&gt; {
+    Function(noteManager.loadNote)
+        .combined(with: noteID)
+        .chained(to: \.tags)
+}
+</code></pre>
+<p>当然，当我们开始混合函数式编程模式和面向对象的api时，上面的例子仅仅触及了一些可能的表面——所以这肯定是我们将在以后的文章中回到的主题。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift 5.2和Xcode 11.4都是非常重要的版本——有一个新的编译错误诊断引擎，很多新的测试和调试特性，等等。 但是从语法的角度来看，Swift 5.2也是一个有趣的发行版，因为它继续拓宽了Swift用于采用函数式编程概念的方式，以及它如何开始模糊类型和函数之间的界限。</p>
+<p><a href="https://www.swiftbysundell.com/articles/exploring-swift-5-2s-new-functional-features/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_Xob8a1C4/" class="tag">
+                    what&#39;s new
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L76CX3exv/" class="tag">
+                    functions
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swifts-closure-capturing-mechanics/">
+                  <h3 class="post-title">
+                    Swift’s closure capturing mechanics
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

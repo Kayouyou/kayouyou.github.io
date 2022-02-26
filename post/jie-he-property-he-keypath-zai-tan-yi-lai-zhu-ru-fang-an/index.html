@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>结合@property和KeyPath再谈依赖注入方案 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+抛弃第三方库的依赖注入
+为什么需要依赖注入?
+AppDelegate作为不创建单例的答案
+使用诸如静态下标、扩展和属性包装器等Swift特性编写解决方案
+结论
+
+
+结合@property和KeyPath再谈依赖注入方案
+依赖注入是一种软..." />
+    <meta name="keywords" content="dependency injection" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">结合@property和KeyPath再谈依赖注入方案</h2>
+            <div class="post-date">2021-07-23</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#%E6%8A%9B%E5%BC%83%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%93%E7%9A%84%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5">抛弃第三方库的依赖注入</a></li>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5">为什么需要依赖注入?</a></li>
+<li><a href="#appdelegate%E4%BD%9C%E4%B8%BA%E4%B8%8D%E5%88%9B%E5%BB%BA%E5%8D%95%E4%BE%8B%E7%9A%84%E7%AD%94%E6%A1%88">AppDelegate作为不创建单例的答案</a></li>
+<li><a href="#%E4%BD%BF%E7%94%A8%E8%AF%B8%E5%A6%82%E9%9D%99%E6%80%81%E4%B8%8B%E6%A0%87%E6%89%A9%E5%B1%95%E5%92%8C%E5%B1%9E%E6%80%A7%E5%8C%85%E8%A3%85%E5%99%A8%E7%AD%89swift%E7%89%B9%E6%80%A7%E7%BC%96%E5%86%99%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88">使用诸如静态下标、扩展和属性包装器等Swift特性编写解决方案</a></li>
+<li><a href="#%E7%BB%93%E8%AE%BA">结论</a></li>
+</ul>
+<!-- /TOC -->
+<p>结合@property和KeyPath再谈依赖注入方案</p>
+<p>依赖注入是一种软件设计模式，在这种模式中，对象接收它所依赖的其他实例。这是一种允许代码重用、插入模拟数据和简化测试的常用技术。例如，将<strong>network provider</strong>作为依赖项初始化视图。</p>
+<p>在Swift中有许多不同的依赖注入解决方案，它们都有各自的优缺点。 在深入研究今天的解决方案之前，最好知道已存在许多好的解决方案。这里讨论的解决方案并不适用于所有人，所以请自由探索依赖注入的世界，并找到最适合您的解决方案。</p>
+<h2 id="抛弃第三方库的依赖注入">抛弃第三方库的依赖注入</h2>
+<p>总的来说，这里讨论的方法是在Swift世界中找到解决方案从而避免使用第三方库。当前外部第三方库可以让您更容易、更快地立即开始。不管怎样，从外部第三方库开始，结合一些Swift的强大功能就足够了，这真的太诱人了。</p>
+<p>通过依赖Swift的标准库，你就可以避免外部库的学习曲线，并且不再依赖于新版本。 使用外部第三方库总是存在重大改动或发现库不再被维护的风险。另一方面，编写您自己的解决方案需要您暂无掌握的知识。希望本文将为您提供所需的方法，以便在项目中编写一个小小的扩展，在没有使用第三方库的情况下处理依赖注入。</p>
+<h2 id="为什么需要依赖注入">为什么需要依赖注入?</h2>
+<p>依赖注入解决了什么问题? 在编写或选择解决方案之前要问自己，这是一个非常重要的问题。在实践中，我最近重新审视了我的依赖注入方法，因为项目变得越来越复杂了，而目前的方案不是很满足项目需求。 根据目前的解决方案遇到的问题，定义了以下需要解决几点事项:</p>
+<ul>
+<li>模拟测试数据应该很容易</li>
+<li>可读性应该与Swift的标准api保持一致</li>
+<li>编译时安全是最好的，以防止隐藏的崩溃。如果应用程序构建，我们就知道所有依赖项都配置正确</li>
+<li>应该避免由于注入依赖而导致大型的初始化器</li>
+<li>AppDelegate不应该是定义所有共享实例的地方</li>
+<li>没有第三方依赖，以防止潜在的学习曲线</li>
+<li>不需要强制<em>unwrapping</em>（解包）</li>
+<li>定义标准依赖项时最好不要暴露<em>private/internal</em>类型</li>
+<li>解决方案应该定义在一个package中，该包可以跨库共享，以实现可重用性</li>
+</ul>
+<p>这些点描述了在开始重新探索依赖管理之前项目的状态。随着时间的推移，项目变得越来越大，但在注入依赖关系方面却越来越不一致。我们有几个类具有较臃肿的构造器; 从而很难降低代码的可读性和去模拟数据。</p>
+<h2 id="appdelegate作为不创建单例的答案">AppDelegate作为不创建单例的答案</h2>
+<p>我也不想在项目中到处创建单例，因为它被视为一种糟糕的模式(不展开另一个讨论)。然而，我们仍然需要共享许多单一引用，所以我们决定在AppDelegate中定义它们，以便在整个应用程序中访问它们。但是这导致一些问题：</p>
+<ul>
+<li>使用<em>AppDelegate.shared</em> 仍然是对每个共享实例使用单例</li>
+<li>您总是需要从主线程访问<em>AppDelegate</em>来防止线程销毁警告</li>
+<li>无法从应用扩展中访问<em>AppDelegate</em></li>
+</ul>
+<p>随着时间的推移，我们从应用委托中删除了几个实例，但仍然有一长串已定义的实例，使得依赖注入很难实现。这是另一个审视目前项目的原因</p>
+<h2 id="使用诸如静态下标-扩展和属性包装器等swift特性编写解决方案">使用诸如静态下标、扩展和属性包装器等Swift特性编写解决方案</h2>
+<p>当你自己编写解决方案时，从现有代码中获得灵感是很好的方式。这些可能是第三方库，它们通常非常擅长使用Swift特性，但可能需要一些更改来满足您的需求。 当然你也可以看看Swift的标准api，比如SwiftUI中的@Environment属性包装器。 我们喜欢这种将环境配置注入SwiftUI视图的方法。</p>
+<p>Property Wrapper允许注入依赖项，并减少实现代码的混乱。不需要大型初始化器，仍然有可能覆盖测试的依赖项。属性包装器还可以明确注入哪些属性，这增加了代码可读性。在下面的例子中，我们有一个符合 <em>NetworkProviding</em> 协议的 <em>NetworkProvider</em>。我们还有一个mocked版本的网络provider叫做<em>MockedNetworkProvider</em>。</p>
+<pre><code class="language-swift">protocol NetworkProviding {
+    func requestData()
+}
+
+struct NetworkProvider: NetworkProviding {
+    func requestData() {
+        print(&quot;Data requested using the `NetworkProvider`&quot;)
+    }
+}
+
+struct MockedNetworkProvider: NetworkProviding {
+    func requestData() {
+        print(&quot;Data requested using the `MockedNetworkProvider`&quot;)
+    }
+}
+</code></pre>
+<p>在配置了新的依赖注入解决方案之后，最终代码如下所示:</p>
+<pre><code class="language-swift">struct DataController {
+    @Injected(\.networkProvider) var networkProvider: NetworkProviding
+    
+    func performDataRequest() {
+        networkProvider.requestData()
+    }
+}
+</code></pre>
+<p>您可以看到，我们定义了一个新的属性包装器，它接受一个键路径引用。在数据请求执行方法中，我们可以直接使用这个networkProvider。在playground中运行这段代码会显示如下输出:</p>
+<pre><code class="language-swift">var dataController = DataController()
+print(dataController.networkProvider) // prints: NetworkProvider()
+
+InjectedValues[\.networkProvider] = MockedNetworkProvider()
+print(dataController.networkProvider) // prints: MockedNetworkProvider()
+
+dataController.networkProvider = NetworkProvider()
+print(dataController.networkProvider) // prints 'NetworkProvider' as we overwritten the property wrapper wrapped value
+
+dataController.performDataRequest() // prints: Data requested using the 'NetworkProvider'
+</code></pre>
+<p>要指出的是，使用injecttedvalues静态下标调整依赖项也会影响已经注入的属性。 这可以确保您不会因为不一致的依赖项引用而产生副作用和奇怪的结果。换句话说:所有被注入的依赖项将引用同一个被注入的实例。通过使用属性包装器的包装值setter，我们还允许通过数据控制器本身更新依赖项。</p>
+<p>我们的解决方案与SwiftUI的环境属性解决方案密切相关。因此，我们首先定义一个InjectionKey协议:</p>
+<pre><code class="language-swift">public protocol InjectionKey {
+
+    /// The associated type representing the type of the dependency injection key's value.
+    associatedtype Value
+
+    /// The default value for the dependency injection key.
+    static var currentValue: Self.Value { get set }
+}
+</code></pre>
+<p>我们为我们的<em>network provider</em>创建一个新的key以符合此协议:</p>
+<pre><code class="language-swift">private struct NetworkProviderKey: InjectionKey {
+    static var currentValue: NetworkProviding = NetworkProvider()
+}
+</code></pre>
+<p>如您所见，我们将 <em>key</em> 定义为<strong>private</strong>。我们可以这样做，因为我们将在属性包装器中使用一个名为InjectedValues的新类型的扩展来公开实际的键路径:</p>
+<pre><code class="language-swift">extension InjectedValues {
+    var networkProvider: NetworkProviding {
+        get { Self[NetworkProviderKey.self] }
+        set { Self[NetworkProviderKey.self] = newValue }
+    }
+}
+</code></pre>
+<p>通过这种方式，我们解决了其中一个问题，确保在执行依赖项注入时保持对暴露的控制。我们不希望所有的实现者都知道<em>NetworkProvider</em>，而是让他们使用<em>NetworkProvider</em>协议。这样做允许我们调整<em>NetworkProvider</em>的实现，而不影响实现的代码，只要协议保持不变。</p>
+<p>让我们看看InjectedValues实例:</p>
+<pre><code class="language-swift">/// Provides access to injected dependencies.
+struct InjectedValues {
+    
+    /// This is only used as an accessor to the computed properties within extensions of `InjectedValues`.
+    private static var current = InjectedValues()
+    
+    /// A static subscript for updating the `currentValue` of `InjectionKey` instances.
+    static subscript&lt;K&gt;(key: K.Type) -&gt; K.Value where K : InjectionKey {
+        get { key.currentValue }
+        set { key.currentValue = newValue }
+    }
+    
+    /// A static subscript accessor for updating and references dependencies directly.
+    static subscript&lt;T&gt;(_ keyPath: WritableKeyPath&lt;InjectedValues, T&gt;) -&gt; T {
+        get { current[keyPath: keyPath] }
+        set { current[keyPath: keyPath] = newValue }
+    }
+}
+</code></pre>
+<p>这个结构主要充当依赖关系解析器。我们定义了一个静态属性current作为静态下标的访问器，因为键路径只能引用非静态成员。 这允许我们使用键路径访问器来引用依赖项，如上例所示:<strong>@Injected(.networkProvider)</strong>。</p>
+<p>属性包装器与InjectedValues结构体紧密合作:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct Injected&lt;T&gt; {
+    private let keyPath: WritableKeyPath&lt;InjectedValues, T&gt;
+    var wrappedValue: T {
+        get { InjectedValues[keyPath] }
+        set { InjectedValues[keyPath] = newValue }
+    }
+    
+    init(_ keyPath: WritableKeyPath&lt;InjectedValues, T&gt;) {
+        self.keyPath = keyPath
+    }
+}
+</code></pre>
+<p>我们使用computed属性来确保在所有地方引用相同的依赖项。通过injecttedvalues的静态下标或使用属性包装器包装的值直接更新依赖项，都会导致更新同一个源。</p>
+<h2 id="结论">结论</h2>
+<p>总之，这个解决方案允许我们在不添加外部库的情况下改进依赖项管理。我们没有太多代码需要维护，对于新加入我们项目的工程师来说，跟上进度应该很容易，因为我们一直在接近现有的解决方案，比如SwiftUI的<em>environment value</em>。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SI7Eu5Vqu/" class="tag">
+                    dependency injection
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/shi-yong-mainactor-shu-xing-zai-zhu-dui-lie-shang-de-zi-dong-diao-du-ui-geng-xin/">
+                  <h3 class="post-title">
+                    使用MainActor属性在主队列上的自动调度UI更新
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

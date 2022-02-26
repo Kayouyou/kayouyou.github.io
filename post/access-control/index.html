@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Access Control | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="访问控制的概念使我们能够限制其他代码如何访问类型、函数和其他声明。Swift提供了五种不同级别的访问控制，为了编写具有清晰分离关注点和健壮结构的程序，充分利用它们是至关重要的。
+当我们在Swift中定义任何新的类型、属性或函数时，默认情况下..." />
+    <meta name="keywords" content="access control,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Access Control</h2>
+            <div class="post-date">2020-01-11</div>
+            
+            <div class="post-content" v-pre>
+              <p>访问控制的概念使我们能够限制其他代码如何访问类型、函数和其他声明。Swift提供了五种不同级别的访问控制，为了编写具有清晰分离关注点和健壮结构的程序，充分利用它们是至关重要的。</p>
+<p>当我们在Swift中定义任何新的类型、属性或函数时，默认情况下它将具有内部访问级别。这意味着它对同一模块内的所有其他代码都是可见的，如应用程序、系统扩展、框架或Swift包。</p>
+<p>举个例子，假设我们正在构建一个购物应用程序，并且我们定义了一个名为priceccalculator的类，它让我们计算一个产品数组的总价格:</p>
+<pre><code class="language-swift">class PriceCalculator {
+    func calculatePrice(for products: [Product]) -&gt; Int {
+        // The reduce function enables us to reduce a collection,
+        // in this case an array of products, into a single value:
+        products.reduce(into: 0) { totalPrice, product in
+            totalPrice += product.price
+        }
+    }
+}
+</code></pre>
+<p>由于我们目前没有指定任何显式的访问级别，我们的PriceCalculator类(及其calculatePrice方法)将可以从应用程序中的任何地方访问。然而,如果我们想分享我们的新类与其他模块,然后，我们需要将其设置为public，以便在这些外部环境中可见:</p>
+<pre><code class="language-swift">public class PriceCalculator {
+    public func calculatePrice(for products: [Product]) -&gt; Int {
+        products.reduce(into: 0) { totalPrice, product in
+            totalPrice += product.price
+        }
+    }
+}
+</code></pre>
+<p>然而，上述改变是不够的。虽然我们现在能够在定义类的模块之外找到类，但我们不能创建它的任何实例——因为它的(隐式)初始化器就像任何其他代码一样，默认情况下是内部的。为了解决这个问题，让我们定义一个公共初始化器，我们将它保留为空，因为在它里面没有实际的工作要做:</p>
+<pre><code class="language-swift">public class PriceCalculator {
+    public init() {}
+    ...
+}
+</code></pre>
+<p>现在我们能够在模块内部和外部找到、初始化和调用我们的priceccalculator——太棒了。但是现在让我们说，为了修改它，或者为它添加新功能，我们也在寻找它的子类。虽然这在它自己的模块中目前是可能的，但它又是防止它的外部的东西。</p>
+<p>为了改变这一点，我们将不得不使用Swift目前最开放的访问控制级别，它的名称为open:</p>
+<pre><code class="language-swift">open class PriceCalculator {
+    ...
+}
+</code></pre>
+<p>完成上述更改后，我们现在可以在任何地方创建PriceCalculator的自定义子类——它可以有新的初始化器、新的属性和新的方法。下面是我们如何使用它来实现一个discountedpriccalculator，它允许我们将给定的折扣应用到所有的价格计算中:</p>
+<pre><code class="language-swift">class DiscountedPriceCalculator: PriceCalculator {
+    let discount: Int
+
+    init(discount: Int) {
+        self.discount = discount
+        super.init()
+    }
+
+    func calculateDiscountedPrice(for products: [Product]) -&gt; Int {
+        let price = calculatePrice(for: products)
+        return price - discount
+    }
+}
+</code></pre>
+<p>上面我们定义了一个全新的price计算方法，但是可以认为重写和修改从基类继承的现有calculatePrice方法更合适。这样，就不会对调用哪个方法产生混淆，而且可以保持两个类的一致性。</p>
+<p>为了能够做到这一点，我们再次必须将原始声明标记为open——这一次是我们的calculatePrice方法声明:</p>
+<pre><code class="language-swift">open class PriceCalculator {
+    public init() {}
+
+    open func calculatePrice(for products: [Product]) -&gt; Int {
+        ...
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以自由地重写calculatePrice，而不必创建一个单独的方法:</p>
+<pre><code class="language-swift">class DiscountedPriceCalculator: PriceCalculator {
+    let discount: Int
+
+    init(discount: Int) {
+        self.discount = discount
+        super.init()
+    }
+
+    override func calculatePrice(for products: [Product]) -&gt; Int {
+        let price = super.calculatePrice(for: products)
+        return price - discount
+    }
+}
+</code></pre>
+<p>所以internal, public and open——它们被用来逐渐开放一个声明供公众使用和修改。当然，我们也可以采用另一种方式，即隐藏代码的一部分，使其不被发现和使用。 乍一看，这样做的价值似乎值得怀疑，但它确实可以帮助我们使我们的API更加狭窄和集中——这反过来又可以使它更容易理解、测试和使用。</p>
+<p>现在让我们一路走到访问级别频谱的另一端，看看限制最严格的级别——private。 任何标记为private的类型、属性或方法只能在其自己的类型中可见(它还包括在同一个文件中定义的该类型的扩展名)。</p>
+<p>任何应该被认为是给定类型的私有实现细节的东西都应该被标记为私有。例如，我们的价格计算器的discount属性以前实际上只在它自己的类中使用-所以让我们继续并将该属性设为私有:</p>
+<pre><code class="language-swift">class DiscountedPriceCalculator: PriceCalculator {
+    private let discount: Int
+    ...
+}
+</code></pre>
+<p>我们前面的实现将继续以与之前完全相同的方式工作，因为discount将在我们的DiscountedPriceCalculator类中完全可见。然而，如果我们想稍微扩展这种可见性，使其也包含在同一个文件中定义的其他类型，我们必须使用fileprivate——它的作用就像它听起来的那样，它在文件中保留一个private声明:</p>
+<pre><code class="language-swift">class DiscountedPriceCalculator: PriceCalculator {
+    fileprivate let discount: Int
+    ...
+}
+</code></pre>
+<p>有了上面的改变，我们现在可以从同一个文件中定义的相关代码访问我们的折扣属性-例如这个UIAlertController扩展，它让我们可以在一个警告中轻松地显示一个产品数组的价格描述:</p>
+<pre><code class="language-swift">extension UIAlertController {
+    func showPriceDescription(
+        for products: [Product],
+        calculator: DiscountedPriceCalculator
+    ) {
+        let price = calculator.calculatePrice(for: products)
+
+        // We can now access 'discount' even outside of the type
+        // that it's declared in, thanks to 'fileprivate':
+        message = &quot;&quot;&quot;
+        Your \(products.count) product(s) will cost \(price).
+        Including a discount of \(calculator.discount).
+        &quot;&quot;&quot;
+    }
+}
+</code></pre>
+<p>当涉及到自由函数、类型和扩展时，private和fileprivate的行为完全相同。它们只有在应用于类型中定义的声明时才不同。</p>
+<p>因此，总结起来，这是Swift目前提供的五个级别的访问控制:</p>
+<p>private将属性或函数保留在其封闭类型内，包括在同一文件中定义的该类型的任何扩展。当应用于顶级类型、函数或扩展时，它的作用方式与fileprivate相同。</p>
+<p>filprivate使声明在定义它的整个文件中可见，同时对所有其他代码隐藏它。</p>
+<p>internal是默认的访问级别，它使声明在定义它的整个模块中可见。</p>
+<p>public在其模块之外显示函数、类型、扩展或属性。</p>
+<p>open允许类在其模块之外子类化，并覆盖函数或属性。</p>
+<p>通常，最好从给定声明实际上可以具有的最严格的访问级别开始，然后在需要时再打开。 这样，我们就限制了各种类型和函数之间的交互途径，乍一看这可能是一件坏事，但对于构建可维护和结构良好的系统来说，这往往是真正必要的。</p>
+<p><a href="https://www.swiftbysundell.com/basics/access-control/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/zm8DFKPZN/" class="tag">
+                    access control
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/writing-reusable-swift-extensions/">
+                  <h3 class="post-title">
+                    Writing reusable Swift extensions
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Utilizing value semantics in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift整体设计中一个非常有趣的方面是，它以值类型的概念为中心。不仅大多数标准库的核心类型(如字符串、数组和字典)建模为值，甚至基本的语言概念(如可选概念)也在底层表示为值。
+值类型唯一的原因是它们在程序的不同部分之间传递的语义， 以及如..." />
+    <meta name="keywords" content="value types,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Utilizing value semantics in Swift</h2>
+            <div class="post-date">2019-07-21</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift整体设计中一个非常有趣的方面是，它以值类型的概念为中心。不仅大多数标准库的核心类型(如字符串、数组和字典)建模为值，甚至基本的语言概念(如可选概念)也在底层表示为值。</p>
+<p>值类型唯一的原因是它们在程序的不同部分之间传递的语义， 以及如何将变化应用到给定实例。本周，让我们来看看这些语义学的几种不同用法-以及如何这样做可以显著提高我们基于价值的代码的灵活性。</p>
+<h2 id="unlocking-local-mutations">Unlocking local mutations</h2>
+<p>一般来说，程序所包含的状态越不易变，发生错误的机会就越少。当事物保持不变时，它们从本质上就更容易预测，因为不可能发生意外的变化。然而，让某些东西变得不可变通常也意味着牺牲灵活性，这有时会带来问题。</p>
+<p>假设我们正在开发一个处理视频的应用程序，为了让我们的核心视频模型尽可能具有可预测性，我们选择使用Let定义所有属性，使其不可变:</p>
+<pre><code class="language-swift">struct Video {
+    let id: UUID
+    let url: URL
+    let title: String
+    let description: String
+    let tags: Set&lt;Tag&gt;
+}
+</code></pre>
+<p>上述方法乍一看似乎是个好主意，特别是如果当前获取视频实例的唯一方法是从网络上下载的数据中解码它们的话。然而，由于值语义的强大功能，执行上述操作通常是不必要的。</p>
+<p>结构体不仅在默认情况下是不可变的除非它们被存储在一个本身是可变的变量中，对结构的实例所做的任何变化也总是只应用于该值的本地副本。这意味着，即使我们打开我们的视频类型的变化，我们也不会冒险引入由未处理的状态变化引起的bug。</p>
+<p>所以让我们这样做，通过使用var来定义我们模型的大部分属性，而不是let。但是，我们不会对所有属性进行更改 -因为我们希望他们中的一些总是保持不变-例如id和url在这种情况下:</p>
+<pre><code class="language-swift">struct Video {
+    let id: UUID
+    let url: URL
+    var title: String
+    var description: String
+    var tags: Set&lt;Tag&gt;
+}
+</code></pre>
+<p>通过执行上述更改，我们都清楚地知道视频模型的哪些部分可能在未来发生变化(即使这些突变发生在其他地方，比如我们的服务器上)，但我们也为该模型解锁了新的用例——比如使用它来跟踪本地状态。</p>
+<p>假设我们要给我们的视频应用添加一个新功能，它允许我们的用户对他们之前下载的视频执行本地编辑。既然我们现在已经为局部变化打开了视频模型，我们可以简单地让这样的视频编辑器直接对我们的模型实例进行操作——像这样:</p>
+<pre><code class="language-swift">class VideoEditingViewController: UIViewController {
+    private var video: Video
+    
+    ...
+
+    func titleTextFieldDidChange(_ textField: UITextField) {
+        textField.text.map { video.title = $0 }
+    }
+
+    func tagSelectionView(_ view: TagSelectionView,
+                          didAddTagNamed tagName: String) {
+        video.tags.insert(Tag(name: tagName))
+    }
+}
+</code></pre>
+<p>上面场景中的值语义的美妙之处在于，VideoEditingViewController对其私有视频值所做的任何局部变化都不会传播到其他地方。这意味着我们可以在完全隔离的情况下自由地处理该值，并且可以将用户的所有编辑与原始数据源清晰地分开。</p>
+<p>另一方面，每当我们想要让任何视频实例完全不可变时，我们所要做的就是使用let引用它，任何变化都不会被允许:</p>
+<pre><code class="language-swift">struct SearchResult {
+    let video: Video
+    let matchedQuery: Query
+}
+</code></pre>
+<p>当涉及到我们的核心数据模型时，比如上面的视频类型， 让外围的上下文决定是否允许变化——而不是把这些决定烘烤到每个模型中-通常使我们的模型代码更加灵活，而不会引入任何实质性的风险，这都归功于值语义</p>
+<h2 id="ensuring-data-consistency">Ensuring data consistency</h2>
+<p>然而，有时我们确实需要更多的控制，当涉及到一个模型是如何被允许变异时， 特别是当模型的不同部分以某种方式相互连接或依赖时。</p>
+<p>例如，现在假设我们正在开发一个购物应用程序，它包含一个购物车模型。除了存储用户已添加到购物车的产品值数组之外，我们还存储了所有产品的总价以及它们的id -为了避免不得不重新计算每次它被访问的总价格，并使常量时间查找是否给定的产品已经被添加:</p>
+<pre><code class="language-swift">struct ShoppingCart {
+    var totalPrice: Int
+    var productIDs: Set&lt;UUID&gt;
+    var products: [Product]
+}
+</code></pre>
+<p>上述设置为我们提供了很大的灵活性和良好的性能，因为我们将在购物车实例上执行的许多常见操作可以在固定的时间内执行 - 然而，在这种情况下，使一切都是可变的也增加了我们的数据变得不一致的重大风险。</p>
+<p>我们不仅必须记住在添加或删除产品时更新totalPrice和productIDs属性，而且这些属性中的每一个也可以在任何时候发生突变——而不需要对产品进行任何更改。这不是很好，但谢天谢地，有一种解决方案允许我们继续使用值语义，但以一种稍微受控的方式。</p>
+<p>通过使用private(set)访问修饰符，我们将大多数突变限制为只允许在ShoppingCart类型本身内，而不是使每个属性都完全可变。然后，我们将使用一个属性观察器，仅在直接响应products数组中的变化时执行这些突变，如下所示:</p>
+<pre><code class="language-swift">struct ShoppingCart {
+    private(set) var totalPrice = 0
+    private(set) var productIDs: Set&lt;UUID&gt; = []
+    var products: [Product] {
+        didSet { productsDidChange() }
+    }
+
+    init(products: [Product]) {
+        self.products = products
+        // Note how we need to manually call our handling
+        // method within our initializer, since property
+        // observers aren't triggered until after a value
+        // has been fully initialized.
+        productsDidChange()
+    }
+
+    private mutating func productsDidChange() {
+        totalPrice = products.reduce(0) { price, product in
+            price + product.price
+        }
+
+        productIDs = []
+        products.forEach { productIDs.insert($0.id) }
+    }
+}
+</code></pre>
+<p>通过上述更改，我们仍然充分利用了products属性的值语义，同时现在还能够保证整个模型的完整数据一致性。</p>
+<h2 id="simplifying-repeated-mutations">Simplifying repeated mutations</h2>
+<p>虽然值语义在限制变化发生的方式和地点方面给我们带来了很多好处， 有时，这些限制会使某些代码变得比实际需要的更复杂。</p>
+<p>这里我们正在开发一种类型，它允许我们将图像渲染管道建模为一系列基于闭包的操作，这些操作应用于RenderingContext结构。 每个操作都将前面的上下文作为输入传递，并对其进行修改，然后返回更新后的值作为输出。最后，一旦所有的操作都完成了，我们取最终的context值并使用它来生成一个图像:</p>
+<pre><code class="language-swift">struct RenderingPipeline {
+    var operations: [(RenderingContext) -&gt; RenderingContext]
+
+    func render() -&gt; Image {
+        var context = RenderingContext()
+
+        context = operations.reduce(context) { context, operation in
+            operation(context)
+        }
+
+        return context.makeImage()
+    }
+}
+</code></pre>
+<p>上述方法是可行的，但有一个问题。在每个闭包操作中，我们都需要手动将当前上下文复制到一个可变变量中，一旦我们执行了变化，我们还需要显式地返回更新后的值——像这样:</p>
+<pre><code class="language-swift">extension RenderingPipeline {
+    mutating func fill(with color: Color) {
+        operations.append { context in
+            var context = context
+            context.changeFillColor(to: color)
+            context.fill(rect: Rect(origin: .zero, size: context.size))
+            return context
+        }
+    }
+}
+</code></pre>
+<p>上面的事情看起来似乎没什么大不了的，而且如果我们能够执行的操作数被保持在最小，那么它可能就不是什么大事了。然而，总是必须复制并返回当前的呈现上下文确实要求我们编写大量的样板文件，所以让我们看看我们能否对此做些什么。</p>
+<p>虽然我们想让RenderingContext仍然是一个结构体，但在调用每个操作时，我们实际上是通过引用而不是值来传递它——使用inout关键字。这样，我们就可以在整个管道中不断改变相同的上下文值:</p>
+<pre><code class="language-swift">struct RenderingPipeline {
+    var operations: [(inout RenderingContext) -&gt; Void]
+
+    func render() -&gt; Image {
+        var context = RenderingContext()
+        operations.forEach { $0(&amp;context) }
+        return context.makeImage()
+    }
+}
+</code></pre>
+<p>使用inout关键字实际上并没有传递指向我们的值的指针，而是提供了与使用引用类型时相同的顶级行为，即自动创建一个可变副本，并将结果值赋回给传入的变量。</p>
+<p>上述更改不仅使我们的RenderingPipeline类型变得更简单，现在还允许我们在操作中直接更改每个上下文—不复制或返回需要的值:</p>
+<pre><code class="language-swift">extension RenderingPipeline {
+    mutating func fill(with color: Color) {
+        operations.append { context in
+            context.changeFillColor(to: color)
+            context.fill(rect: Rect(origin: .zero, size: context.size))
+        }
+    }
+}
+</code></pre>
+<p>尽管inout关键字的使用应该非常谨慎，因为它确实绕过了值类型在避免共享状态方面提供的一些保护措施 - 当在一个类型内部使用时，就像我们上面做的那样，它可以再次给我们一些非常真实的好处，而没有太多额外的风险。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>充分利用值类型处理突变的方式，以及他们如何确保默认状态是本地的， 可以同时提高模型代码的稳定性和灵活性。</p>
+<p>然而，在默认情况下使一切都是可变的并不一定是最好的方法-有时我们确实需要锁定一些东西，以确保数据的一致性， 并发出一个明确的信号，什么数据是永远不应该被修改的。</p>
+<p>最后，使用inout关键字可以让我们继续利用值类型的强大功能-同时也引入了一些引用类型的便捷性，在正确的情况下使用。</p>
+<p><a href="https://www.swiftbysundell.com/articles/utilizing-value-semantics-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/K623Q1U6L/" class="tag">
+                    value types
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/generalizing-swift-code/">
+                  <h3 class="post-title">
+                    Generalizing Swift code
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

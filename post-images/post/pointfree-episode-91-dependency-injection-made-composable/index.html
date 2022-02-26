@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 91: Dependency Injection Made Composable | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Effects recap
+
+
+
+
+Environment recap
+
+
+
+
+Current problems
+
+
+
+
+Environment in the reducer
+
+
+
+
+Environ..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 91: Dependency Injection Made Composable</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Effectsrecap">Effects recap</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Environmentrecap">Environment recap</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Currentproblems">Current problems</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Environmentinthereducer">Environment in the reducer</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Environmentinthestore">Environment in the store</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Erasingtheenvironmentfromthestore">Erasing the environment from the store</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 91: Dependency Injection Made Composable -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>在去年引入可组合体系结构时，我们特别强调了副作用和测试。事实上，我们用了整整8集的时间来讨论这些话题。这是因为每个架构都需要有一个关于副作用的故事:这只是生活中的一个事实。但是，一旦引入副作用，就有破坏可测试性的风险。</p>
+<p>然而，我们能够让副作用和可测试性和谐共存，通过使用一种我们在近两年前谈到的老技术:<strong>environment</strong>。环境提供了一个地方来放置所有可能导致副作用的东西，并且我们禁止自己使用任何依赖项，除非它存储在环境中。这为我们提供了一种一致的访问依赖项的方式，并且使得在测试和<strong>playgrounds</strong>中将依赖项替换为受控依赖项变得很简单，如果我们愿意，我们甚至可以在运行实际应用程序时使用模拟依赖项。 如果你无网状态，或者想要在一个非常特定的状态下测试你的应用程序，这可能特别有用。</p>
+<p>然而，我们给出的解决方案并不是全部。它在很多情况下都工作得很好，但是它有一些问题，我们可以设计一个更加健壮和通用的解决方案来解决可组合体系结构中的依赖关系问题。为了看到这一切，我们所要做的就是对<strong>reducer</strong>的签名做一个非常小的调整，一切都会自然地随之而来。</p>
+<p>但在我们进入这之前，让我们提醒自己我们是如何使用<strong>environment</strong>技术来控制和测试我们的副作用的。</p>
+<h2 id="2-a-nameeffectsrecapaeffects-recap">2. <a name='Effectsrecap'></a>Effects recap</h2>
+<p>回想一下，我们在可组合体系结构中表示副作用的方式是从我们的<strong>reducer</strong>返回一个<strong>effect</strong>值数组，然后在幕后<strong>store</strong>负责获取所有这些<strong>effects</strong>并运行它们。</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action&gt; = (inout Value, Action) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p><strong>Effect</strong>是我们构建的自定义类型，它符合<strong>Combine</strong>框架中的<strong>Publisher</strong>协议:</p>
+<pre><code class="language-swift">public struct Effect&lt;Output&gt;: Publisher {
+  public typealias Failure = Never
+
+  let publisher: AnyPublisher&lt;Output, Failure&gt;
+
+  public func receive&lt;S&gt;(
+    subscriber: S
+  ) where S: Subscriber, Failure == S.Failure, Output == S.Input {
+    self.publisher.receive(subscriber: subscriber)
+  }
+}
+</code></pre>
+<p>这允许我们利用<strong>Combine</strong>来提升我们的<strong>effects</strong>。我们可以使用它们的助手来执行网络请求，在模型中解码JSON，定时器，以及所有你可以与<strong>publishers</strong>做的有趣的转换，如<strong>map, zip, flatMap，filter</strong>等等。</p>
+<p>我们的<strong>Effect</strong>只是简单地包装了一个现有的<strong>publisher</strong>，我们这样做是因为我们想添加自己的方便助手，而不污染其他所有人的<strong>publisher</strong>API。我们有像<strong>fireAndForget</strong>函数这样的助手:</p>
+<pre><code class="language-swift">extension Effect {
+  public static func fireAndForget(work: @escaping () -&gt; Void) -&gt; Effect {
+    return Deferred { () -&gt; Empty&lt;Output, Never&gt; in
+      work()
+      return Empty(completeImmediately: true)
+    }.eraseToEffect()
+  }
+}
+</code></pre>
+<p>这让我们可以触发一个需要做一些工作的副作用，但不需要向系统反馈任何数据。这方面的例子可以是日志记录和分析跟踪，我们甚至使用这种风格效果将数字列表保存到磁盘上。</p>
+<p>我们也有一个<strong>helper</strong>来执行一些同步工作，在我们需要与外部世界交互的时候，但它不一定需要异步完成:</p>
+<pre><code class="language-swift">extension Effect {
+  public static func sync(work: @escaping () -&gt; Output) -&gt; Effect {
+    return Deferred {
+      Just(work())
+    }.eraseToEffect()
+  }
+}
+</code></pre>
+<p>例如，我们使用它来执行从磁盘加载一些数据的效果。</p>
+<p>更普遍的是，我们可以在<strong>Combine</strong>中自由使用任何api来构造和转换<strong>publishers</strong>，然后在工作的最后，你可以使用<strong>eraseToEffect</strong>助手将你的<strong>publisher</strong>转换成一个<strong>effect</strong> :</p>
+<pre><code class="language-swift">extension Publisher where Failure == Never {
+  public func eraseToEffect() -&gt; Effect&lt;Output&gt; {
+    return Effect(publisher: self.eraseToAnyPublisher())
+  }
+}
+</code></pre>
+<p>我们将这些<strong>effects</strong>引入应用程序的方法是构造并从<strong>reducer</strong>返回它们。</p>
+<p>举个简单的例子，假设我们想在点击减量按钮时在计数器视图中打印一些东西。我们可以简单地返回一个<strong>fireAndForget</strong>效果来进行打印:</p>
+<pre><code class="language-swift">public func counterReducer(state: inout CounterState, action: CounterAction) -&gt; [Effect&lt;CounterAction&gt;] {
+  switch action {
+  case .decrTapped:
+    state.count -= 1
+    return [
+      .fireAndForget {
+        print(state.count)
+      }
+    ]
+</code></pre>
+<blockquote>
+<p>🛑 Escaping closure captures ‘inout’ parameter ‘state’</p>
+</blockquote>
+<p>这现在不起作用，因为我们正在试图访问逃逸闭包中的<strong>inout</strong>状态变量。这是一个非常好的错误，因为如果Swift允许这样做，就意味着我们可以在稍后执行的闭包中改变我们的状态。事实上，这个闭包可以在创建后的10秒内执行，这意味着一些神秘的突变正在<strong>reducer</strong>权限之外发生，而这正是我们想要在架构中防止的。</p>
+<p>然而，如果我们在闭包外部得到一个不可变的计数引用，一切都会正常工作:</p>
+<pre><code class="language-swift">case .decrTapped:
+  state.count -= 1
+  let count = state.count
+  return [
+    .fireAndForget {
+      print(count)
+    }
+  ]
+</code></pre>
+<p>如果我们想做一些更复杂的事情呢? 如果在点击减量按钮之后，我们想要等待1秒，然后增加计数呢? 这当然是一件愚蠢的事情，但它是一个相当复杂的效果想要处理。幸运的是，我们可以简单地使用<strong>Combine</strong>框架:</p>
+<pre><code class="language-swift">return [
+  .fireAndForget {
+    print(&quot;Decr Tapped!&quot;, count)
+  },
+
+  Just(.incrTapped)
+    .delay(for: 1, scheduler: DispatchQueue.main)
+    .eraseToEffect()
+]
+</code></pre>
+<p>在这里，我们将想要发送的动作封装到一个<strong>Just publisher</strong>中，这个<strong>publisher</strong>会立即发出它的值。然后我们将它的发射延迟1秒，并最终把<strong>publisher</strong> 类型擦除为一个<strong>effect</strong>。</p>
+<p>这三行代码很有冲击力，意味着现在如果我们运行应用，每次我们尝试减少它都会在一秒后撤销。即使我们多次点击它，它最终也会抵消掉所有的工作。</p>
+<h2 id="3-a-nameenvironmentrecapaenvironment-recap">3. <a name='Environmentrecap'></a>Environment recap</h2>
+<p>这就是<strong>effects</strong>。它们让我们能够完成需要与外界互动的工作，而这些工作是由<strong>reducers</strong>自己无法完成的。但副作用也很难测试，所以为了控制我们的影响，我们转向了<strong>environment</strong>技术。</p>
+<p>为了采用这种技术，我们首先定义一个<strong>environment</strong>结构，它包含我们的应用程序需要访问的所有依赖项。例如，<strong>Counter</strong>模块只需要访问一个用于计算“第n个素数”的函数，该函数通常会向一个强大的计算平台<strong>Wolfram Alpha</strong>发出网络请求:</p>
+<pre><code class="language-swift">struct CounterEnvironment {
+  var nthPrime: (Int) -&gt; Effect&lt;Int?&gt;
+}
+</code></pre>
+<p>我们将这个字段设置为<strong>var</strong>，因为它可以很容易地在<strong>tests、playgrounds和staged applications</strong>中将实时依赖项替换为模拟依赖项。</p>
+<p>作为这项技术的一部分，我们也喜欢提供对环境的实时和模拟实现的简单访问，表示为静态:</p>
+<pre><code class="language-swift">extension CounterEnvironment {
+  static let live = CounterEnvironment(nthPrime: Counter.nthPrime)
+}
+
+extension CounterEnvironment {
+  static let mock = CounterEnvironment(nthPrime: { _ in .sync { 17 }})
+}
+</code></pre>
+<p>到目前为止，这些似乎都没有争议，但接下来我们做了一些非常奇怪的事情:我们定义了这个<strong>environment</strong>的全局可变实例，默认为<strong>live environment</strong>:</p>
+<pre><code class="language-swift">var Current = CounterEnvironment.live
+</code></pre>
+<p>然后我们强迫自己永远不要接触<strong>dependency</strong>，除非它存储在<strong>environment</strong>中。</p>
+<p>例如，当我们点击按钮询问“第n个质数”是什么时，我们通过当前<strong>environment</strong>执行<strong>effect</strong>:</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  state.isNthPrimeButtonDisabled = true
+  return [
+    Current.nthPrime(state.count)
+      .map(CounterAction.nthPrimeResponse)
+      .receive(on: DispatchQueue.main)
+      .eraseToEffect()
+]
+</code></pre>
+<p>这个可变变量可能看起来很奇怪，但它允许我们在一行中轻松模拟整个环境。例如，在计数器测试中，我们在<strong>setUp</strong>块中执行了以下操作:</p>
+<pre><code class="language-swift">class CounterTests: XCTestCase {
+  override func setUp() {
+    super.setUp()
+    Current = .mock
+  }
+}
+</code></pre>
+<p>这意味着我们可以保证每个测试运行在一个受控制的环境中，但我们也可以通过重写任何依赖项来进一步调整每个测试用例中的环境，例如:</p>
+<pre><code class="language-swift">func testNthPrimeButtonHappyFlow() {
+  Current.nthPrime = { _ in .sync { 17 } }
+
+  assert(
+</code></pre>
+<h2 id="4-a-namecurrentproblemsacurrent-problems">4. <a name='Currentproblems'></a>Current problems</h2>
+<p>这就是环境技术的工作原理。它非常容易上手，为我们提供了一种单一的、一致的方式来访问我们的依赖关系，同时模拟所有的依赖关系是微不足道的。</p>
+<p>然而，这并不是没有问题。</p>
+<p>也许最明显的问题是，我们定义的每个<strong>environments</strong>都位于它们自己的模块中，因此是完全断开连接的。请记住，我们对架构的组合减速器方法的好处之一是，我们可以编写类似集成的测试，一次测试应用程序的多个层。</p>
+<p>例如，我们编写了一个测试，表明计数器特征和素数模态特征正确集成。特别地，我们模拟了这样一个想法:用户将计数器加1，然后从他们喜欢的质数中添加或删除这个数字。代码是这样的:</p>
+<pre><code class="language-swift">func testPrimeModal() {
+  assert(
+    initialValue: CounterViewState(
+      count: 1,
+      favoritePrimes: [3, 5]
+    ),
+    reducer: counterViewReducer,
+    steps:
+    Step(.send, .counter(.incrTapped)) {
+      $0.count = 2
+    },
+    Step(.send, .primeModal(.saveFavoritePrimeTapped)) {
+      $0.favoritePrimes = [3, 5, 2]
+    },
+    Step(.send, .primeModal(.removeFavoritePrimeTapped)) {
+      $0.favoritePrimes = [3, 5]
+    }
+  )
+}
+</code></pre>
+<p>这是不可思议的强大，我们基本上从我们的可组合<strong>reducers</strong>免费得到它。</p>
+<p>然而，我们并没有在这个步骤脚本中测试任何效果，所以我们没有看到全貌。现在只有<strong>Counter</strong>模块有任何效果，<strong>PrimeModal</strong>模块没有任何效果，所以很难看出这里的复杂性。为了模拟所有的<strong>effects</strong>，我们需要做的就是:</p>
+<pre><code class="language-swift">func testPrimeModal() {
+  Current = .mock
+
+  assert(
+</code></pre>
+<p>但是，如果我们考虑为我们的主要应用目标编写集成测试，即将所有内容组合到一个大<strong>appReducer</strong>中，我们将更好地了解需要什么。让我们首先清理PrimeTimeTests文件:</p>
+<pre><code class="language-swift">import XCTest
+@testable import PrimeTime
+
+class PrimeTimeTests: XCTestCase {
+}
+</code></pre>
+<p>如果我们想为此编写一个集成测试，我们首先需要导入所有的功能:</p>
+<pre><code class="language-swift">@testable import Counter
+@testable import FavoritePrimes
+@testable import PrimeModal
+</code></pre>
+<p>我们可以引入一个测试函数:</p>
+<pre><code class="language-swift">class PrimeTimeTests: XCTestCase {
+  func testIntegration() {
+  }
+}
+</code></pre>
+<p>现在，在这个测试中，我们想要确保我们处于一个完全受控的环境中，因此我们需要模拟每个模块的环境。 这意味着<strong>Counter</strong>模块和<strong>FavoritePrimes</strong>模块:</p>
+<pre><code class="language-swift">class PrimeTimeTests: XCTestCase {
+  func testIntegration() {
+    Counter.Current = .mock
+    FavoritePrimes.Current = .mock
+  }
+}
+</code></pre>
+<p>这有点令人失望。我们并没有从编译器那里得到任何静态帮助来确保我们正确地执行了这个操作。随着我们向应用程序添加越来越多的特性，我们将创建新的模块来容纳这些特性，每个模块都将拥有<strong>environments</strong>，没有任何东西会迫使我们确保我们已经模拟出了这些<strong>environments</strong>。我们冒着在测试期间调用活动依赖项的风险。</p>
+<p>这对你和你的团队来说可能不是最大的问题。当然，你可以把一些流程放到合适的地方，帮助捕捉这样的事情。但这是需要记住的，理想情况下应该有一个更普遍的解决方案。</p>
+<p>这种方法的另一个问题是，跨模块共享依赖项并不容易。例如，<strong>FavoritePrimes</strong>模块持有一个<strong>FileClient</strong>，我们用它来保存和加载数据到磁盘。如果我们想在另一个模块中使用同样的依赖，我们很可能必须构造一个新的文件客户端并在该模块中使用它。否则，我们需要在更高的层次上进行一些协调。例如，在应用程序委托中，我们可以做一些额外的工作，以确保<strong>FavoritePrimes</strong>模块和其他模块共享相同的文件客户端。我们还必须确保在测试中做同样的工作，以确保所有模块都使用相同的依赖项进行测试。 这是有可能解决的，但理想情况下会有一个更普遍的解决方案，</p>
+<p>最后，这种形式的<strong>environment</strong>技术的另一个问题是，模块中所有事物的实例只能使用该<strong>environment</strong>中的一个真实<strong>environment</strong>。例如，我们不能创建一个计数器视图，它使用<strong>Wolfram API</strong>来做它的计算，但同时也创建一个计数器视图，它使用一些其他API来做它的计算。这使得我们每个模块中的代码的灵活性有所降低。</p>
+<p>所有这些问题的解决方案是，我们应该显式地将依赖关系传递给需要这些依赖关系的函数。如果您为一个函数提供了完成其工作所需的一切，那么测试和控制它们就很简单了。</p>
+<p>然而，这并不总是可能或容易做到的。在现实世界的代码基础中，可能难以置信地或甚至不可能像您希望的那样传递依赖关系。您可能有遗留的代码使它变得困难，或者您可能有抽象层阻止您做您想做的事情。这就是环境技术真正发挥作用的地方。它允许您在任何代码库中立即获得一些可测试性和对依赖项的一些控制。</p>
+<h2 id="5-a-nameenvironmentinthereduceraenvironment-in-the-reducer">5. <a name='Environmentinthereducer'></a>Environment in the reducer</h2>
+<p>然而，对于可组合体系结构，情况有些不同。它为我们提供了一种单一、一致的方式来构建整个应用程序的特性。如果我们可以让架构意识到环境，那么我们就不需要接触全局环境，因为我们可以自动地使用它。</p>
+<p>首先要做的是<strong>reducer</strong>，因为<strong>reducer</strong>负责产生后来由<strong>store</strong>运行的<strong>effects</strong>。为了使这些<strong>effects</strong>是可控的，我们需要以可控的方式访问它的依赖关系。之前我们接触了模块的环境，但是如果<strong>reducer</strong>内部有一个可用的环境呢?</p>
+<p>我们的<strong>reducer</strong>不是这样的</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action&gt; = (inout Value, Action) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p>我们将使<strong>reducer</strong>在当前值和动作之外提供一个环境，这意味着引入另一个泛型:</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action, Environment&gt; = (inout Value, Action) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p>我们可以使用这种通用的一种方法是对<strong>reducer</strong>进行<strong>curry</strong>处理，这样首先给它一个环境，然后它将返回一个传统的<strong>reducer</strong>签名:</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action, Environment&gt; = (Environment) -&gt; (inout Value, Action) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p>这是完全有效的，事实上，这是我们如何控制副作用在我们的<a href="https://www.pointfree.co/episodes/ep2-side-effects">第二集Point-Free</a>。在那一节中，我们将一个日期值放入函数中，以便我们能够控制它。</p>
+<p>然而，对<strong>reducer</strong>使用这个签名将意味着总是从我们的<strong>reducer</strong>返回一个函数，这将在一段时间后变得很烦人。 值得庆幸的是，有一个等价的公式，我们只是在环境中通过<strong>state和action</strong>:</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action, Environment&gt; = (inout Value, Action, Environment) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p>我们甚至可以把函数往另一个方向<strong>curry</strong>:</p>
+<pre><code class="language-swift">//public typealias Reducer&lt;Value, Action, Environment&gt; = (inout Value, Action) -&gt; (Environment) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p>我们不会那样做，但它也是定义<strong>reducers</strong>的有效方法，我们有练习来探索这个。</p>
+<p>这个<strong>Environment</strong>通用型使我们有机会提供<strong>reducer</strong>所需的任何依赖项，以产生增强其逻辑的效果。</p>
+<p>这当然会破坏很多东西，所以让我们开始修复。让我们首先关注<strong>ComposableArchitecture</strong>模块。</p>
+<p>我们看到的第一个编译器错误是在<strong>combine</strong>函数中，该函数取一堆相同类型的<strong>reducer</strong>并将它们组合成一个巨型的<strong>reducer</strong>。为了解决这个问题，我们只需要引入环境泛型，并将其传递给每一个<strong>sub-reducers</strong>:</p>
+<pre><code class="language-swift">public func combine&lt;Value, Action, Environment&gt;(
+  _ reducers: Reducer&lt;Value, Action, Environment&gt;...
+) -&gt; Reducer&lt;Value, Action, Environment&gt; {
+  return { value, action, environment in
+    let effects = reducers.flatMap { $0(&amp;value, action, environment) }
+    return effects
+  }
+}
+</code></pre>
+<p>很简单。接下来是<strong>pullback</strong>，它现在遇到了麻烦，因为我们再次需要考虑新环境的通用情况。最简单的解决方法是引入一个<strong>Environment</strong>泛型，并在执行<strong>pullback</strong>时将<strong>Environment</strong>传递给本地<strong>reducer</strong>。</p>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction, Environment&gt;(
+  _ reducer: @escaping Reducer&lt;LocalValue, LocalAction, Environment&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: CasePath&lt;GlobalAction, LocalAction&gt;
+) -&gt; Reducer&lt;GlobalValue, GlobalAction, Environment&gt; {
+  return { globalValue, globalAction, environment in
+    guard let localAction = action.extract(globalAction) else { return [] }
+    let localEffects = reducer(&amp;globalValue[keyPath: value], localAction, environment)
+
+    return localEffects.map { localEffect in
+      localEffect.map(action.embed)
+        .eraseToEffect()
+    }
+  }
+}
+</code></pre>
+<p>这可以正常<strong>build</strong>，但并不理想。 <strong>reducers</strong>上的<strong>pullback</strong>操作完全是关于能够将在局部域上工作的<strong>reducers</strong>转换为在全局域上工作的<strong>reducers</strong>。这对于模块化很方便，因为它允许我们将我们的功能分解成只包含该功能真正关心的域类型的模块，然后应用程序目标可以将这些域组装成完整的应用程序域。</p>
+<p>为了维护这种模块化，并将局部环境与全局环境的无关细节隔离开来，我们还希望能够转换环境。</p>
+<p>因此，让我们为局部和全局环境引入泛型，并看看环境转换需要成为什么样的形状:</p>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction, LocalEnvironment, GlobalEnvironment&gt;(
+  _ reducer: @escaping Reducer&lt;LocalValue, LocalAction, LocalEnvironment&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: CasePath&lt;GlobalAction, LocalAction&gt;,
+  environment: ???
+) -&gt; Reducer&lt;GlobalValue, GlobalAction, GlobalEnvironment&gt; {
+</code></pre>
+<p>在这个函数的函数体中，我们需要返回一个新的<strong>reducer</strong>，它可以在全局环境下工作:</p>
+<pre><code class="language-swift">return { globalValue, globalAction, globalEnvironment in
+</code></pre>
+<p>然后，当我们尝试运行本地<strong>reducer</strong>时，我们需要为它提供一个本地环境。似乎我们需要一种方法，将现有的全球环境转变为局部环境，而这就决定了我们需要采取的转变方式:</p>
+<pre><code class="language-swift">environment: @escaping (GlobalEnvironment) -&gt; LocalEnvironment
+</code></pre>
+<p>然后我们可以简单地通过以下操作来修复回调:</p>
+<pre><code class="language-swift">return { globalValue, globalAction, globalEnvironment in
+  guard let localAction = action.extract(globalAction) else { return [] }
+  let localEffects = reducer(&amp;globalValue[keyPath: value], localAction, environment(globalEnvironment))
+
+  return localEffects.map { localEffect in
+    localEffect.map(action.embed)
+      .eraseToEffect()
+  }
+}
+</code></pre>
+<p>就像<strong>pullback</strong>一样现在编译。关于这一点:</p>
+<ul>
+<li>
+<p>请注意，环境转换的方向与价值和行动转换的方向相同。这三种方法都是从全局到局部的。所以这个变换在它的每一个泛型中仍然是逆变的，这就是为什么<strong>pullback</strong>仍然是这个操作的好名字。</p>
+</li>
+<li>
+<p>我们还想说，沿着普通函数而不是关键路径或case路径<strong>pullback</strong>环境是完全可以的。关键路径和<strong>case</strong>路径之所以必不可少，是因为我们需要一个更强大的工具来分离状态和行为并将它们粘在一起。但是对于环境，我们只需要将局部环境从全局环境中投影出来，一个简单的函数就可以做到这一点。</p>
+</li>
+</ul>
+<p>好了，这个模块中的下一个编译器错误是日志高阶减速器，它允许我们向任何减速器添加日志记录功能。我们只需要确保将环境传递给我们正在添加日志的减速机:</p>
+<pre><code class="language-swift">public func logging&lt;Value, Action, Environment&gt;(
+  _ reducer: @escaping Reducer&lt;Value, Action, Environment&gt;
+) -&gt; Reducer&lt;Value, Action, Environment&gt; {
+  return { value, action, environment in
+    let effects = reducer(&amp;value, action, environment)
+    let newValue = value
+    return [.fireAndForget {
+      print(&quot;Action: \(action)&quot;)
+      print(&quot;Value:&quot;)
+      dump(newValue)
+      print(&quot;---&quot;)
+      }] + effects
+  }
+}
+</code></pre>
+<p>现在，我们甚至可以通过要求调用者提供一个保存打印函数的环境来改进这个高阶减速器。就像这样，我们更新了<strong>reducers</strong>和它们的转换函数来适应环境，这是非常简单的。</p>
+<hr>
+<h2 id="6-a-nameenvironmentinthestoreaenvironment-in-the-store">6. <a name='Environmentinthestore'></a>Environment in the store</h2>
+<p>但我们在<strong>Store</strong>类型中有一堆错误。</p>
+<p>首先，它持有的<strong>Reducer</strong>现在有3个泛型:</p>
+<pre><code class="language-swift">private let reducer: Reducer&lt;Value, Action&gt;
+</code></pre>
+<blockquote>
+<p>🛑 Generic type ‘Reducer’ specialized with too few type parameters (got 2, but expected 3)</p>
+</blockquote>
+<p>我们需要以某种方式提供这个泛型。似乎没有太多的其他我们可以做，除了添加泛型到我们的商店:</p>
+<pre><code class="language-swift">public final class Store&lt;Value, Action, Environment&gt;: ObservableObject {
+  private let reducer: Reducer&lt;Value, Action, Environment&gt;
+</code></pre>
+<p>这可能是合理的，毕竟我们似乎有相同的形状的<strong>Reducer</strong>和<strong>Store</strong>的形状。</p>
+<p>下一个错误是在<strong>Store</strong>的初始化式中，它只需要新的泛型:</p>
+<pre><code class="language-swift">public init(initialValue: Value, reducer: @escaping Reducer&lt;Value, Action, Environment&gt;) {
+</code></pre>
+<p>接下来，我们在<strong>send</strong>方法中出现错误，因为我们试图在不提供环境的情况下调用<strong>reducer</strong>:</p>
+<pre><code class="language-swift">public func send(_ action: Action) {
+  let effects = self.reducer(&amp;self.value, action)
+</code></pre>
+<blockquote>
+<p>🛑 Missing argument for parameter #3 in call</p>
+</blockquote>
+<p>我们要从哪里得到这样的环境? 似乎我们应该在创建<strong>Store</strong>时为其提供环境。这样，它就可以抓住环境，并在任何动作出现时将环境传递给它的<strong>Reducer</strong>。让我们这样做:</p>
+<pre><code class="language-swift">public final class Store&lt;Value, Action, Environment&gt;: ObservableObject {
+  private let reducer: Reducer&lt;Value, Action, Environment&gt;
+  private let environment: Environment
+  @Published public private(set) var value: Value
+  private var viewCancellable: Cancellable?
+  private var effectCancellables: Set&lt;AnyCancellable&gt; = []
+
+  public init(
+    initialValue: Value,
+    reducer: @escaping Reducer&lt;Value, Action, Environment&gt;,
+    environment: Environment
+  ) {
+    self.reducer = reducer
+    self.value = initialValue
+    self.environment = environment
+  }
+</code></pre>
+<p>现在我们有一些东西要传递给<strong>Reducer</strong>:</p>
+<pre><code class="language-swift">public func send(_ action: Action) {
+  let effects = self.reducer(&amp;self.value, action, self.environment)
+</code></pre>
+<p>到目前为止，这些错误都很容易修复。</p>
+<p>但下一个有点棘手。它在<strong>Store</strong>的<strong>view</strong>方法中，该方法允许我们将<strong>Store</strong>转换为只公开局部域的<strong>Store</strong>。 这就是我们如何将<strong>Store</strong>放在一个SwiftUI视图中，并将其传递给一个更小的视图，该视图只需要父视图的状态和操作的一部分。</p>
+<p>现在它正在抱怨，因为我们缺少第三个泛型:</p>
+<pre><code class="language-swift">public func view&lt;LocalValue, LocalAction&gt;(
+  value toLocalValue: @escaping (Value) -&gt; LocalValue,
+  action toGlobalAction: @escaping (LocalAction) -&gt; Action
+) -&gt; Store&lt;LocalValue, LocalAction&gt; {
+  let localStore = Store&lt;LocalValue, LocalAction&gt;(
+</code></pre>
+<blockquote>
+<p>🛑 Generic type ‘Store’ specialized with too few type parameters (got 2, but expected 3)</p>
+</blockquote>
+<p>由于这个函数是关于将一个全局域上的<strong>Store</strong>转换为一个局部域上的<strong>Store</strong>，我们可能会认为我们应该在这里的值和操作转换之外提供另一个转换。</p>
+<p>因此，让我们首先为本地环境引入一个泛型和一个新的转换参数:</p>
+<pre><code class="language-swift">public func view&lt;LocalValue, LocalAction, LocalEnvironment&gt;(
+  value toLocalValue: @escaping (Value) -&gt; LocalValue,
+  action toGlobalAction: @escaping (LocalAction) -&gt; Action,
+  environment: ???
+) -&gt; Store&lt;LocalValue, LocalAction, LocalEnvironment&gt; {
+  let localStore = Store&lt;LocalValue, LocalAction, LocalEnvironment&gt;(
+    …
+    environment: ???
+  )
+</code></pre>
+<p>如果我们想提供这样的论据，我们会看到我们需要提供一个局部环境，我们手边有一个全局环境，所以这似乎决定了我们的转变应该走向:</p>
+<pre><code class="language-swift">public func view&lt;LocalValue, LocalAction, LocalEnvironment&gt;(
+  value toLocalValue: @escaping (Value) -&gt; LocalValue,
+  action toGlobalAction: @escaping (LocalAction) -&gt; Action,
+  environment toLocalEnvironment: @escaping (Environment) -&gt; LocalEnvironment
+) -&gt; Store&lt;LocalValue, LocalAction, LocalEnvironment&gt; {
+  let localStore = Store&lt;LocalValue, LocalAction, LocalEnvironment&gt;(
+    initialValue: toLocalValue(self.value),
+    reducer: { localValue, localAction in
+      self.send(toGlobalAction(localAction))
+      localValue = toLocalValue(self.value)
+      return []
+  },
+    environment: toLocalEnvironment(self.environment)
+  )
+</code></pre>
+<p>越来越近了，这个方法中又多了一个编译器错误</p>
+<blockquote>
+<p>🛑 Contextual closure type ‘(inout LocalValue, LocalAction, LocalEnvironment) -&gt; [Effect]’ expects 3 arguments, but 2 were used in closure body</p>
+</blockquote>
+<p>我们在这里实现的<strong>reducer</strong>使用了<strong>reducer</strong>的老签名，只有两个参数。我们现在有第三个参数，环境，也就是这里的本地环境</p>
+<pre><code class="language-swift">reducer: { localValue, localAction, localEnvironment in
+</code></pre>
+<p>奇怪的是，这就得到了编译的结果。 奇怪的是，我们甚至不需要使用局部环境。实际上，我们可以使用下划线来表示它根本没有被使用:</p>
+<pre><code class="language-swift">reducer: { localValue, localAction, _ in
+</code></pre>
+<p>这意味着我们并没有以任何有意义的方式利用环境。我们所做的只是将其转换并将其传递给新<strong>Store</strong>，但新<strong>Store</strong>并没有将其全部使用。</p>
+<hr>
+<h2 id="7-a-nameerasingtheenvironmentfromthestoreaerasing-the-environment-from-the-store">7. <a name='Erasingtheenvironmentfromthestore'></a>Erasing the environment from the store</h2>
+<p>可组合架构模块终于开始构建了，但是我们在构建过程中遇到了一些奇怪的事情。<strong>Store</strong>上的<strong>view</strong>方法的实现非常奇怪，这让我怀疑我们是否在做正确的事情。我们需要在视图方法中考虑环境，即使它没有以任何有意义的方式使用。</p>
+<p>事实上，<strong>Store</strong>作为一个整体概念与环境几乎没有关系。<strong>Store</strong>的用户只关心从它获取状态值并向它发送操作。他们从不访问环境，甚至不需要了解正在底层使用的环境。</p>
+<p>我们想要从<strong>Store</strong>类中“删除”这个类型。也就是说，我们希望从<strong>Store</strong>中删除泛型，并将环境细节隐藏在类的实现中，而不是将其公开。</p>
+<p>关于Swift的类型擦除有很多可说的，但我们足够幸运的是，对于<strong>Store</strong>类型，擦除这种类型非常容易。让我们从删除环境泛型开始，这样我们可以看到我们需要做什么来解决这个问题:</p>
+<pre><code class="language-swift">public final class Store&lt;Value, Action&gt;: ObservableObject {
+</code></pre>
+<p>随着泛型类型的消失，我们不能再保留指定了environment类型的<strong>Reducer</strong>或环境。然而，我们可以将这些类型替换为<strong>Any</strong>，这样我们现在就不需要放入具体的类型，但在运行时可以使用任何值:</p>
+<pre><code class="language-swift">public final class Store&lt;Value, Action&gt;: ObservableObject {
+  private let reducer: Reducer&lt;Value, Action, Any&gt;
+  private let environment: Any
+</code></pre>
+<p>然后，对于初始化器，这是一个我们实际上需要环境信息的地方，我们可以引入一个泛型并将其用于<strong>reducer</strong>和环境参数:</p>
+<pre><code class="language-swift">public init&lt;Environment&gt;(
+  initialValue: Value,
+  reducer: @escaping Reducer&lt;Value, Action, Environment&gt;,
+  environment: Environment
+) {
+  self.reducer = reducer
+  self.value = initialValue
+  self.environment = environment
+}
+</code></pre>
+<p>这会导致编译器错误，因为它不知道如何在<strong>Any</strong>环境的<strong>reducer</strong>和特定环境的<strong>reducer</strong>之间进行转换:</p>
+<blockquote>
+<p>🛑 Cannot assign value of type ‘(inout Value, Action, Environment) -&gt; [Effect]’ to type ‘(inout Value, Action, Any) -&gt; [Effect]’</p>
+</blockquote>
+<p>我们可以通过在这个初始化器中实现一个自定义的<strong>reducer</strong>来解决这个问题，该<strong>reducer</strong>强制将Any值转换为一个合适的<strong>Environment</strong>值。这听起来可能很危险，但如果我们小心，我们永远不会意外地得到一个我们不期望的环境。我们来试一下:</p>
+<pre><code class="language-swift">public init&lt;Environment&gt;(
+  initialValue: Value,
+  reducer: @escaping Reducer&lt;Value, Action, Environment&gt;,
+  environment: Environment
+) {
+  self.reducer = { value, action, environment in
+    reducer(&amp;value, action, environment as! Environment)
+  }
+  self.value = initialValue
+  self.environment = environment
+}
+</code></pre>
+<p>这会得到初始化器的编译，但<strong>view</strong>方法又有问题了，但我们所要做的就是删除环境泛型并将我们自己的环境传递给新的<strong>store</strong>:</p>
+<pre><code class="language-swift">public func view&lt;LocalValue, LocalAction&gt;(
+  value toLocalValue: @escaping (Value) -&gt; LocalValue,
+  action toGlobalAction: @escaping (LocalAction) -&gt; Action
+) -&gt; Store&lt;LocalValue, LocalAction&gt; {
+  let localStore = Store&lt;LocalValue, LocalAction&gt;(
+    initialValue: toLocalValue(self.value),
+    reducer: { localValue, localAction, _ in
+      self.send(toGlobalAction(localAction))
+      localValue = toLocalValue(self.value)
+      return []
+  },
+    environment: self.environment
+  )
+  localStore.viewCancellable = self.$value.sink { [weak localStore] newValue in
+    localStore?.value = toLocalValue(newValue)
+  }
+  return localStore
+}
+</code></pre>
+<p>事情正在发展中!强制施法可能看起来很可怕，但也可以不使用强制施法而进行这种类型的擦除。</p>
+<p>我们不需要在视图中显式地转换环境，这可能看起来很奇怪，但请记住，环境纯粹是存储中的一个实现细节，而且所有的环境转换都已经应用到<strong>reducer</strong>上了。</p>
+<hr>
+<p>幸运的是，应用程序是完全模块化的，所以我们可以从最简单、依赖最少的模块开始，然后返回到主应用目标。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-90composing-architecture-with-case-paths/">
+                  <h3 class="post-title">
+                    PointFree Episode 90:Composing Architecture with Case Paths 
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

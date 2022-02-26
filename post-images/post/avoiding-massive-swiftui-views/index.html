@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Avoiding massive SwiftUI views | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在编写任何形式的UI代码时，通常很难决定何时以及如何将各种视图实现分割成更小的部分。每个视图都代表整个屏幕或特性，这很容易导致难以更改、重构和重用的代码
+对于基于uikit的应用程序(在某种程度上也是基于appkit的)，这个问题的一个常见..." />
+    <meta name="keywords" content="code structure,architecture,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Avoiding massive SwiftUI views</h2>
+            <div class="post-date">2020-03-08</div>
+            
+            <div class="post-content" v-pre>
+              <p>在编写任何形式的UI代码时，通常很难决定何时以及如何将各种视图实现分割成更小的部分。每个视图都代表整个屏幕或特性，这很容易导致难以更改、重构和重用的代码</p>
+<p>对于基于uikit的应用程序(在某种程度上也是基于appkit的)，这个问题的一个常见表现是“海量视图控制器”综合症。这是当一个视图控制器最终承担了太多的责任，导致大量的实现，无论是在作用域还是行计数方面。</p>
+<p>现在，我们正共同朝着SwiftUI框架的方向发展，将其作为为所有苹果平台构建用户界面的首选框架。乍一看，这个问题似乎很快就会消失。没有视图控制器，没有问题，对吧?  然而，虽然SwiftUI的总体设计确实鼓励我们在默认情况下编写更可组合、解耦的代码，但它仍然要求我们在设计和分解视图代码时，不会把太多的责任推到单个类型上。</p>
+<p>本周，让我们来探索这个主题，并看看一些不同的技术， 可以用来避免用海量视图控制器</p>
+<h2 id="extract-reuse-repeat">Extract, reuse, repeat</h2>
+<p>由于SwiftUI视图不是屏幕上像素的具体表示，而是对我们想要渲染的各种视图的轻量级描述，因此它们通常很适合被提取成更小的片段，然后在各种上下文中重用。</p>
+<p>例如，假设我们正在开发一个浏览电影的应用程序。为了呈现一个电影列表，我们已经构建了一个电影列表视图——它观察一个视图模型并像这样呈现它的各种子视图</p>
+<pre><code class="language-swift">struct MovieList: View {
+    @ObservedObject var viewModel: MovieListViewModel
+    @Binding var selectedMovie: Movie?
+
+    var body: some View {
+        List(viewModel.movies, selection: $selectedMovie) { movie in
+            HStack {
+                Image(uiImage: movie.image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: 100)
+                VStack(alignment: .leading) {
+                    Text(movie.name).font(.headline)
+                    HStack {
+                        Image(systemName: &quot;person&quot;)
+                        Text(&quot;Director:&quot;)
+                    }.foregroundColor(.secondary)
+                    Text(movie.director)
+                    HStack {
+                        Image(systemName: &quot;square.grid.2x2&quot;)
+                        Text(&quot;Genre:&quot;)
+                    }.foregroundColor(.secondary)
+                    Text(movie.genre)
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>如果我们只看上面视图的行数，它真的一点也不庞大。然而，考虑到我们目前正在一个单一的地方构建视图的所有不同部分，要快速掌握最终的UI是什么样子是相当困难的-- 随着我们不断添加新的UI变化和功能，这个问题可能会继续增长。</p>
+<p>相反，让我们看看是否可以将上面的视图构建为单个组件的集合，而不是单个单元。这样，我们既可以在其他视图中单独重用这些组件，也可以使UI代码可读性更好。</p>
+<p>让我们从我们的图像开始，它并不真正保证一个新的视图实现——因为我们只是应用了一组修饰符来使每个图像渲染成一个更小的“缩略图”。 所以，就像我们在“配置SwiftUI视图”中看到的那样，让我们转而编写一个扩展，将这些修饰符组合在一起，以便使它们在语义上更有意义:</p>
+<pre><code class="language-swift">extension Image {
+    func asThumbnail(withMaxWidth maxWidth: CGFloat = 100) -&gt; some View {
+        resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: maxWidth)
+    }
+}
+</code></pre>
+<p>接下来，让我们重构呈现两个主要信息的子视图——电影导演和类型——到一个名为InfoView的可重用组件中:</p>
+<pre><code class="language-swift">struct InfoView: View {
+    var icon: Image
+    var title: String
+    var text: String
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                icon
+                Text(title)
+            }.foregroundColor(.secondary)
+            Text(text)
+        }
+    }
+}
+</code></pre>
+<p>note：在重构过程中，我们还利用这个机会让上面的视图完全不知道它的底层模型——因为它现在只是呈现一个图标、一个标题和一个文本，而不是一个电影模型。查看“在Swift中防止视图感知模型”以了解更多关于该方法的信息。</p>
+<p>上面的这些看起来似乎是大计划中的一些小改变，但是如果我们现在回到我们的MovieList并更新它以使用我们的新组件，我们可以看到我们实际上使它的实现更容易阅读。</p>
+<pre><code class="language-swift">struct MovieList: View {
+    @ObservedObject var viewModel: MovieListViewModel
+    @Binding var selectedMovie: Movie?
+
+    var body: some View {
+        List(viewModel.movies, selection: $selectedMovie) { movie in
+            HStack {
+                Image(uiImage: movie.image).asThumbnail()
+                VStack(alignment: .leading) {
+                    Text(movie.name).font(.headline)
+                    InfoView(
+                        icon: Image(systemName: &quot;person&quot;),
+                        title: &quot;Director:&quot;,
+                        text: movie.director
+                    )
+                    InfoView(
+                        icon: Image(systemName: &quot;square.grid.2x2&quot;),
+                        title: &quot;Genre:&quot;,
+                        text: movie.genre
+                    )
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>尽管我们只是在重构期间减少了列表视图的行数，但 我们现在已经设置了它的实现，使其以一种更易于维护的方式增长--因为我们现在可以分别迭代它的每个独立组件-- 这通常需要很长一段时间才能防止视图变得庞大。</p>
+<p>然而，我们不能就此止步，因为SwiftUI高度可组合设计的美妙之处在于，我们可以将用户界面分割成不同的部分，直到达到我们完全满意的分离程度。例如，与其让MovieList自己负责配置它的每一行，不如将所有这些子视图封装到另一个组件中，就像这样</p>
+<pre><code class="language-swift">struct MovieRow: View {
+    var movie: Movie
+
+    var body: some View {
+        HStack {
+            Image(uiImage: movie.image).thumbnail()
+            VStack(alignment: .leading) {
+                Text(movie.name).font(.headline)
+                InfoView(
+                    icon: Image(systemName: &quot;person&quot;),
+                    title: &quot;Director:&quot;,
+                    text: movie.director
+                )
+                InfoView(
+                    icon: Image(systemName: &quot;square.grid.2x2&quot;),
+                    title: &quot;Genre:&quot;,
+                    text: movie.genre
+                )
+            }
+        }
+    }
+}
+</code></pre>
+<p>虽然我们也可以让上面的MovieRow模型不可知，但在这种情况下这样做是否值得还是个问题——因为它本质上是我们的核心组件(如InfoView)和我们的电影模型之间的“组合层”</p>
+<p>有了上面的内容，我们现在可以再次回到MovieList，并极大地简化它的实现。它现在可以只关心一个任务——列表——并让它的子视图配置和管理自己</p>
+<pre><code class="language-swift">struct MovieList: View {
+    @ObservedObject var viewModel: MovieListViewModel
+    @Binding var selectedMovie: Movie?
+
+    var body: some View {
+        List(viewModel.movies,
+            selection: $selectedMovie,
+            rowContent: MovieRow.init
+        )
+    }
+}
+</code></pre>
+<p>由于SwiftUI会在任何数据依赖项发生变化时自动重新渲染每个视图，所以我们不需要手动管理电影列表及其子视图之间的任何形式的状态——所有这些都由框架负责</p>
+<h2 id="binding-mutable-state">Binding mutable state</h2>
+<p>但是，如果我们需要一个子视图能够改变父视图所拥有的某种形式的状态，那该怎么办呢?  尽管SwiftUI总是通过我们的视图层次结构向下传播状态更改，但要想也向上进行更改，我们需要创建双向绑定，使更新可以双向流动</p>
+<p>现在让我们假设我们正在开发一个应用程序来订购某种形式的产品，并且我们希望重构我们的主订单，使其变得更加模块化——类似于我们对上面的MovieList视图所做的。这个视图使用SwiftUI内置的表单API来呈现一系列的section，每个section都包含用于改变用户当前顺序的输入控件——像这样</p>
+<pre><code class="language-swift">struct OrderForm: View {
+    @ObservedObject var productManager: ProductManager
+    var handler: (Order) -&gt; Void
+
+    @State private var order = Order()
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text(&quot;Shipping address&quot;)) {
+                    TextField(&quot;Name&quot;, text: $order.recipient)
+                    TextField(&quot;Address&quot;, text: $order.address)
+                    TextField(&quot;Country&quot;, text: $order.country)
+                }
+                Section(header: Text(&quot;Product&quot;)) {
+                    Picker(
+                        selection: $order.product,
+                        label: Text(&quot;Select product&quot;),
+                        content: {
+                            ForEach(productManager.products) { product in
+                                Text(product.name).tag(product)
+                            }
+                        }
+                    )
+                }
+                ...
+                Button(
+                    action: { self.handler(self.order) },
+                    label: { Text(&quot;Place order&quot;) }
+                )
+            }
+        }
+    }
+}
+</code></pre>
+<p>注意上面的NavigationView的使用，在iOS上使用默认的选择器风格时是需要的，因为这样选择器会将选项的视图推到当前导航堆栈上</p>
+<p>那么，我们如何分割上面的视图，同时仍然使每个部分能够改变相同的顺序状态?让我们从SwiftUI的内置视图中获得一些灵感，并使用@Binding属性包装器在我们的新子视图和它们的父视图的状态之间创建双向绑定。 下面是我们在提取表单的“送货地址”部分时可能做的事情:</p>
+<pre><code class="language-swift">struct ShippingAddressFormSection: View {
+    @Binding var order: Order
+
+    var body: some View {
+        Section(header: Text(&quot;Shipping address&quot;)) {
+            TextField(&quot;Name&quot;, text: $order.recipient)
+            TextField(&quot;Address&quot;, text: $order.address)
+            TextField(&quot;Country&quot;, text: $order.country)
+        }
+    }
+}
+</code></pre>
+<p>上面我们为我们的新独立部分提供了对完整订单模型的访问权，因为它需要改变它的几个属性。然而，对于“Product”一节，我们将采用一种稍微不同的方法——只允许它访问一个产品数组，并为用户的选择赋值一个绑定的产品值:</p>
+<pre><code class="language-swift">struct ProductPickerFormSection: View {
+    var products: [Product]
+    @Binding var selection: Product
+
+    var body: some View {
+        Section(header: Text(&quot;Product&quot;)) {
+            Picker(selection: $selection, label: Text(&quot;Select product&quot;)) {
+                ForEach(products) { product in
+                    Text(product.name).tag(product)
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>一旦像上面那样提取了所有的节，我们就可以回到OrderForm，让它在创建节时将绑定引用传递给它自己的Order状态，就像这样</p>
+<pre><code class="language-swift">struct OrderForm: View {
+    @ObservedObject var productManager: ProductManager
+    var handler: (Order) -&gt; Void
+
+    @State private var order = Order()
+
+    var body: some View {
+        NavigationView {
+            Form {
+                ShippingAddressFormSection(order: $order)
+                ProductPickerFormSection(
+                    products: productManager.products,
+                    selection: $order.product
+                )
+                ...
+                Button(
+                    action: { self.handler(self.order) },
+                    label: { Text(&quot;Place order&quot;) }
+                )
+            }
+        }
+    }
+}
+</code></pre>
+<p>我们可以将任何形式的本地State属性转换为双向绑定值，只需在其前面加上$(访问其投影值)，这一点非常强大。 因为它给了我们完全的自由来决定我们如何分割我们的视图，即使这些子视图需要改变它们的父视图的状态。</p>
+<h2 id="out-of-body-delegation">Out-of-body delegation</h2>
+<p>最后，让我们看看如何通过将某些任务委托给外部对象来分解一些较大的视图实现。例如，我们正在构建一个HomeView作为应用程序的初始导航目的地。 下面展示了一个实现为列表的菜单，该菜单包含一系列行，每一行都包装在一个NavigationLink中，以使新的视图能够被推送到导航堆栈上——像这样:</p>
+<pre><code class="language-swift">struct HomeView: View {
+    var body: some View {
+        NavigationView {
+            List {
+                NavigationLink(destination: ...) {
+                    MenuRow(title: &quot;Catalog&quot;, icon: .browse)
+                }
+                NavigationLink(destination: ...) {
+                    MenuRow(title: &quot;Recommendations&quot;, icon: .star)
+                }
+                NavigationLink(destination: ...) {
+                    MenuRow(title: &quot;Profile&quot;, icon: .user)
+                }
+                ...
+            }.navigationBarTitle(&quot;Home&quot;)
+        }
+    }
+}
+</code></pre>
+<p>现在的问题是，我们应该如何创建上述目标视图?当然，一个选项是在上面的视图中内联创建每个目标-然而，这样做不仅会使我们的HomeView变得非常庞大，它还需要它携带每个目的地所需要的所有依赖。</p>
+<p>我们将在以后的文章中更详细地研究使用SwiftUI时管理依赖的各种方法，在这种情况下，防止HomeView承担太多责任的一种方法是引入一个单独的对象，它可以处理创建所有目的地的复杂性。</p>
+<p>就像我们在“Swift中使用工厂注入依赖”和“Swift中使用锁和钥匙管理对象”中看到的那样，使用工厂模式是一种很好的方式，可以将各种视图和屏幕从应用程序的其他部分分离出来-- 因为它允许我们将导航目的地的创建从触发导航的地方移开。这是我们如何为我们的HomeView做的</p>
+<pre><code class="language-swift">struct HomeView: View {
+    var factory: HomeViewFactory
+
+    var body: some View {
+        NavigationView {
+            List {
+                NavigationLink(destination: factory.makeCatalogView()) {
+                    MenuRow(title: &quot;Catalog&quot;, icon: .browse)
+                }
+                NavigationLink(destination: factory.makeRecommendationsView()) {
+                    MenuRow(title: &quot;Recommendations&quot;, icon: .star)
+                }
+                NavigationLink(destination: factory.makeProfileView()) {
+                    MenuRow(title: &quot;Profile&quot;, icon: .user)
+                }
+                ...
+            }.navigationBarTitle(&quot;Home&quot;)
+        }
+    }
+}
+</code></pre>
+<p>我们上面使用的HomeViewFactory可以包含目标所需要的所有依赖项，并负责设置每个目标视图，让HomeView完全不知道这些细节</p>
+<pre><code class="language-swift">struct HomeViewFactory {
+    var database: Database
+    var networkController: NetworkController
+    ...
+
+    func makeCatalogView() -&gt; some View {
+        let viewModel = CatalogViewModel(database: database, ...)
+        return CatalogView(viewModel: viewModel)
+    }
+    
+    func makeRecommendationsView() -&gt; some View {
+        ...
+    }
+    
+    func makeProfileView() -&gt; some View {
+        ...
+    }
+}
+</code></pre>
+<p>虽然我们可能不想把所有的视图创建代码都移到工厂类型中，但将复杂的导航层次结构的设置委托给某种形式的外部对象通常是一个好主意，对于其他类型的复杂任务(如事件处理、输入验证等)也是如此</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>SwiftUI在设计时考虑了组合和双向数据绑定，这为我们在构造视图及其各种组件时提供了极大的灵活性。通过尽早将UI分解成更小的构建块，并让我们的底层组件尽可能不知道我们的领域特定模型，我们通常能够实现非常灵活的设置，让我们能够轻松地调整和迭代我们的UI\</p>
+<p>虽然在引入新的抽象之前我们应该再三考虑，但将某些任务委托给外部对象也可以帮助我们简化顶级视图,这样做可以让他们仅仅专注于将一组UI组件连接到特定的状态片段，并根据用户输入改变该状态。</p>
+<p><a href="https://www.swiftbysundell.com/articles/avoiding-massive-swiftui-views/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/splitting-up-swift-types/">
+                  <h3 class="post-title">
+                    Splitting up Swift types
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

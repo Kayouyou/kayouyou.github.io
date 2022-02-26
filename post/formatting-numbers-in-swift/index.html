@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Formatting numbers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="任何一个特定应用程序的逻辑的一个重要部分都可能以某种方式与数字打交道。无论是为了执行布局计算，使用时间间隔来安排事件，还是通过处理我们自己的、自定义的指标，数字确实无处不在。
+虽然处理数字是计算机天生擅长的事情之一，但我们偶尔也需要以人类可..." />
+    <meta name="keywords" content="numbers,foundation" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Formatting numbers in Swift</h2>
+            <div class="post-date">2020-11-01</div>
+            
+            <div class="post-content" v-pre>
+              <p>任何一个特定应用程序的逻辑的一个重要部分都可能以某种方式与数字打交道。无论是为了执行布局计算，使用时间间隔来安排事件，还是通过处理我们自己的、自定义的指标，数字确实无处不在。</p>
+<p>虽然处理数字是计算机天生擅长的事情之一，但我们偶尔也需要以人类可读的方式格式化和呈现一些数字，这往往比预期的要复杂。因此，本周，让我们探讨一下这个话题，以及不同类型的数字如何保证不同的格式化策略。</p>
+<h2 id="solving-the-decimal-problem">Solving the decimal problem</h2>
+<p>在最基本的层次上，创建给定数字的文本表示只涉及用它初始化字符串，这可以直接完成，也可以使用字符串字面量:</p>
+<pre><code class="language-swift">let a = String(42) // &quot;42&quot;
+let b = String(3.14) // &quot;3.14&quot;
+let c = &quot;\(42), \(3.14)&quot; // &quot;42, 3.14&quot;
+</code></pre>
+<p>然而，尽管这种方法可以很好地生成我们完全可以控制的更简单的数字描述， 在处理动态数字时，我们可能需要更健壮的格式化策略。</p>
+<p>例如，这里我们定义了一个度量（Metric）类型，它允许我们将给定的Double与名称相关联，然后在为这样的值生成自定义描述时使用:</p>
+<pre><code class="language-swift">struct Metric: Codable {
+    var name: String
+    var value: Double
+}
+
+extension Metric: CustomStringConvertible {
+    var description: String {
+        &quot;\(name): \(value)&quot;
+    }
+}
+</code></pre>
+<p>由于上述度量类型可以包含任何双精度值，我们可能希望以一种更可预测的方式格式化它。 例如，我们可以使用自定义格式将其四舍五入到小数点后两位，而不是简单地将其Double值转换为字符串，这将使我们的输出保持一致，无论每个潜在的双精度值实际上有多精确:</p>
+<pre><code class="language-swift">extension Metric: CustomStringConvertible {
+    var description: String {
+        let formattedValue = String(format: &quot;%.2f&quot;, value)
+        return &quot;\(name): \(formattedValue)&quot;
+    }
+}
+</code></pre>
+<p>然而，我们现在总是输出两位小数点后的数字，即使我们的双精度浮点数是整数，或者只有一位小数点后的数字——这可能不是我们想要的。 以42为例。我们可能不希望它被格式化为42.00，这是我们当前实现将会发生的情况。</p>
+<p>如何解决这个问题的最初想法可能是采用手工方法，并在返回格式化字符串之前修剪所有末尾的0和小数点——像这样:</p>
+<pre><code class="language-swift">extension Metric: CustomStringConvertible {
+    var description: String {
+        var formattedValue = String(format: &quot;%.2f&quot;, value)
+
+        while formattedValue.last == &quot;0&quot; {
+            formattedValue.removeLast()
+        }
+
+        if formattedValue.last == &quot;.&quot; {
+            formattedValue.removeLast()
+        }
+
+        return &quot;\(name): \(formattedValue)&quot;
+    }
+}
+</code></pre>
+<p>上面的代码当然可以工作，但是它可能不是很优雅，而且还假设我们总是会对所有用户以相同的方式格式化我们的每个数字——这可能不是我们实际想要做的。<br>
+因为事实证明，虽然数学可能是一个真正普遍的概念，但人们期望在文本中表示数字的方式因国家和地区的不同而有很大差异。</p>
+<h2 id="using-numberformatter">Using NumberFormatter</h2>
+<p>相反，让我们使用Foundation’s NumberFormatter来解决我们的小数问题。就像DateFormatter可以用各种方式格式化日期值一样，NumberFormatter类附带了一套非常全面的格式化工具，它们都是特定于数字的。</p>
+<p>例如，使用NumberFormatter，我们可以指定要将每个数字格式化为最多两个小数位数的小数， 这将给我们所期望的结果，而不必做任何手动调整。像42、42.1和42.12这样的数字现在都是这样渲染的，任何更精确的数字仍然会自动四舍五入到两个小数点:</p>
+<pre><code class="language-swift">extension Metric: CustomStringConvertible {
+    var description: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+
+        let number = NSNumber(value: value)
+        let formattedValue = formatter.string(from: number)!
+        return &quot;\(name): \(formattedValue)&quot;
+    }
+}
+</code></pre>
+<p>我们可以安全地强制解包装NumberFormatter从上述调用返回的可选参数，因为我们完全控制传递给它的NSNumber。</p>
+<p>使用NumberFormatter的另一个主要好处是，在格式化数字时，它将自动考虑用户当前的语言环境。例如，在一些国家，数字50932.52预计被格式化为50 932,52，而其他地区更倾向于50,932.52。现在，所有这些复杂性都可以完全自动地为我们处理，这很可能是我们在格式化面向用户的数字时所希望的。</p>
+<p>然而，如果情况并非如此，而我们要在所有地区寻找一致性，那么我们可以将特定的地区分配给NumberFormatter或者我们可以配置它，使用特定的字符作为它的decimalSeparator和groupingSeparator -像这样:</p>
+<pre><code class="language-swift">extension Metric: CustomStringConvertible {
+    var description: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        formatter.decimalSeparator = &quot;.&quot;
+        formatter.groupingSeparator = &quot;&quot;
+
+        ...
+    }
+}
+</code></pre>
+<p>值得注意的是，当直接使用字符串时，我们也可以通过将特定的区域设置(或.current)传递给前面使用的基于格式的初始化器来生成本地化的数字。</p>
+<p>在这种情况下，我们假设我们确实想要本地化我们的格式。为了完成我们的实现，让我们将NumberFormatter的创建移动到一个静态属性(这将允许我们在所有度量值重用相同的实例中使用)，让我们引入一个专门的API来检索每个格式化的值——像这样:</p>
+<pre><code class="language-swift">extension Metric: CustomStringConvertible {
+    private static var valueFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        return formatter
+    }()
+
+    var formattedValue: String {
+        let number = NSNumber(value: value)
+        return Self.valueFormatter.string(from: number)!
+    }
+
+    var description: String {
+        &quot;\(name): \(formattedValue)&quot;
+    }
+}
+</code></pre>
+<p>因此，当我们希望将原始数值格式化成人类可读的描述时，NumberFormatter是非常有用的，但它还能做的远不止这些。让我们继续探索!</p>
+<h2 id="domain-specific-numbers">Domain-specific numbers</h2>
+<p>根据我们正在开发的应用程序的类型，我们可能还需要处理特定领域的数字。 也就是说，它们代表的不仅仅是原始的数值。</p>
+<p>例如，假设我们正在开发一个购物应用程序，我们使用自定义价格结构中的Double来描述给定产品的价格:</p>
+<pre><code class="language-swift">struct Product: Codable {
+    var name: String
+    var price: Price
+    ...
+}
+struct Price: Codable {
+    var amount: Double
+    var currency: Currency
+}
+enum Currency: String, Codable {
+    case eur
+    case usd
+    case sek
+    case pln
+    ...
+}
+</code></pre>
+<p>现在的问题是，如何格式化这样的Price实例让每个用户都能理解，不管他们在哪个国家，使用哪个地区?</p>
+<p>这是NumberFormatter非常有用的另一种情况，因为它还包括对本地化货币格式的全面支持。我们所要做的就是将它的numberStyle设置为currency，并给它我们正在使用的货币的代码——像这样:</p>
+<pre><code class="language-swift">extension Price: CustomStringConvertible {
+    var description: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = currency.rawValue
+        formatter.maximumFractionDigits = 2
+
+        let number = NSNumber(value: amount)
+        return formatter.string(from: number)!
+    }
+}
+</code></pre>
+<p>例如，当使用上述方法时，瑞典货币SEK的3.14价格将在几个不同的地区显示:</p>
+<pre><code class="language-swift">Sweden: 3,14 kr
+Spain: 3.14 SEK
+US: SEK 3.14
+France: SEK 3,14
+</code></pre>
+<p>这些看起来似乎是大计划中的一些小差异，但让我们格式化价格和其他数字的方式对每个用户来说都是完全自然的，这真的可以让应用感觉更加精致。当然，下一步还将自动将每个价格转换为当前用户自己的货币，但这肯定超出了本文的范围。</p>
+<p>除了价格之外，我们想要本地化的另一类常见数值是测量值。例如，假设我们正在开发的虚拟购物应用程序现在只专注于销售车辆，我们将产品类型转换为更具体的车型，其中包括最高速度等属性:</p>
+<pre><code class="language-swift">struct Vehicle {
+    var name: String
+    var price: Price
+    var topSpeed: Double
+    ...
+}
+</code></pre>
+<p>目前，我们的最高速度属性再次是双精度值，虽然对于大多数应该具有浮点精度的原始数字来说，这当然是一个很好的选择，它实际上并不适合这种情况——因为我们当前的实现没有告诉我们任何关于我们的值使用的度量单位的信息。<br>
+可以是千米每小时，英里每小时，米每秒，等等。</p>
+<p>表达这种基于单位的数值正是内置度量类型的目的，所以让我们改用它。在本例中，我们将用幻影类型UnitSpeed专门化它，这使得我们的最高速度值非常清楚地表示了速度的度量:</p>
+<pre><code class="language-swift">struct Vehicle {
+    var name: String
+    var price: Price
+    var topSpeed: Measurement&lt;UnitSpeed&gt;
+    ...
+}
+</code></pre>
+<p>当创建上述车辆类型的实例时，我们需要始终指定最高速度属性的底层测量单位，这是一件很棒的事情，因为这大大减少了这些值的模糊性。但这只是一个开始，因为Measurement也有它自己的格式化程序，我们现在可以使用它轻松地生成格式化的描述每辆车的最高速度:</p>
+<pre><code class="language-swift">extension Vehicle {
+    var formattedTopSpeed: String {
+        let formatter = MeasurementFormatter()
+        return formatter.string(from: topSpeed)
+    }
+}
+</code></pre>
+<p>真正伟大的是，不仅上面的描述将被本地化，MeasurementFormatter还将自动将每个值转换成当前用户地区首选的单位-在这种情况下不是km/h就是mph很酷的!</p>
+<p>然而，在使用测量值时，有一件事我们需要记住，那就是它们在默认情况下是如何编码和解码的。当使用编译器生成的可编码一致性时，每个Measurement值都要从包含几个元数据属性的字典中解码，这些元数据属性可能不包含在我们从应用程序服务器下载的任何JSON中。 相反，我们很可能有一个一致同意的度量单位，我们的服务器正在使用，这意味着我们必须手动执行我们的解码在这种情况下-例如:</p>
+<pre><code class="language-swift">extension Vehicle: Codable {
+    private enum CodingKeys: CodingKey {
+        case name, price, topSpeed, ...
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Decoding all other properties
+        ...
+        topSpeed = try Measurement(
+            value: container.decode(Double.self, forKey: .topSpeed),
+            unit: .kilometersPerHour
+        )
+    }
+    // Encoding implementation
+    ...
+}
+</code></pre>
+<p>由于自定义的可编码实现维护起来通常很麻烦，让我们来探索一种替代方法。下面是我们如何创建一个专用的属性包装器，让我们可以在单一类型中封装Double和Measurement之间的转换:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct KilometersPerHour {
+    var wrappedValue: Measurement&lt;UnitSpeed&gt;
+}
+
+extension KilometersPerHour: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Double.self)
+
+        wrappedValue = Measurement(
+            value: rawValue,
+            unit: .kilometersPerHour
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(wrappedValue.value)
+    }
+}
+</code></pre>
+<p>上述方法的一个主要好处是，除非我们真的需要Vehicle来使用定制的可编码实现，现在我们可以简单地用@KilometersPerHour标记我们的最高速度属性，我们将再次能够让编译器为我们生成所有这些代码:</p>
+<pre><code class="language-swift">struct Vehicle: Codable {
+    var name: String
+    var price: Price
+    @KilometersPerHour var topSpeed: Measurement&lt;UnitSpeed&gt;
+    ...
+}
+</code></pre>
+<p>有关使用属性包装器在每个属性的基础上定制可编码的更多信息，请参阅“用默认解码值注释属性”。</p>
+<p>有了上面的内容，我们现在将获得使用度量的所有优点——从额外的类型安全到内置的格式化和转换特性——同时在编码和解码模型时仍然能够使用双精度值。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>将数字格式化为人类可读的字符串的任务，很可能是我们希望尽可能多地委托给系统的任务，特别是当我们希望生成本地化的描述或适应当前用户的语言环境时。因为简单地将Double转换为字符串可能是一项简单的任务，但实际上将每个值格式化为正确的字符串通常比最初看起来要困难得多。</p>
+<p><a href="https://www.swiftbysundell.com/articles/formatting-numbers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/JWQzBWZ2M/" class="tag">
+                    numbers
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWHkY3onB/" class="tag">
+                    foundation
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/when-does-the-order-of-swiftui-modifiers-matter-and-why/">
+                  <h3 class="post-title">
+                    When does the order of SwiftUI modifiers matter, and why?
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

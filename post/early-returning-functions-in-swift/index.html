@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Early returning functions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="从函数返回对象和值是在大多数语言中都能找到的核心编程概念之一。无论我们谈论的是像Haskell这样的纯函数式编程语言，还是像Swift这样的多范式编程语言，函数及其生成输出的能力都是任何应用程序或系统的关键构建模块。
+然而，就像大多数编程概..." />
+    <meta name="keywords" content="code structure,functions" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Early returning functions in Swift</h2>
+            <div class="post-date">2018-09-02</div>
+            
+            <div class="post-content" v-pre>
+              <p>从函数返回对象和值是在大多数语言中都能找到的核心编程概念之一。无论我们谈论的是像Haskell这样的纯函数式编程语言，还是像Swift这样的多范式编程语言，函数及其生成输出的能力都是任何应用程序或系统的关键构建模块。</p>
+<p>然而，就像大多数编程概念一样，函数有很多不同的使用方法。函数式编程语言通常围绕着纯函数的思想——这些函数不会产生任何副作用，并且在给定相同输入的情况下总是产生相同的输出-当用Swift构建应用程序时，更常见的是使用更多面向对象的方法，使用可变的属性和函数来影响它们。</p>
+<p>就像在“Swift中的第一类函数”这篇文章中一样，本周，让我们看看如何从函数编程世界中得到启发，来改进Swift代码的结构和健壮性 -这次重点是使用返回对象和值的函数。</p>
+<h2 id="return-early-return-often">Return early, return often</h2>
+<p>让我们先看一个我们希望改进其结构的代码示例。 在本例中，我们在notes应用程序中使用一个基于NotificationCenter的API，我们正在响应一个通知，告诉我们给定的注释已经更新。要加载更新后的note，我们首先必须从传递的通知中提取它的ID，目前我们使用嵌套的if let语句来做这个操作，如下所示:</p>
+<pre><code class="language-swift">class NoteListViewController: UIViewController {
+    @objc func handleChangeNotification(_ notification: Notification) {
+        let noteInfo = notification.userInfo?[&quot;note&quot;] as? [String : Any]
+
+        if let id = noteInfo?[&quot;id&quot;] as? Int {
+            if let note = database.loadNote(withID: id) {
+                notes[id] = note
+                tableView.reloadData()
+            }
+        }
+    }
+}
+</code></pre>
+<p>上面的代码可以工作，但是阅读和理解有点困难，因为它包含多个级别的缩进和类型转换。让我们看看我们能不能改进它!</p>
+<p>我们要做的第一件事是应用早期返回的概念，通过使我们的函数总是尽可能快地返回。不要使用嵌套的if let语句来展开可选项并执行类型转换，我们将使用guard语句，在没有找到所需数据的情况下简单地返回:</p>
+<pre><code class="language-swift">class NoteListViewController: UIViewController {
+    @objc func handleChangeNotification(_ notification: Notification) {
+        let noteInfo = notification.userInfo?[&quot;note&quot;] as? [String : Any]
+
+        guard let id = noteInfo?[&quot;id&quot;] as? Int else {
+            return
+        }
+
+        guard let note = database.loadNote(withID: id) else {
+            return
+        }
+
+        notes[id] = note
+        tableView.reloadData()
+    }
+}
+</code></pre>
+<p>像我们现在所做的那样，提前返回的好处是，它使函数的失败条件更加清楚。 这不仅提高了可读性——特别是因为我们的代码现在更少缩进了——而且在决定编写单元测试的代码路径时也非常有帮助。由于现在每个失败条件都由一个守卫表示，我们可以简单地添加与每个守卫语句的条件(以及成功路径的条件)匹配的测试——我们的代码应该被完全覆盖。</p>
+<p>我们还可以进一步改进，将从传递的通知中提取note ID的代码移到通知类型本身的私有扩展中。这样，我们的通知处理代码就可以包含使用note的ID执行更新的实际逻辑，从而产生一个更清晰的实现-像这样:</p>
+<pre><code class="language-swift">private extension Notification {
+    var noteID: Int? {
+        let info = userInfo?[&quot;note&quot;] as? [String : Any]
+        return info?[&quot;id&quot;] as? Int
+    }
+}
+
+class NoteListViewController: UIViewController {
+    @objc func handleChangeNotification(_ notification: Notification) {
+        guard let id = notification.noteID else {
+            return
+        }
+
+        guard let note = database.loadNote(withID: id) else {
+            return
+        }
+
+        notes[id] = note
+        tableView.reloadData()
+    }
+}
+</code></pre>
+<p>使用早期的return和guard语句构造代码也可以大大简化调试失败。现在，我们不必总是遍历所有逻辑，只需在每个guard语句的返回值上设置断点，并在导致失败的条件下立即停止。</p>
+<h2 id="conditional-construction">Conditional construction</h2>
+<p>在构造对象的新实例时，我们需要哪种类型的对象取决于一系列的条件，这是很常见的。例如，当应用程序启动时，我们将向用户显示哪个视图控制器取决于两个条件:</p>
+<p><em>Is the user logged in?<br>
+Has the user gone through our onboarding flow?</em></p>
+<p>我们对这些条件建模的最初实现可能是使用一系列if和else语句，如下所示:</p>
+<pre><code class="language-swift">func showInitialViewController() {
+    if loginManager.isUserLoggedIn {
+        if tutorialManager.isOnboardingCompleted {
+            navigationController.viewControllers = [HomeViewController()]
+        } else {
+            navigationController.viewControllers = [OnboardingViewController()]
+        }
+    } else {
+        navigationController.viewControllers = [LoginViewController()]
+    }
+}
+</code></pre>
+<p>同样，在这种情况下，早期返回和guard语句可以让我们编写更容易阅读和调试的代码，但在这种情况下，我们讨论的不是失败条件-而只是状态的不同，所以我们的早期返回不会简单地退出我们的功能。</p>
+<p>相反，让我们使用工厂模式的一种“轻量级版本”，并将初始视图控制器的构造移动到一个专用的函数中。这样，我们就可以返回一个视图控制器的新实例，它与我们的条件的当前状态相匹配，就像这样:</p>
+<pre><code class="language-swift">func makeInitialViewController() -&gt; UIViewController {
+    guard loginManager.isUserLoggedIn else {
+        return LoginViewController()
+    }
+
+    guard tutorialManager.isOnboardingCompleted else {
+        return OnboardingViewController()
+    }
+
+    return HomeViewController()
+}
+</code></pre>
+<p>上述方法的美妙之处在于它允许我们大量清理调用站点。我们不再需要在多个if和else块中复制相同的赋值代码，而可以简单地使用调用上述工厂函数的结果:</p>
+<pre><code class="language-swift">func showInitialViewController() {
+    let viewController = makeInitialViewController()
+    navigationController.viewControllers = [viewController]
+}
+</code></pre>
+<p>因为我们新的makeInitialViewController函数是纯函数(它不会改变任何状态或产生任何副作用)，我们实际上已经转变了一个分支逻辑——其中每个分支都会改变应用程序的状态 -变成一个纯粹的功能用来进行单一的变异， 更少的突变通常会导致更可预测的代码👍。</p>
+<h2 id="codified-conditions">Codified conditions</h2>
+<p>最后，让我们看看函数如何帮助使复杂的条件更容易理解。 这里我们正在构建一个视图控制器，它让用户在社交网络应用程序中显示评论， 如果满足三个单独的条件，那么用户也可以编辑该评论。 我们的逻辑当前发生在viewDidLoad当我们决定是否添加一个编辑按钮到UI，像这样:</p>
+<pre><code class="language-swift">class CommentViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        if comment.authorID == user.id {
+            if comment.replies.isEmpty {
+                if !comment.edited {
+                    let editButton = UIButton()
+                    ...
+                    view.addSubview(editButton)
+                }
+            }
+        }
+
+        ...
+    }
+}
+</code></pre>
+<p>就像我们在“编写自文档的Swift代码”中，通过将大函数(如viewDidLoad倾向于随着时间的推移而变得更大)分割成更小的函数，使我们的代码更具有自文档性，并具有更明确的命名和作用域-我们可以做同样的事情，更清楚地编纂我们的上述条件。</p>
+<p>由于我们的三个嵌套条件目前发生在一个方法，用于设置我们的视图控制器的子视图，它可能是一个有点难理解为什么他们在那里。除非我们有一些清晰的文档(和测试)来解释为什么这些条件与用户是否应该能够编辑评论有关，人们(包括我们自己)很容易在将来无意中改变或删除这些条件。</p>
+<p>相反，让我们将这三个条件移动到一个专门的函数中——命名清楚——这次使用注释上的扩展实现:</p>
+<pre><code class="language-swift">extension Comment {
+    func canBeEdited(by user: User) -&gt; Bool {
+        guard authorID == user.id else {
+            return false
+        }
+
+        guard comment.replies.isEmpty else {
+            return false
+        }
+
+        return !edited
+    }
+}
+</code></pre>
+<p>有了上述改变，我们的视图控制器现在可以简单地专注于在viewDidLoad中设置它的UI，它变得非常清楚是什么导致编辑按钮被添加：</p>
+<pre><code class="language-swift">class CommentViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        if comment.canBeEdited(by: user) {
+            let editButton = UIButton()
+            ...
+            view.addSubview(editButton)
+        }
+
+        ...
+    }
+}
+</code></pre>
+<p>将上面的方法与一些简单的单元测试结合起来，覆盖我们的新功能，我们已经大大降低了我们的代码在将来被误解(和破坏)的风险🎉。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用函数、保护语句和早期返回并不是最初的概念——但当应用于分支逻辑、复杂条件或处理多个可选的代码时，很容易忘记它们有多么强大。如果我们也可以将代码结构成具有明确条件的纯函数，我们通常会得到更容易测试的代码。</p>
+<p>如果您想看到很多早期回报和纯函数的例子，可以看看我最近开发的开源Splash框架，它也是本文中所有代码示例的动力。</p>
+<p><a href="https://www.swiftbysundell.com/articles/early-returning-functions-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L76CX3exv/" class="tag">
+                    functions
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/enum-iterations-in-swift/">
+                  <h3 class="post-title">
+                    Enum iterations in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

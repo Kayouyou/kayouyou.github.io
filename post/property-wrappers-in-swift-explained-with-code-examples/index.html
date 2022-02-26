@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Property Wrappers in Swift explained with code examples | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Property Wrappers in Swift explained with code examples
+
+
+1.1. What is a Property Wrapper?
+1.2. Property wrappers an..." />
+    <meta name="keywords" content="property-wrappers" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Property Wrappers in Swift explained with code examples</h2>
+            <div class="post-date">2021-05-13</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#PropertyWrappersinSwiftexplainedwithcodeexamples">Property Wrappers in Swift explained with code examples</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#WhatisaPropertyWrapper">What is a Property Wrapper?</a></li>
+<li>1.2. <a href="#PropertywrappersandUserDefaults">Property wrappers and UserDefaults</a></li>
+<li>1.3. <a href="#Usingpropertywrapperstoremoveboilerplatecode">Using property wrappers to remove boilerplate code</a></li>
+<li>1.4. <a href="#Addingmorepropertiesusingthesamewrapper">Adding more properties using the same wrapper</a></li>
+<li>1.5. <a href="#StoringoptionalsusingaUserDefaultsPropertyWrapper">Storing optionals using a User Defaults Property Wrapper</a></li>
+<li>1.6. <a href="#ProjectingaValueFromaPropertyWrapper">Projecting a Value From a Property Wrapper</a></li>
+<li>1.7. <a href="#DefiningSampleFilesusingapropertywrapper">Defining Sample Files using a property wrapper</a></li>
+<li>1.8. <a href="#Accessingprivatedefinedproperties">Accessing private defined properties</a></li>
+<li>1.9. <a href="#Otherusageexamples">Other usage examples</a></li>
+<li>1.10. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namepropertywrappersinswiftexplainedwithcodeexamplesaproperty-wrappers-in-swift-explained-with-code-examples">1. <a name='PropertyWrappersinSwiftexplainedwithcodeexamples'></a>Property Wrappers in Swift explained with code examples</h2>
+<p>Swift中的属性包装器允许您在不同的包装器对象中提取公共逻辑。自从在2019年全球开发者大会期间推出并在Xcode 11和Swift 5中可用以来，在社区中分享了许多例子。这是Swift库的一个整洁的补充，它允许删除许多我们可能都在我们的项目中编写的样板代码。</p>
+<h3 id="11-a-namewhatisapropertywrapperawhat-is-a-property-wrapper">1.1. <a name='WhatisaPropertyWrapper'></a>What is a Property Wrapper?</h3>
+<p>属性包装器可以看作是一个额外的层，它定义了如何在读取时存储或计算属性。它对于替换属性的getter和setter中的重复代码特别有用。</p>
+<p>一个常见的例子是自定义用户默认属性，其中使用自定义getter和setter相应地转换值。一个示例实现如下:</p>
+<pre><code class="language-swift">extension UserDefaults {
+    @UserDefault(key: &quot;has_seen_app_introduction&quot;, defaultValue: false)
+    static var hasSeenAppIntroduction: Bool
+}
+</code></pre>
+<p>@UserDefault语句是对属性包装器的调用。正如您所看到的，我们还可以给它一些参数，这些参数用于配置属性包装器。有几种与属性包装器交互的方法，比如使用包装值和投影值。您还可以使用注入的属性设置属性包装器，我们将在后面介绍这些内容。让我们首先深入研究User Defaults属性包装器的示例。</p>
+<h3 id="12-a-namepropertywrappersanduserdefaultsaproperty-wrappers-and-userdefaults">1.2. <a name='PropertywrappersandUserDefaults'></a>Property wrappers and UserDefaults</h3>
+<p>下面的代码显示了一个您可能都认识的模式。它在UserDefaults对象周围创建一个包装器，使属性可访问，而不必将字符串键粘贴到整个项目的任何地方。</p>
+<pre><code class="language-swift">extension UserDefaults {
+
+    public enum Keys {
+        static let hasSeenAppIntroduction = &quot;has_seen_app_introduction&quot;
+    }
+
+    /// Indicates whether or not the user has seen the onboarding.
+    var hasSeenAppIntroduction: Bool {
+        set {
+            set(newValue, forKey: Keys.hasSeenAppIntroduction)
+        }
+        get {
+            return bool(forKey: Keys.hasSeenAppIntroduction)
+        }
+    }
+}
+</code></pre>
+<p>它允许你设置和获取用户默认值从任何地方如下:</p>
+<pre><code class="language-swift">UserDefaults.standard.hasSeenAppIntroduction = true
+
+guard !UserDefaults.standard.hasSeenAppIntroduction else { return }
+showAppIntroduction()
+</code></pre>
+<p>现在，因为这似乎是一个很好的解决方案，它很容易最终成为一个带有许多已定义键和属性的大文件。代码是重复的，需要一种方法使其更容易。使用@propertyWrapper关键字的自定义属性包装器可以帮助我们解决这个问题。</p>
+<h3 id="13-a-nameusingpropertywrapperstoremoveboilerplatecodeausing-property-wrappers-to-remove-boilerplate-code">1.3. <a name='Usingpropertywrapperstoremoveboilerplatecode'></a>Using property wrappers to remove boilerplate code</h3>
+<p>以上面的例子为例，我们可以重写代码并删除大量的开销。为此，我们必须创建一个新的属性包装器，我们将其称为UserDefault。这将最终允许我们将属性定义为用户默认属性。</p>
+<blockquote>
+<p>如果您正在使用swifttui，则可能需要使用AppStorage属性包装器。将此作为替换重复代码的示例。</p>
+</blockquote>
+<pre><code class="language-swift">@propertyWrapper
+struct UserDefault&lt;Value&gt; {
+    let key: String
+    let defaultValue: Value
+    var container: UserDefaults = .standard
+
+    var wrappedValue: Value {
+        get {
+            return container.object(forKey: key) as? Value ?? defaultValue
+        }
+        set {
+            container.set(newValue, forKey: key)
+        }
+    }
+}
+</code></pre>
+<p>如果还没有注册值，包装器允许传入一个默认值。当包装器用泛型值value定义时，我们可以传入任何值。</p>
+<p>现在我们可以更改之前的代码实现，并在UserDefaults类型上创建以下扩展:</p>
+<pre><code class="language-swift">extension UserDefaults {
+
+    @UserDefault(key: &quot;has_seen_app_introduction&quot;, defaultValue: false)
+    static var hasSeenAppIntroduction: Bool
+}
+</code></pre>
+<p>正如您所看到的，我们可以使用定义的属性包装器中默认生成的结构初始化器。我们传入与之前使用的相同的密钥，并将默认值设为false。使用这个新属性很简单:</p>
+<pre><code class="language-swift">UserDefaults.hasSeenAppIntroduction = false
+print(UserDefaults.hasSeenAppIntroduction) // Prints: false
+UserDefaults.hasSeenAppIntroduction = true
+print(UserDefaults.hasSeenAppIntroduction) // Prints: true
+</code></pre>
+<p>在某些情况下，您可能希望定义自己的自定义用户默认值。例如，在你有一个应用组的情况下定义用户默认值。我们定义的包装器默认为标准用户默认值，但你可以重写它来使用你自己的容器:</p>
+<pre><code class="language-swift">extension UserDefaults {
+    static let groupUserDefaults = UserDefaults(suiteName: &quot;group.com.swiftlee.app&quot;)!
+
+    @UserDefault(key: &quot;has_seen_app_introduction&quot;, defaultValue: false, container: .groupUserDefaults)
+    static var hasSeenAppIntroduction: Bool
+}
+</code></pre>
+<h3 id="14-a-nameaddingmorepropertiesusingthesamewrapperaadding-more-properties-using-the-same-wrapper">1.4. <a name='Addingmorepropertiesusingthesamewrapper'></a>Adding more properties using the same wrapper</h3>
+<pre><code class="language-swift">extension UserDefaults {
+
+    @UserDefault(key: &quot;has_seen_app_introduction&quot;, defaultValue: false)
+    static var hasSeenAppIntroduction: Bool
+
+    @UserDefault(key: &quot;username&quot;, defaultValue: &quot;Antoine van der Lee&quot;)
+    static var username: String
+
+    @UserDefault(key: &quot;year_of_birth&quot;, defaultValue: 1990)
+    static var yearOfBirth: Int
+}
+</code></pre>
+<p>正如您所看到的，只要支持将类型保存在用户默认值中，包装器就可以使用您定义的任何类型。</p>
+<h3 id="15-a-namestoringoptionalsusingauserdefaultspropertywrapperastoring-optionals-using-a-user-defaults-property-wrapper">1.5. <a name='StoringoptionalsusingaUserDefaultsPropertyWrapper'></a>Storing optionals using a User Defaults Property Wrapper</h3>
+<p>使用属性包装器时可能遇到的一个常见问题是，泛型值允许您定义所有可选值或所有未包装值。在社区中有一种常见的技术可以解决这个问题，它使用自定义的AnyOptional协议:</p>
+<pre><code class="language-swift">/// Allows to match for optionals with generics that are defined as non-optional.
+public protocol AnyOptional {
+    /// Returns `true` if `nil`, otherwise `false`.
+    var isNil: Bool { get }
+}
+extension Optional: AnyOptional {
+    public var isNil: Bool { self == nil }
+}
+</code></pre>
+<p>我们可以扩展UserDefault属性包装器来符合这个协议(为了能使用nil):</p>
+<pre><code class="language-swift">extension UserDefault where Value: ExpressibleByNilLiteral {
+    
+    /// Creates a new User Defaults property wrapper for the given key.
+    /// - Parameters:
+    ///   - key: The key to use with the user defaults store.
+    init(key: String, _ container: UserDefaults = .standard) {
+        self.init(key: key, defaultValue: nil, container: container)
+    }
+}
+</code></pre>
+<p>这个扩展创建了一个额外的初始化器，它删除了定义默认值的要求，并允许使用可选值。</p>
+<p>最后，我们需要调整包装器的值设置来允许从用户默认值中移除对象:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct UserDefault&lt;Value&gt; {
+    let key: String
+    let defaultValue: Value
+    var container: UserDefaults = .standard
+
+    var wrappedValue: Value {
+        get {
+            return container.object(forKey: key) as? Value ?? defaultValue
+        }
+        set {
+            // Check whether we're dealing with an optional and remove the object if the new value is nil.
+            if let optional = newValue as? AnyOptional, optional.isNil {
+                container.removeObject(forKey: key)
+            } else {
+                container.set(newValue, forKey: key)
+            }
+        }
+    }
+
+    var projectedValue: Bool {
+        return true
+    }
+}
+</code></pre>
+<p>现在允许我们定义可选的值并将值设为nil:</p>
+<pre><code class="language-swift">extension UserDefaults {
+
+    @UserDefault(key: &quot;year_of_birth&quot;)
+    static var yearOfBirth: Int?
+}
+
+UserDefaults.yearOfBirth = 1990
+print(UserDefaults.yearOfBirth) // Prints: 1990
+UserDefaults.yearOfBirth = nil
+print(UserDefaults.yearOfBirth) // Prints: nil
+</code></pre>
+<p>太棒了!我们现在可以用用户默认包装器处理所有场景。最后要添加的是一个投影值，我们可以将其转换为Combine发布者，就像@Published属性包装器一样。</p>
+<h3 id="16-a-nameprojectingavaluefromapropertywrapperaprojecting-a-value-from-a-property-wrapper">1.6. <a name='ProjectingaValueFromaPropertyWrapper'></a>Projecting a Value From a Property Wrapper</h3>
+<p>属性包装器可以选择在包装值之外添加另一个属性，称为投影值。这允许我们基于包装的值投射另一个值。一个常见的例子是定义一个Combine发布者，以便我们可以在发生变化时观察变化。</p>
+<p>要使用用户默认属性包装器实现这一点，我们必须添加一个发布者，它将是一个传递主题。这一切都在名称中:它将简单地传递值更改。实现如下所示:</p>
+<pre><code class="language-swift">import Combine
+ 
+ @propertyWrapper
+ struct UserDefault&lt;Value&gt; {
+     let key: String
+     let defaultValue: Value
+     var container: UserDefaults = .standard
+     private let publisher = PassthroughSubject&lt;Value, Never&gt;()
+     
+     var wrappedValue: Value {
+         get {
+             return container.object(forKey: key) as? Value ?? defaultValue
+         }
+         set {
+             // Check whether we're dealing with an optional and remove the object if the new value is nil.
+             if let optional = newValue as? AnyOptional, optional.isNil {
+                 container.removeObject(forKey: key)
+             } else {
+                 container.set(newValue, forKey: key)
+             }
+             publisher.send(newValue)
+         }
+     }
+
+     var projectedValue: AnyPublisher&lt;Value, Never&gt; {
+         return publisher.eraseToAnyPublisher()
+     }
+ } 
+</code></pre>
+<p>我们现在可以开始观察属性的变化如下:</p>
+<pre><code class="language-swift">let subscription = UserDefaults.$username.sink { username in
+    print(&quot;New username: \(username)&quot;)
+}
+UserDefaults.username = &quot;Test&quot;
+// Prints: New username: Test 
+</code></pre>
+<p>这很棒! 它允许我们对任何变化做出反应。正如我们之前静态定义的属性，这个发布者现在将在我们的应用程序中工作。</p>
+<h3 id="17-a-namedefiningsamplefilesusingapropertywrapperadefining-sample-files-using-a-property-wrapper">1.7. <a name='DefiningSampleFilesusingapropertywrapper'></a>Defining Sample Files using a property wrapper</h3>
+<p>上面的示例主要关注用户默认值，但是如果您想定义另一个包装器呢?让我们进入另一个例子，希望能激发一些想法。</p>
+<p>使用下面的属性包装器，我们在其中定义了一个示例文件:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct SampleFile {
+
+    let fileName: String
+
+    var wrappedValue: URL {
+        let file = fileName.split(separator: &quot;.&quot;).first!
+        let fileExtension = fileName.split(separator: &quot;.&quot;).last!
+        let url = Bundle.main.url(forResource: String(file), withExtension: String(fileExtension))!
+        return url
+    }
+
+    var projectedValue: String {
+        return fileName
+    }
+}
+</code></pre>
+<p>我们可以使用这个包装器来定义我们可能想要用于调试或运行测试的样例文件:</p>
+<pre><code class="language-swift">struct SampleFiles {
+    @SampleFile(fileName: &quot;sample-image.png&quot;)
+    static var image: URL
+}
+</code></pre>
+<p>projectedValue属性允许我们读出在属性包装器中使用的文件名:</p>
+<pre><code class="language-swift">print(SampleFiles.image) // Prints: &quot;../resources/sample-image.png&quot;
+print(SampleFiles.$image) // Prints: &quot;sample-image.png&quot;
+</code></pre>
+<p>如果您想知道包装器使用了哪些初始值来计算最终值，这可能很有用。注意，我们在这里使用美元符号作为访问投影值的前缀。</p>
+<h3 id="18-a-nameaccessingprivatedefinedpropertiesaaccessing-private-defined-properties">1.8. <a name='Accessingprivatedefinedproperties'></a>Accessing private defined properties</h3>
+<p>虽然不建议以这种方式使用属性包装器，但在某些情况下读取包装器定义的属性会很有用。我将演示这是可能的，但是如果您发现自己需要访问私有属性，可能需要重新考虑您的代码实现。</p>
+<p>在上面的例子中，我们也可以通过使用下划线前缀来访问文件名。这允许我们访问私有属性filename:</p>
+<pre><code class="language-swift">extension SampleFiles {
+    static func printKey() {
+        print(_image.fileName)
+    }
+}
+</code></pre>
+<p>对它有所保留，看看是否可以通过使用不同的实例类型来解决您的需求。</p>
+<h3 id="19-a-nameotherusageexamplesaother-usage-examples">1.9. <a name='Otherusageexamples'></a>Other usage examples</h3>
+<p>属性包装器也在默认的Swift api中使用。特别是在swifttui中，您会发现像@StateObject和@Binding这样的属性包装器。它们都有一个共同点:使常用模式更容易访问。</p>
+<p>受这些内置示例的启发，您可以开始创建自己的属性包装器。另一个想法是为命令行操作创建一个包装器:</p>
+<pre><code class="language-swift">@Option(shorthand: &quot;m&quot;, documentation: &quot;Minimum value&quot;, defaultValue: 0)
+var minimum: Int
+</code></pre>
+<p>或者对于在代码中定义了布局的视图:</p>
+<pre><code class="language-swift">final class MyViewController {
+    @UsesAutoLayout
+    var label = UILabel()
+}
+</code></pre>
+<p>最后一个例子，我经常在我的项目中使用的视图使用自动布局，并要求translatesAutoresizingMaskIntoConstraints设置为false。</p>
+<h3 id="110-a-nameconclusionaconclusion">1.10. <a name='Conclusion'></a>Conclusion</h3>
+<p>属性包装器是删除代码中的样板文件的好方法。上面的示例只是它可能有用的许多场景中的一个。您可以自己尝试它，找到重复的代码并用自定义包装器替换它。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/e6qModfHfX/" class="tag">
+                    property-wrappers
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-51-takes-dependency-injection-to-the-next-level/">
+                  <h3 class="post-title">
+                    Swift 5.1 Takes Dependency Injection to the Next Level
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

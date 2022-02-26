@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Adding SwiftUI’s ViewBuilder attribute to functions | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="ViewBuilder函数builder属性在SwiftUI的DSL中扮演着非常重要的角色，它使我们能够通过简单地创建视图的实例来在容器(如HStack和VStack)中组合和结合多个视图。
+当我们希望将给定视图主体的某些部分提取为专用函数..." />
+    <meta name="keywords" content="code structure,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Adding SwiftUI’s ViewBuilder attribute to functions</h2>
+            <div class="post-date">2020-07-30</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>ViewBuilder函数builder属性在SwiftUI的DSL中扮演着非常重要的角色，它使我们能够通过简单地创建视图的实例来在容器(如HStack和VStack)中组合和结合多个视图。</p>
+<p>当我们希望将给定视图主体的某些部分提取为专用函数时，这个属性也非常方便。 举个例子，假设我们正在处理一个SongRow视图，它呈现一个歌曲模型，以及一个允许用户播放或暂停该歌曲的按钮</p>
+<pre><code class="language-swift">struct SongRow: View {
+    var song: Song
+    @Binding var isPlaying: Bool
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(song.name).bold()
+                Text(song.artist.name)
+            }
+            Spacer()
+            Button(
+                action: { self.isPlaying.toggle() },
+                label: {
+                    if isPlaying {
+                        PauseIcon()
+                    } else {
+                        PlayIcon()
+                    }
+                }
+            )
+        }
+    }
+}
+</code></pre>
+<p>现在，假设我们计划向上面的视图添加一些新特性，但在此之前，我们想对它的主体进行一些重构，以防止它变得过于复杂。例如，我们可以将这个逻辑移到一个私有的实用方法中，而不是将按钮的标签构造为内联的，最终可能会像这样:</p>
+<pre><code class="language-swift">private extension SongRow {
+    func makeButtonLabel() -&gt; some View {
+        if isPlaying {
+            return AnyView(PauseIcon())
+        } else {
+            return AnyView(PlayIcon())
+        }
+    }
+}
+</code></pre>
+<p>然而，虽然将某些表达式和条件作为单独的方法来实现是提高代码整体可读性的好方法，但与将逻辑内联到视图体相比，上面的实现有相当大的缺点</p>
+<p>由于我们的新方法使用两种不同类型的视图(PauseIcon或PlayIcon)，我们需要使用AnyView来执行类型擦除，以便为我们的两个代码分支提供相同的返回类型，</p>
+<p>实际上，我们也可以将SwiftUI本身使用的ViewBuilder属性应用到我们自己的方法上， 这使得我们可以通过简单地输入视图表达式，就像我们在swift闭包中输入这些表达式一样，最终删除AnyView的使用</p>
+<pre><code class="language-swift">private extension SongRow {
+    @ViewBuilder func makeButtonLabel() -&gt; some View {
+        if isPlaying {
+            PauseIcon()
+        } else {
+            PlayIcon()
+        }
+    }
+}
+</code></pre>
+<p>有了上面的步骤，我们现在可以在构造按钮时简单地调用makeButtonLabel()，如下所示:</p>
+<pre><code class="language-swift">struct SongRow: View {
+    ...
+
+    var body: some View {
+        HStack {
+            ...
+            Button(
+                action: { self.isPlaying.toggle() },
+                label: { makeButtonLabel() }
+            )
+        }
+    }
+}
+</code></pre>
+<p>在上述情况下，另一个值得考虑的选项是将我们的UI的某些部分作为单独的视图类型来实现——例如回放按钮的例子</p>
+<pre><code class="language-swift">struct PlaybackButton: View {
+    @Binding var isPlaying: Bool
+
+    var body: some View {
+        Button(
+            action: { self.isPlaying.toggle() },
+            label: {
+                if isPlaying {
+                    PauseIcon()
+                } else {
+                    PlayIcon()
+                }
+            }
+        )
+    }
+}
+</code></pre>
+<p>然后，我们可以在我们的主SongRow视图中使用我们新的，专门的按钮，通过传递一个绑定引用到它的isPlaying属性:</p>
+<pre><code class="language-swift">struct SongRow: View {
+    var song: Song
+    @Binding var isPlaying: Bool
+
+    var body: some View {
+        HStack {
+            ...
+            PlaybackButton(isPlaying: $isPlaying)
+        }
+    }
+}
+</code></pre>
+<p>我的一般经验法则是:当我只是希望通过提取逻辑的某些部分来使给定视图的主体更容易阅读时，那么我将使用私有的@ViewBuilder方法- 但当我想把一个视图的一部分转换成一个更普遍可重用的组件时，我会创建一个新的视图类型</p>
+<p><a href="https://www.swiftbysundell.com/tips/adding-swiftui-viewbuilder-to-functions/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/building-custom-combine-publishers-in-swift/">
+                  <h3 class="post-title">
+                    Building custom Combine publishers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

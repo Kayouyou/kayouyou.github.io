@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>怎样决定在哪个DispatchQueue上调用 completion handler | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Deciding what DispatchQueue to run a completion handler on
+在调用异步操作的完成处理程序时，长期以来，苹果开发人员社区中建立的惯例是简单地在操作本身(或至少是操作的最后部分)所执行的..." />
+    <meta name="keywords" content="completion handler,dispatch queue" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">怎样决定在哪个DispatchQueue上调用 completion handler</h2>
+            <div class="post-date">2021-05-07</div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="deciding-what-dispatchqueue-to-run-a-completion-handler-on">Deciding what DispatchQueue to run a completion handler on</h2>
+<p>在调用异步操作的完成处理程序时，长期以来，苹果开发人员社区中建立的惯例是简单地在操作本身(或至少是操作的最后部分)所执行的DispatchQueue上继续执行。</p>
+<p>例如，当使用内置的URLSession API执行基于数据任务的网络调用时，我们附加的完成处理程序将在URLSession内部管理的队列上执行:</p>
+<pre><code class="language-swift">let task = URLSession.shared.dataTask(with: url) {
+    data, response, error in
+
+    // 这段代码将在一个内部URLSession队列上执行， 不管我们在哪个队列上创建任务。
+    ...
+}
+</code></pre>
+<p>上面的约定在理论上是完全有意义的——因为它鼓励我们编写非阻塞的异步代码，而且当不需要这样做时，它倾向于减少涉及队列间切换带来的开销。然而，如果我们不小心的话，它也经常会导致不同种类的bug和竞态条件。</p>
+<p>这是因为，最终，绝大多数应用程序中的绝大多数代码都不是线程安全的。使类、函数或其他类型的实现线程安全通常需要大量的工作，特别是涉及到UI相关的代码时，因为所有苹果的核心UI框架(包括UIKit和SwiftUI)只能在主线程中安全地使用。</p>
+<h3 id="remembering-to-dispatch-ui-updates-on-the-main-queue">Remembering to dispatch UI updates on the main queue</h3>
+<p>让我们看一个例子，在这个例子中，我们构建了一个ProductLoader，它使用上面提到的URLSession API来根据给定的产品ID加载一个产品:</p>
+<pre><code class="language-swift">class ProductLoader {
+    typealias Handler = (Result&lt;Product, Error&gt;) -&gt; Void
+
+    private let urlSession: URLSession
+    private let urlResolver: (Product.ID) -&gt; URL
+    
+    ...
+
+    func loadProduct(withID id: UUID,
+                     completionHandler: @escaping Handler) {
+        let task = urlSession.dataTask(with: urlResolver(id)) {
+            data, response, error in
+
+            // Decode data, perform error handling, and so on...
+            ...
+            
+            handler(result)
+        }
+
+        task.resume()
+    }
+}
+</code></pre>
+<p>上面的类遵循既定的约定，不将它的completionHandler调用分派到任何特定的队列上，而只是在它自己的完成处理程序中内联地调用闭包，而这个闭包又由URLSession在前面提到的内部后台队列上调用。</p>
+<p>正因为如此，每当我们在任何一种与UI相关的代码中使用我们的ProductLoader时，我们需要记住总是显式地在我们的应用程序的主DispatchQueue上分派任何结果的UI更新——例如:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    private let productID: Product.ID
+    private let loader: ProductLoader
+    private lazy var nameLabel = UILabel()
+    private lazy var descriptionLabel = UILabel()
+    
+    ...
+
+    func update() {
+        loader.loadProduct(withID: productID) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let product):
+                    self?.nameLabel.text = product.name
+                    self?.descriptionLabel.text = product.description
+                case .failure(let error):
+                    self?.handle(error)
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>必须记住在我们的异步闭包中执行上述类型的DispatchQueue调用实际上可能不是一个很大的问题， 因为(就像经典的weak self dance一样)这是我们在为苹果平台开发应用程序时必须经常做的事情，所以这不是我们容易忘记的事情。</p>
+<p>另外，如果我们真的忘记添加这个调用(或者如果有人刚刚开始应用开发，还没有了解到这方面)，那么Xcode的主线程检查器会很快触发一个紫色的警告，只要我们运行任何代码，偶然调用了一个主线程API从后台线程。</p>
+<p>但是，如果我们不使用闭包呢? 例如，让我们假设我们的ProductLoader使用委托模式，而不是调用一个完成处理程序，它将在完成一个操作时调用一个委托方法:</p>
+<pre><code class="language-swift">class ProductLoader {
+    weak var delegate: ProductLoaderDelegate?
+    ...
+
+    func loadProduct(withID id: UUID) {
+        let task = urlSession.dataTask(with: urlResolver(id)) {
+            [weak self] data, response, error in
+
+            guard let self = self else { return }
+
+            // Decode data, perform error handling, and so on...
+            ...
+            
+            self.delegate?.productLoader(self,
+                didFinishLoadingWithResult: result
+            )
+        }
+
+        task.resume()
+    }
+}
+</code></pre>
+<p>如果我们现在回到我们的ProductViewController并相应地更新它，那么调用站点(在本例中是它的委托协议实现)是否正在处理异步操作的结果就不再很清楚了，这使得我们更有可能忘记在主队列上异步执行UI更新。</p>
+<p>所以，尽管Xcode在调用以下方法时仍然会给我们一个运行时错误(我们的UI更新是在后台队列上执行的)，但仅仅看它的实现是不正确的并不十分明显:</p>
+<pre><code class="language-swift">extension ProductViewController: ProductLoaderDelegate {
+    func productLoader(
+        _ loader: ProductLoader,
+        didFinishLoadingWithResult result: Result&lt;Product, Error&gt;
+    ) {
+        switch result {
+        case .success(let product):
+            nameLabel.text = product.name
+            descriptionLabel.text = product.description
+        case .failure(let error):
+            handle(error)
+        }
+    }
+}
+</code></pre>
+<p>当然，委托模式不像以前那么时髦(但是我仍然喜欢它)，但是上面的问题绝对不是那个特定模式所特有的。事实上，如果我们现在看一下我们的ProductLoader和它关联的视图控制器的一个非常现代的、基于组合的版本——我们可以看到它与我们的基于委托的实现有着完全相同的问题 - 我们的UI更新是否会在后台队列中执行还不是很明显。</p>
+<pre><code class="language-swift">class ProductLoader {
+    ...
+
+    func loadProduct(withID id: UUID) -&gt; AnyPublisher&lt;Product, Error&gt; {
+        urlSession
+            .dataTaskPublisher(for: urlResolver(id))
+            .map(\.data)
+            .decode(type: Product.self, decoder: JSONDecoder())
+            .eraseToAnyPublisher()
+    }
+}
+
+class ProductViewController: UIViewController {
+    ...
+    private var updateCancellable: AnyCancellable?
+
+    func update() {
+        updateCancellable = loader
+            .loadProduct(withID: productID)
+            .convertToResult()
+            .sink { [weak self] result in
+                switch result {
+                case .success(let product):
+                    self?.nameLabel.text = product.name
+                    self?.descriptionLabel.text = product.description
+                case .failure(let error):
+                    self?.handle(error)
+                }
+            }
+    }
+}
+</code></pre>
+<blockquote>
+<p>上面我们使用了自定义的convertToResult操作符，该操作符来自于“<a href="https://www.swiftbysundell.com/articles/extending-combine-with-convenience-apis/#result-conversions">使用便利的api扩展Combine</a>”，以便能够轻松地将Combine管道的输出处理为Result值。</p>
+</blockquote>
+<p>因此，总的来说，无论我们选择哪种模式来实现异步操作，总是有一个风险，我们会忘记在主队列上手动调度我们的UI更新——特别是当给定的回调可能在后台队列上执行并不明显的时候。</p>
+<h3 id="explicit-queue-injection">Explicit queue injection</h3>
+<p>那么我们该如何解决上述问题呢? 这值得修复吗，或者我们应该假设每个有一定经验的Swift开发者都会记得确保他们的UI更新将在主队列上执行?</p>
+<p>如果你问我，我认为任何真正伟大的API都不应该依赖于调用者记住(甚至知道)某些约定——这些约定理想情况下应该被纳入<a href="https://www.swiftbysundell.com/articles/designing-swift-apis/">API设计本身</a>。毕竟，确保API不会被错误使用的一种坚如磐石的方法是不可能(或至少很难)这样做——通过利用像Swift的类型系统这样的工具在编译时验证每个调用。</p>
+<p>在这种情况下，一种方法是总是在主队列上调用我们的完成处理程序，这将完全消除任何调用站点意外地在后台队列上执行UI更新的风险:</p>
+<pre><code class="language-swift">class ProductLoader {
+    ...
+
+    func loadProduct(withID id: UUID,
+                     completionHandler: @escaping Handler) {
+        let task = urlSession.dataTask(with: urlResolver(id)) {
+            data, response, error in
+
+            ...
+
+            DispatchQueue.main.async {
+                completionHandler(result)
+            }
+        }
+
+        task.resume()
+    }
+}
+</code></pre>
+<p>然而，上述模式也可能导致自身的问题，特别是当我们希望在确实希望以非阻塞方式继续在后台队列上执行的上下文中使用ProductLoader时。</p>
+<p>所以这是一个更动态的版本，它仍然使用主队列作为所有完成处理程序调用的默认值，但也允许显式注入DispatchQueue -让我们既可以在远离主线程的并发环境中使用我们的ProductLoader，也可以在我们的UI代码中使用，同时大大降低了在错误队列上执行UI更新的风险:</p>
+<pre><code class="language-swift">// Completion handler-based version:
+
+class ProductLoader {
+    ...
+
+    func loadProduct(
+        withID id: UUID,
+        resultQueue: DispatchQueue = .main,
+        completionHandler: @escaping Handler
+    ) {
+        let task = urlSession.dataTask(with: urlResolver(id)) {
+            data, response, error in
+
+            ...
+
+            resultQueue.async {
+                completionHandler(result)
+            }
+        }
+
+        task.resume()
+    }
+}
+
+// Combine-based version:
+
+class ProductLoader {
+    ...
+    
+    func loadProduct(
+        withID id: UUID,
+        resultQueue: DispatchQueue = .main
+    ) -&gt; AnyPublisher&lt;Product, Error&gt; {
+        urlSession
+            .dataTaskPublisher(for: urlResolver(id))
+            .map(\.data)
+            .decode(type: Product.self, decoder: JSONDecoder())
+            .receive(on: resultQueue)
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>当然,上述模式依赖于我们记住resultQueue参数添加到每个异步api(我们也可以实现它作为初始化参数),但至少现在我们不必记得总是使用在每一个调用站点DispatchQueue.main.async——我个人认为是一个重大胜利。</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>虽然不存在完全防错误的API，而且针对任何类型的平台开发应用总是需要学习和记住某些约定， 如果我们能让我们在自己的应用中设计的api尽可能容易使用(或难以误用)，那么这往往会导致代码基础是健壮的和直接的工作。</p>
+<p>默认调用主队列上的完成处理程序可能只是其中的一小部分，但它可能是相当重要的一部分，特别是在大量使用异步操作导致UI更新的代码库中。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/WtwZ6dTAV/" class="tag">
+                    completion handler
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/COa1pbN1c7/" class="tag">
+                    dispatch queue
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/wei-ios-app-gou-jian-yi-ge-tong-yong-de-ke-chong-yong-de-uitableviewcontroller/">
+                  <h3 class="post-title">
+                    为iOS APP 构建一个通用的可重用的UITableViewController
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

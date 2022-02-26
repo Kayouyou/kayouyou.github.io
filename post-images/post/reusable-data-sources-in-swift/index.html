@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Reusable data sources in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="列表和项目集合可以说是应用程序中最常见的两种ui类型。论我们是建立一个浏览内容的应用程序，与他人交流，或执行购买-许多应用程序通过UITableView或UICollectionView渲染他们的数据的很大一部分。
+表视图和集合视图有一个共..." />
+    <meta name="keywords" content="data sources,code reuse,uikit" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Reusable data sources in Swift</h2>
+            <div class="post-date">2018-09-16</div>
+            
+            <div class="post-content" v-pre>
+              <p>列表和项目集合可以说是应用程序中最常见的两种ui类型。论我们是建立一个浏览内容的应用程序，与他人交流，或执行购买-许多应用程序通过UITableView或UICollectionView渲染他们的数据的很大一部分。</p>
+<p>表视图和集合视图有一个共同点，那就是它们都使用数据源对象来为它们提供要显示的单元格和数据。虽然这种模式一开始看起来很笨拙，是样板的主要来源——但它是使这种类型的视图能够轻松重用单元格并代表我们进行大量性能优化的核心部分。</p>
+<p>本周，让我们看看如何以一种更可重用的方式为表和集合视图实现数据源，以及这样做如何使基于列表的UI代码更易于组合和使用。虽然这篇文章中的所有代码示例都将基于表视图，但同样的技术也可以用于集合视图。就让我们一探究竟吧!</p>
+<h2 id="moving-out-of-view-controllers">Moving out of view controllers</h2>
+<p>就像其他与显示和处理来自UI的交互相关的代码一样，数据源实现很容易在我们的视图控制器中结束。例如，假设我们正在构建一个电子邮件客户端应用程序，并且我们正在使用一个UITableView来在一个InboxViewController中渲染用户的收件箱。一个很常见的解决方案是让视图控制器作为它的表视图的数据源，像这样:</p>
+<pre><code class="language-swift">extension InboxViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView,
+                   numberOfRowsInSection section: Int) -&gt; Int {
+        return messages.count
+    }
+
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+        let message = messages[indexPath.row]
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: &quot;message&quot;,
+            for: indexPath
+        )
+
+        cell.textLabel?.text = message.title
+        cell.detailTextLabel?.text = message.preview
+
+        return cell
+    }
+}
+</code></pre>
+<p>虽然上面的方法对于不包含很多逻辑的简单一次性的表视图控制器很好，但如果我们需要让我们的视图控制器也执行其他几个任务(这是通常的情况)，事情可能会变得非常混乱- 或者我们想在我们的应用程序的其他地方重用相同的数据源逻辑。</p>
+<p>例如，我们的电子邮件应用程序非常有可能需要在许多不同的地方呈现消息——例如在包含已发送消息的列表中，存档消息中，或者在草稿或文件夹视图中。在这种情况下，能够轻松重用我们的数据源代码是非常好的，因为它让我们能够非常快速地基于相同的底层数据模型构建新的ui。</p>
+<p>这样做的一种方法是简单地将所有与数据源相关的逻辑从我们的视图控制器中移到单独的类中——并让这些类符合UITableViewDataSource，像这样:</p>
+<pre><code class="language-swift">class MessageListDataSource: NSObject, UITableViewDataSource {
+    // We keep this public and mutable, to enable our data
+    // source to be updated as new data comes in.
+    var messages: [Message]
+
+    init(messages: [Message]) {
+        self.messages = messages
+    }
+
+    func tableView(_ tableView: UITableView,
+                   numberOfRowsInSection section: Int) -&gt; Int {
+        return messages.count
+    }
+
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+        let message = messages[indexPath.row]
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: &quot;message&quot;,
+            for: indexPath
+        )
+
+        cell.textLabel?.text = message.title
+        cell.detailTextLabel?.text = message.preview
+
+        return cell
+    }
+}
+</code></pre>
+<p>上述方法的好处是，我们开始转向更多的插件风格的UI架构，通过插入现有的构建块，我们可以快速、轻松地组装新的UI和特性。就像子视图控制器一样，一旦它们被分解成独立的部分，就会变得更容易推理。</p>
+<h2 id="generalizing">Generalizing</h2>
+<p>将代码分解成不同的类型是避免大量类的好办法，但有时会导致代码重复。虽然复制并不一定是坏事——有时一些轻微的复制比创建过于宽泛且难以定制的抽象要好——但通常不需要重复编写高度相似的代码是件好事。</p>
+<p>当涉及到表和集合视图数据源代码时，我们通常希望为许多(有时甚至是所有)模型执行完全相同的任务。 我们通常希望为每个模型实例显示一个单元格，并且我们总是需要为每种类型的数据执行相同的dequeueing dance 。</p>
+<p>让我们看看是否可以引入一个非常轻量级的抽象，通过泛化以前的专用数据源类来更好地实现这一点。让我们创建一个可以渲染任何模型的泛型类，给定一个单元重用标识符和一个为给定模型配置表格视图单元的闭包，而不是一个专门绑定到渲染消息模型的实现——像这样:</p>
+<pre><code class="language-swift">class TableViewDataSource&lt;Model&gt;: NSObject, UITableViewDataSource {
+    typealias CellConfigurator = (Model, UITableViewCell) -&gt; Void
+
+    var models: [Model]
+
+    private let reuseIdentifier: String
+    private let cellConfigurator: CellConfigurator
+
+    init(models: [Model],
+         reuseIdentifier: String,
+         cellConfigurator: @escaping CellConfigurator) {
+        self.models = models
+        self.reuseIdentifier = reuseIdentifier
+        self.cellConfigurator = cellConfigurator
+    }
+}
+</code></pre>
+<p>上面我们使用了基于闭包的方法，但另一种选择是使用配置器模式，如“在Swift中防止视图感知模型”。</p>
+<p>有了上面的这些，我们现在可以在不了解任何模型实现细节的情况下实现UITableViewDataSource，只需要简单地使用模型数组和配置闭包，就可以在我们的数据源初始化器中注入——像这样:</p>
+<pre><code class="language-swift">func tableView(_ tableView: UITableView,
+               numberOfRowsInSection section: Int) -&gt; Int {
+    return models.count
+}
+
+func tableView(_ tableView: UITableView,
+               cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+    let model = models[indexPath.row]
+    let cell = tableView.dequeueReusableCell(
+        withIdentifier: reuseIdentifier,
+        for: indexPath
+    )
+
+    cellConfigurator(model, cell)
+
+    return cell
+}
+</code></pre>
+<p>现在，当我们需要一个数据源来显示模型的数组时，我们可以简单地创建一个TableViewDataSource的实例，例如替换我们之前的MessageListDataSource:</p>
+<pre><code class="language-swift">func messagesDidLoad(_ messages: [Message]) {
+    let dataSource = TableViewDataSource(
+        models: messages,
+        reuseIdentifier: &quot;message&quot;
+    ) { message, cell in
+        cell.textLabel?.text = message.title
+        cell.detailTextLabel?.text = message.preview
+    }
+
+    // We also need to keep a strong reference to the data source,
+    // since UITableView only uses a weak reference for it.
+    self.dataSource = dataSource
+    tableView.dataSource = dataSource
+}
+</code></pre>
+<p>很整洁!很酷的是，我们现在可以使用同一个类来渲染我们最有可能拥有的任何其他模型-例如联系人，草稿，模板，等等-我们甚至可以添加静态方便方法，使它额外容易为我们最常见的模型创建数据源:</p>
+<pre><code class="language-swift">extension TableViewDataSource where Model == Message {
+    static func make(for messages: [Message],
+                     reuseIdentifier: String = &quot;message&quot;) -&gt; TableViewDataSource {
+        return TableViewDataSource(
+            models: messages,
+            reuseIdentifier: reuseIdentifier
+        ) { (message, cell) in
+            cell.textLabel?.text = message.title
+            cell.detailTextLabel?.text = message.preview
+        }
+    }
+}
+</code></pre>
+<p>添加这些方便的方法不仅进一步减少了重复代码的需要，还使我们能够以一种非常好的方式使用点语法创建数据源。</p>
+<pre><code class="language-swift">func messagesDidLoad(_ messages: [Message]) {
+    dataSource = .make(for: messages)
+    tableView.dataSource = dataSource
+}
+</code></pre>
+<p>上面的改变一开始可能看起来纯粹是装点门面，但确实会对开发人员的生产力产生巨大的积极影响，特别是当我们在开发一个需要快速迭代和实验的应用程序时——因为创建大多数数据源不再是一件大事。</p>
+<h2 id="composing-sections">Composing sections</h2>
+<p>让我们继续进一步探讨可重用数据源的概念。到目前为止，我们只实现了呈现单个部分的数据源，但有时我们想呈现多个数据源，每个数据源都有自己的数据类型。例如，在我们的电子邮件应用程序中，我们可能想要实现一个HomeViewController，它向用户显示最近的联系人列表以及来自用户收件箱的顶部消息。</p>
+<p>虽然这可以使用一个新的专用对象来完成，该对象获取主屏幕的所有数据，并通过自定义UITableViewDataSource实现提供这些数据，但让我们尝试使用复合来将多个小数据源组合在一起，以形成我们需要的一个数据源。</p>
+<p>为此，我们来实现SectionedTableViewDataSource，它只接受其他数据源的数组，并使用它们在提供数据的表视图中形成一个section。我们从这里开始:</p>
+<pre><code class="language-swift">class SectionedTableViewDataSource: NSObject {
+    private let dataSources: [UITableViewDataSource]
+
+    init(dataSources: [UITableViewDataSource]) {
+        self.dataSources = dataSources
+    }
+}
+</code></pre>
+<p>然后，我们将遵循UITableViewDataSource，将大多数调用转发到匹配当前索引路径的section索引的底层数据源:</p>
+<pre><code class="language-swift">extension SectionedTableViewDataSource: UITableViewDataSource {
+    func numberOfSections(in tableView: UITableView) -&gt; Int {
+        return dataSources.count
+    }
+
+    func tableView(_ tableView: UITableView,
+                   numberOfRowsInSection section: Int) -&gt; Int {
+        let dataSource = dataSources[section]
+        return dataSource.tableView(tableView, numberOfRowsInSection: 0)
+    }
+
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+        let dataSource = dataSources[indexPath.section]
+        let indexPath = IndexPath(row: indexPath.row, section: 0)
+        return dataSource.tableView(tableView, cellForRowAt: indexPath)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以轻松地创建分段数据源，几乎不需要任何代码重复——并结合我们之前创建特定于模型的数据源的便利api，我们可以轻松地组合由多组模型组成的数据源:</p>
+<pre><code class="language-swift">let dataSource = SectionedTableViewDataSource(dataSources: [
+    TableViewDataSource.make(for: recentContacts),
+    TableViewDataSource.make(for: topMessages)
+])
+</code></pre>
+<p>总的来说，这就是组合的强大之处，我们不必总是从一个新的类型开始，而是可以经常从现有的功能组合起来。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>通过编写更通用的数据源，我们通常可以在呈现相同模型的应用程序的多个部分中重用相同的代码。由于数据源主要基于索引路径，它们也很适合组合——因为数据源的核心功能通常可以以完全与模型无关的方式执行。</p>
+<p>当然也有一些时候，UITableViewDataSource或UICollectionViewDataSource的自定义、高度专门化的实现是有序的-可重用数据源(如本文中的示例)的目标是消除在编写执行简单数据绑定的数据源时经常涉及的大量样板和重复。</p>
+<p><a href="https://www.swiftbysundell.com/articles/reusable-data-sources-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/vpAuLve9x/" class="tag">
+                    data sources
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/2aj4ZEUkug/" class="tag">
+                    code reuse
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l8xvWHOizF/" class="tag">
+                    uikit
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/lightweight-presenters-in-swift/">
+                  <h3 class="post-title">
+                    Lightweight presenters in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

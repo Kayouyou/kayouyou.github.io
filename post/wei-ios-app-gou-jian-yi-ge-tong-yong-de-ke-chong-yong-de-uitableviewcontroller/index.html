@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>为iOS APP 构建一个通用的可重用的UITableViewController | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+为iOS APP 构建一个通用的可重用的UITableViewController
+
+
+
+
+Building the Generic TableViewController
+
+
+2.1. Using the GenericTable..." />
+    <meta name="keywords" content="uitableview,data sources,code reuse" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">为iOS APP 构建一个通用的可重用的UITableViewController</h2>
+            <div class="post-date">2021-05-06</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#iOSAPPUITableViewController">为iOS APP 构建一个通用的可重用的UITableViewController</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#BuildingtheGenericTableViewController">Building the Generic TableViewController</a></li>
+</ol>
+<ul>
+<li>2.1. <a href="#UsingtheGenericTableViewController">Using the GenericTableViewController</a></li>
+<li>2.2. <a href="#SettingUpthePersonGenericTableViewController">Setting Up the Person GenericTableViewController</a></li>
+<li>2.3. <a href="#SettingUptheFilmGenericTableViewController">Setting Up the Film GenericTableViewController</a></li>
+<li>2.4. <a href="#FinalintegrationusingUITabBarControllerasContainerViewController">Final integration using UITabBarController as Container View Controller</a></li>
+<li>2.5. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameiosappuitableviewcontrollera为ios-app-构建一个通用的可重用的uitableviewcontroller">1. <a name='iOSAPPUITableViewController'></a>为iOS APP 构建一个通用的可重用的UITableViewController</h2>
+<p>TableView Controller是一个基本的UIKit组件，几乎在每个iOS应用中都使用它来在列表中呈现数据集合。当我们想要在UITableViewController中显示不同类型的数据时，大多数时候我们创建一个新子类来显示相关类型的数据。这种方法可以工作，但是如果应用程序中有许多不同类型的数据，则可能导致重复和维护困难。</p>
+<p>我们该如何处理和解决这个问题呢?其中一种方法是，我们可以使用简单的抽象使用Swift通用抽象数据类型来创建通用UITableViewController子类，使用Swift通用约束可以用来配置和显示不同类型的数据。</p>
+<h2 id="2-a-namebuildingthegenerictableviewcontrollerabuilding-the-generic-tableviewcontroller">2. <a name='BuildingtheGenericTableViewController'></a>Building the Generic TableViewController</h2>
+<p>我们创建UITableViewController的一个子类叫做GenericTableViewController，我们添加了2种类型的Generic T和Cell。我们添加了一个约束，即Cell必须是UITableViewCell的子类。T将被用作数据的抽象，而Cell将被注册到UITableView，出列以显示每一行的数据为UITableViewCell。</p>
+<pre><code class="language-swift">class GenericTableViewController&lt;T, Cell: UITableViewCell&gt;: UITableViewController {  var items: [T]
+  var configure: (Cell, T) -&gt; Void
+  var selectHandler: (T) -&gt; Void  
+  init(items: [T], configure: @escaping (Cell, T) -&gt; Void, selectHandler: @escaping (T) -&gt; Void) {
+    self.items = items
+    self.configure = configure
+    self.selectHandler = selectHandler
+    super.init(style: .plain)
+    self.tableView.register(Cell.self, forCellReuseIdentifier: &quot;Cell&quot;)
+  }  ...
+}
+</code></pre>
+<p>让我们看一下初始化器，它接受3个参数:</p>
+<ol>
+<li>
+<p>Generic T数组:它将被指定为驱动UITableViewDataSource的实例变量。</p>
+</li>
+<li>
+<p>Configure closure:这个配置闭包将在传递T数据和Cell时被调用，当tableview将Cell从队列中取出以显示在每一行时。这里，我们设置如何使用数据显示UITableViewCell。(通过在参数中显式声明Cell的类型，编译器将能够隐式推断Cell的类型，只要它是UITableViewCell的子类)</p>
+</li>
+<li>
+<p>Cell选中的处理闭包。当用户选择/点击单元格中的行时，将通过传递selected来调用此闭包。在这里，我们可以添加当用户点击一行时将调用的逻辑或操作。</p>
+</li>
+</ol>
+<p>初始化器将这3个参数的每已个都分配为类的实例变量，然后它用一个可重用的标识符将Cell注册到UITableView，这个标识符可以用来为数据源将UITableViewCell从可重用队列取出。</p>
+<pre><code class="language-swift">class GenericTableViewController&lt;T, Cell: UITableViewCell&gt;: UITableViewController {  ....  //1
+  override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -&gt; Int {
+    return items.count
+  }  
+  
+  //2  
+  override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+    let cell = tableView.dequeueReusableCell(withIdentifier: &quot;Cell&quot;, for: indexPath) as! Cell
+    let item = items[indexPath.row]
+    configure(cell, item)
+    return cell
+  }
+
+  //3
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    tableView.deselectRow(at: indexPath, animated: true)
+    let item = items[indexPath.row]
+    selectHandler(item)
+  }
+}
+</code></pre>
+<p>下面是我们需要覆盖的UITableViewDataSource和UITableViewDelegate方法:</p>
+<blockquote>
+<ol>
+<li><em>tableView:numberOfRowsInSection:</em> : Here we just return the number of data in the array of T object.</li>
+<li><em>tableView:cellForRowAtIndexPath:</em> : We dequeue the UITableViewCell using the reusable identifier and then cast it as Cell. Then, we get the data from the T array using the index path row. After that, we invoke the configuration closure passing the cell and the data for it to be customized before displayed.</li>
+<li><em>tableView:didSelectRowAtIndexPath:</em> : Here we just get our data from the array using the index path row the invoke the selected handler closure passing the data.</li>
+</ol>
+</blockquote>
+<h3 id="21-a-nameusingthegenerictableviewcontrollerausing-the-generictableviewcontroller">2.1. <a name='UsingtheGenericTableViewController'></a>Using the GenericTableViewController</h3>
+<p>为了尝试使用不同类型的对象来使用GenericTableViewController，我们创建了两个简单的结构体，Person和Film。在每个结构内部，我们创建一个静态计算变量，该变量将为每个结构返回一个硬编码存根对象数组。</p>
+<pre><code class="language-swift">struct Person {
+  let name: String
+  static var stubPerson: [Person] {
+    return [
+      Person(name: &quot;Mark Hamill&quot;),
+      Person(name: &quot;Harrison Ford&quot;),
+      Person(name: &quot;Carrie Fisher&quot;),
+      Person(name: &quot;Hayden Christensen&quot;),
+      Person(name: &quot;Ewan McGregor&quot;),
+      Person(name: &quot;Natalie Portman&quot;),
+      Person(name: &quot;Liam Neeson&quot;)
+   ]
+  }
+}
+struct Film {  
+  let title: String
+  let releaseYear: Int  
+  static var stubFilms: [Film] {
+    return [
+      Film(title: &quot;Star Wars: A New Hope&quot;, releaseYear: 1978),
+      Film(title: &quot;Star Wars: Empire Strikes Back&quot;, releaseYear: 1982),
+      Film(title: &quot;Star Wars: Return of the Jedi&quot;, releaseYear:  1984),
+      Film(title: &quot;Star Wars: The Phantom Menace&quot;, releaseYear: 1999),
+      Film(title: &quot;Star Wars: Clone Wars&quot;, releaseYear: 2003),
+      Film(title: &quot;Star Wars: Revenge of the Sith&quot;, releaseYear: 2005)]
+  }
+}
+</code></pre>
+<h3 id="22-a-namesettingupthepersongenerictableviewcontrollerasetting-up-the-person-generictableviewcontroller">2.2. <a name='SettingUpthePersonGenericTableViewController'></a>Setting Up the Person GenericTableViewController</h3>
+<pre><code class="language-swift">let personsVC = GenericTableViewController(items: Person.stubPerson,          configure: { (cell: UITableViewCell, person) in
+        cell.textLabel?.text = person.name
+    }) { (person) in
+        print(person.name)
+    }
+</code></pre>
+<p>我们将使用标准的UITableViewCell Basic样式显示Person列表。这里，我们实例化传递Person对象数组的GenericTableViewController。完成闭包使用标准UITableViewCell的Cell类型，在配置中，我们只是使用人名分配textLabel文本属性。对于所选的处理程序闭包，我们只需将所选人员的名字打印到控制台。您可以在这里看到Swift隐式类型引用的强大功能，编译器将自动用Person结构替换T泛型。</p>
+<h3 id="23-a-namesettingupthefilmgenerictableviewcontrollerasetting-up-the-film-generictableviewcontroller">2.3. <a name='SettingUptheFilmGenericTableViewController'></a>Setting Up the Film GenericTableViewController</h3>
+<pre><code class="language-swift">class SubtitleTableViewCell: UITableViewCell {
+  override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+    super.init(style: .subtitle, reuseIdentifier: nil)
+  }
+  ...
+}
+</code></pre>
+<p>对于film，我们将使用带有Subtitle样式的UITableViewCell来显示它。为了能够做到这一点，我们需要创建一个子类来覆盖默认样式来使用Subtitle样式，我们称之为SubtitleTableViewCell。</p>
+<pre><code class="language-swift">let filmsVC = GenericTableViewController(items: Film.stubFilms, configure: { (cell: SubtitleTableViewCell, film) in
+  cell.textLabel?.text = film.title
+  cell.detailTextLabel?.text = &quot;\(film.releaseYear)&quot;
+}) { (film) in
+  print(film.title)
+}
+</code></pre>
+<p>我们实例化了传入电影对象数组的GenericTableViewController。对于配置闭包，我们将cell参数的单元格类型显式设置为SubtitleTableViewCell，然后在闭包内部，我们只使用电影的标题和发行年份设置单元格textLabel和detailTextLabel文本属性。对于所选的处理程序闭包，我们只将所选电影的标题打印到控制台。</p>
+<h3 id="24-a-namefinalintegrationusinguitabbarcontrollerascontainerviewcontrollerafinal-integration-using-uitabbarcontroller-as-container-view-controller">2.4. <a name='FinalintegrationusingUITabBarControllerasContainerViewController'></a>Final integration using UITabBarController as Container View Controller</h3>
+<pre><code class="language-swift">@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {  var window: UIWindow?  
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -&gt; Bool {    
+
+    // Instantiate person and film table view controller
+    ...    
+    let tabVC = UITabBarController(nibName: nil, bundle: nil)
+    tabVC.setViewControllers([
+      UINavigationController(rootViewController: personsVC),
+      UINavigationController(rootViewController: filmsVC)
+    ], animated: false)
+    
+    window = UIWindow(frame: UIScreen.main.bounds)
+    window?.rootViewController = tabVC
+    window?.makeKeyAndVisible()
+   
+    return true
+  }
+}
+</code></pre>
+<p>为了在iOS项目中显示它，我们将使用一个UITabBarController，它包含了Person和Film实例的GenericTableViewController作为ViewControllers。我们将标签栏控制器设置为UIWindow根视图控制器，并将每个通用表视图控制器嵌入到UINavigationController中。</p>
+<h3 id="25-a-nameconclusionaconclusion">2.5. <a name='Conclusion'></a>Conclusion</h3>
+<p>我们最终使用Swift泛型为UITableViewController创建了一个抽象容器类。这种方法真的帮助我们能够重用相同的UITableViewController与不同类型的数据源，我们仍然可以自定义使用通用单元格，符合UITableViewCell。Swift泛型是一个非常棒的范例，我们可以用它来创建一个非常强大的抽象。加油快乐，加油万岁，加油😋。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/cmaFTpdHR/" class="tag">
+                    uitableview
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/vpAuLve9x/" class="tag">
+                    data sources
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/2aj4ZEUkug/" class="tag">
+                    code reuse
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/rxswift-flatmap-de-shi-xian-xi-jie/">
+                  <h3 class="post-title">
+                    RxSwift: FlatMap的实现细节
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>如何在你的iOS框架内使用CocoaPods | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+如何在你的iOS框架内使用CocoaPods
+
+
+1.1. CocoaPods or Carthage?
+1.2. Getting started with CocoaPods
+1.3. Integrate a CocoaPod
+1..." />
+    <meta name="keywords" content="cocoapods,framework,modular" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">如何在你的iOS框架内使用CocoaPods</h2>
+            <div class="post-date">2021-05-16</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#iOSCocoaPods">如何在你的iOS框架内使用CocoaPods</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#CocoaPodsorCarthage">CocoaPods or Carthage?</a></li>
+<li>1.2. <a href="#GettingstartedwithCocoaPods">Getting started with CocoaPods</a></li>
+<li>1.3. <a href="#IntegrateaCocoaPod">Integrate a CocoaPod</a></li>
+<li>1.4. <a href="#Gottalinkemall">Gotta link em’ all</a></li>
+<li>1.5. <a href="#Dependenciessortedletsbuildsomething">Dependencies sorted, let’s build something!</a></li>
+<li>1.6. <a href="#CommonIssues">Common Issues</a>
+<ul>
+<li>1.6.1. <a href="#Appisstillsayinglibrarynotloaded">App is still saying library not loaded</a></li>
+<li>1.6.2. <a href="#IssueswhenintegratingintoanotherarchitecturewatchOSMacOS">Issues when integrating into another architecture (watchOS, MacOS)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameioscocoapodsa如何在你的ios框架内使用cocoapods">1. <a name='iOSCocoaPods'></a>如何在你的iOS框架内使用CocoaPods</h2>
+<p>在我之前关于如何将特性构建为框架的文章中，我讨论了如何通过在项目workspace中直接使用iOS框架来提高团队的工作效率。  我所介绍的示例非常简单，并为这种方法提供了一个起点，但我们中的许多人需要构建更复杂的东西，通常包括第三方依赖关系。当CocoaPods的结构是这样时，将其集成到项目中可能有点棘手，所以这就是我想在本教程中解释的内容。</p>
+<h3 id="11-a-namecocoapodsorcarthageacocoapods-or-carthage">1.1. <a name='CocoaPodsorCarthage'></a>CocoaPods or Carthage?</h3>
+<p>在为你的iOS项目选择依赖管理器时，大多数人会在两个选项中做出选择:CocoaPods或Carthage。CocoaPods多年来一直是标准的承载者，它是一个非常成熟的代码库，有大量的包可供选择。它将代码集成到你的项目中是通过为每个包含的Pods创建一个框架目标，构建框架，并使用一个特殊的脚本将它们复制到你的主应用模块。</p>
+<p>Carthage的工作方式有点不同。它并不依赖于对项目的集成，而是将每个依赖项的代码下载并构建到它们自己的框架中，然后将这些框架导入到项目中。 这意味着依赖项必须手动集成到项目中，但它使项目独立于Carthage本身。</p>
+<p>选择什么作为包管理器取决于您，如果需要，您甚至可以同时使用两者。Carthage的优点是不重写任何项目文件，而CocoaPods只需要几个自动步骤就可以让您开始。 在本文中，我将介绍如何将CocoaPods集成到您的内部框架中。</p>
+<h3 id="12-a-namegettingstartedwithcocoapodsagetting-started-with-cocoapods">1.2. <a name='GettingstartedwithCocoaPods'></a>Getting started with CocoaPods</h3>
+<p>让我们从我在前一篇文章中所写的小示例项目开始。我在repo中的一个名为use-cocoapods的分支上做了以下所有更改，但您可以从主分支上已经存在的内容开始。如果遇到困难，请检查代码以查看最终结果。</p>
+<p>确保您已经安装了CocoaPods，无论是在系统范围内还是在Gemfile中定义的CocoaPods中使用Bundler。</p>
+<p>如果您以前使用过CocoaPods，您可能知道开始使用它的通常方法是在包含.xcproject文件的目录中运行pod init。 运行此命令将创建一个工作区，CocoaPods可以使用该工作区来管理依赖项。 因为我们已经创建了包含内部依赖项的自己的工作区，所以我们需要做一些不同的事情。</p>
+<p>使用文本编辑器，在git repo的根目录下创建一个名为Podfile的新文件。添加以下几行:</p>
+<pre><code class="language-swift">use_frameworks!
+workspace 'SimpleCounter.xcworkspace'
+</code></pre>
+<p>这告诉CocoaPods您希望使用现有的工作区来包含您的Pod依赖项。 在同一个目录下运行pod install以确认它是否正常工作。这不会安装任何东西，但会将Pods项目集成到该工作区中。</p>
+<h3 id="13-a-nameintegrateacocoapodaintegrate-a-cocoapod">1.3. <a name='IntegrateaCocoaPod'></a>Integrate a CocoaPod</h3>
+<p>让我们将UICircularProcessingRing Pod 集成到应用程序和框架中。是一个简单的环形进度条，我们可以用它来显示朝着指定目标的进度。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqkkl8lyvbj3064064web.jpg" alt="avatar" loading="lazy"></figure>
+<p>Add the following to your Podfile:</p>
+<pre><code class="language-swift">target 'SimpleCounterFeature' do
+    project './SimpleCounterFeature/SimpleCounterFeature.xcodeproj' 
+    pod 'UICircularProgressRing', '6.1.0'
+end
+</code></pre>
+<p>这将把UICircularProgressRing CocoaPod应用到SimpleCounterFeature框架目标。这些看起来都很熟悉，除了指定了需要依赖项的确切的.xcodeproj文件。我们需要这样做是因为在.xcworkspace文件的根目录中，CocoaPods并不清楚需要依赖项的目标在哪里。 通常，应用主模块的.xcproject文件和CocoaPods生成的.xcworkspace文件位于同一个目录中，因此CocoaPods将在默认情况下找到它。</p>
+<p>然后，运行pod install。这将下载并应用UICircularProgressRing依赖项到SimpleCounterFeature框架目标。</p>
+<p>现在，让我们测试一下集成是否成功。打开CounterViewController.swift文件并添加</p>
+<pre><code class="language-swift">import UICircularProgressRing
+</code></pre>
+<p>在文件的最上面。在目标列表中选择SimpleCounterFeature目标并build。构建应该成功。</p>
+<p>现在尝试构建并运行SimpleCounterApp目标，看看会发生什么。构建将成功，但应用程序在启动时崩溃! 我们得到以下错误消息:</p>
+<pre><code class="language-swift">dyld: Library not loaded: @rpath/UICircularProgressRing.framework/UICircularProgressRing
+Referenced from: /Users/akfreas/Library/Developer/Xcode/DerivedData/SimpleCounter-awbumravmznuqofjwyrvfwfaoohc/Build/Products/Debug-iphonesimulator/SimpleCounterFeature.framework/SimpleCounterFeature
+Reason: image not found
+</code></pre>
+<p>这是为什么呢?我们将依赖添加到SimpleCounterFeature中，它构建得很好，应用也是如此!为什么说库没有加载?</p>
+<h3 id="14-a-namegottalinkemallagotta-link-em-all">1.4. <a name='Gottalinkemall'></a>Gotta link em’ all</h3>
+<blockquote>
+<p>What’s missing is the actual compiled UICircularProgressRing binary that the SimpleCounterFeature requests when it is loaded. This is because iOS frameworks are dynamically linked, meaning they only reference their dependencies rather than packaging them with the compiled binary image. Doing this generally reduces app size, as dependencies that are shared between binaries in the executable image (in this case, our app module) are not duplicated and instead loaded only once by the dynamic linker. In this case the linker is an Apple utility called dyld, which threw the fatal error above.</p>
+</blockquote>
+<p>缺少的是加载时SimpleCounterFeature请求的实际编译的UICircularProgressRing二进制文件。这是因为iOS框架是动态链接的，这意味着它们只引用它们的依赖项，而不是将它们与编译后的二进制映像打包。这样做通常会减少应用程序的大小，因为在可执行映像(在本例中，我们的app模块)的二进制文件之间共享的依赖不会重复，而是由动态链接器加载一次。在本例中，链接器是一个名为dyld的苹果实用程序，它抛出了上面的致命错误。</p>
+<p>换句话说，应用程序不知道在哪里可以找到UICircularProgressRing二进制文件，因为它既没有与SimpleCounterFeature框架打包，也没有与主应用程序模块打包。 当dyld加载SimpleCounterFramework时，请求该二进制文件，但无法找到，导致崩溃。</p>
+<p>我们需要做的是将UICircularProgressRing框架添加到主应用模块的链接二进制文件中。这可以通过将这些行添加到Podfile中来完成:</p>
+<pre><code class="language-swift">target 'SimpleCounterApp' do
+    project './SimpleCounterApp/SimpleCounterApp.xcodeproj'
+    pod 'UICircularProgressRing', '6.1.0'
+end
+</code></pre>
+<p>更好的方式 😊</p>
+<pre><code class="language-swift">def simpleCounterFeature_pods
+   pod 'UICircularProgressRing', '6.1.0'
+end
+
+target 'SimpleCounterFeature' do
+    project './SimpleCounterFeature/SimpleCounterFeature.xcodeproj' 
+    simpleCounterFeature_pods
+end
+
+target 'SimpleCounterApp' do
+    project './SimpleCounterApp/SimpleCounterApp.xcodeproj'
+    simpleCounterFeature_pods
+end
+</code></pre>
+<p>现在，运行pod install，清理应用程序目标，并尝试再次构建和运行应用程序。你可能不得不从你的模拟器或设备删除应用程序，如果你没有看到计数器接口启动。</p>
+<h3 id="15-a-namedependenciessortedletsbuildsomethingadependencies-sorted-lets-build-something">1.5. <a name='Dependenciessortedletsbuildsomething'></a>Dependencies sorted, let’s build something!</h3>
+<p>在我们有了两个目标可用的UI二进制文件，我们可以使用它了。我将进度视图集成到框架中，你可以在github上的代码中检出。这里使用框架进行构建并没有什么独特之处，所以我将把它留给您去研究。我们剩下的是这样一个界面:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqkklbukmbj30bi0owwen.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="16-a-namecommonissuesacommon-issues">1.6. <a name='CommonIssues'></a>Common Issues</h3>
+<p>在将更多依赖项集成到应用模块和框架中时，你可能会遇到一些问题。</p>
+<h4 id="161-a-nameappisstillsayinglibrarynotloadedaapp-is-still-saying-library-not-loaded">1.6.1. <a name='Appisstillsayinglibrarynotloaded'></a>App is still saying library not loaded</h4>
+<p>If you are getting the same error we had above, where dyld is complaining that it cannot find your internal framework, make sure you have the framework listed in both Linked Frameworks and Libraries and in Embedded Binaries in the General section of your build settings for your main app module. It should look like this:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqkkkrnakjj30g4082glt.jpg" alt="avatar" loading="lazy"></figure>
+<h4 id="162-a-nameissueswhenintegratingintoanotherarchitecturewatchosmacosaissues-when-integrating-into-another-architecture-watchos-macos">1.6.2. <a name='IssueswhenintegratingintoanotherarchitecturewatchOSMacOS'></a>Issues when integrating into another architecture (watchOS, MacOS)</h4>
+<p>如果您正在为另一个体系结构(如WatchOS)构建框架，则需要在框架项目中创建另一个构建目标，该目标将为该体系结构构建代码。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqkkkydaqzj30mi07dwey.jpg" alt="avatar" loading="lazy"></figure>
+<p>通过将Base SDK设置为watchOS，将Valid Architectures设置为armv7k，你可以构建你的watchOS框架，并将其集成到你的主watchOS应用程序模块中，就像你在iOS应用程序中所做的一样。还有一些其他的困难可能会导致障碍，但是我在这里就不详细讨论了。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ao_P-d1pz/" class="tag">
+                    cocoapods
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/BCLm_HeSI/" class="tag">
+                    framework
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/GAkD_BWre/" class="tag">
+                    modular
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/tong-guo-jiang-gong-neng-gou-jian-wei-kuang-jia-lai-ti-gao-ios-tuan-dui-de-sheng-chan-li/">
+                  <h3 class="post-title">
+                    通过将功能构建为框架来提高iOS团队的生产力
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

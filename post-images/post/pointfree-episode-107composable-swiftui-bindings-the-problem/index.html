@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 107:Composable SwiftUI Bindings: The Problem | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Inventory entry screen
+
+
+
+
+Implementing quantity
+
+
+
+
+Domain modeling
+
+
+
+
+Next time: binding transfo..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 107:Composable SwiftUI Bindings: The Problem</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Inventoryentryscreen">Inventory entry screen</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Implementingquantity">Implementing quantity</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Domainmodeling">Domain modeling</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Nexttime:bindingtransformations">Next time: binding transformations</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 107:Composable SwiftUI Bindings: The Problem -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>之前我们引入了“<strong>case paths</strong>”的概念，它的作用与<strong>key paths</strong>对<strong>struct</strong>的每个字段所做的相同，但相反，它们适用于<strong>enum</strong>的每个情况。一开始它可能看起来有点抽象，毕竟，如果<strong>case paths</strong>如此重要，为什么苹果没有在Swift中为我们提供一流的支持?</p>
+<p>但是，我们能够证明<strong>case paths</strong>允许我们抽象地分离和隔离enum的部分，这样我们就可以在数据类型的形状上编写泛型算法。到目前为止，我们最大的应用是在可组合架构中转换<strong>reducer</strong>的概念。特别地，如果我们有一个在用户操作的小范围内操作的<strong>reducer</strong>，我们可以通过使用一个<strong>case path</strong>将它转换为一个在全局操作上工作的<strong>reducer</strong>。</p>
+<p>这是一个泛型算法的例子，它能够完成它的工作，因为我们给它一个<strong>case path</strong>来隔离和转换枚举的单个<strong>case</strong>。但这只是冰山一角，案例路径有很多应用，就像<strong>key paths</strong>有很多应用一样，今天我们将开始一系列的章节来进一步探索。</p>
+<p>SwiftUI中的<strong>Binding</strong>类型是该框架中最重要的类型之一，因为它促进了应用程序不同部分之间的通信。它允许应用程序某个角落的更改立即反映到另一个部分，无论您使用的是@<strong>ObservedObject、@State</strong>属性包装器还是<strong>environment value</strong>，您最终都是在处理绑定。</p>
+<p>因为绑定是SwiftUI的一个基本概念，我们也希望它是一个超级可组合和可转换的单元。也就是说，应该可以采用现有的绑定，并使用一些简单的操作符和构造派生所有新的绑定。事实上，SwiftUI确实提供了一些转换绑定的方法，而且它实际上非常强大。</p>
+<p>然而，不幸的是，所提供的转换只是冰山的一半。 所有提供给我们的开箱即用的工具都与结构体和更一般的所谓的“产品”类型密切相关，主要是因为这些工具利用了<strong>key paths</strong>的力量。没有适当处理枚举和和类型的工具，这意味着很难或不可能以精确的方式建模我们的域，这导致了许多不必要的复杂性。</p>
+<p>好吧，很快我们就会修复SwiftUI工具集的这个缺陷，当然<strong>case path</strong>将在实现这一点上发挥很大的作用，因为它们是通用地处理枚举的完美工具。</p>
+<p>但首先，让我们更好地理解绑定是如何工作的，以及我们有哪些方法可以在SwiftUI中把它们从盒子里转换出来。</p>
+<hr>
+<h2 id="2-a-nameinventoryentryscreenainventory-entry-screen">2. <a name='Inventoryentryscreen'></a>Inventory entry screen</h2>
+<p>我们将使用下面看似简单的屏幕来探索这个概念。它表示一个将物品添加到库存系统的屏幕。您可以输入项目的名称，选择一个颜色，然后指定它的数量。为了让事情变得有趣一点，仅仅指定它的数量是不够的。当一件商品被标记为已售完时，还有一种进一步的选择，即该商品正在延期订购，这意味着某天它将有存货，或者只是永远缺货。</p>
+<p>在可组合架构中构建这个屏幕很容易，我们喜欢可组合架构，但我们想看看在普通的SwiftUI中构建需要什么。我们之所以这么做，是因为大多数构建SwiftUI应用程序的人都会使用苹果提供的原始类型，而我们想要展示的是，<strong>case path</strong>可以增强这些原始类型。</p>
+<p>让我们从建模开始。我们想定义一个新的数据类型来表示这个屏幕上的数据。我们将开始建模项目的标题和颜色:</p>
+<pre><code class="language-swift">struct Item {
+  var name: String
+  var color: Color
+
+  enum Color {
+    case blue
+    case green
+    case black
+    case red
+    case yellow
+    case white
+  }
+}
+</code></pre>
+<p>然后我们可以创建一个基本的表单视图来公开UI控件来编辑这些字段。我们将创建一个新的视图结构体来保存<strong>Item</strong>的绑定:</p>
+<pre><code class="language-swift">struct ItemView: View {
+  @Binding var item: Item
+}
+</code></pre>
+<p>@<strong>Binding</strong>是SwiftUI为管理应用状态提供的几个属性包装器之一。我们在这里使用它,我们只是希望任何突变使它反映在父视图中。这正是绑定所擅长的。</p>
+<p>要实现主体，我们可以在表单中包装一个TextField和一个Picker。我们将使用<strong>item</strong>绑定来派生<strong>item</strong>部分的绑定，然后可以将其交给UI控件，以便它们可以被编辑:</p>
+<pre><code class="language-swift">var body: some View {
+  Form {
+    TextField(&quot;Name&quot;, text: self.$item.name)
+
+    Picker(selection: self.$item.color, label: Text(&quot;Color&quot;)) {
+
+    }
+  }
+  .navigationBarTitle(Text(&quot;Add item&quot;))
+}
+</code></pre>
+<p>为了访问<strong>Color enum</strong>中的所有颜色，我们将使该类型符合<strong>CaseIterable</strong>协议:</p>
+<pre><code class="language-swift">enum Color: CaseIterable {
+  ...
+}
+</code></pre>
+<p>然后为了在<strong>ForEach</strong>中使用这个颜色数组，我们可以用字符串表示它们，用原始值标识它们，然后用可哈希的颜色标记每一行。</p>
+<pre><code class="language-swift">enum Color: String, Hashable {
+  ...
+}
+...
+ForEach(Item.Color.allCases, id: \.rawValue) { color in
+  Text(color.rawValue)
+    .tag(color)
+}
+</code></pre>
+<p>但我们也想支持完全不使用颜色的想法，所以让它成为可选的。</p>
+<pre><code class="language-swift">struct Item {
+  var name: String
+  var color: Color?
+
+  ...
+}
+</code></pre>
+<p>然后我们可以用不代表颜色的行来更新视图，并将其标记为<strong>Optional.none</strong>。</p>
+<pre><code class="language-swift">Picker(selection: self.$item.color, label: Text(&quot;Color&quot;)) {
+  Text(&quot;None&quot;)
+    .tag(Item.Color?.none)
+
+  ForEach(Item.Color.allCases, id: \.rawValue) { color in
+    Text(color.rawValue)
+      .tag(color)
+  }
+}
+</code></pre>
+<p>但是，我们还必须更新每一行的标记，使其为可选的，以便选择器使用绑定。</p>
+<pre><code class="language-swift">Picker(selection: self.$item.color, label: Text(&quot;Color&quot;)) {
+  Text(&quot;None&quot;)
+    .tag(Item.Color?.none)
+
+  ForEach(Item.Color.allCases, id: \.rawValue) { color in
+    Text(color.rawValue)
+      .tag(Optional(color))
+  }
+}
+</code></pre>
+<p>有了这些基础设施，让我们来预览一下SwiftUI。有一个复杂的问题是，我们并不清楚如何构造需要传递给item视图的绑定:</p>
+<pre><code class="language-swift">struct ItemView_Previews: PreviewProvider {
+  static var previews: some View {
+    ItemView(item: &lt;#Binding&lt;Item&gt;#&gt;)
+  }
+}
+</code></pre>
+<p>通常，我们通过从<strong>observed objects</strong>或@<strong>State</strong>派生绑定来构造绑定，但我们在这里没有任何访问权限。另一种可能是构造一个可以直接操作的可变项的绑定:</p>
+<pre><code class="language-swift">struct ItemView_Previews: PreviewProvider {
+  static var previews: some View {
+    var item = Item(name: &quot;Keyboard&quot;, color: .green)
+    let itemBinding = Binding(get: { item }, set: { item = $0 })
+
+    return ItemView(item: itemBinding)
+  }
+}
+</code></pre>
+<p>我们现在在屏幕上有一些东西。一个奇怪的事情是，颜色行似乎是禁用的。事实证明，将<strong>picker</strong>视图嵌入表单会自动设置向下钻取到新屏幕以进行<strong>picker</strong>选择的功能。这真的很棒，但也意味着它只会在我们的视图进一步嵌入到<strong>NavigationView</strong>中时工作，所以让我们把它添加到预览:</p>
+<pre><code class="language-swift">return NavigationView {
+  ItemView(item: itemBinding)
+}
+</code></pre>
+<p>现在我们的预览正在运行，并且它像预期的那样工作。我们可以编辑项目的标题和颜色。</p>
+<hr>
+<h2 id="3-a-nameimplementingquantityaimplementing-quantity">3. <a name='Implementingquantity'></a>Implementing quantity</h2>
+<p>现在让我们尝试实现条目编辑器的数量特性。这比标题和颜色要复杂得多，因为这个状态有一些相互依赖的关系。如果该商品有库存，那么我们将显示一个数量步进控制，否则，我们将显示一个切换，显示该商品是否延期订购或永久售罄。</p>
+<p>实现该特性最重要的部分是域建模。如果我们正确地完成了这部分工作，那么我们就会希望UI能够很自然地完成。</p>
+<p>让我们以一种非常直接的方式开始域建模，尽管有点幼稚。我们知道该商品有一个数量，所以我们将添加:</p>
+<pre><code class="language-swift">struct Item {
+  var name = &quot;&quot;
+  var color: Color?
+  var quantity = 1
+}
+</code></pre>
+<p>我们知道，该项目可以是在库存或缺货:</p>
+<pre><code class="language-swift">struct Item {
+  var name = &quot;&quot;
+  var color: Color?
+  var quantity = 1
+  var isInStock = true
+}
+</code></pre>
+<p>最后，当一件商品缺货时，它可以是延期订购，也可以不是:</p>
+<pre><code class="language-swift">struct Item {
+  var name = &quot;&quot;
+  var color: Color?
+  var quantity = 1
+  var isInStock = true
+  var isOnBackOrder = false
+}
+</code></pre>
+<p>现在我们的一些观众可能在他们的脑海里有一些痒痒的东西告诉他们，这是不完全正确的，但我们很快就会解决这个问题。对于第一次尝试，这是一种非常好的建模域的方法，所以让我们继续使用它。</p>
+<p>在我们的模型中添加了一些新状态后，让我们添加一些UI控件来更新这个新状态。我们可以从检查该商品是否有库存开始，如果有库存，我们将显示数量的步长:</p>
+<pre><code class="language-swift">if self.item.isInStock {
+  Section(header: Text(&quot;In stock&quot;)) {
+    Stepper(&quot;Quantity: \(self.item.quantity)&quot;, value: self.$item.quantity)
+  }
+}
+</code></pre>
+<p>否则，我们可以显示延期订购切换:</p>
+<pre><code class="language-swift">} else {
+  Section(header: Text(&quot;Out of stock&quot;)) {
+    Toggle(&quot;Is on back order?&quot;, isOn: self.$item.isOnBackOrder)
+  }
+}
+</code></pre>
+<p>我们仍然无法在库存和缺货之间来回切换。为了做到这一点，我们将引入一个按钮来标记项目已售:</p>
+<pre><code class="language-swift">if self.item.isInStock {
+  Section(header: Text(&quot;In stock&quot;)) {
+    Stepper(&quot;Quantity: \(self.item.quantity)&quot;, value: self.$item.quantity)
+    Button(&quot;Mark as sold out&quot;) {
+      self.item.quantity = 0
+      self.item.isInStock = false
+    }
+  }
+} else {
+</code></pre>
+<p>以及另一个按钮来标记该项目为延期订购:</p>
+<pre><code class="language-swift">} else {
+  Section(header: Text(&quot;Out of stock&quot;)) {
+    Toggle(isOn: self.$item.isOnBackOrder) { Text(&quot;Is on back order?&quot;) }
+    Button(&quot;Is back in stock!&quot;) {
+      self.item.quantity = 1
+      self.item.isInStock = true
+    }
+  }
+}
+</code></pre>
+<p>现在如果我们尝试一下，它不太管用。我们不知道为什么，似乎是SwiftUI或Xcode的错误。我们也在最近的Xcode 12测试版中尝试了这一代码，但漏洞仍然存在。</p>
+<p>为了解决这个问题，我们可以创建一个小的包装器视图，使用@<strong>State</strong>，然后向下传递绑定:</p>
+<pre><code class="language-swift">struct ItemView_Previews: PreviewProvider {
+  static var previews: some View {
+    struct Wrapper: View {
+      @State var item = Item(name: &quot;Keyboard&quot;, color: .green)
+
+      var body: some View {
+        ItemView(item: self.$item)
+      }
+    }
+  }
+  return NavigationView {
+    Wrapper()
+  }
+}
+</code></pre>
+<p>我们必须这样做，这真的很令人沮丧，但我们不确定是否有更好的方法来解决。</p>
+<hr>
+<h2 id="4-a-namedomainmodelingadomain-modeling">4. <a name='Domainmodeling'></a>Domain modeling</h2>
+<p>然而，关于我们如何构建这个特性，有一些地方不太正确。当然，我们已经完成了工作，而且现在看起来还不错，但是我们巧妙地隐藏了大量的复杂性，这些复杂性随着时间的推移只会变得更糟，并且会感染需要与该领域交互的应用程序的每个部分。</p>
+<p>问题的关键在于Item数据类型中的这3个字段:</p>
+<pre><code class="language-swift">var isInStock = true
+var isOnBackOrder = false
+var quantity = 1
+</code></pre>
+<p>这当然代表了我们项目的库存范围，但它也代表了比我们想要的多得多的东西。例如:</p>
+<ul>
+<li>isInStock为真，isOnBackOrder也为真，这意味着什么? 已经有库存的东西怎么还会延期呢?</li>
+<li>类似地，isInStock为false，而quantity大于0，这意味着什么?</li>
+</ul>
+<p>在这种情况下，人们可能试图争论的一种方法是在Item上提供自定义初始化器，这样我们只能构造不代表我们刚才提到的奇怪状态的项:</p>
+<pre><code class="language-swift">extension Item {
+  static func inStock(
+    name: String,
+    color: Color?,
+    quantity: Int
+  ) -&gt; Self {
+    Item(color: color, quantity: quantity, isInStock: true, isOnBackOrder: false, title: title)
+  }
+
+  static func outOfStock(
+    name: String,
+    color: Color?,
+    isOnBackOrder: Bool
+  ) -&gt; Self {
+      Item(color: color, quantity: 0, isInStock: false, isOnBackOrder: isOnBackOrder, title: title)
+  }
+}
+</code></pre>
+<p>在这里，我们公开了两个用于构造项目的静态函数，每个函数都表示库存或缺货的两种情况</p>
+<p>然后，如果我们将Item的初始化器设为私有，而不通过这些静态函数之一，本质上就没有办法构造这些项，这将给我们一些信心，只有有效的值才能被构造……对吧!</p>
+<p>这是无法保证的。首先，即使初始化器可能是私有的，它仍然可以被这个文件中的所有代码访问，这意味着我们可以自由地构造无效的值并将它们传播到这个文件之外的代码中。此外，还有一些方法可以让这种类型更自由地进行初始化，比如将类型设置为<strong>Decodeable</strong>。然后我们可以从JSON中创建<strong>Item</strong>值，并且我们没有能力确保只使用有效的JSON表示，除非我们记得用更多的自定义逻辑覆盖合成的初始化器。</p>
+<p>因此，一开始在我们的数据模型中出现这些小的不一致似乎没什么大不了，但从根本上说，这意味着您根本不能信任这些数据。您可以尽最大努力确保只构造这些字段的有效组合，但您必须假设最终必须处理表示应用程序不应该处于的状态的数据。</p>
+<p>我们需要重新构建域，集中精力从数据类型中完全删除无效状态。也就是说，我们知道的无意义的值，比如库存和延期交货，在类型中根本不存在。它们是完全不可表示的，编译器会为我们证明这一点。</p>
+<p>你可以利用结构体和枚举来减少我们的数据类型，直到只剩下最基本的东西。</p>
+<p>我们已经尝试通过公开一对静态构造函数来实现这一点。这真正指出的是，我们的模型应该使用枚举来表示这两种情况，而不是使用一个整数和两个布尔值。因此，我们将引入一个新类型来表示该项目是否在库存中，枚举的每一种情况都可以保存与该状态相关的额外数据:</p>
+<pre><code class="language-swift">//var isInStock = true
+//var isOnBackOrder = false
+//var quantity = 1
+
+var status: Status
+
+enum Status {
+  case inStock(quantity: Int)
+  case outOfStock(isOnBackOrder: Bool)
+}
+</code></pre>
+<p>我们首先注释掉添加到Item中的静态构造函数，因为不再需要它们了。</p>
+<p>进一步说，视图中用于检查项目处于哪个状态的if语句不再正确，但是需要大量的工作来修复这个问题，所以我们暂时忽略它。</p>
+<p>我们可以通过更新初始项的构造方式来修复SwiftUI预览:</p>
+<pre><code class="language-swift">struct ItemView_Previews: PreviewProvider {
+  static var previews: some View {
+    struct Wrapper: View {
+      @State var item = Item(
+        name: &quot;Keyboard&quot;,
+        color: .green,
+        status: .inStock(quantity: 1)
+      )
+
+      var body: some View {
+        ItemView(item: self.$item)
+      }
+    }
+
+    return NavigationView {
+      Wrapper()
+    }
+  }
+}
+</code></pre>
+<p>现在让我们再看看我们的视图。目前，我们有一个简单的<strong>if/else</strong>语句来决定我们为数量显示哪个控制。</p>
+<p>但比拥有这些属性更好的是，我们现在有了一个合适的enum，可以切换它来分别处理每个情况。目前在Swift 5.2中，由于函数构建器的限制，我们不能在视图中使用switch语句，但一旦Swift 5.3发布，我们将能够直接在视图中使用switch语句，所以这可能会在这里帮助我们:</p>
+<pre><code class="language-swift">switch self.item.status {
+case let .inStock(quantity):
+  ...
+case let .outOfStock(isOnBackOrder):
+  ...
+}
+</code></pre>
+<blockquote>
+<p>🛑 Closure containing control flow statement cannot be used with function builder ‘ViewBuilder’</p>
+</blockquote>
+<p>Swift 5.3之前我们可以这样实现，通过将<strong>switch</strong>包装在<strong>Group</strong>中，并显式将每个case的视图包装在<strong>AnyView</strong>中来模拟这个特性:</p>
+<pre><code class="language-swift">Group { () -&gt; AnyView in
+  switch self.item.status {
+  case let .inStock(quantity):
+    return AnyView(...)
+  case let .outOfStock(isOnBackOrder):
+    return AnyView(...)
+  }
+}
+</code></pre>
+<p>在第一部分中，我们可以使用从enum案例中解构出来的数量，并更新按钮来直接设置状态。</p>
+<pre><code class="language-swift">case let .inStock(quantity):
+  return AnyView(
+    Section(header: Text(&quot;In stock&quot;)) {
+      Stepper(&quot;Quantity: \(quantity)&quot;, value: self.$item.quantity)
+      Button(&quot;Sold out&quot;) {
+        self.item.status = .outOfStock(isOnBackOrder: false)
+//        self.item.quantity = 0
+//        self.item.isInStock = false
+      }
+    }
+  )
+case let .outOfStock(isOnBackOrder):
+  return AnyView(
+    Section(header: Text(&quot;Out of stock&quot;)) {
+      Toggle(isOn: self.$item.isOnBackOrder) { Text(&quot;Is on back order?&quot;) }
+      Button(&quot;Is back in stock!&quot;) {
+        self.item.status = .inStock(quantity: 1)
+//        self.item.quantity = 1
+//        self.item.isInStock = true
+      }
+    }
+  }
+}
+</code></pre>
+<p>然而，这仍然不能编译，因为我们不再能够方便地访问数量绑定的<strong>self.<span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>i</mi><mi>t</mi><mi>e</mi><mi>m</mi><mo>∗</mo><mo>∗</mo><mi mathvariant="normal">。</mi><mi mathvariant="normal">数</mi><mi mathvariant="normal">量</mi><mi mathvariant="normal">或</mi><mi mathvariant="normal">延</mi><mi mathvariant="normal">期</mi><mi mathvariant="normal">订</mi><mi mathvariant="normal">单</mi><mi mathvariant="normal">绑</mi><mi mathvariant="normal">定</mi><mo>∗</mo><mo>∗</mo><mi>s</mi><mi>e</mi><mi>l</mi><mi>f</mi><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">item**。数量或延期订单绑定**self.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.65952em;vertical-align:0em;"></span><span class="mord mathdefault">i</span><span class="mord mathdefault">t</span><span class="mord mathdefault">e</span><span class="mord mathdefault">m</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.46528em;vertical-align:0em;"></span><span class="mord">∗</span><span class="mord cjk_fallback">。</span><span class="mord cjk_fallback">数</span><span class="mord cjk_fallback">量</span><span class="mord cjk_fallback">或</span><span class="mord cjk_fallback">延</span><span class="mord cjk_fallback">期</span><span class="mord cjk_fallback">订</span><span class="mord cjk_fallback">单</span><span class="mord cjk_fallback">绑</span><span class="mord cjk_fallback">定</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8888799999999999em;vertical-align:-0.19444em;"></span><span class="mord">∗</span><span class="mord mathdefault">s</span><span class="mord mathdefault">e</span><span class="mord mathdefault" style="margin-right:0.01968em;">l</span><span class="mord mathdefault" style="margin-right:0.10764em;">f</span><span class="mord">.</span></span></span></span>item.isOnBackOrder</strong>。所以我们看到，虽然在SwiftUI中使用开关的能力是非常酷的，但它并没有完全解决我们现在正在攻击的问题。</p>
+<p>让我们退出这些修改，回到简单的<strong>if/else</strong>语句。</p>
+<p>另一种方法是在<strong>status enum</strong>上重新创建这些属性。例如，<strong>isInStock</strong>属性很容易实现:</p>
+<pre><code class="language-swift">var isInStock: Bool {
+  guard case .inStock = self else { return false }
+  return true
+}
+</code></pre>
+<p>然后在我们的视图中，我们可以访问<strong>status</strong>字段上的<strong>isInStock</strong>属性:</p>
+<pre><code class="language-swift">if self.item.status.isInStock {
+</code></pre>
+<p>这修复了一个编译器错误，但还剩下几个。</p>
+<p>最容易修复的是按钮动作闭包，我们根据标记商品已售完或备货中来重置状态。目前我们正在分别设置几个字段来将项目重置为特定的状态，但现在我们可以覆盖<strong>status</strong>字段来精确地表示情况:</p>
+<pre><code class="language-swift">Button(&quot;Sold out&quot;) {
+//  self.item.quantity = 0
+//  self.item.isInStock = false
+  self.item.status = .outOfStock(isOnBackOrder: false)
+}
+...
+Button(&quot;Back in stock&quot;) {
+//  self.item.quantity = 1
+//  self.item.isInStock = true }
+  self.item.status = .inStock(quantity: 1)
+}
+</code></pre>
+<p>接下来，我们会遇到编译器错误，因为我们正在访问条目上不再存在的字段。例如,quantity。我们可以很容易地模拟这个属性:</p>
+<pre><code class="language-swift">var quantity: Int {
+  switch self {
+  case .inStock(quantity: let quantity):
+    return quantity
+  case .outOfStock:
+    return 0
+  }
+}
+</code></pre>
+<p>然后我们可以更新视图来访问这个状态属性:</p>
+<pre><code class="language-swift">Stepper(&quot;Quantity: \(self.item.status.quantity)&quot;, ...)
+</code></pre>
+<p>有点奇怪的是，我们必须从outOfStock情况返回一个整数。返回Sure 0是合理的，但如果我们根本不考虑这种情况下的数量意味着什么，那就更好了，毕竟这就是为什么我们首先转向enum的原因。我们可以从属性中返回一个可选属性:</p>
+<pre><code class="language-swift">var quantity: Int? {
+  ...
+  case .outOfStock:
+    return nil
+  }
+}
+</code></pre>
+<p>但这会使在视图中使用它变得复杂。我们要么需要进一步展开这个可选选项:</p>
+<pre><code class="language-swift">self.item.status.quantity.map { quantity in
+  Stepper(&quot;Quantity: \(quantity)&quot;, ...)
+}
+</code></pre>
+<p>或者我们需要将它合并为一些不可选的东西，这只是将逻辑从模型推到视图中:</p>
+<pre><code class="language-swift">Stepper(&quot;Quantity: \(self.item.status.quantity ?? 0)&quot;, ...)
+</code></pre>
+<p>这两种方法都不是很好，所以让我们现在返回一个真实的整数，我们一会儿会解决这个奇怪的问题:</p>
+<pre><code class="language-swift">var quantity: Int {
+  ...
+}
+</code></pre>
+<p>我们遇到的下一个编译器错误是我们将数量绑定导出到<strong>stepper</strong>的地方:</p>
+<pre><code class="language-swift">value: self.$item.quantity
+</code></pre>
+<p>我们可能会试图确保这访问状态上的<strong>quantity</strong>属性:</p>
+<pre><code class="language-swift">value: self.$item.status.quantity
+</code></pre>
+<blockquote>
+<p>🛑 Cannot assign to property: ‘quantity’ is a get-only property</p>
+</blockquote>
+<p>但这行不通，因为<strong>quantity</strong>只是一个getter计算属性，而像这样的派生绑定需要属性是一个<strong>getter和setter</strong>。<br>
+毕竟，当步进器被更改时，我们希望确保更改最终被传播回项目。</p>
+<p>看起来我们需要将<strong>getter升级为setter</strong>，但这样做时，我们需要做一些选择。例如，当我们已经在<strong>isInStock</strong>的情况下，我们可以只设置数量来更新状态:</p>
+<pre><code class="language-swift">var quantity: Int {
+  get {
+    ...
+  }
+  set {
+    switch self {
+    case .inStock:
+      self = .inStock(quantity: newValue)
+    case .outOfStock:
+      break
+    }
+  }
+}
+</code></pre>
+<p>这有点说得通，因为我们应该已经有库存时编辑数量。事实上，我们的视图在某种程度上执行了这一点，因为我们只有在库存时才显示步进控制。</p>
+<p>然而，有人可能会说，设置一件物品的数量应该只是让我们有库存，即使我们目前没有库存:</p>
+<pre><code class="language-swift">set {
+  self = .inStock(quantity: newValue)
+}
+</code></pre>
+<p>哪一个是正确的选择?老实说，我不确定。他们都有各自的优点和缺点，但让我们继续前进，看看这是如何发展的。</p>
+<p>在实现了setter之后，我们终于有了这样的编译行:</p>
+<pre><code class="language-swift">Stepper(&quot;Quantity: \(self.item.status.quantity)&quot;, value: self.$item.status.quantity)
+</code></pre>
+<p>我们最后一个编译器错误是这一行，我们试图派生<strong>isOnBackOrder</strong>属性的绑定:</p>
+<pre><code class="language-swift">Toggle(isOn: self.$item.isOnBackOrder) { Text(&quot;Is on back order?&quot;) }
+</code></pre>
+<p>我们不再有这个属性，所以让我们重复对<strong>quantity</strong>属性所做的操作，将一个<strong>getter/setter</strong>计算属性添加到<strong>Status</strong>。我们还需要处理一些奇怪的事情，例如，当物品库存时，我们应该为getter返回什么?真与假都没有意义:</p>
+<pre><code class="language-swift">get {
+  guard case let .outOfStock(isOnBackOrder) = self else {
+    return false // ???
+//    return true  // ???
+  }
+  return isOnBackOrder
+}
+</code></pre>
+<p>我们也可以让这个属性返回一个可选的布尔值，但这和可选的数量有同样的问题，所以我们不这样做。</p>
+<p><strong>setter</strong>也充满了混乱，因为<strong>setter</strong>只能在我们已经缺货的情况下进行设置:</p>
+<pre><code class="language-swift">set {
+  switch self {
+  case .inStock:
+    break
+  case .outOfStock:
+    self = .outOfStock(isOnBackOrder: newValue)
+  }
+}
+</code></pre>
+<p>这已经在视图中模拟了，因为我们只在项目已经处于缺货状态时才显示切换。但也许我们应该允许设置这个值，即使我们有库存，我们会翻转到无库存:</p>
+<pre><code class="language-swift">set {
+  self = .outOfStock(isOnBackOrder: newValue)
+}
+</code></pre>
+<p>再次，我不确定哪一个是正确的选择:</p>
+<pre><code class="language-swift">Toggle(isOn: self.$item.status.isOnBackOrder) { Text(&quot;Is on back order?&quot;) }
+</code></pre>
+<p>如果我们运行预览，一切似乎都像以前一样工作，所以我们的视图确实在更新我们的状态尽管我们大幅重塑了状态的结构以便它更精确地描述可能的值。</p>
+<p>然而，我们所做的事情显然有些不太正确，因为我们在这一过程中做了很多奇怪的决定。我们在Status enum上创建了属性，以便从中投射出某些信息，但在每种情况下，这些信息只对其中一种情况有意义。这迫使我们做出一些选择，但我们并不清楚我们是否做出了正确的选择。如果我们在这个枚举中添加了第三种情况，那么选择只会增加。</p>
+<p>因此，我们在这里看到的是，尽管我们更好地建模了我们的核心领域，以正确地使用枚举，它精确地描述了我们的项目可以处于的两种状态,我们还意外地破坏了所有的精确性，因为我们试图从视图的通用枚举中投射出特定于状态的信息。</p>
+<p>这是由于一个非常重要的原因:很简单，Swift更喜欢structs而不是enum。</p>
+<p>对于没有枚举对应故事的结构体，Swift对许多概念和技术提供了一流的支持。我们已经一遍又一遍地解释了结构体和枚举实际上只是同一枚硬币的两面，我们为其中一个引入的任何概念都应该尝试为枚举寻找相应的概念。</p>
+<p>在这个例子中，我们看到的是SwiftUI没有给我们提供处理枚举状态的工具。它提供给我们的所有工具都深深地嵌入到结构体和产品类型的世界中，这导致我们试图将为结构体制作的工具硬塞进枚举的世界中。</p>
+<p>因此，如果没有这些工具，我们就会本能地转向经典的封装方法来保留模型的不变量，而不是充分利用结构体和枚举的好处来制造不可表示的无效状态。在我们作为程序员的早期阶段，封装的想法就被灌输到我们的思想中，作为管理复杂性的正确方法，但在这里，我们看到，即使我们试图在核心模型上放置一个很好的公共接口，我们仍然可能会有复杂性泄漏并影响我们的视图。</p>
+<h2 id="5-a-namenexttimebindingtransformationsanext-time-binding-transformations">5. <a name='Nexttime:bindingtransformations'></a>Next time: binding transformations</h2>
+<p>那么，我们如何解决这个问题呢? 好吧，我们需要继续Swift和SwiftUI的工作，这意味着创建工具，允许我们在那些只被设计为与结构体一起使用的地方使用枚举。了理解这可能意味着什么，让我们更深入地了解一下SwiftUI提供给我们的工具到底是什么。</p>
+<p><a href="https://www.pointfree.co/collections/swiftui/composable-bindings/ep107-composable-swiftui-bindings-the-problem">原文链接🔗</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-99ergonomic-state-management-part-2/">
+                  <h3 class="post-title">
+                    PointFree Episode 99:Ergonomic State Management: Part 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

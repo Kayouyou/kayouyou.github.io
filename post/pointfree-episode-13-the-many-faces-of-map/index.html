@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 13: The Many Faces of Map | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Swift’s maps
+
+
+
+
+Parametricity and theorems for free
+
+
+
+
+Define your own map
+
+
+
+
+The f word
+
+
+
+
+Wha..." />
+    <meta name="keywords" content="map,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 13: The Many Faces of Map</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Swiftsmaps">Swift’s maps</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Parametricityandtheoremsforfree">Parametricity and theorems for free</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Defineyourownmap">Define your own map</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Thefword">The f word</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 13: The Many Faces of Map -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>今天的话题很重要，这只是一个漫长而深刻旅程的开始。我们想要考虑表面上不起眼的<strong>map</strong>函数的所有荣耀。许多人指出，语言中<strong>map</strong>的存在是该语言具有“<strong>functional</strong>”倾向的有力指标。你会经常听到“语言ABC支持函数概念，如<strong>map、filter、reduce</strong>等”，并且总是先提到<strong>map</strong>! 这是为什么呢? !</p>
+<p>Swift必须具有双重功能，因为它有两个<strong>map</strong>!一个在数组上，一个在可选类型上!</p>
+<p>我们想要建立一种直觉，来解释为什么<strong>map</strong>在“<strong>functional-leaning</strong>”语言中如此普遍，事实上，在我们日常的Swift代码的阴影下，还隐藏着许多其他的<strong>maps</strong>，我们还没有探索。</p>
+<h2 id="2-a-nameswiftsmapsaswifts-maps">2. <a name='Swiftsmaps'></a>Swift’s maps</h2>
+<p>让我们先浏览一下Swift给我们的所有<strong>map</strong>。在这个系列中，我们已经在这个系列上探索了很多<strong>map</strong>方法。它用于转换数组中的所有元素，并返回一个全新的数组:</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .map { $0 + 1 }
+
+[1, 2, 3]
+  .map(incr)
+</code></pre>
+<p>我们还定义了一个自由<strong>map</strong>函数因为我们看到它能更好地组合。让我们重新定义它，但也提供一个从头开始的实现，只是为了向每个人展示这个函数是多么简单:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { xs in
+    var result = [B]()
+    xs.forEach { x in result.append(f(x)) }
+    return result
+  }
+}
+</code></pre>
+<p>然后我们可以做各种有趣的事情，比如:</p>
+<pre><code class="language-swift">[1, 2, 3]
+  |&gt; map(incr)
+[1, 2, 3]
+  |&gt; map(incr)
+  |&gt; map(square)
+</code></pre>
+<p>我们在玩这些东西时观察到的一个重要规律是，<strong>map</strong>组合上有突出优势，这具有性能暗示:</p>
+<pre><code class="language-swift">[1, 2, 3]
+  |&gt; map(incr &gt;&gt;&gt; square)
+</code></pre>
+<p>到目前为止，标准库中还有另一个<strong>map</strong>，我们只简要提到过，那就是<strong>可选map</strong>。它允许你安全地展开可选的，执行转换，然后重新包装可选的:</p>
+<pre><code class="language-swift">Int?.some(2)
+  .map(incr)
+Int?.none
+  .map(incr)
+</code></pre>
+<p>这意味着<strong>map</strong>允许您以一种非常安全且富有表现力的方式处理可选项，而不必为了获得内部的值而强行展开它们。</p>
+<p>我们之前还在可选项上定义了一个自由<strong>map</strong>，因为它的可组合性非常好。让我们再做一次，但这次完全执行它，以显示它是多么简单:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (A?) -&gt; B? {
+  return {
+    switch $0 {
+    case let .some(a): return .some(f(a))
+    case .none:        return .none
+    }
+  }
+}
+</code></pre>
+<p>Which can be used like so:</p>
+<pre><code class="language-swift">Int?.some(2)
+  |&gt; map(incr)
+Int?.some(2)
+  |&gt; map(incr)
+  |&gt; map(square)
+Int?.some(2)
+  |&gt; map(incr &gt;&gt;&gt; square)
+</code></pre>
+<p>似乎在可选项上的map与在数组上的map具有相同的属性，因为它分布在函数组合上。因为可选项不是零成本抽象，这也有一些性能影响，尽管很小，因为我们没有创建多个可选项。</p>
+<p><strong>map</strong>满足的另一个属性我们还不需要使用或讨论。为了理解它，让我们看一些有点奇怪的东西:</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .map { $0 }
+Int?.some(2)
+  .map { $0 }
+</code></pre>
+<p>这是另一个属性。 如果我们为<strong>map</strong>提供的转换逻辑不做任何事情，那么它将保持结构不变。 对于<strong>map</strong>来说，这似乎是一个非常合理的属性。 除了返回参数外什么也不做的函数有一个名字:<strong>恒等函数</strong>（<strong>the identity function</strong>）。我们可以这样定义它:</p>
+<pre><code class="language-swift">func id&lt;A&gt;(_ a: A) -&gt; A {
+  return a
+}
+</code></pre>
+<p>这似乎是一个无用的函数，但这意味着我们可以重写之前的调用。</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .map(id)
+Int?.some(2)
+  .map(id)
+</code></pre>
+<p>有多少次你在<strong>compactMap(或flatMap</strong>)中使用{<strong>$0</strong>}闭包来删除<strong>nils</strong> ? 现在你可以使用<strong>id</strong>了!</p>
+<pre><code class="language-swift">[1, 2, nil, 3].compactMap(id)
+[1, 2, nil, 3].flatMap(id)
+</code></pre>
+<p>在以后的剧集里也会有更多的用途。</p>
+<p>我们在这里看到的是，当我们用id进行<strong>map</strong>时，我们不会改变所映射的值:<strong>map</strong>保留了恒等函数，就像它保留了函数组合一样:</p>
+<pre><code class="language-swift">// map(id) == id
+</code></pre>
+<p>当然，这对于数组和可选项也是成立的。</p>
+<pre><code class="language-swift">[1, 2, 3].map(id) == id([1, 2, 3]) // true
+Int?.some(2).map(id) == id(Int?.some(2)) // true
+</code></pre>
+<p>恒等函数的另一个特点是，将它与其他函数组合在一起时，其他函数不变:</p>
+<pre><code class="language-swift">// f &gt;&gt;&gt; id == f
+// id &gt;&gt;&gt; f == f
+</code></pre>
+<h2 id="3-a-nameparametricityandtheoremsforfreeaparametricity-and-theorems-for-free">3. <a name='Parametricityandtheoremsforfree'></a>Parametricity and theorems for free</h2>
+<p>好吧，这很有趣，但那又怎样? 在我们的代码中，我们一直在做这类事情，但却没有什么深刻和美丽的东西，对吗?</p>
+<p>好!我在这里告诉你，<strong>map</strong>是唯一定义的! 除了上面的方法，实际上没有其他方法可以在数组或可选项上定义<strong>map</strong>。 这是自然界的普遍事实! 我们别无选择，只能像上面那样定义<strong>map</strong>。无论你如何进行哲学思考，在定义<strong>map</strong>时，没有自由意志!</p>
+<p>这可能是真的吗? 但我们可以定义所有类型的函数，它们具有与<strong>map</strong>相同的签名，但却做一些与<strong>map</strong>完全不同的事情!让我们从这个存根开始:</p>
+<pre><code class="language-swift">func lift&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { xs in
+
+  }
+}
+</code></pre>
+<p>我们可以将这个函数定义为只返回一个空数组。</p>
+<pre><code class="language-swift">func lift&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { xs in
+    return []
+  }
+}
+</code></pre>
+<p>见鬼，我还可以double数组:</p>
+<pre><code class="language-swift">func lift&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { xs in
+    return xs + xs
+  }
+}
+</code></pre>
+<blockquote>
+<p>🛑 Cannot convert return expression of type ‘[A]’ to return type ‘[B]’</p>
+</blockquote>
+<p>哦，等等，x在[A]中，我需要得到[B]。我想我应该映射这个结果:</p>
+<pre><code class="language-swift">func lift&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { xs in
+    return (xs + xs).map(f)
+  }
+}
+</code></pre>
+<p>We can keep going!</p>
+<pre><code class="language-swift">func lift&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { xs in
+    return []
+    return (xs + xs).map(f)
+    return (xs + xs + xs).map(f)
+    return xs.reversed().map(f)
+    return Array(xs.prefix(1)).map(f)
+    return Array(xs.prefix(2)).map(f)
+    return Array(xs.suffix(1)).map(f)
+    return Array(xs.suffix(2)).map(f)
+  }
+}
+</code></pre>
+<p>那么这到底有什么独特之处呢?</p>
+<p>嗯，它是独特的，但有一个警告。虽然<strong>map</strong>在所有具有此签名的函数中不是唯一的，但它是唯一满足我们之前观察到的属性的函数:<strong>map(id) == id</strong>。 我们定义的所有<strong>lift</strong>都没有这个属性。它们通过变换数组、取子集或重复元素来改变数组的结构。此外，我们不得不在<strong>shuffle</strong>之后使用<strong>map</strong>来转换数组，这并非巧合。我们也可以在<strong>shuffle</strong>之前调用<strong>map</strong>:</p>
+<pre><code class="language-swift">func lift&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { xs in
+    return []
+    return xs.map(f) + xs.map(f)
+    return xs.map(f) + xs.map(f) + xs.map(f)
+    return xs.map(f).reversed()
+    return Array(xs.map(f).prefix(1))
+    return Array(xs.map(f).prefix(2))
+    return Array(xs.map(f).suffix(1))
+    return Array(xs.map(f).suffix(2))
+  }
+}
+</code></pre>
+<p>我们在这里看到的是，因为这个函数签名是完全通用的，我们对<strong>A和B</strong>一无所知，除了我们有一个<strong>f</strong>可以把<strong>A转换成B</strong>，函数的执行是非常严格的。我们不能过滤掉，比如说，偶数因为我们不知道我们处理的是整数。 我们不可能所有的值都等于其他的值因为我们不知道我们在处理的是<strong>Equatable</strong>东西。我们不能取所有大于某些值的值，因为我们不知道我们处理的是<strong>Comparable</strong>东西。</p>
+<p>在执行过程中，我们没有太多的选择。我们被迫进入两种情况之一:要么用<strong>map(f)<strong>转换数据，然后应用我们的</strong>shuffling</strong>，要么用<strong>map(f)<strong>应用我们的</strong>shuffling</strong>并转换。</p>
+<p>此的正式声明如下:</p>
+<pre><code class="language-swift">// If f, g are functions
+// then lift(f) &gt;&gt;&gt; map(g) == map(f) &gt;&gt;&gt; lift(g)
+</code></pre>
+<p>这对任何<strong>lift</strong>函数都成立。这有点像<strong>map</strong>是足够普遍的，它可以“缠绕(intertwine)”自己的任何其他功能，有相同的签名。让我们来看一些具体的例子:</p>
+<pre><code class="language-swift">let xs = [1, 2, 3, 4, 5]
+let f = incr
+let g = { (x: Int) in String(x) }
+
+let lhs = lift(f) &gt;&gt;&gt; map(g)
+let rhs = map(f) &gt;&gt;&gt; lift(g)
+
+lhs(xs) == rhs(xs) // true
+</code></pre>
+<p>它为true是有意义的，因为<strong>lift</strong>目前返回一个空数组。</p>
+<pre><code class="language-swift">lhs(xs) // []
+rhs(xs) // []
+</code></pre>
+<p>但它仍然适用于我们定义的每一个<strong>lift</strong>! 我们可以为<strong>xs</strong>使用任何数组，为<strong>f和g</strong>使用任何函数(只要它们组成)，以及任何<strong>lift</strong>实现。这个等式是成立的。</p>
+<p>因此，考虑到<strong>map</strong>与所有<strong>lift</strong>实现相互交织的普遍性质，我们可以得出什么结论。如果l<strong>ift</strong>也满足<strong>lift(id) = id</strong>属性，那么<strong>lift和map</strong>之间的关系会怎样呢?</p>
+<p>让我们假设<strong>lift(id)与id</strong>相同，看看会发生什么。鉴于我们之前的公式:</p>
+<pre><code class="language-swift">// lift(f) &gt;&gt;&gt; map(g) == map(f) &gt;&gt;&gt; lift(g)
+</code></pre>
+<p>We can swap f out for id!</p>
+<pre><code class="language-swift">// lift(id) &gt;&gt;&gt; map(g) == map(id) &gt;&gt;&gt; lift(g)
+</code></pre>
+<p>We can now swap both lift(id) and map(id) out for id.</p>
+<pre><code class="language-swift">// id &gt;&gt;&gt; map(g) == id &gt;&gt;&gt; lift(g)
+</code></pre>
+<p>我们还知道函数的组合恒等式与函数本身是相同的，所以我们可以删除这些组合。</p>
+<pre><code class="language-swift">// map(g) == lift(g)
+</code></pre>
+<p>你瞧:<strong>map和lift</strong>的功能是一样的! 当我们要求<strong>lift(id) = id</strong>时，我们突然得到了map和lift必须是相等的事实!<br>
+这已经“证明”了<strong>map</strong>的普适性! 它独特的功能和它的签名保持了一致性。</p>
+<p>我们在这里所掌握的基本思想被称为参数性，它只在支持参数多态性的语言中可见，Swift使用泛型就可以做到这一点。它允许您通过引入类型参数来编写适用于许多形状的代码。这与其他形式的多态性(如子类型多态性)形成对比，在子类型多态性中，您可以通过创建超类型的子类型(如子类化)来编写适用于多种形状的代码。</p>
+<p>在1989年，也就是大约30年前，菲利普·瓦德勒发表了一篇名为《自由定理》的论文，证明了一个非常棒的结果。它本质上是说，给定一个适当的泛型函数，比如我们的<strong>map</strong>，就会有一个相应的定理可以自由地跳出来，就像我们的纠缠特性<strong>lift(f) &gt;&gt;&gt; map(g) = map(f) &gt;&gt;&gt; lift(f)</strong>。</p>
+<p>这适用于任何完全泛型函数!举个例子:</p>
+<pre><code class="language-swift">func r&lt;A&gt;(_ xs: [A]) -&gt; A? {
+  fatalError()
+}
+</code></pre>
+<p>这里隐藏着一个定理，它显示了数组上的映射与可选上的映射是如何相互缠绕的! 但我们要把细节留给练习!</p>
+<h2 id="4-a-namedefineyourownmapadefine-your-own-map">4. <a name='Defineyourownmap'></a>Define your own map</h2>
+<p>标准库并不是我们唯一应该定义<strong>map</strong>的地方。你也应该根据自己的习惯类型来定义它们，只要它们符合规范。我们可以定义什么类型的<strong>map</strong>?</p>
+<p>我们以前遇到过的一种类型是<strong>Result</strong>类型。</p>
+<pre><code class="language-swift">enum Result&lt;A, E&gt; {
+  case success(A)
+  case failure(E)
+}
+</code></pre>
+<p>它的免费<strong>map</strong>会是什么样子?</p>
+<pre><code class="language-swift">func map&lt;A, B, E&gt;(_ f: @escaping (A) -&gt; B) -&gt; (Result&lt;A, E&gt;) -&gt; Result&lt;B, E&gt; {
+  return { result in
+    switch result {
+    case let .success(a):
+      return .success(f(a))
+    case let .failure(e):
+      return .failure(e)
+    }
+  }
+}
+</code></pre>
+<p>给定一个函数(<strong>A) -&gt; B</strong>, <strong>map</strong>将它提升到一个函数(<strong>Result&lt; A, E&gt;) -&gt; Result&lt;B, E&gt;</strong>，在其中转换结果的成功情况。这允许您安全地展开结果以获得它的值，应用转换，然后将其包装回结果中。</p>
+<p>What’s this look like in use?</p>
+<pre><code class="language-swift">Result&lt;Int, String&gt;.success(42)
+  |&gt; map(incr) // .success(43)
+Result&lt;Int, String&gt;.failure(&quot;Error&quot;)
+  |&gt; map(incr) // .failure(&quot;Error&quot;)
+</code></pre>
+<p>我们看到，它映射了<strong>success</strong>的一面，而保留了<strong>failure</strong>。</p>
+<p>现在，你可能会想:为什么我们只绘制结果的成功一面? 你想知道这一点是完全正确的，事实是没有特别好的理由。<strong>map</strong>函数被定义为一次只操作一个类型，因此我们必须选择一方。我们选择的立场只不过是社会的惯例。但是我们也可以很容易地定义一个故障情况的映射它是完全有效的。社区可能会选择成功案例，因为作为程序员，我们通常更关注“快乐”路径而不是错误路径。</p>
+<p>这并不与<strong>map</strong>的唯一性相矛盾，因为我们这里有两个不同的映射在两个不同的泛型参数上。 对于数组和可选项，我们只有一个泛型。我们真正拥有的是每个泛型参数都有一个唯一的<strong>map</strong>实现。</p>
+<p>在以后的章节中，我们将探索一种方法，将这两个映射连接到一个概念中，这实际上将大大简化我们的类型。</p>
+<p>既然我们发现用我们自己的类型来定义<strong>map</strong>完全没问题，让我们用一些例子来说明这个函数有多常见。举个例子:</p>
+<pre><code class="language-swift">struct F1&lt;A&gt; {
+  let value: A
+}
+</code></pre>
+<p>我甚至不想给它命名，让我们抽象地关注类型。它是一个封装泛型值A的包装器。让我们定义这样一个类型上的<strong>map</strong>是什么样子的:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (F1&lt;A&gt;) -&gt; F1&lt;B&gt; {
+  return { f1 in
+
+  }
+}
+</code></pre>
+<p>我们知道这是它应该有的形状，那么我们可以实现它吗?</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (F1&lt;A&gt;) -&gt; F1&lt;B&gt; {
+  return { f1 in
+    F1(value: f(f1.value))
+  }
+}
+</code></pre>
+<p>因此，映射这个类型中的值意味着简单地展开值，用<strong>f</strong>转换它，然后再次包装它。</p>
+<p>那么，<strong>map(id) == id</strong>是否为真呢?让我们考虑一下body。</p>
+<pre><code class="language-swift">//return { f1 in
+//  F1(value: f(f1.value))
+//}
+</code></pre>
+<p>用<strong>id</strong>替换<strong>f</strong></p>
+<pre><code class="language-swift">//return { f1 in
+//  F1(value: id(f1.value))
+//}
+</code></pre>
+<p><strong>id</strong>保持它的值不变。</p>
+<pre><code class="language-swift">//return { f1 in
+//  F1(value: f1.value)
+//}
+</code></pre>
+<p>并且<strong>f1</strong>和**f1 (value: f1.value)**是等价的。</p>
+<pre><code class="language-swift">//return { f1 in
+//  f1
+//}
+</code></pre>
+<p>It’s the identity function!</p>
+<pre><code class="language-swift">//return { $0 }
+</code></pre>
+<p>的确，似乎我们已经为<strong>F1</strong>偶然发现了一个真正的<strong>map</strong>。</p>
+<p>让我们试另一个!看看这种类型:</p>
+<pre><code class="language-swift">struct F2&lt;A, B&gt; {
+  let apply: (A) -&gt; B
+}
+</code></pre>
+<p>它只是一个函数的包装器。我声明，可以为B型泛型参数定义一个类似映射的函数:</p>
+<pre><code class="language-swift">func map&lt;A, B, C&gt;(_ f: @escaping (B) -&gt; C) -&gt; (F2&lt;A, B&gt;) -&gt; F2&lt;A, C&gt; {
+  return { f2 in
+    return F2 { a in
+
+    }
+  }
+}
+</code></pre>
+<p>我们在这里能做什么? 我们有一些在<strong>A</strong>中的东西，我们有一些把<strong>A</strong>变成<strong>B</strong>的东西，我们有一些把<strong>B</strong>变成<strong>C</strong>的东西! Well it pretty much writes itself:</p>
+<pre><code class="language-swift">func map&lt;A, B, C&gt;(_ f: @escaping (B) -&gt; C) -&gt; (F2&lt;A, B&gt;) -&gt; F2&lt;A, C&gt; {
+  return { f2 in
+    return F2 { a in
+      f(f2.apply(a))
+    }
+  }
+}
+</code></pre>
+<p>我们甚至可以通过使用我们最喜欢的操作符来缩短它:</p>
+<pre><code class="language-swift">func map&lt;A, B, C&gt;(_ f: @escaping (B) -&gt; C) -&gt; (F2&lt;A, B&gt;) -&gt; F2&lt;A, C&gt; {
+  return { f2 in
+    F2(apply: f2.apply &gt;&gt;&gt; f)
+  }
+}
+</code></pre>
+<p>同样，我们可以看到<strong>map(id) == id</strong>当我们用<strong>id</strong>替换<strong>f</strong>时</p>
+<pre><code class="language-swift">//return { f2 in
+//  F2(apply: f2.apply &gt;&gt;&gt; id)
+//}
+</code></pre>
+<p>我们知道，组合成id会使另一个函数不变。</p>
+<pre><code class="language-swift">//return { f2 in
+//  F2(apply: f2.apply)
+//}
+</code></pre>
+<p>现在我们来看看等价类型。</p>
+<pre><code class="language-swift">//return { f2 in
+//  f2
+//}
+</code></pre>
+<p>再来一次恒等函数。</p>
+<pre><code class="language-swift">//return { $0 }
+</code></pre>
+<p>这是F2上唯一定义的<strong>map</strong>。</p>
+<p>现在您可能想知道我们是否可以在F2的<strong>A</strong>一般参数上定义一个<strong>map</strong>，这似乎是合理的。</p>
+<p>然而，这样做有一个小问题。我们现在还不想透露，所以我们把它留作本集的练习，我们会在以后的一集里介绍它!</p>
+<p>再来一个怎么样?</p>
+<pre><code class="language-swift">struct F3&lt;A&gt; {
+  let run: (@escaping (A) -&gt; Void) -&gt; Void
+}
+</code></pre>
+<p>哇，这个真奇怪! 它是一个函数的包装器，它接受一个函数作为参数，但不返回任何东西。这个形状应该让人想起你处理过的回调api，即使是在UIKit和Cocoa中。 例如，在UIKit中你经常呈现视图控制器，在那个签名中你会发现这个形状:</p>
+<pre><code class="language-swift">//URLSession.shared.dataTask(with: &lt;#T##URL#&gt;, completionHandler: &lt;#T##(Data?, URLResponse?, Error?) -&gt; Void#&gt;) -&gt; Void
+</code></pre>
+<p>我们能在这个奇怪的东西上定义<strong>map</strong>吗!让我们看看!</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (F3&lt;A&gt;) -&gt; F3&lt;B&gt; {
+  return { f3 in
+    return F3 { callback in
+
+    }
+  }
+}
+</code></pre>
+<p>天啊，我们到底能做什么! 好吧，让我们来看一些类型，看看它们是如何匹配的:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (F3&lt;A&gt;) -&gt; F3&lt;B&gt; {
+  return { f3 in
+    return F3 { callback in
+      f3.run // ((A) -&gt; Void) -&gt; Void
+      callback // (B) -&gt; Void
+      f // (A) -&gt; B
+    }
+  }
+}
+</code></pre>
+<p>这些是怎么连接在一起的?  好吧，唯一匹配的是<strong>f</strong>的输出和<strong>callback</strong>的输入匹配，所以我们可以从这里开始:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (F3&lt;A&gt;) -&gt; F3&lt;B&gt; {
+  return { f3 in
+    return F3 { callback in
+      f3.run // ((A) -&gt; Void) -&gt; Void
+      callback // (B) -&gt; Void
+      f // (A) -&gt; B
+      f &gt;&gt;&gt; callback // (A) -&gt; Void
+    }
+  }
+}
+</code></pre>
+<p>好吧，现在，最后一行正是我们需要提供给<strong>f3.run</strong>的内容!</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (F3&lt;A&gt;) -&gt; F3&lt;B&gt; {
+  return { f3 in
+    return F3 { callback in
+      f3.run(f &gt;&gt;&gt; callback)
+    }
+  }
+}
+</code></pre>
+<p>同样，我们可以很容易地验证<strong>map(id) == id</strong>如果我们把<strong>f</strong>换成<strong>id</strong>。</p>
+<pre><code class="language-swift">//return { f3 in
+//  return F3 { callback in
+//    f3.run(id &gt;&gt;&gt; callback)
+//  }
+//}
+</code></pre>
+<p>复合让我们的<strong>callback</strong>保持不变。</p>
+<pre><code class="language-swift">//return { f3 in
+//  return F3 { callback in
+//    f3.run(callback)
+//  }
+//}
+</code></pre>
+<p>现在<strong>F3</strong>直接把它的回调函数传递给<strong>block</strong>:</p>
+<pre><code class="language-swift">//return { f3 in
+//  return F3(run: f3.run)
+//}
+</code></pre>
+<p>所有的东西都被整齐地折叠成恒等函数!</p>
+<pre><code class="language-swift">//return { f3 in
+//  f3
+//}
+</code></pre>
+<p>Our map is indeed the universal map for this type.</p>
+<pre><code class="language-swift">//return { $0 }
+</code></pre>
+<p>现在，我们对这些类型使用了非常抽象的名称，以便不去关注它们的任何特定性质，因为这些对于定义<strong>map</strong>都无关紧要。<br>
+你甚至可能知道一些或所有这些类型的专有名称，如果不知道，你很快就会在未来的Point-Free剧集中知道。</p>
+<p>看到我们刚刚定义的所有地图的签名也很有趣:</p>
+<pre><code class="language-swift">// func map   &lt;A, B&gt;(_ f: (A) -&gt; B) -&gt; (F1   &lt;A&gt;) -&gt; F1   &lt;B&gt;
+// func map&lt;R, A, B&gt;(_ f: (A) -&gt; B) -&gt; (F2&lt;R, A&gt;) -&gt; F2&lt;R, B&gt;
+// func map   &lt;A, B&gt;(_ f: (A) -&gt; B) -&gt; (F3   &lt;A&gt;) -&gt; F3   &lt;B&gt;
+</code></pre>
+<p>令人惊讶的是，我们可以用所有这些类型来定义<strong>map</strong>，我们得到了一幅独一无二的<strong>map</strong>。</p>
+<h2 id="5-a-namethefwordathe-f-word">5. <a name='Thefword'></a>The f word</h2>
+<p>既然我们已经知道<strong>map</strong>是一个如此普遍的概念，你可能会认为它应该有个名字。现在，在Point-Free上，我们已经花了很长时间来介绍一些概念，带有很多动机，而没有陷入术语中。然而，我们仍然希望我们的观众知道这些术语，以便他们可以继续学习这些主题。</p>
+<p>所以，我想我们已经准备好定义第一个函数式编程术语了，它有一点可怕的名声。我们要说“f”这个词:“<strong>functor</strong>”。</p>
+<p>是的，这里我们要抓住的概念是一个函子。<strong>functor</strong>是一种带有<strong>functor</strong>类函数的类型。数组是一个<strong>functor</strong>，因为它有<strong>map</strong>。Optional是一个<strong>functor</strong>，因为它有map。Result是一个<strong>functor</strong>，因为它有map。所有这些从F1到F3的奇怪类型都是<strong>functor</strong>，因为它们有map!</p>
+<p>所有这些看起来完全不同的类型都被<strong>functor</strong>的概念联系在一起，因为它们带有一个映射函数，允许人们将函数带入它们的世界。</p>
+<p>现在，关于“<strong>functor</strong>”这样一个抽象的名称的一个伟大的事情是，它没有包袱，人们选择如何理解这个概念。我们刚刚探索的每种类型，无论是<strong>Result、Array、Optional</strong>还是F1到F3，都有自己特定于领域的方法来直观地了解它们所代表的内容。例如，一个可选的有点像一个容器，里面有一个可能不存在的值。 数组就像一个可以容纳很多值的容器。对于所有这些事情，没有单一的直觉。</p>
+<p>因此，我们认为避免对<strong>functor</strong>过于直观的描述，而只依赖于它最基本的属性是有帮助的:它有一个map函数，并且map函数必须满足<strong>map(id) == id</strong>的属性。然后我们得到了map保持函数复合的奇妙性质，即<strong>map(f &gt;&gt;&gt; g) == map(f) &gt;&gt;&gt; map(g)</strong>。</p>
+<h2 id="6-a-namewhatsthepointawhats-the-point">6. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>我们已经深入抽象了。这种<strong>map</strong>知识如何适用于日常代码?</p>
+<p>理解<strong>map</strong>的普遍属性对于了解它来自哪里以及如何为我们自己的类型定义它非常重要! 我们很习惯在Array和Optional中使用map，因为这些函数都是Swift自带的，而且我们已经开始看到我们可以以同样的表达能力处理这两种类型。我们可以也应该在我们自己的类型上定义它，这样我们就可以以同样的、富有表现力的方式处理我们的类型。</p>
+<p>虽然参数性和“免费定理”可能看起来很学术，但它们帮助我们认识到Swift的类型系统是多么强大，以及它如何推动我们把我们写的代码看作是发现，而不是发明!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/-67TCBNRH/" class="tag">
+                    map
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-12-tagged/">
+                  <h3 class="post-title">
+                    PointFree Episode 12: Tagged
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

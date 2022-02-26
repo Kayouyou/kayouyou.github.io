@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>5 small but significant improvements in Swift 5.1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift5.1现在已经正式发布,尽管是一个小版本,它包含了大量的变化和改进——从基本的新特性,如模块稳定(这使得SDK供应商能够发布预编译的Swift框架),到所有支持SwiftUI的新语法特性。
+除了主要的新特性之外，Swift 5.1..." />
+    <meta name="keywords" content="what's new" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">5 small but significant improvements in Swift 5.1</h2>
+            <div class="post-date">2019-09-22</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift5.1现在已经正式发布,尽管是一个小版本,它包含了大量的变化和改进——从基本的新特性,如模块稳定(这使得SDK供应商能够发布预编译的Swift框架),到所有支持SwiftUI的新语法特性。</p>
+<p>除了主要的新特性之外，Swift 5.1还包含了一些更小但仍然非常重要的新功能和改进。这种变化一开始可能看起来非常小，甚至是不必要的，但最终会对我们如何编写和构造Swift代码产生相当大的影响。本周，让我们来看看其中的五个功能，以及它们在什么情况下会有用。</p>
+<h2 id="memberwise-initializers-with-default-values">Memberwise initializers with default values</h2>
+<p>Swift中的struct之所以如此吸引人，其中一个原因是它们的自动生成的“memberwise”初始化器——这使得我们可以通过传递每个属性对应的值来初始化任何struct(不包含私有存储的属性)，就像这样:</p>
+<pre><code class="language-swift">struct Message {
+    var subject: String
+    var body: String
+}
+
+let message = Message(subject: &quot;Hello&quot;, body: &quot;From Swift&quot;)
+</code></pre>
+<p>这些合成的初始化器在Swift 5.1中有了显著的改进，因为它们现在考虑了默认的属性值，并自动将这些值转换为默认的初始化器参数。</p>
+<p>假设我们想扩展上面的消息结构，支持附件，但是我们希望默认值是一个空数组——同时， 我们也希望不需要预先指定消息体就可以初始化消息，因此我们也将为该属性指定一个默认值:</p>
+<pre><code class="language-swift">struct Message {
+    var subject: String
+    var body = &quot;&quot;
+    var attachments: [Attachment] = []
+}
+</code></pre>
+<p>在Swift 5.0和更早版本中，我们仍然必须为上述所有属性传递初始化器参数，而不管它们是否有默认值。然而，在Swift 5.1中，不再是这样了——这意味着我们现在可以通过传递一个主题来初始化消息，如下所示:</p>
+<pre><code class="language-swift">var message = Message(subject: &quot;Hello, world!&quot;)
+</code></pre>
+<p>这真的很酷，它使得使用结构比以前更加方便。但更酷的是，就像使用标准默认参数时一样，我们仍然可以通过传递参数来覆盖任何默认属性值——这给了我们很多灵活性:</p>
+<pre><code class="language-swift">var message = Message(
+    subject: &quot;Hello, world!&quot;,
+    body: &quot;Swift 5.1 is such a great update!&quot;
+)
+</code></pre>
+<p>然而，尽管memberwise初始化器在应用程序或模块中非常有用，但它们仍然没有作为模块的公共API的一部分公开——这意味着如果我们正在构建某种形式的库或框架，我们仍然必须手动定义面向公共的初始化器(目前)。</p>
+<h2 id="using-self-to-refer-to-enclosing-types">Using Self to refer to enclosing types</h2>
+<p>Swift的Self关键字(或者真正的类型)使我们能够在不知道具体类型的上下文中动态地引用类型—例如在协议扩展中引用协议的实现类型:</p>
+<pre><code class="language-swift">extension Numeric {
+    func incremented(by value: Self = 1) -&gt; Self {
+        return self + value
+    }
+}
+</code></pre>
+<p>尽管这仍然是可能的，Self的范围现在已经扩展到也包括具体类型——如枚举、结构和类-允许我们使用Self作为一种别名，引用方法或属性的封装类型，像这样:</p>
+<pre><code class="language-swift">extension TextTransform {
+    static var capitalize: Self {
+        return TextTransform { $0.capitalized }
+    }
+
+    static var removeLetters: Self {
+        return TextTransform { $0.filter { !$0.isLetter } }
+    }
+}
+</code></pre>
+<p>事实上，我们现在可以使用上面的Self而不是完整的TextTransform类型名，这当然是纯粹的语法糖-但是它可以帮助我们的代码变得更紧凑，特别是在处理长类型名的时候。我们甚至可以在方法或属性中使用Self 内联，使上面的代码更加紧凑:</p>
+<pre><code class="language-swift">extension TextTransform {
+    static var capitalize: Self {
+        return Self { $0.capitalized }
+    }
+
+    static var removeLetters: Self {
+        return Self { $0.filter { !$0.isLetter } }
+    }
+}
+</code></pre>
+<p>除了引用封装类型本身之外，我们现在还可以使用Self访问实例方法或属性中的静态成员 -当我们想要在一个类型的所有实例中重用相同的值时，这是非常有用的，例如本例中的cellReuseIdentifier:</p>
+<pre><code class="language-swift">class ListViewController: UITableViewController {
+    static let cellReuseIdentifier = &quot;list-cell&quot;
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        tableView.register(
+            ListTableViewCell.self,
+            forCellReuseIdentifier: Self.cellReuseIdentifier
+        )
+    }
+}
+</code></pre>
+<p>同样，在访问静态属性时，我们可以简单地输入ListViewController，但使用Self确实提高了代码的可读性 -也将允许我们重命名我们的视图控制器，而不必更新我们访问它的静态成员的方式。</p>
+<h2 id="switching-on-optionals">Switching on optionals</h2>
+<p>接下来，让我们看看Swift 5.1如何简化对可选值的模式匹配，这在打开可选值时非常方便。举个例子，假设我们正在开发一个音乐应用程序，它包含一个歌曲模型——它有一个downloadState属性，可以让我们跟踪歌曲是否已经下载，是否正在下载，等等:</p>
+<pre><code class="language-swift">struct Song {
+    ...
+    var downloadState: DownloadState?
+}
+</code></pre>
+<p>上面的属性是可选的，因为我们想让nil表示缺乏下载状态，也就是说，如果一首歌根本没有被下载的话。</p>
+<p>就像我们看了看在“快速模式匹配”,斯威夫特的高级模式匹配功能使我们能够直接打开一个可选值,无需打开它——但是,在Swift5.1之前,这样做要求我们一个问号附加到每个匹配的情况下,是这样的:</p>
+<pre><code class="language-swift">func songDownloadStateDidChange(_ song: Song) {
+    switch song.downloadState {
+    case .downloadInProgress?:
+        showProgressIndiator(for: song)
+    case .downloadFailed(let error)?:
+        showDownloadError(error, for: song)
+    case .downloaded?:
+        downloadDidFinish(for: song)
+    case nil:
+        break
+    }
+}
+</code></pre>
+<p>在Swift 5.1中，那些末尾的问号不再需要了，现在我们可以简单地直接引用每个case——就像打开一个非可选值时一样:</p>
+<pre><code class="language-swift">func songDownloadStateDidChange(_ song: Song) {
+    switch song.downloadState {
+    case .downloadInProgress:
+        showProgressIndiator(for: song)
+    case .downloadFailed(let error):
+        showDownloadError(error, for: song)
+    case .downloaded:
+        downloadDidFinish(for: song)
+    case nil:
+        break
+    }
+}
+</code></pre>
+<p>虽然从进一步减少实现通用模式所需的语法方面来说，上面的改变确实是一个受欢迎的改变，但它确实有一个轻微的副作用，可能会破坏某些枚举和switch语句的源。</p>
+<p>由于Swift可选项是在底层使用可选enum实现的，我们不再能够对任何包含some或none大小写的enum执行上述可选模式匹配 - 因为这些现在将与可选包含的情况冲突。</p>
+<p>然而，可以认为任何包含这种情况的枚举(特别是none)都应该使用可选的实现——因为表示可能缺失的值本质上就是可选的作用。</p>
+<h2 id="the-identifiable-protocol">The Identifiable protocol</h2>
+<p>这个新的可识别协议最初是作为SwiftUI发行版的一部分引入的，现在已经进入Swift标准库，并提供了一种简单统一的方式来将任何类型标记为具有稳定的、唯一的标识符。</p>
+<p>为了符合这个新的协议，我们只需要声明一个id属性，它可以包含任何可哈希类型-例如String:</p>
+<pre><code class="language-swift">struct User: Identifiable {
+    typealias ID = String
+
+    var id: ID
+    var name: String
+}
+</code></pre>
+<p>与Swift 5.0将Result添加到标准库时类似，现在任何Swift模块都可以访问identiable的一个主要好处是，它可以用于跨不同代码库共享需求。</p>
+<p>例如，使用一个受限的协议扩展，我们可以添加一个方便的API来将任何包含可识别元素的序列转换到字典中 - 然后将该扩展作为库的一部分出售，而不需要我们定义自己的任何协议:</p>
+<pre><code class="language-swift">public extension Sequence where Element: Identifiable {
+    func keyedByID() -&gt; [Element.ID : Element] {
+        var dictionary = [Element.ID : Element]()
+        forEach { dictionary[$0.id] = $0 }
+        return dictionary
+    }
+}
+</code></pre>
+<p>上面的API是作为一个方法实现的，而不是作为一个计算属性，因为它的时间复杂度是O(n)。有关在方法和计算属性之间进行选择的更多信息，请参见本文。</p>
+<p>然而，尽管标准库的新可识别协议在处理具有稳定标识符的值集合时非常有用，但它对提高代码的实际类型安全性并没有多大作用。</p>
+<p>因为可标识符所做的一切都要求我们定义任何可哈希的id属性，所以它不会保护我们不小心混淆了标识符-例如在这种情况下，当我们错误地将用户ID传递给一个接受视频ID的函数时:</p>
+<pre><code class="language-swift">postComment(comment, onVideoWithID: user.id)
+
+</code></pre>
+<p>因此，对于合适的标识符类型和更健壮的可识别协议，仍然有很多强有力的用例——比如我们在“Swift中的类型安全标识符”中看到的那些用例，这就防止了上述错误的发生。然而，现在在标准库中有一些可识别协议的版本仍然是非常好的，即使它有一些限制。</p>
+<h2 id="ordered-collection-diffing">Ordered collection diffing</h2>
+<p>最后，让我们来看看一个全新的标准库API，它是作为Swift 5.1的一部分而引入的——ordered collection differ。作为一个社区，我们越来越接近于使用诸如Combine和SwiftUI之类的工具进行声明式编程——能够计算两种状态之间的差异变得越来越重要。</p>
+<p>毕竟，声明式UI开发就是不断地呈现状态的新快照 - 虽然SwiftUI和新的可替换数据源可能会完成大部分繁重的工作  - 能够计算两种状态之间的差值是非常有用的。</p>
+<p>例如，假设我们正在构建一个DatabaseController，它可以让我们轻松地用一组内存模型更新磁盘上的数据库。为了能够确定模型是应该插入还是删除，我们现在只需调用new difference API来计算旧数组和新数组之间的差值-然后遍历差异内的变化，以便执行我们的数据库操作:</p>
+<pre><code class="language-swift">class DatabaseController&lt;Model: Hashable &amp; Identifiable&gt; {
+    private let database: Database
+    private(set) var models: [Model] = []
+    ...
+    func update(with newModels: [Model]) {
+        let diff = newModels.difference(from: models)
+
+        for change in diff {
+            switch change {
+            case .insert(_, let model, _):
+                database.insert(model)
+            case .remove(_, let model, _):
+                database.delete(model)
+            }
+        }
+        models = newModels
+    }
+}
+</code></pre>
+<p>然而，上面的实现没有考虑移动模型——因为移动在默认情况下将被视为单独的插入和删除。为了解决这个问题，让我们在计算差值时也调用inferringMoves方法——然后看看每次插入是否与删除相关联，如果是，则将其视为移动，如下所示:</p>
+<pre><code class="language-swift">func update(with newModels: [Model]) {
+    let diff = newModels.difference(from: models).inferringMoves()
+    
+    for change in diff {
+        switch change {
+        case .insert(let index, let model, let association):
+            // If the associated index isn't nil, that means
+            // that the insert is associated with a removal,
+            // and we can treat it as a move.
+            if association != nil {
+                database.move(model, toIndex: index)
+            } else {
+                database.insert(model)
+            }
+        case .remove(_, let model, let association):
+            // We'll only process removals if the associated
+            // index is nil, since otherwise we will already
+            // have handled that operation as a move above.
+            if association == nil {
+                database.delete(model)
+            }
+        }
+    }
+    
+    models = newModels
+}
+</code></pre>
+<p>事实上，差异化现在已经被内置到标准库(以及UIKit和AppKit)中，这是一个非常棒的消息——因为编写一个高效、灵活、健壮的差异化算法是非常困难的。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift 5.1不仅是SwiftUI和Combine的关键支持，对于任何销售预编译框架的团队来说，这也是个大新闻，因为Swift现在不仅ABI稳定了，模块也稳定了。</p>
+<p><a href="https://www.swiftbysundell.com/articles/5-small-but-significant-improvements-in-swift-5-1/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_Xob8a1C4/" class="tag">
+                    what&#39;s new
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/managing-dependencies-using-the-swift-package-manager/">
+                  <h3 class="post-title">
+                    Managing dependencies using the Swift Package Manager
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

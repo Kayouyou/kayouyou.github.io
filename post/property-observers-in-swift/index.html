@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Property observers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="能够观察各种值的变化对于许多不同类型的编程风格和技术来说是必不可少的。无论我们是使用委托、函数还是响应式编程——我们的大部分逻辑通常是由状态和值的变化驱动的。
+虽然我们可以创建许多抽象，以以不同的方式观察和交流这种价值变化- Swift内置..." />
+    <meta name="keywords" content="properties,reactive programming" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Property observers in Swift</h2>
+            <div class="post-date">2019-04-21</div>
+            
+            <div class="post-content" v-pre>
+              <p>能够观察各种值的变化对于许多不同类型的编程风格和技术来说是必不可少的。无论我们是使用委托、函数还是响应式编程——我们的大部分逻辑通常是由状态和值的变化驱动的。</p>
+<p>虽然我们可以创建许多抽象，以以不同的方式观察和交流这种价值变化- Swift内置了一种简单而强大的方式，可以将观察结果附加到任何一种非惰性的存储属性上 - 恰如其名的属性观察者。</p>
+<p>本周，让我们看看使用属性观察者的几种不同方式，以及它们如何让我们以一种非常被动的方式驱动部分逻辑——而不需要任何额外的框架或抽象。</p>
+<h2 id="automatic-updates">Automatic updates</h2>
+<p>当处理任何一种状态时，理想情况下，我们希望有一个单一的真相来源，我们可以检查和观察——以便更新依赖于该状态当前值的代码库的其他部分。</p>
+<p>例如，假设我们正在构建一个绘图应用程序，我们的核心UI类之一是一个视图控制器，它渲染工具箱面板——它允许我们的用户更改当前正在使用的绘图工具(如钢笔、笔刷或橡皮擦)。然后，我们的ToolboxViewController就被协调工具箱和绘图画布的父视图控制器所拥有。</p>
+<p>为了使ToolboxViewController能够让它的所有者知道当前选择的工具何时被更改，并且以一种解耦的方式这样做，我们使用委托模式来定义一个通信协议——像这样：</p>
+<pre><code class="language-swift">protocol ToolboxViewControllerDelegate: AnyObject {
+    func toolboxViewController(
+        _ viewController: ToolboxViewController,
+        willChangeToolTo newTool: Tool
+    )
+
+    func toolboxViewController(
+        _ viewController: ToolboxViewController,
+        didChangeToolFrom oldTool: Tool
+    )
+}
+
+class ToolboxViewController: UIViewController {
+    weak var delegate: ToolboxViewControllerDelegate?
+    var tool = Tool.boxedSelection
+}
+</code></pre>
+<p>上面的API使用了非常常见的“will/did”命名约定，这在苹果平台上已经使用了很长时间，它允许委托在状态发生变化之前和之后采取不同的行动。</p>
+<p>然而，由于视图控制器的工具属性可以在任何时候发生变化，因此很难保证我们的委托协议所建立的API契约实际上会被遵循。我们本质上需要记住总是调用willChangeTool和didChangeTool方法，任何时候我们对工具属性做任何改变-在ToolboxViewController内部或外部。</p>
+<p>上述问题正是属性观察想要解决的问题。它们有两种不同的风格——willSet和didSet——让我们可以轻松地在属性被分配之前或之后运行代码块。</p>
+<p>在任何willSet块中，一个newValue变量都会自动可用，它包含了我们的属性将要被更新的值-同样，didSet块包含oldValue变量，以相同的方式工作，但为前一个值。</p>
+<p>使用willSet和didSet，我们现在可以很容易地确保我们的委托在任何时候工具属性发生改变时都能得到正确的通知:</p>
+<pre><code class="language-swift">class ToolboxViewController: UIViewController {
+    weak var delegate: ToolboxViewControllerDelegate?
+
+    var tool = Tool.boxedSelection {
+        willSet {
+            // Property observers are called even if the new
+            // value is the same as the old one, so we need to
+            // perform a simple equality check here.
+            guard tool != newValue else {
+                return
+            }
+
+            delegate?.toolboxViewController(self,
+                willChangeToolTo: newValue
+            )
+        }
+
+        didSet {
+            guard tool != oldValue else {
+                return
+            }
+
+            delegate?.toolboxViewController(self,
+                didChangeToolFrom: oldValue
+            )
+        }
+    }
+}
+</code></pre>
+<p>现在，无论我们在哪里以及如何改变当前选择的工具，委托总是会得到通知——这使我们能够保持我们的视图控制器的API简单，同时仍然在底层确保正确性。</p>
+<h2 id="view-configuration">View configuration</h2>
+<p>当我们想要基于给定值配置视图时，属性观察者的另一个亮点就是。如，这里我们使用didSet属性观察器将变化传播到一个颜色元组到底层的CAGradientLayer，这是用来渲染渐变视图的:</p>
+<p>每一个UIView都是寄宿在一个CALayer的示例上，继承UIView 重写layerClass 可以更改底层的宿主图层layer。</p>
+<pre><code class="language-swift">class GradientView: UIView {
+    // By defining a custom 'layerClass' for a view, we can
+    // leverage all of UIView's default layer handling, while
+    // still using a more specialized CALayer subclass.
+    override class var layerClass: AnyClass {
+        return CAGradientLayer.self
+    }
+
+    var colors: (start: UIColor, end: UIColor)? {
+        didSet {
+            let gradient = layer as! CAGradientLayer
+
+            gradient.colors = colors.map {
+                [$0.start.cgColor, $0.end.cgColor]
+            }
+        }
+    }
+}
+</code></pre>
+<p>在上面的didSet观察中，我们跳过了等式检查，因为我们只是将指定的值传递给CAGradientLayer—没有逻辑要求更改为一个全新的值。</p>
+<p>上面的设计给我们带来了与之前的ToolboxViewController示例相同的好处，但它也使我们能够隐藏实现细节(比如渐变将使用CAGradientLayer进行渲染)，在一个更简单的API后面。要使用上述类，我们所要做的就是分配一个开始和结束颜色，其他的一切都会自动处理。</p>
+<h2 id="rendering-only-when-needed">Rendering only when needed</h2>
+<p>当值发生变化时，重新呈现简单的视图并没有什么坏处，但对于更复杂的视图或数据集，过于急于进行更新有时会导致性能问题和大量不必要的计算。</p>
+<p>例如，假设我们正在构建一个自定义的图形呈现系统，该系统允许我们在图形上绘制(可能很大)多个点——而呈现这样的图形可能是一个非常昂贵的操作。如果我们总是在以下三个属性发生改变时重新渲染图形，那么下面的代码就会出现问题:</p>
+<pre><code class="language-swift">private extension GraphViewController {
+    func configure(_ view: GraphView, with graph: Graph) {
+        view.points = graph.points.map { $0.cgPoint }
+        view.lineColor = theme.graphLineColor
+        view.drawMarkers = shouldDrawMarkers
+        // At this point we'll have rendered the graph 3 times
+    }
+}
+</code></pre>
+<p>为了解决上述问题，我们可能需要实现一个更懒惰和防御性的渲染方案。在这种情况下，我们将开始检查每个更改(类似于我们在最初的ToolboxViewController示例中所做的)， 也可以使用UIKit的setNeedsDisplay和drawRect方法——这使得我们可以将我们的图形的实际渲染推迟到下一个绘制周期，避免重复的更新:</p>
+<pre><code class="language-swift">class GraphView: UIView {
+    var points = [CGPoint]() {
+        didSet { property(\.points, didChangeFrom: oldValue) }
+    }
+
+    var lineColor = UIColor.black {
+        didSet { property(\.lineColor, didChangeFrom: oldValue) }
+    }
+
+    var drawMarkers = false {
+        didSet { property(\.drawMarkers, didChangeFrom: oldValue) }
+    }
+
+    override func draw(_ rect: CGRect) {
+        // Draw the graph
+        ...
+    }
+
+    private func property&lt;T: Equatable&gt;(
+        _ keyPath: KeyPath&lt;GraphView, T&gt;,
+        didChangeFrom oldValue: T
+    ) {
+        guard self[keyPath: keyPath] != oldValue else {
+            return
+        }
+
+        setNeedsDisplay()
+    }
+}
+</code></pre>
+<p>上面我们使用关键路径来避免在我们的didSet观察者之间复制过多的代码，因为我们现在可以在我们的属性(didChangeFrom:)方法中使用一个单独的守卫语句来执行所有的相等性检查，并且只在值实际改变时安排重绘。</p>
+<h2 id="input-validation">Input validation</h2>
+<p>最后，让我们看看如何利用属性观察者来验证(和调整)输入值。</p>
+<p>假设我们使用了一些轻微的“游戏化”方法，即在用户完成应用目标时给予他们成就。 我们使用一个成就结构来为我们的成就建模，这个成就结构包含了用户朝着某个既定成就所取得的进展-定义为0和1之间的速率，看起来像这样:</p>
+<pre><code class="language-swift">struct Achievement {
+    var id: ID
+    var name: String
+    var progressRate: Double = 0
+}
+</code></pre>
+<p>每当一段代码要求一个值保持在某个范围内时，如果我们能够尽一切努力来确保这一点总是好的——而且超出范围的值会触发某种形式的错误。</p>
+<p>在这种情况下,我们可以做到这一点通过添加didSet观察我们的progressRate产权和观察块内触发assertionFailure以防分配值不匹配我们的期望,并调整它总是在允许的范围内——是这样的:</p>
+<pre><code class="language-swift">struct Achievement {
+    var id: ID
+    var name: String
+    var progressRate: Double = 0 {
+        didSet {
+            let allowedRange: ClosedRange&lt;Double&gt; = 0...1
+
+            if allowedRange.contains(progressRate) {
+                return
+            }
+
+            assertionFailure(&quot;Progress rate must be within 0-1&quot;)
+            progressRate = max(allowedRange.lowerBound, progressRate)
+            progressRate = min(allowedRange.upperBound, progressRate)
+        }
+    }
+}
+</code></pre>
+<p>注意，我们能够重新分配上述didSet块中的observed属性，而不会导致任何无限递归——因为在didSet块中所做的更改不会触发对同一属性的任何额外观察。</p>
+<p>属性观察不被触发的另一种情况是在初始化对象或值时——这在我们的情况下可能会有点问题，因为即使我们不再能够为一个成就分配一个无效的进度率，初始化是未检查的-使这段代码通过而不触发我们的断言:</p>
+<pre><code class="language-swift">let achievement = Achievement(
+    id: 7,
+    name: &quot;Completed 10 tasks&quot;,
+    progressRate: 999
+)
+</code></pre>
+<p>为了解决这个问题，让我们把验证逻辑移到一个单独的方法——我们既可以在我们的didSet观察块中调用，也可以在初始化一个成就实例时调用:</p>
+<pre><code class="language-swift">private extension Achievement {
+    func validate(_ progressRate: Double) -&gt; Double {
+        let allowedRange: ClosedRange&lt;Double&gt; = 0...1
+
+        if allowedRange.contains(progressRate) {
+            return progressRate
+        }
+
+        assertionFailure(&quot;Progress rate must be within 0-1&quot;)
+
+        return max(
+            allowedRange.lowerBound,
+            min(allowedRange.upperBound, progressRate)
+        )
+    }
+}
+</code></pre>
+<p>上面的方法返回一个新值，而不是简单地直接分配给我们的progressRate属性，是因为我们需要在我们的didSet块中进行实际的分配-否则我们就会开始产生无限递归，因为编译器只在属性观察器本身发生变化时才保护我们不受这种递归的影响。</p>
+<p>我们现在可以使用上面的方法来确保赋值和初始化，使用的progressRate值都在允许的范围内:</p>
+<pre><code class="language-swift">struct Achievement {
+    var id: ID
+    var name: String
+    var progressRate: Double = 0 {
+        didSet {
+            progressRate = validate(progressRate)
+        }
+    }
+
+    init(id: ID, name: String, progressRate: Double) {
+        self.id = id
+        self.name = name
+        self.progressRate = validate(progressRate)
+    }
+}
+</code></pre>
+<p>解决上述问题的另一种方法是在调用站点进行验证，例如引入专用的进程类型。在以后的文章中，我们将进一步研究这种验证的不同策略，以及确保我们的值保持正确的其他方法。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用willSet和didSet的属性观察提供了一种非常强大的方法，可以方便地观察值的变化，而不需要任何额外的抽象。它们可以用来确保我们基于单一的真相来源来驱动我们的逻辑，并允许我们在给定的属性发生变化时响应性地更新其他值和状态。</p>
+<p>然Swift内置的属性观察器只能让我们观察同步属性的变化，但它们也可以用来构建异步抽象——比如 Futures &amp; Promises。</p>
+<p><a href="https://www.swiftbysundell.com/articles/property-observers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/2-HyEvrbK/" class="tag">
+                    properties
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hmS8pdSRE/" class="tag">
+                    reactive programming
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/designing-swift-apis/">
+                  <h3 class="post-title">
+                    Designing Swift APIs
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

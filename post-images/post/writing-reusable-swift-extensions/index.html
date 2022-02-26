@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Writing reusable Swift extensions | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="可以说，Swift最有趣和最强大的特性之一是它让我们能够为任何类型或协议扩展新的功能。这不仅让我们能够调整语言及其标准库以适应每个项目的需求，还为编写扩展提供了许多不同的机会，这些扩展可以在多个用例和项目中重用。
+本周，让我们来看几个这样做..." />
+    <meta name="keywords" content="extensions,generics" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Writing reusable Swift extensions</h2>
+            <div class="post-date">2020-01-05</div>
+            
+            <div class="post-content" v-pre>
+              <p>可以说，Swift最有趣和最强大的特性之一是它让我们能够为任何类型或协议扩展新的功能。这不仅让我们能够调整语言及其标准库以适应每个项目的需求，还为编写扩展提供了许多不同的机会，这些扩展可以在多个用例和项目中重用。</p>
+<p>本周，让我们来看几个这样做的例子，以及一组原则，当将扩展推广到更广泛的环境中时，记住这些原则是很好的。</p>
+<h2 id="generalizing-through-abstractions">Generalizing through abstractions</h2>
+<p>在日常编写代码时，每个新特性和功能片段通常都是作为特定于领域的实现开始的。 这并没有什么错，事实上，它帮助我们避免“过早的泛化”，并且经常让我们通过一开始只关注单个用例来更快地迭代。</p>
+<p>例如，假设我们正在编写一个用于写文章的文本编辑器，为了在某些情况下提高我们的应用程序的性能，我们编写了以下函数，使我们能够轻松地将给定的文章缓存到磁盘</p>
+<pre><code class="language-swift">extension Article {
+    func cacheOnDisk() throws {
+        let folderURLs = FileManager.default.urls(
+            for: .cachesDirectory,
+            in: .userDomainMask
+        )
+        let fileName = &quot;Article-\(id).cache&quot;
+        let fileURL = folderURLs[0].appendingPathComponent(fileName)
+        let data = try JSONEncoder().encode(self)
+        try data.write(to: fileURL)
+    }
+}
+</code></pre>
+<p>使用上述实用程序扩展特定类型是减少代码重复和简化跨代码库执行常见任务的好方法。 然而，一个具体类型的扩展有时也会失去一些机会，使我们的代码更少的解耦和更灵活。 在这个特定的例子中，我们不仅需要缓存Article实例，而且还需要缓存其他类型的模型——这是我们当前的实现所不允许的。</p>
+<p>当寻找泛化一个特定的扩展时，可能首先看起来正在完成的工作确实与正在扩展的具体类型紧密联系在一起。 例如，上面的缓存函数使用文章类型的名称及其id属性来形成每个文件名。 但是，从概念上讲，这两段数据并不是文章所特有的——每一种类型都有一个名称，任何类型都可以有一个id属性，因此我们应该能够使该扩展可重用。</p>
+<p>让我们从回顾缓存函数的实际需求开始:</p>
+<p>为了能够将每个值编码为JSON表示，我们需要与函数一起使用的任何类型，以符合标准库的可编码协议。</p>
+<p>我们还需要每个兼容类型都有一个id属性，以便能够为每个正在缓存的值计算一个唯一的文件名。</p>
+<p>为了以一种不直接绑定到任何具体类型的方式为这两个需求建模，我们将使用Encodable作为扩展的新基础目标，然后我们将添加一个泛型类型约束来指定我们的缓存方法只能在符合可识别的类型上调用-另一个标准库协议，它给了我们需要的id属性:</p>
+<pre><code class="language-swift">extension Encodable where Self: Identifiable {
+    // We also take this opportunity to parameterize our JSON
+    // encoder, to enable the users of our new API to pass in
+    // a custom encoder, and to make our method's dependencies
+    // more clear:
+    func cacheOnDisk(using encoder: JSONEncoder = .init()) throws {
+        let folderURLs = FileManager.default.urls(
+            for: .cachesDirectory,
+            in: .userDomainMask
+        )
+
+        // Rather than hard-coding a specific type's name here,
+        // we instead dynamically resolve a description of the
+        // type that our method is currently being called on:
+        let typeName = String(describing: Self.self)
+        let fileName = &quot;\(typeName)-\(id).cache&quot;
+        let fileURL = folderURLs[0].appendingPathComponent(fileName)
+        let data = try encoder.encode(self)
+        try data.write(to: fileURL)
+    }
+}
+</code></pre>
+<p>就像这样，我们已经将缓存方法从一个非常特定于文章的植入转换为一个完全可重用的方法-由于我们的新扩展只依赖于Swift标准库定义的协议和抽象，我们现在也可以在需要相同功能的代码库之间共享它。</p>
+<h2 id="finding-the-right-protocol">Finding the right protocol</h2>
+<p>让我们来看另一个例子，在这个例子中，我们再次编写了一个特定于Article的扩展，这次是关于标准库的Result类型——使携带Article值数组的Result实例能够轻松地与另一个相同类型的实例组合:</p>
+<pre><code class="language-swift">extension Result where Success == [Article] {
+    func combine(with other: Self) throws -&gt; Self {
+        try .success(get() + other.get())
+    }
+}
+</code></pre>
+<p>就像我们之前的缓存方法一样，上面的combine方法不需要知道Article的具体类型。在这种情况下，我们所需要的就是能够将两个底层的值集合组合成一个——这是可以用符合RangeReplaceableCollection的任何类型来完成的。</p>
+<p>所以，让我们再次用更通用的约束来替换我们的具体类型要求，这一次我们甚至不需要改变我们的实际实现:</p>
+<pre><code class="language-swift">extension Result where Success: RangeReplaceableCollection {
+    func combine(with other: Self) throws -&gt; Self {
+        try .success(get() + other.get())
+    }
+}
+</code></pre>
+<p>上面两个例子都说明了通常可以将一个实用程序扩展扩展到更通用的用途 -选择标准库的众多内置抽象之一作为扩展的目标，而不是使用我们自己的具体类型。通过这样做，我们不仅可以在我们自己的类型中重用我们的功能，而且还可能在项目之间共享它——甚至开放它的源代码。</p>
+<h2 id="avoiding-conflicts-and-type-pollution">Avoiding conflicts and type pollution</h2>
+<p>到目前为止，我们所定义的扩展都包含了我们想要添加的实际功能，但情况并非总是如此。例如，有时扩展的全部目的是用协议一致性来改造现有类型，或者使其与自定义系统或API兼容。</p>
+<p>让我们来看看这样一个场景，在这个场景中，我们正在构建一个通用存储框架，它将允许各种项目使用容器类型保存和加载不同的值。 为了能够将给定的数据写入其中一个容器中，我们定义了一个DataConvertible协议，然后让几个系统类型符合这个协议——像这样:</p>
+<pre><code class="language-swift">public protocol DataConvertible {
+    var data: Data { get }
+}
+
+extension Data: DataConvertible {
+    public var data: Data { self }
+}
+
+extension String: DataConvertible {
+    public var data: Data { Data(utf8) }
+}
+
+extension UIImage: DataConvertible {
+    public var data: Data { pngData()! }
+}
+
+public struct Container {
+    public func write(_ value: DataConvertible) throws {
+        let data = value.data
+        ...
+    }
+}
+</code></pre>
+<p>上面的方法可能在单个代码库中工作得相当好，但如果我们的目的是让这个功能在多个项目中共享，那么它很可能会变成一个相当大的问题。</p>
+<p>由于我们将属性需求简单地定义为数据，因此它最终与具有相同名称的其他属性定义发生冲突的可能性很大。我们的协议本身也是如此，它有一个非常通用的名称DataConvertible——在更大的上下文中，这个名称可能会变得模糊。 而类型名称总是可以使用ModuleName.TypeName来消除歧义，属性名不能。</p>
+<p>解决这一问题的一个可能的解决方案是将我们的协议(及其相关的扩展)全部移除，取而代之的是在我们的容器类型中添加一些特定类型的重载，如下所示:</p>
+<pre><code class="language-swift">public struct Container {
+    public func write(_ data: Data) throws {
+        ...
+    }
+    public func write(_ string: String) throws {
+        try write(Data(string.utf8))
+    }
+    public func write(_ image: UIImage) throws {
+        guard let data = image.pngData() else {
+            throw Error.failedToConvertImageToPNGData
+        }
+        try write(data)
+    }
+}
+</code></pre>
+<p>尽管上面的方法在我们支持的类型数量相当低的情况下非常有效，但如果我们想要向容器API添加更多的配置选项和参数，事情就会变得棘手起来。</p>
+<p>例如，假设我们希望让API用户在编写给定值时指定使用何种级别的持久性，或者将一组标记与之关联。仅仅这两个小的增加就已经使我们的实现更加复杂，并导致相当数量的代码重复-因为我们需要添加这两个参数(和它们的默认值)到每个重载:</p>
+<pre><code class="language-swift">public struct Container {
+    public func write(_ data: Data,
+                      persistence: Persistence = .permanent,
+                      tags: [Tag] = []) throws {
+        ...
+    }
+
+    public func write(_ string: String,
+                      persistence: Persistence = .permanent,
+                      tags: [Tag] = []) throws {
+        let data = Data(string.utf8)
+
+        try write(data,
+            persistence: persistence,
+            tags: tags
+        )
+    }
+
+    public func write(_ image: UIImage,
+                      persistence: Persistence = .permanent,
+                      tags: [Tag] = []) throws {
+        guard let data = image.pngData() else {
+            throw Error.failedToConvertImageToPNGData
+        }
+
+        try write(data,
+            persistence: persistence,
+            tags: tags
+        )
+    }
+}
+</code></pre>
+<p>事实证明，在容器类型中内在化所有可能的参数组合也不一定很好——让我们回过头来进一步探讨面向协议的路由。</p>
+<p>因为我们之前的主要问题是，我们的协议及其需求的命名方式可能会导致潜在的冲突——让我们改用稍微详细一些的命名约定，它显式地包含了单词“Container”。让我们把协议要求设为throw函数，这样在将UIImage转换为Data时就可以避免任何强制展开:</p>
+<pre><code class="language-swift">public protocol ContainerDataConvertible {
+    func asContainerData() throws -&gt; Data
+}
+
+extension Data: ContainerDataConvertible {
+    public func asContainerData() -&gt; Data {
+        self
+    }
+}
+
+extension String: ContainerDataConvertible {
+    public func asContainerData() -&gt; Data {
+        Data(utf8)
+    }
+}
+
+extension UIImage: ContainerDataConvertible {
+    public func asContainerData() throws -&gt; Data {
+        guard let data = pngData() else {
+            throw Container.Error.failedToConvertImageToPNGData
+        }
+
+        return data
+    }
+}
+</code></pre>
+<p>注意，不仅仅因为一个协议函数被标记为抛出，并不意味着它的所有实现都需要抛出。</p>
+<p>有了以上的改变，当我们的扩展与其他代码库混合时，导致问题的可能性现在大大降低了，我们又回到了只有一个write方法的容器，可以处理任何符合containerdataconvertible的类型:</p>
+<pre><code class="language-swift">public struct Container {
+    public func write(
+        _ value: ContainerDataConvertible,
+        persistence: Persistence = .permanent,
+        tags: [Tag] = []
+    ) throws {
+        let data = try value.asContainerData()
+        ...
+    }
+}
+</code></pre>
+<p>这已经好得多了，但是也许我们可以更进一步，使我们的系统扩展尽可能地不引人注目。到目前为止，我们一直在向被改造的类型添加实例属性和方法，这使得这些添加非常明显，并且很可能显示为自动完成结果(即使它们或多或少是用于容器的实现细节)。</p>
+<p>为了解决这个问题，让我们将协议需求定义为一个静态函数——并在实际类型本身上实现它，而不是将它添加到它们的所有实例中:</p>
+<pre><code class="language-swift">public protocol ContainerDataConvertible {
+    static func makeContainerData(for value: Self) throws -&gt; Data
+}
+
+extension Data: ContainerDataConvertible {
+    public static func makeContainerData(for value: Data) -&gt; Data {
+        value
+    }
+}
+
+extension String: ContainerDataConvertible {
+    public static func makeContainerData(for value: String) -&gt; Data {
+        Data(value.utf8)
+    }
+}
+
+extension UIImage: ContainerDataConvertible {
+    public static func makeContainerData(for value: UIImage) throws -&gt; Data {
+        guard let data = value.pngData() else {
+            throw Container.Error.failedToConvertImageToPNGData
+        }
+
+        return data
+    }
+}
+</code></pre>
+<p>上面的实现仍然允许我们只维护一个write函数，而不必为兼容类型的实例增加任何额外的复杂性-因为我们现在将直接对每个值的类型调用makeContainerData，像这样:</p>
+<pre><code class="language-swift">public struct Container {
+    public func write&lt;T: ContainerDataConvertible&gt;(
+        _ value: T,
+        persistence: Persistence = .permanent,
+        tags: [Tag] = []
+    ) throws {
+        let data = try T.makeContainerData(for: value)
+        ...
+    }
+}
+</code></pre>
+<p>特别是当涉及到使许多系统类型与自定义API或框架兼容时，在静态上下文中添加所需的复杂性是更好地封装所有这些实现细节的好方法，并且可以让我们避免“污染”这些类型的实例。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使给定的扩展能够被重用的一个重要部分通常归结为为它选择正确的抽象级别，我们越依赖标准库作为所有兼容类型的公分母，我们的扩展就越可能变得可移植。</p>
+<p>然而，当在项目之间共享扩展时，有时我们确实需要引入我们自己的自定义协议，这并没有什么错 -只要我们确保我们正在做的一切，我们可以避免添加额外的混乱或潜在的冲突来源的任何系统类型，我们正在制定符合这些协议。</p>
+<p><a href="https://www.swiftbysundell.com/articles/writing-reusable-swift-extensions/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/caKSUYFIR/" class="tag">
+                    extensions
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/initializers-in-swift/">
+                  <h3 class="post-title">
+                    Initializers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

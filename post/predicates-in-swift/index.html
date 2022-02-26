@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Predicates in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管现代应用程序倾向于严重依赖某种形式的服务器组件来加载数据和执行各种工作，对于一个应用程序来说，必须处理大量本地存储的数据也是非常普遍的。
+我们不仅必须想出有效和安全的方法来存储这些数据，我们还必须设计用于访问这些数据的api-确保这些功..." />
+    <meta name="keywords" content="closures,generics,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Predicates in Swift</h2>
+            <div class="post-date">2019-12-08</div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管现代应用程序倾向于严重依赖某种形式的服务器组件来加载数据和执行各种工作，对于一个应用程序来说，必须处理大量本地存储的数据也是非常普遍的。</p>
+<p>我们不仅必须想出有效和安全的方法来存储这些数据，我们还必须设计用于访问这些数据的api-确保这些功能足够灵活，让我们能够以平稳和富有成效的方式不断迭代新特性和功能。</p>
+<p>本周，让我们看看在处理本地数据时，我们如何利用谓词的强大功能来实现很大程度的灵活性，以及Swift如何使我们能够以一种既具有高度表现力又非常强大的方式对谓词建模。</p>
+<h2 id="filtering-a-collection-of-models">Filtering a collection of models</h2>
+<p>举个例子，假设我们正在构建一个经典的todo应用程序，它允许我们的用户使用多个列表来组织他们的任务和todo项目——每个列表都由一个TodoList实例表示。</p>
+<p>因为我们想让我们的用户能够以各种方式轻松地过滤他们的任务——我们已经创建了几个api，让我们根据各种不同的条件来查询列表中的项目，像这样:</p>
+<pre><code class="language-swift">extension Date {
+    static var now: Date { Date() }
+}
+
+struct TodoList {
+    var name: String
+    private var items = [TodoItem]()
+
+    func futureItems(basedOnDate date: Date = .now) -&gt; [TodoItem] {
+        items.filter {
+            !$0.isCompleted &amp;&amp; $0.dueDate &gt; date
+        }
+    }
+
+    func overdueItems(basedOnDate date: Date = .now) -&gt; [TodoItem] {
+        items.filter {
+            !$0.isCompleted &amp;&amp; $0.dueDate &lt; date
+        }
+    }
+
+    func itemsTaggedWith(_ tag: Tag) -&gt; [TodoItem] {
+        items.filter { $0.tags.contains(tag) }
+    }
+}
+</code></pre>
+<p>注意，简单地在数组上调用filter通常不是搜索(可能很大的)值集合的最有效方法。 然而，为了简单起见，我们将在本文中继续使用filter。有关更高级的数据结构方法，请查看“在Swift中选择正确的数据结构”。</p>
+<p>虽然上面的api并没有什么问题，但如果我们能够在不断迭代应用和添加更多过滤功能时拥有更大程度的灵活性就更好了。 因为我们的TodoList类型是当前设计的，所以每次我们想要添加一种新的方法来过滤数据时，我们必须返回并添加一个全新的API。</p>
+<p>让我们看看我们是否能找到一种方法，让我们的数据的消费者决定他们想要如何过滤它 。这样我们就只需要构建和维护一个API，同时也可以在不修改底层数据存储的情况下构建新特性。</p>
+<h2 id="a-case-for-predicates">A case for predicates</h2>
+<p>实现这种灵活性的一种方法是使用Foundation的NSPredicate类，它利用了Objective-C的动态特性，让我们可以使用基于字符串的查询来过滤数据集合。 例如，我们可以使用nsprediced从TodoItem值数组中检索所有过期的项:</p>
+<pre><code class="language-swift">// Before we can apply a predicate to our array, we must
+// first convert it into an Objective-C-based NSArray:
+let array = NSArray(array: items)
+
+let overdueItems = array.filtered(using: NSPredicate(
+    format: &quot;isCompleted == false &amp;&amp; dueDate &lt; %@&quot;,
+    NSDate()
+))
+</code></pre>
+<p>虽然NSPredicate非常强大，但它在Swift中使用时也有很多缺点。首先，由于查询是以字符串的形式编写的，因此它们没有任何编译时安全性——因为编译器无法验证我们的属性名，甚至无法验证我们的查询在语法上是否正确。</p>
+<p>使用基于Objective-C的api，如NSPredicate和NSArray，也要求我们将数据模型转换为继承自NSObject的类-这将阻止我们使用值语义，并要求我们遵守Objective-C的约定，比如启用基于字符串的动态访问我们的属性。</p>
+<p>因此，尽管谓词的思想和概念非常吸引人，让我们看看能否以一种更“Swifty”的方式实现它们。毕竟，不考虑实现细节，谓词只是一个为给定值返回Bool值的函数——并且可以用最简单的形式，像这样建模:</p>
+<pre><code class="language-swift">typealias Predicate&lt;T&gt; = (T) -&gt; Bool
+</code></pre>
+<p>虽然我们可以明确地将谓词定义为自由形式的函数和闭包，让我们来创建一个简单的包装结构，它接受一个闭包，并将其作为matcher存储:</p>
+<pre><code class="language-swift">struct Predicate&lt;Target&gt; {
+    var matches: (Target) -&gt; Bool
+
+    init(matcher: @escaping (Target) -&gt; Bool) {
+        matches = matcher
+    }
+}
+</code></pre>
+<p>如果上面的设计看起来很相似，那可能是因为我们在上周的文章“让Swift代码通过插件扩展”中使用了完全相同的设置来实现插件。</p>
+<p>有了上面的内容，我们现在可以回到TodoList类型，用一个过滤api替换之前的所有过滤api——它接受一个谓词，并将其匹配的闭包传递给items.filter，以返回我们正在寻找的项目:</p>
+<pre><code class="language-swift">extension TodoList {
+    func items(matching predicate: Predicate&lt;TodoItem&gt;) -&gt; [TodoItem] {
+        items.filter(predicate.matches)
+    }
+}
+</code></pre>
+<p>现在，无论何时我们想要基于任何类型的查询过滤TodoList，我们现在可以通过调用上述方法轻松地做到这一点:</p>
+<pre><code class="language-swift">let list: TodoList = ...
+
+let overdueItems = list.items(matching: Predicate {
+    !$0.isCompleted &amp;&amp; $0.dueDate &lt; .now
+})
+</code></pre>
+<p>然而，虽然我们现在使过滤API变得更加灵活，但我们也失去了以前方法所提供的一些一致性。如果我们需要一次又一次地重新输入相同的谓词代码，那么很可能会出现不一致、bug和错误。</p>
+<p>值得庆幸的是，有一种方法既可以实现相当程度的一致性，又可以保持自由形式谓词的强大功能和灵活性。通过将静态属性和工厂方法与泛型类型约束结合起来，我们可以在一个中心位置构造最常用的谓词——像这样:</p>
+<pre><code class="language-swift">extension Predicate where Target == TodoItem {
+    static var isOverdue: Self {
+        Predicate {
+            !$0.isCompleted &amp;&amp; $0.dueDate &lt; .now
+        }
+    }
+}
+</code></pre>
+<p>上面的方法不仅给了我们更大程度的一致性，它还使我们的调用站点看起来非常优雅，因为我们可以使用点语法引用上述类型的静态属性:</p>
+<pre><code class="language-swift">let overdueItems = list.items(matching: .isOverdue)
+</code></pre>
+<p>现在，我们已经找到了一种使我们的新谓词系统既一致又灵活的方法——让我们看看是否可以继续迭代它，以便更容易地定义和组合各种谓词。</p>
+<h2 id="xpressive-operators">xpressive operators</h2>
+<p>Swift提供的最具争议的特性之一可能是定义和重载操作符的能力。虽然有一个明确的论点是，过度依赖(特别是自定义)操作符会使我们的代码更加神秘和难以理解——当在正确的上下文中使用时，它们也可能产生完全相反的效果。</p>
+<p>例如，让我们看看如果重载==操作符，以允许使用键路径和匹配值定义谓词会发生什么:</p>
+<pre><code class="language-swift">func ==&lt;T, V: Equatable&gt;(lhs: KeyPath&lt;T, V&gt;, rhs: V) -&gt; Predicate&lt;T&gt; {
+    Predicate { $0[keyPath: lhs] == rhs }
+}
+</code></pre>
+<p>在Swift中，操作符实现只是将操作数作为参数的普通函数(在本例中是左操作数和右操作数)。</p>
+<p>使用上面的方法，我们现在可以像这样创建匹配谓词:</p>
+<pre><code class="language-swift">let uncompletedItems = list.items(matching: \.isCompleted == false)
+</code></pre>
+<p>这很酷!如果我们想，我们也可以超载!操作符，这使我们能够将上面的== false检查封装到结果谓词中:</p>
+<pre><code class="language-swift">prefix func !&lt;T&gt;(rhs: KeyPath&lt;T, Bool&gt;) -&gt; Predicate&lt;T&gt; {
+    rhs == false
+}
+</code></pre>
+<p>有了上面的代码，我们的调用站点语法现在变得非常轻量级:</p>
+<pre><code class="language-swift">let uncompletedItems = list.items(matching: !\.isCompleted)
+</code></pre>
+<p>同样，对于符合Swift可比协议的值，我们也可以重载&gt;和&lt;操作符——使我们能够使用相同的轻量级语法定义比较谓词:</p>
+<pre><code class="language-swift">func &gt;&lt;T, V: Comparable&gt;(lhs: KeyPath&lt;T, V&gt;, rhs: V) -&gt; Predicate&lt;T&gt; {
+    Predicate { $0[keyPath: lhs] &gt; rhs }
+}
+
+func &lt;&lt;T, V: Comparable&gt;(lhs: KeyPath&lt;T, V&gt;, rhs: V) -&gt; Predicate&lt;T&gt; {
+    Predicate { $0[keyPath: lhs] &lt; rhs }
+}
+
+let highPriorityItems = list.items(matching: \.priority &gt; 5)
+</code></pre>
+<p>运算符允许我们纯粹使用语言语法来表达完全定制的类型，这一事实真的很吸引人，并且在我们设计api时，它给我们带来了难以置信的强大力量。我们必须确保负责任地使用这种权力。</p>
+<h2 id="composition-built-in">Composition built-in</h2>
+<p>我们选择将谓词类型建立在闭包的基础上，这也为组合提供了很多机会——因为函数和闭包可以很容易地组合在一起以形成新的功能。</p>
+<p>例如，下面是我们如何定义额外的一对操作符，以使我们的谓词能够组合成双匹配或任意匹配组合:</p>
+<pre><code class="language-swift">func &amp;&amp;&lt;T&gt;(lhs: Predicate&lt;T&gt;, rhs: Predicate&lt;T&gt;) -&gt; Predicate&lt;T&gt; {
+    Predicate { lhs.matches($0) &amp;&amp; rhs.matches($0) }
+}
+
+func ||&lt;T&gt;(lhs: Predicate&lt;T&gt;, rhs: Predicate&lt;T&gt;) -&gt; Predicate&lt;T&gt; {
+    Predicate { lhs.matches($0) || rhs.matches($0) }
+}
+</code></pre>
+<p>使用上面的操作符，以及到目前为止我们定义的其他操作符重载，我们现在可以创建更复杂的谓词，可以拥有任意数量的条件——所有这些都使用我们已经熟悉的现有操作符:</p>
+<pre><code class="language-swift">let futureItems = list.items(
+    matching: !\.isCompleted &amp;&amp; \.dueDate &gt; .now
+)
+
+let overdueItems = list.items(
+    matching: !\.isCompleted &amp;&amp; \.dueDate &lt; .now
+)
+
+let myTasks = list.items(
+    matching: \.creator == .currentUser || \.assignedTo == .currentUser
+)
+</code></pre>
+<p>然而，回到之前的一致性点，当涉及到要在整个代码库中重用的复杂谓词时， 仍然使用静态工厂方法更好——因为这样做可以让我们把所有相关的逻辑简洁地封装在一个地方:</p>
+<pre><code class="language-swift">extension Predicate where Target == TodoItem {
+    static func isOverdue(
+        comparedTo date: Date = .now,
+        inlcudingCompleted includeCompleted: Bool = false
+    ) -&gt; Self {
+        Predicate {
+            if !includeCompleted {
+                guard !$0.isCompleted else {
+                    return false
+                }
+            }
+
+            return $0.dueDate &lt; date
+        }
+    }
+}
+
+let overdueItems = list.items(matching: .isOverdue())
+
+</code></pre>
+<p>通过使用方法，而不是计算属性，我们还可以注入定制选项和在编写测试时可以存根化的数据。</p>
+<p>使用包装类型而不是直接引用函数和闭包的主要好处之一是，这样做可以让我们决定哪种语法在每种情况下最合适。</p>
+<h2 id="an-expandable-pattern">An expandable pattern</h2>
+<p>我们现在建立的谓词模式的美妙之处在于，它使我们能够不断扩展实现，以满足不断变化的需求。例如，如果我们发现自己需要检查给定的嵌套集合是否包含元素，则可以为其添加另一个操作符重载:</p>
+<pre><code class="language-swift">func ~=&lt;T, V: Collection&gt;(
+    lhs: KeyPath&lt;T, V&gt;, rhs: V.Element
+) -&gt; Predicate&lt;T&gt; where V.Element: Equatable {
+    Predicate { $0[keyPath: lhs].contains(rhs) }
+}
+
+let importantItems = list.items(matching: \.tags ~= &quot;important&quot;)
+</code></pre>
+<p>最后，由于我们将谓词类型构建为一个简单的基于闭包的包装器，因此它自动与许多标准库的各种集合api兼容-我们可以将谓词的matches闭包作为第一类函数传递:</p>
+<pre><code class="language-swift">let strings: [String] = ...
+let predicate: Predicate&lt;String&gt; = \.count &gt; 3
+
+strings.filter(predicate.matches)
+strings.drop(while: predicate.matches)
+strings.prefix(while: predicate.matches)
+strings.contains(where: predicate.matches)
+
+</code></pre>
+<p>由于我们使用了包装类型及其匹配属性的命名方式，上面的调用站点读起来也非常好，几乎像普通的英语句子一样。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>谓词使我们能够以灵活且功能强大的方式过滤内存中的数据，而不需要我们维护一组不断增长的高度特定的api。</p>
+<p>通过以一种利用Swift一些最强大特性(如泛型、操作符和第一类函数)来建模我们的谓语-我们还可以创建不仅灵活而且完全类型安全的谓语。</p>
+<p>我也非常期待Swift Evolution提案SE-0249的实现，它将使关键路径能够直接转换为函数——从而能够轻松构建更多种类的谓词。</p>
+<p>然而，我们在本文中研究的这类谓词实际上只适合查询内存中的数据，因为将自由形式的闭包编码到可以传递给服务器或磁盘数据库的东西中是非常困难的。</p>
+<p><a href="https://www.swiftbysundell.com/articles/predicates-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/WHIN6Hnog/" class="tag">
+                    closures
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/making-swift-code-extensible-through-plugins/">
+                  <h3 class="post-title">
+                    Making Swift code extensible through plugins
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

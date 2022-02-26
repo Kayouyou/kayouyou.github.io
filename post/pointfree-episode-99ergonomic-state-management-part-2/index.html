@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 99:Ergonomic State Management: Part 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Dynamic member lookup
+
+
+
+
+Dynamic member store
+
+
+
+
+Bindings and the architecture
+
+
+
+
+Binding helpers
+
+
+
+
+
+
+1. Dynami..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 99:Ergonomic State Management: Part 2</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Dynamicmemberlookup">Dynamic member lookup</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Dynamicmemberstore">Dynamic member store</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Bindingsandthearchitecture">Bindings and the architecture</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Bindinghelpers">Binding helpers</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 99:Ergonomic State Management: Part 2 -->
+<h2 id="1-a-namedynamicmemberlookupadynamic-member-lookup">1. <a name='Dynamicmemberlookup'></a>Dynamic member lookup</h2>
+<p>如果我们看一下<strong>CounterView</strong>，我们会看到7行都重复.<strong>value</strong>以获取它们所关心的数据:</p>
+<pre><code class="language-swift">.disabled(self.viewStore.value.isDecrementButtonDisabled)
+…
+Text(&quot;\(self.viewStore.value.count)&quot;)
+…
+.disabled(self.viewStore.value.isIncrementButtonDisabled)
+…
+Button(self.viewStore.value.nthPrimeButtonTitle) {
+…
+.disabled(self.viewStore.value.isNthPrimeButtonDisabled)
+…
+isPresented: .constant(self.viewStore.value.isPrimeModalShown),
+…
+item: .constant(self.viewStore.value.alertNthPrime)
+</code></pre>
+<p>这种重复的噪音并不是世界上最糟糕的事情，但我认为我们有机会利用Swift的特性来简化一些事情，那就是“<strong>dynamic member lookup</strong>”。动态成员查找允许您增强类型，使其能够接受不直接存在于该类型上的属性的点语法调用。</p>
+<p>让我们跳到<strong>playground</strong>上去看看它是如何运作的。</p>
+<p>假设我们有一个简单的<strong>User</strong>结构体。</p>
+<pre><code class="language-swift">struct User {
+  var id: Int
+  var name: String
+  var bio: String
+}
+
+let user = User(id: 1, name: &quot;Blob&quot;, bio: &quot;Blobbed around the world&quot;)
+</code></pre>
+<p>如果我们想添加一些管理功能，我们可以用一个额外的字段来增强<strong>User</strong>类型:</p>
+<pre><code class="language-swift">struct User {
+  var id: Int
+  var name: String
+  var bio: String
+  var isAdmin: Bool
+}
+
+let blob = User(id: 1, name: &quot;Blob&quot;, bio: &quot;Blobbed around the world&quot;, isAdmin: true)
+
+let blobJr = User(id: 2, name: &quot;Blob Jr&quot;, bio: &quot;Blobbed around the world&quot;, isAdmin: false)
+</code></pre>
+<p>并且我们可以使用这个字段来防止任何仅用于<strong>admin-only</strong>功能。</p>
+<pre><code class="language-swift">func doAdminStuff(user: User) {
+  guard user.isAdmin else { return }
+  print(&quot;\(user.name) is an admin&quot;)
+}
+
+doAdminStuff(user: blob)
+// prints &quot;Blob is an admin&quot;
+
+doAdminStuff(user: blobJr)
+// prints nothing
+</code></pre>
+<p>也许更好的方法是，将管理员完全区分为自己的类型，并包装更多的基本用户数据:</p>
+<pre><code class="language-swift">struct User {
+  var id: Int
+  var name: String
+  var bio: String
+//  var isAdmin: Bool
+}
+
+struct Admin {
+  var user: User
+}
+</code></pre>
+<p>然后我们可以要求函数采用<strong>Admin</strong>值而不是<strong>User</strong>值。</p>
+<pre><code class="language-swift">func doAdminStuff(user: Admin) {
+//  guard user.isAdmin else { return }
+  print(&quot;\(user.user.name) is an admin&quot;)
+}
+</code></pre>
+<p>现在我们可以在编译时保护仅管理员的功能! 例如，我们可以引入一个只接受管理员的函数。</p>
+<pre><code class="language-swift">doAdminStuff(user: blob)
+doAdminStuff(user: blobJr)
+</code></pre>
+<blockquote>
+<p>🛑 Cannot convert value of type ‘User’ to expected argument type ‘Admin’</p>
+</blockquote>
+<p>现在，为了执行该功能，我们必须手头有一个<strong>Admin</strong>值。</p>
+<pre><code class="language-swift">let blob = Admin(user: User(id: 1, name: &quot;Blob&quot;, bio: &quot;Blobbed around the world&quot;, isAdmin: true))
+…
+doAdminStuff(user: blob)
+// prints &quot;Blob is an admin&quot;
+
+//doAdminStuff(user: blobJr)
+</code></pre>
+<p>这种类型安全确实是件好事。</p>
+<p>不幸的是，像<strong>Admin</strong>这样的包装类型的缺点是它们可能带有许多样板。为了访问管理员的用户字段，我们必须遍历其用户字段。</p>
+<pre><code class="language-swift">print(&quot;\(admin.user.name) is an admin&quot;)
+</code></pre>
+<p>在包装类型上直接访问这些属性会很好:</p>
+<pre><code class="language-swift">print(&quot;\(admin.name) is an admin&quot;)
+</code></pre>
+<blockquote>
+<p>🛑 Value of type ‘Admin’ has no member ‘name’</p>
+</blockquote>
+<p>好吧，动态成员查找允许我们这样做!</p>
+<p>为了用这个功能增强<strong>Admin</strong>类型，我们可以用@<strong>dynamicMemberLookup</strong>属性来注释它。</p>
+<pre><code class="language-swift">@dynamicMemberLookup
+struct Admin {
+</code></pre>
+<blockquote>
+<p>🛑 @dynamicMemberLookup attribute requires ‘Admin’ to have a ‘subscript(dynamicMember:)’ method that accepts either ‘ExpressibleByStringLiteral’ or a key path</p>
+</blockquote>
+<p>它有一个要求:一个采用关键路径的下标</p>
+<pre><code class="language-swift">subscript(dynamicMember keyPath: KeyPath&lt;???, ???&gt;) -&gt; ???
+</code></pre>
+<p>实现此下标将关键路径根的所有属性直接显示在包装器类型上。因此，为了在<strong>Admin</strong>上直接显示所有<strong>User</strong>类型的字段，关键路径的根应该是<strong>User</strong>，值应该是某个泛型类型A。</p>
+<pre><code class="language-swift">subscript&lt;A&gt;(dynamicMember keyPath: KeyPath&lt;User, A&gt;) -&gt; A
+</code></pre>
+<p>在正文中，我们可以把键路径传递给用户的键路径下标。</p>
+<pre><code class="language-swift">subscript&lt;A&gt;(dynamicMember keyPath: KeyPath&lt;User, A&gt;) -&gt; A
+  self.user[keyPath: keyPath]
+}
+</code></pre>
+<p>在这几行代码中，有很多事情要做，但它说的是，当这个下标被一个关键路径调用时，它可以把它转发给一个底层值，在这种情况下，就是<strong>user</strong>。现在，我们的<strong>doAdminStuff</strong>函数正在编译并再次运行，但是我们应该注意，访问管理员用户上的任何底层值都可以正常工作。</p>
+<pre><code class="language-swift">blob.id   // 1
+blob.name // &quot;Blob&quot;
+</code></pre>
+<p>这真的很酷!我们能够平铺一堆嵌套调用并消除噪声。 <strong>Admin</strong>类型现在的行为与<strong>User</strong>几乎完全相同，但它是自己的、可区分的类型。这几乎就好像我们已经获得了类继承的好处，但没有引用类型的所有包袱。</p>
+<hr>
+<h2 id="2-a-namedynamicmemberstoreadynamic-member-store">2. <a name='Dynamicmemberstore'></a>Dynamic member store</h2>
+<p>那么，动态成员查找如何改进我们架构的人体工程学呢? <strong>ViewStore</strong>类型也是一个包装器! 它持有表示应用程序状态的<strong>value</strong>字段。</p>
+<pre><code class="language-swift">public final class ViewStore&lt;Value, Action&gt;: ObservableObject {
+  // …
+  @Published public private(set) var value: Value
+</code></pre>
+<pre><code class="language-swift">@dynamicMemberLookup
+public final class ViewStore&lt;Value, Action&gt;: ObservableObject {
+</code></pre>
+<blockquote>
+<p>🛑 @dynamicMemberLookup attribute requires ‘Store’ to have a ‘subscript(dynamicMember:)’ method that accepts either ‘ExpressibleByStringLiteral’ or a keypath</p>
+</blockquote>
+<p>然后我们可以实现下标:</p>
+<pre><code class="language-swift">public subscript&lt;LocalValue&gt;(dynamicMember keyPath: KeyPath&lt;Value, LocalValue&gt;) -&gt; LocalValue {
+  return self.value[keyPath: keyPath]
+}
+</code></pre>
+<p>这个实现看起来很像我们在<strong>Admin</strong>上实现的那个，我们只是将键路径传递给包装值的下标。</p>
+<p>在我们的视图中，我们现在应该能够通过我们所操作的<strong>value</strong>删除所有嵌套调用。</p>
+<p><strong>counter</strong>视图有很多我们可以修改的地方。</p>
+<pre><code class="language-swift">public struct CounterView: View {
+  …
+  public var body: some View {
+    print(&quot;CounterView.body&quot;)
+    return VStack {
+      HStack {
+        Button(&quot;-&quot;) { self.viewStore.send(.decrTapped) }
+          .disabled(self.viewStore.isDecrementButtonDisabled)
+        Text(&quot;\(self.viewStore.count)&quot;)
+        Button(&quot;+&quot;) { self.viewStore.send(.incrTapped) }
+          .disabled(self.viewStore.isIncrementButtonDisabled)
+      }
+      Button(&quot;Is this prime?&quot;) { self.viewStore.send(.isPrimeButtonTapped) }
+      Button(self.viewStore.nthPrimeButtonTitle) {
+        self.viewStore.send(.nthPrimeButtonTapped)
+      }
+      .disabled(self.viewStore.isNthPrimeButtonDisabled)
+    }
+    .font(.title)
+    .navigationBarTitle(&quot;Counter demo&quot;)
+    .sheet(
+      isPresented: .constant(self.viewStore.isPrimeModalShown),
+      onDismiss: { self.viewStore.send(.primeModalDismissed) }
+    ) {
+      IsPrimeModalView(
+        store: self.store.scope(
+          value: { ($0.count, $0.favoritePrimes) },
+          action: { .primeModal($0) }
+        )
+      )
+    }
+    .alert(
+      item: .constant(self.viewStore.alertNthPrime)
+    ) { alert in
+      Alert(
+        title: Text(alert.title),
+        dismissButton: .default(Text(&quot;Ok&quot;)) {
+          self.viewStore.send(.alertDismissButtonTapped)
+        }
+      )
+    }
+    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+    .background(Color.white)
+    .onTapGesture(count: 2) {
+      self.viewStore.send(.doubleTap)
+    }
+  }
+}
+</code></pre>
+<p>但是，我们可以使用<strong>find-replace</strong>来更新所有内容，而不是手动将这些更改应用到每个视图。</p>
+<p>现在这些都是小的，但很好的改变，它将与代码库的大小相乘。它读起来也很好，就像我们直接向<strong>store</strong>询问它包含的某些状态。它基本上不需要工作。因此，在处理包装器类型时，要记住这是一个方便的技巧。</p>
+<hr>
+<h2 id="3-a-namebindingsandthearchitectureabindings-and-the-architecture">3. <a name='Bindingsandthearchitecture'></a>Bindings and the architecture</h2>
+<p>所以动态成员查找帮助我们的视图减少了噪音，但摆脱了所有的<strong>viewStore.value</strong>重复，这很好。在我们的视图中还有一个更麻烦的东西我想我们可以清理一下，让我们的视图更简单，那就是绑定。</p>
+<p><strong>SwiftUI</strong>中经常使用绑定作为两个组件之间的双向通信形式。 它们真的很强大，可以让你非常迅速地完成任务，但它们也带来了一些复杂性成本。让我们看一下到目前为止在应用程序中使用的几个绑定。</p>
+<p>目前，我们的应用程序中有5个绑定。其中一个在最喜欢的质数屏幕上，两个在计数器屏幕上，还有两个在我们的macOS应用程序的计数器屏幕上。在最喜爱的启动屏幕上的绑定用来驱动显示和隐藏<strong>alert</strong>:</p>
+<pre><code class="language-swift">.alert(item: .constant(self.viewStore.alertNthPrime)) { primeAlert in
+  Alert(
+    title: Text(primeAlert.title),
+    dismissButton: Alert.Button.default(Text(&quot;Ok&quot;), action: {
+      self.viewStore.send(.alertDismissButtonTapped)
+}))
+</code></pre>
+<p>这里我们使用一个常量绑定，当<strong>alertNthPrime</strong>变为<strong>非nil</strong>时显示警报，当它变为<strong>nil</strong>时隐藏警报。我们需要使用一个常量绑定，因为不允许<strong>alert</strong>直接更改<strong>alertNthPrime</strong>。在可组合架构中，对状态进行更改的唯一方法是发送一个操作。事实上，<strong>view store</strong>上的<strong>alertNthPrime</strong>值甚至是不可写的，所以我们真的别无选择。</p>
+<p>但是，在一天结束的时候，我们确实需要把状态更新为nil，比如当他们点击警报上的&quot;确定&quot;按钮时。这就是为什么当我们将dimiss按钮添加到警告时我们会点击它的动作闭包以便我们可以发送<strong>alertDismissButtonTapped</strong>动作。这使我们的状态与SwiftUI保持同步。</p>
+<p>在<strong>counter</strong>视图中，我们有一些类似的东西，我们还有另一个绑定，用来驱动<strong>alert</strong>:</p>
+<pre><code class="language-swift">.alert(
+  item: .constant(self.viewStore.alertNthPrime)
+) { alert in
+  Alert(
+    title: Text(alert.title),
+    dismissButton: .default(Text(&quot;Ok&quot;)) {
+      self.viewStore.send(.alertDismissButtonTapped)
+    }
+  )
+}
+</code></pre>
+<p>在这个绑定之上，我们显示了一个基于某些状态的模态:</p>
+<pre><code class="language-swift">.sheet(
+  isPresented: .constant(self.viewStore.isPrimeModalShown),
+  onDismiss: { self.viewStore.send(.primeModalDismissed) }
+) {
+</code></pre>
+<p>这使得一旦<strong>isPrimeModalShown</strong>变为true模态就会显示，然后一旦<strong>isPrimeModalShown</strong>变为false就被隐藏。更进一步，当模态被<strong>dismissed</strong>时，这个闭包被调用，而不是尝试直接改变我们的状态，我们只是发送一个动作到<strong>view store</strong>，以便我们的简化程序可以处理它。</p>
+<p>最后，在macOS视图中，我们也有类似的东西，除了这里的弹出窗口是由绑定提供的，还有一个警告:</p>
+<pre><code class="language-swift">.popover(
+  isPresented: Binding(
+    get: { self.viewStore.isPrimePopoverShown },
+    set: { _ in self.viewStore.send(.primePopoverDismissed) }
+  )
+) {
+
+.alert(
+  item: .constant(self.viewStore.alertNthPrime)
+) { alert in
+</code></pre>
+<p>在这些例子中，有很多不同的方法。有时我们使用.<strong>constant</strong>绑定，然后进入一个外部事件来发送一个解散动作，有时我们通过实现从视图存储区返回状态的getter来从头构建绑定，而setter则向视图存储区发送一个动作。</p>
+<p>老实说，其中一些方法并不完全正确😬。例如，当我们使用.<strong>constant</strong>绑定时，我们基本上忽略了对绑定所做的任何写入操作。但有时写入这个绑定实际上是合法的。</p>
+<p>例如，现在我们通过点击解散按钮来发送一个动作来处理“nth prime'”警报的解散:</p>
+<pre><code class="language-swift">.alert(
+  item: .constant(self.viewStore.alertNthPrime)
+) { alert in
+  Alert(
+    title: Text(alert.title),
+    dismissButton: .default(Text(&quot;Ok&quot;)) {
+      self.viewStore.send(.alertDismissButtonTapped)
+    }
+  )
+}
+</code></pre>
+<p>这允许我们的<strong>reducer</strong>清除与警报相关的状态，这使得警报在UI中消失。</p>
+<p>然而，我们可能会忘记介入这一<strong>dismissal</strong>行动。几个月后，当我们不太熟悉可组合架构的所有内部工作原理时，我们可能会想这样做:</p>
+<pre><code class="language-swift">.alert(
+  item: .constant(self.viewStore.alertNthPrime)
+) { alert in
+  Alert(
+    title: Text(alert.title),
+    dismissButton: .default(Text(&quot;Ok&quot;))
+  )
+}
+</code></pre>
+<p>或者更糟糕的是，如果你不提供任何警告按钮，你就会得到一个免费的“Ok”拒绝:</p>
+<pre><code class="language-swift">.alert(
+  item: .constant(self.viewStore.alertNthPrime)
+) { alert in
+  Alert(title: Text(alert.title))
+}
+</code></pre>
+<p>如果我们像这样实现警报，我们就会完全错过导致警报消失的操作，这意味着我们永远不会清理状态。要了解为什么这是有问题的，让我们运行应用程序，钻到计数器屏幕，触发警报，回到根屏幕，然后钻回计数器屏幕。如果我们在这个屏幕上做任何动作，我们会突然得到一个<strong>alert</strong>。这是因为在我们的应用程序的状态中<strong>alertNthPrime</strong>仍然有一个非nil值，这意味着它将继续重新触发，我们永远不能完全关闭它。</p>
+<p>因此，这就是绑定和可组合架构的问题所在。一方面，绑定非常有用，SwiftUI经常使用它们来控制UI组件。但是，从另一方面来说，它们并不完全适合可组合架构所采用的单向数据流技术，因此围绕这一技术进行工作将导致我们以一种可能不安全的方式使用绑定。</p>
+<hr>
+<h2 id="4-a-namebindinghelpersabinding-helpers">4. <a name='Bindinghelpers'></a>Binding helpers</h2>
+<p>解决方案是创建帮助程序，使我们能够从可组合架构中的类型派生出真实的绑定。尽管我们不希望外部环境直接改变应用程序的状态，但我们仍然可以编写绑定，使其看起来像是我们直接设置状态，而实际上它是在幕后发送操作。</p>
+<p>为了获得这个助手在调用站点的灵感，让我们看看我们在macOS应用程序中用于弹出窗口的绑定:</p>
+<pre><code class="language-swift">.popover(
+  isPresented: Binding(
+    get: { self.viewStore.isPrimePopoverShown },
+    set: { _ in self.viewStore.send(.primePopoverDismissed) }
+  )
+</code></pre>
+<p>这实际上是我们在应用程序中使用的最正确的绑定，因为它正确地处理了绑定的<strong>getter和setter</strong>。我们没有办法让我们的 <strong>view store</strong>的状态与SwiftUI不同步，因为我们确保在绑定改变的时候发送一个动作到<strong>store</strong>。</p>
+<p>在这个小片段中仍然有一些样板代码和重复代码。在get和set中，我们都访问<strong>viewStore</strong>，令人困惑的是，在set中，我们根本没有设置任何东西，我们只是发送一个操作。<br>
+如果我们可以从<strong>viewStore</strong>中派生绑定，只要我们给它一种获取和发送的方式，而不是获取和设置。它可能看起来像这样:</p>
+<pre><code class="language-swift">.popover(
+  isPresented: self.viewStore.binding(
+    get: { $0.isPrimePopoverShown },
+    send: { _ in .primePopoverDismissed }
+  )
+</code></pre>
+<p>这很清楚，当绑定需要获取它的值时，它会通过<strong>viewStore</strong>的状态，当绑定需要发送一个值时，它会发送这个动作。</p>
+<p>更好的是，现在Swift 5.2发布了，我们甚至可以为<strong>getter</strong>设置一个关键路径:</p>
+<pre><code class="language-swift">.popover(
+  isPresented: self.viewStore.binding(
+    get: \.isPrimePopoverShown,
+    send: { _ in .primePopoverDismissed }
+  )
+</code></pre>
+<p>更好的是，如果我们不需要访问被设置的值，我们可以提供我们想要在绑定直接设置时发送的动作:</p>
+<pre><code class="language-swift">.popover(
+  isPresented: self.viewStore.binding(
+    get: \.isPrimePopoverShown,
+    send: .primePopoverDismissed
+  )
+</code></pre>
+<p>现在这是超级简洁的，它保护我们在绑定更改时不小心忘记发送操作的边缘情况。</p>
+<p>让我们试着实现这个。我们知道我们希望这个helper方法在<strong>ViewStore</strong>上，因为它是能够读取状态和发送操作的对象:</p>
+<pre><code class="language-swift">extension ViewStore {
+  public func binding(
+  ) {
+  }
+}
+</code></pre>
+<p>我们需要为将用于此绑定的局部值引入一个泛型。例如，警报的本地状态为<strong>alertNthPrime</strong>，而弹出窗口绑定的本地状态为<strong>Bool</strong>:</p>
+<pre><code class="language-swift">extension ViewStore {
+  public func binding&lt;LocalValue&gt;(
+  ) {
+  }
+}
+</code></pre>
+<p>这个方法需要提供两个参数，一个用于描述如何从<strong>view store</strong>的值中获取局部值，另一个用于描述设置绑定时发送什么动作:</p>
+<pre><code class="language-swift">extension ViewStore {
+  public func binding&lt;LocalValue&gt;(
+    get: (Value) -&gt; LocalValue,
+    send action: Action
+  ) {
+  }
+}
+</code></pre>
+<p>我们想从这个方法返回一个绑定:</p>
+<pre><code class="language-swift">extension ViewStore {
+  public func binding&lt;LocalValue&gt;(
+    get: (Value) -&gt; LocalValue,
+    send action: Action
+  ) -&gt; Binding&lt;LocalValue&gt; {
+  }
+}
+</code></pre>
+<p>最后我们可以实现这个方法:</p>
+<pre><code class="language-swift">extension ViewStore {
+  public func binding&lt;LocalValue&gt;(
+    get: @escaping (Value) -&gt; LocalValue,
+    send action: Action
+  ) -&gt; Binding&lt;LocalValue&gt; {
+    Binding(
+      get: { get(self.value) },
+      set: { _ in self.send(action) }
+    )
+  }
+}
+</code></pre>
+<p>这样，macOS应用程序中的伪代码现在就可以编译了，我们有了绑定助手!</p>
+<p>尽管这个助手在我们不需要正在设置的值的时候工作得很好，但有些时候我们确实需要这个值。因此，我们可以创建另一个重载，允许我们基于所设置的值指定一个操作:</p>
+<pre><code class="language-swift">public func binding&lt;LocalValue&gt;(
+  get: @escaping (Value) -&gt; LocalValue,
+  send toAction: @escaping (LocalValue) -&gt; Action
+) -&gt; Binding&lt;LocalValue&gt; {
+  Binding(
+    get: { get(self.value) },
+    set: { self.send(toAction($0)) }
+  )
+}
+</code></pre>
+<p>因此，让我们使用新的绑定助手来转换所有现有的临时绑定，并使所有内容看起来都一样。<br>
+在最喜欢的质数屏幕上，我们可以将常量绑定转换为由<strong>store</strong>驱动的东西。</p>
+<pre><code class="language-swift">.alert(
+//  item: .constant(self.viewStore.alertNthPrime)
+  item: self.viewStore.binding(
+    get: \.alertNthPrime,
+    send: .alertDismissButtonTapped
+  )
+) { primeAlert in
+  Alert(title: Text(primeAlert.title), dismissButton: Alert.Button.default(Text(&quot;Ok&quot;), action: {
+    self.viewStore.send(.alertDismissButtonTapped)
+  }))
+}
+</code></pre>
+<p>使用这个帮助器更好，因为我们现在可以通过将其返回到<strong>store</strong>来响应发送到这个绑定的任何内容，尽管它看起来要冗长得多。不过，如果你还记得，我们现在可以消去一堆其他代码，包括<strong>dismiss</strong>按钮动作，以及<strong>dismiss</strong>按钮本身。</p>
+<pre><code class="language-swift">.alert(
+  item: self.viewStore.binding(
+    get: \.alertNthPrime,
+    send: .alertDismissButtonTapped
+  )
+) { primeAlert in
+  Alert(title: Text(primeAlert.title))
+}
+</code></pre>
+<p>在iOS的计数器屏幕中，我们可以改变我们的警报绑定:</p>
+<pre><code class="language-swift">.alert(
+  item: self.viewStore.binding(
+    get: \.alertNthPrime,
+    send: .alertDismissButtonTapped
+  )
+) { alert in
+</code></pre>
+<p>这修复了我们之前看到的错误，即警报状态没有被取消设置，导致在视图重新出现时重新显示警报。</p>
+<p>这个屏幕中的另一个绑定也可以更新为新样式。</p>
+<pre><code class="language-swift">.sheet(
+  isPresented: self.viewStore.binding(
+    get: \.isPrimeModalShown,
+    send: Action.primeModalDismissed
+  )
+) {
+</code></pre>
+<p>这些助手可以用于更多的情况下，不只是显示提醒，弹出窗口和模式。有许多SwiftUI组件是由绑定驱动的，例如文本字段、开关、选择器、滑动器、步进器、标签栏，甚至导航链接。通过使用这个绑定助手，所有这些组件都可以与可组合体系结构正确集成。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-98ergonomic-state-management-part-1/">
+                  <h3 class="post-title">
+                    PointFree Episode 98:Ergonomic State Management: Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

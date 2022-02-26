@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Observers in Swift - Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="通常在构建应用程序时，我们会发现自己处于需要在对象之间建立一对多关系的情况下。 当多个对象希望对同一状态的更改作出反应时，或者当需要将某个事件广播到系统的不同部分时，可以使用这种方法。
+在这种情况下，想要为特定的对象添加某种方式是很常见的。..." />
+    <meta name="keywords" content="observers,design pattern" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Observers in Swift - Part 1</h2>
+            <div class="post-date">2018-04-15</div>
+            
+            <div class="post-content" v-pre>
+              <p>通常在构建应用程序时，我们会发现自己处于需要在对象之间建立一对多关系的情况下。 当多个对象希望对同一状态的更改作出反应时，或者当需要将某个事件广播到系统的不同部分时，可以使用这种方法。</p>
+<p>在这种情况下，想要为特定的对象添加某种方式是很常见的。与大多数编程技术一样，Swift中有多种方法可以向对象添加这样的观察功能 -它们都有不同的优势和权衡。这周我们会先看两个技巧，然后下周我们会继续看其他一些技巧。</p>
+<p>就让我们一探究竟吧!😀</p>
+<h2 id="the-use-case">The use case</h2>
+<p>了能够在我们将要尝试的各种观察技术之间进行直接比较，我们将对所有这些技术使用相同的用例。我们将使用的例子是一个AudioPlayer类，它让其他对象观察它的PlaybackState。当玩家开始播放、暂停或结束回放时，我们希望通知观察者状态的变化。 这将允许多个对象将他们的逻辑绑定到同一个player - 例如列表显示可玩的项目，一个playerUI和一些类似“mini-player”显示在屏幕底部。</p>
+<p>下面是我们的AudioPlayer的样子:</p>
+<pre><code class="language-swift">class AudioPlayer {
+    private var state = State.idle {
+        // We add a property observer on 'state', which lets us
+        // run a function on each value change.
+        didSet { stateDidChange() }
+    }
+
+    func play(_ item: Item) {
+        state = .playing(item)
+        startPlayback(with: item)
+    }
+
+    func pause() {
+        switch state {
+        case .idle, .paused:
+            // Calling pause when we're not in a playing state
+            // could be considered a programming error, but since
+            // it doesn't do any harm, we simply break here.
+            break
+        case .playing(let item):
+            state = .paused(item)
+            pausePlayback()
+        }
+    }
+
+    func stop() {
+        state = .idle
+        stopPlayback()
+    }
+}
+</code></pre>
+<p>上面你可以看到我们使用了“建模Swift状态”的技术来使用枚举来建模AudioPlayer的内部状态。这使我们能够摆脱选项和多种真相来源-相反地，给了我们清晰明确的player状态。这是我们的状态enum的样子:</p>
+<pre><code class="language-swift">private extension AudioPlayer {
+    enum State {
+        case idle
+        case playing(Item)
+        case paused(Item)
+    }
+}
+</code></pre>
+<p>在上面你可以看到，每次播放器的状态改变时我们调用stateDidChange()方法。我们的主要任务是根据将要尝试的不同技术，用不同的实现填充该方法。</p>
+<h2 id="notificationcenter">NotificationCenter</h2>
+<p>我们要看的第一个技术是使用内置的NotificationCenter API在播放状态改变时广播通知。像许多其他系统级苹果api一样，NotificationCenter是基于单例的，但因为我们想要让我们的AudioPlayer类能够被测试(也要清楚它依赖于NotificationCenter)，我们将在AudioPlayer的初始化器中注入一个通知中心实例，像这样:</p>
+<pre><code class="language-swift">class AudioPlayer {
+    private let notificationCenter: NotificationCenter
+
+    init(notificationCenter: NotificationCenter = .default) {
+        self.notificationCenter = notificationCenter
+    }
+}
+</code></pre>
+<p>NotificationCenter使用命名通知来确定观察或触发的事件。 为了避免使用内联字符串作为API的一部分，我们将在NotificationCenter.name上添加一个扩展。我们的通知names有一个单一的真相来源。 我们会添加一个用于回放开始时，一个用于暂停时，一个用于停止时:</p>
+<pre><code class="language-swift">extension Notification.Name {
+    static var playbackStarted: Notification.Name {
+        return .init(rawValue: &quot;AudioPlayer.playbackStarted&quot;)
+    }
+
+    static var playbackPaused: Notification.Name {
+        return .init(rawValue: &quot;AudioPlayer.playbackPaused&quot;)
+    }
+
+    static var playbackStopped: Notification.Name {
+        return .init(rawValue: &quot;AudioPlayer.playbackStopped&quot;)
+    }
+}
+</code></pre>
+<p>上面的扩展也将使我们的API的用户可以很容易地用点语法引用我们的通知名称;比如.playbackstarted，这总是很好。</p>
+<p>与上述扩展到位，我们现在可以开始张贴通知。我们将填写之前的stateDidChange()方法，并检查当前状态，以查看应该发布哪种类型的通知。对于播放和暂停状态，我们也将传递当前正在播放的项目作为通知的对象:</p>
+<pre><code class="language-swift">class NowPlayingViewController: UIViewController {
+    deinit {
+        // If your app supports iOS 8 or earlier, you need to manually
+        // remove the observer from the center. In later versions
+        // this is done automatically.
+        notificationCenter.removeObserver(self)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        notificationCenter.addObserver(self,
+            selector: #selector(playbackDidStart),
+            name: .playbackStarted,
+            object: nil
+        )
+    }
+
+    @objc private func playbackDidStart(_ notification: Notification) {
+        guard let item = notification.object as? AudioPlayer.Item else {
+            let object = notification.object as Any
+            assertionFailure(&quot;Invalid object: \(object)&quot;)
+            return
+        }
+
+        titleLabel.text = item.title
+        durationLabel.text = &quot;\(item.duration)&quot;
+    }
+}
+</code></pre>
+<p>使用基于notificationcenter的通知的主要优点是它们非常容易实现-不论是在被观察对象的内部，以及任何想开始观察它的人。这也是一个大多数Swift开发者都很熟悉的API，因为苹果自己使用它来传递多种类型的系统通知，比如键盘事件。</p>
+<p>然而，这种方法也有一些显著的缺点。首先，由于NotificationCenter是一个Objective-C API，它不能使用像泛型这样的Swift特性来保持类型安全。虽然这是总是可以在顶部实现的东西(通过创建一些形式的包装器)，使用它的默认方式要求我们做类型转换，就像我们在上面的playbackDidStart的前几行所做的。这使得我们的代码非常脆弱，因为我们不能利用编译器来确保观察者和被观察对象对广播的值使用相同的类型。</p>
+<p>说到广播，使用NotificationCenter的另一个缺点是，通知在应用程序范围内广播，没有太多的限制。虽然这很方便(你可以在任何地方观察任何对象)，但它使参与观察的对象之间的关系更加松散，这使得在应用程序的各个部分之间保持清晰的分离变得更加困难——尤其是随着代码库的增长。</p>
+<h2 id="observation-protocols">Observation protocols</h2>
+<p>接下来，让我们看看如何使用协议来创建更严格和定义良好的观察api。当使用这种技术时，我们要求所有对观察我们的AudioPlayer感兴趣的对象都遵守AudioPlayerObserver协议。就像我们为每个回放状态定义了三个独立的通知一样，我们将定义三个方法来观察每个事件，如下所示:</p>
+<pre><code class="language-swift">protocol AudioPlayerObserver: class {
+    func audioPlayer(_ player: AudioPlayer,
+                     didStartPlaying item: AudioPlayer.Item)
+
+    func audioPlayer(_ player: AudioPlayer, 
+                     didPausePlaybackOf item: AudioPlayer.Item)
+
+    func audioPlayerDidStop(_ player: AudioPlayer)
+}
+</code></pre>
+<p>为了让只选择一个事件来观察成为可能，我们还将使用协议扩展为每个事件添加默认(空)实现:</p>
+<pre><code class="language-swift">extension AudioPlayerObserver {
+    func audioPlayer(_ player: AudioPlayer,
+                     didStartPlaying item: AudioPlayer.Item) {}
+
+    func audioPlayer(_ player: AudioPlayer, 
+                     didPausePlaybackOf item: AudioPlayer.Item) {}
+
+    func audioPlayerDidStop(_ player: AudioPlayer) {}
+}
+</code></pre>
+<h2 id="weak-storage">Weak storage</h2>
+<p>在设计观察api时，只保留对所有观察者的弱引用通常是一个好做法。否则，当被观察对象的所有者也是观察者本身时，很容易引入保留周期。然而，以一种良好的方式在Swift集合中弱存储对象并不总是直接的，因为默认情况下所有集合都是强保留其成员的。</p>
+<p>为了解决这个问题以满足我们的观察需要，我们将引入一个小的包装器类型，它简单地跟踪一个带有弱引用的观察者:</p>
+<pre><code class="language-swift">private extension AudioPlayer {
+    struct Observation {
+        weak var observer: AudioPlayerObserver?
+    }
+}
+</code></pre>
+<p>使用上面的类型，我们现在可以向我们的AudioPlayer添加一个观察集合。在这种情况下，我们将选择一个带有ObjectIdentifier键的字典来获取固定时间的插入和移除观察者:</p>
+<pre><code class="language-swift">class AudioPlayer {
+    private var observations = [ObjectIdentifier : Observation]()
+}
+</code></pre>
+<p>ObjectIdentifier是一个内置的值类型，作为一个类的给定实例的唯一标识符。要了解更多信息，请查看“Swift中识别物体”。</p>
+<p>我们现在可以通过遍历所有观察并调用对应于当前状态的协议方法来实现stateDidChange()。值得注意的是，当我们在迭代时，我们还将利用这个机会清理任何未使用的观察(如果对应的对象已被释放)。</p>
+<pre><code class="language-swift">private extension AudioPlayer {
+    func stateDidChange() {
+        for (id, observation) in observations {
+            // If the observer is no longer in memory, we
+            // can clean up the observation for its ID
+            guard let observer = observation.observer else {
+                observations.removeValue(forKey: id)
+                continue
+            }
+
+            switch state {
+            case .idle:
+                observer.audioPlayerDidStop(self)
+            case .playing(let item):
+                observer.audioPlayer(self, didStartPlaying: item)
+            case .paused(let item):
+                observer.audioPlayer(self, didPausePlaybackOf: item)
+            }
+        }
+    }
+}
+</code></pre>
+<h2 id="observing">Observing</h2>
+<p>最后，我们需要一种方法让符合AudioPlayerObserver的对象将自己注册为观察者。我们还需要一种简单的方法让对象注销自己，以防它们不再对更新感兴趣。 为了实现这两点，我们将在AudioPlayer上添加一个扩展，它增加了两个新方法:</p>
+<pre><code class="language-swift">extension AudioPlayer {
+    func addObserver(_ observer: AudioPlayerObserver) {
+        let id = ObjectIdentifier(observer)
+        observations[id] = Observation(observer: observer)
+    }
+
+    func removeObserver(_ observer: AudioPlayerObserver) {
+        let id = ObjectIdentifier(observer)
+        observations.removeValue(forKey: id)
+    }
+}
+</code></pre>
+<p>就是这样!🎉我们现在可以更新NowPlayingViewController来使用我们闪亮的新观察协议，而不是使用NotificationCenter:</p>
+<pre><code class="language-swift">class NowPlayingViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        player.addObserver(self)
+    }
+}
+
+extension NowPlayingViewController: AudioPlayerObserver {
+    func audioPlayer(_ player: AudioPlayer,
+                     didStartPlaying item: AudioPlayer.Item) {
+        titleLabel.text = item.title
+        durationLabel.text = &quot;\(item.duration)&quot;
+    }
+}
+</code></pre>
+<p>正如您在上面看到的，使用显式观察协议而不是依赖NotificationCenter的主要优点是我们获得了完全的编译时类型安全。因为我们的协议使用了AudiPlayer.item。在我们的观察方法中，我们不再需要做任何类型转换——从而产生了更多清晰和可靠的代码。</p>
+<p>添加一个显式的观察API还可以提高可观察对象类工作方式的透明性。 很明显，在我们的例子中，你应该遵循AudioPlayerObserver来观察播放器，而不是考虑应该使用NotificationCenter。</p>
+<p>然而，这种方法的一个缺点是，它在AudioPlayer内部需要比使用NotificationCenter更多的代码。它还需要引入额外的协议和类型，如果代码库非常依赖观察，这可能是一个缺点。</p>
+<p><a href="https://www.swiftbysundell.com/articles/observers-in-swift-part-1/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/3kIoTw_PC/" class="tag">
+                    observers
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4g5XtbTAR/" class="tag">
+                    design pattern
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-the-builder-pattern-in-swift/">
+                  <h3 class="post-title">
+                    Using the builder pattern in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

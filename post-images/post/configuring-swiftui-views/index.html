@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Configuring SwiftUI views | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="与苹果之前的UI框架相比，SwiftUI的一个主要不同之处在于它的视图创建和配置方式。事实上，在使用SwiftUI的时候，我们实际上从来没有创建过任何视图——相反，我们只是简单地描述我们想要的UI的样子，然后由系统来处理实际的渲染。
+本周，..." />
+    <meta name="keywords" content="code structure,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Configuring SwiftUI views</h2>
+            <div class="post-date">2020-02-16</div>
+            
+            <div class="post-content" v-pre>
+              <p>与苹果之前的UI框架相比，SwiftUI的一个主要不同之处在于它的视图创建和配置方式。事实上，在使用SwiftUI的时候，我们实际上从来没有创建过任何视图——相反，我们只是简单地描述我们想要的UI的样子，然后由系统来处理实际的渲染。</p>
+<p>本周，让我们来看看构建这些视图描述的几种不同技术，以及每种方法在代码结构和灵活性方面给我们带来的优缺点。</p>
+<h2 id="initializers-modifiers-and-inheritance">Initializers, modifiers and inheritance</h2>
+<p>总的来说，有三种不同的方式来配置SwiftUI视图——通过向其初始化器传递参数，使用修饰符，以及通过其周围的环境。例如，这里我们正在配置一个Text view，它作为TitleView的主体——使用它的初始化器，并通过应用修饰符来改变它的字体和文本颜色:</p>
+<pre><code class="language-swift">struct TitleView: View {
+    var title: String
+
+    var body: some View {
+        Text(title)
+            .font(.headline)
+            .italic()
+            .foregroundColor(.blue)
+    }
+}
+</code></pre>
+<p>note：在使用命令式框架(如UIKit或AppKit)时，SwiftUI的声明式编程风格与UI的构造方式的很大一部分是通过上面的方式将修饰符链接在一起，而不是改变单个值。</p>
+<p>上面是一个直接配置的例子，因为我们通过直接调用方法来显式地设置和修改我们的文本视图。然而，SwiftUI也支持间接配置，因为许多不同的修饰符和属性会自动通过每个给定的视图层次结构向下传播。</p>
+<p>当我们希望多个兄弟视图采用同一种配置或样式时，这种间接的、继承的配置非常有用 一 就像下面的例子，我们配置了一个文本和一个列表来显示它们所有的文本，使用的是等宽字体，只需要将字体赋值给它们的父VStack:</p>
+<pre><code class="language-swift">struct ListView: View {
+    var title: String
+    var items: [Item]
+    @Binding var selectedItem: Item?
+
+    var body: some View {
+        VStack {
+            Text(title).bold()
+            List(items, selection: $selectedItem) { item in
+                Text(item.title)
+            }
+        }.font(.system(.body, design: .monospaced))
+    }
+}
+</code></pre>
+<p>事实上，整个SwiftUI视图的层次结构都可以通过它们的父视图来配置，这一点非常强大，因为它允许我们应用共享的样式和配置，而不必单独修改每个视图。</p>
+<p>这不仅常常会减少代码，而且还为我们的共享配置建立了一个单一的真相来源 — 比如字体、颜色等等——不需要我们引入任何抽象来实现这些。</p>
+<p>让我们来看另一个例子，在这个例子中，我们只需将整个导航堆栈的accentColor分配给我们的根导航视图即可 —  颜色会被应用到所有的子视图，包括那些由系统管理的视图，比如我们定义的导航栏项</p>
+<pre><code class="language-swift">struct ContactListView: View {
+    @ObservedObject var contacts: ContactList
+
+    var body: some View {
+        NavigationView {
+            List(contacts) { contact in
+                ...
+            }
+            .navigationBarItems(
+                trailing: Button(
+                    action: { ... },
+                    label: {
+                        // This image will be colored purple
+                        Image(systemName: &quot;person.badge.plus&quot;)
+                    }
+                )
+            )
+        }.accentColor(.purple)
+    }
+}
+</code></pre>
+<p>然而，有时我们可能希望将一组样式应用到一组视图，而不必改变它们与父视图的关系。例如，假设我们正在构建一个用于在应用程序中显示地址的视图，它由一系列堆叠的文本视图组成:</p>
+<pre><code class="language-swift">struct AddressView: View {
+    var address: Address
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(address.recipient)
+                .font(.headline)
+                .padding(3)
+                .background(Color.secondary)
+            Text(address.street)
+                .font(.headline)
+                .padding(3)
+                .background(Color.secondary)
+            HStack {
+                Text(address.postCode)
+                Text(address.city)
+            }
+            Text(address.country)
+        }
+    }
+}
+</code></pre>
+<p>上面我们为前两个标签分配了完全相同的样式，所以让我们看看是否可以统一代码以避免重复它。在这种情况下，我们不能将修饰符应用到标签的父视图，因为我们只想将给定的样式应用到它的子视图的子集。</p>
+<p>值得庆幸的是，SwiftUI还提供了一个Group类型，它允许我们将一组视图作为一个组来对待——而不会影响它们在整体视图层次结构中的布局、绘图或位置。使用该类型，我们可以将两个标签组合在一起，然后同时对它们应用我们的一组修饰符:</p>
+<pre><code class="language-swift">struct AddressView: View {
+    var address: Address
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Group {
+                Text(address.recipient)
+                Text(address.street)
+            }
+            .font(.headline)
+            .padding(3)
+            .background(Color.secondary)
+            ...
+        }
+    }
+}
+</code></pre>
+<p>Group的力量在于它直接将修饰符应用于它的子对象，而不是它自己。相比之下，如果我们使用另一个VStack来分组我们的标签，这将导致填充和背景颜色被应用到那个堆栈，而不是单独应用到我们的标签。</p>
+<h2 id="views-versus-extensions">Views versus extensions</h2>
+<p>随着基于swift的视图越来越复杂，我们可能需要开始使用多种方式来分组和共享我们的各种配置和样式，以保持代码易于使用。到目前为止，我们主要是通过修改器处理样式，但是UI配置的一个主要部分也归结到我们如何构造视图本身。</p>
+<p>假设我们正在处理一个表单让用户在一个应用程序中注册一个账户。为了让我们的表单看起来更漂亮，我们在每个文本字段前面加上了苹果的SF Symbols库中的图标——实现如下所示:</p>
+<pre><code class="language-swift">struct SignUpForm: View {
+    ...
+    @State private var username = &quot;&quot;
+    @State private var email = &quot;&quot;
+
+    var body: some View {
+        Form {
+            Text(&quot;Sign up&quot;).font(.headline)
+            HStack {
+                Image(systemName: &quot;person.circle.fill&quot;)
+                TextField(&quot;Username&quot;, text: $username)
+            }
+            HStack {
+                Image(systemName: &quot;envelope.circle.fill&quot;)
+                TextField(&quot;Email&quot;, text: $email)
+            }
+            Button(
+                action: { ... },
+                label: { Text(&quot;Continue&quot;) }
+            )
+        }
+    }
+}
+</code></pre>
+<p>上面我们使用了相同的HStack + Image + TextField组合两次，虽然这并不一定是一个问题，因为我们配置我们的两个文本字段非常不同。— 假设我们还想把这个组合变成一个独立的组件，这样我们就可以在整个应用程序的其他地方重用它。</p>
+<p>关于如何做到这一点，最初的想法可能是创建一个新的视图类型，它接受一个iconName和title来显示，还有一个@Binding对text属性的引用，当组件的文本字段被编辑时，我们希望更新这个属性——像这样:</p>
+<pre><code class="language-swift">struct IconPrefixedTextField: View {
+    var iconName: String
+    var title: String
+    @Binding var text: String
+
+    var body: some View {
+        HStack {
+            Image(systemName: iconName)
+            TextField(title, text: $text)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的步骤，我们现在可以回到SignUpForm，用新的IconPrefixedTextField组件的实例来替换之前重复的HStack配置:</p>
+<pre><code class="language-swift">struct SignUpForm: View {
+    ...
+
+    var body: some View {
+        Form {
+            ...
+            IconPrefixedTextField(
+                iconName: &quot;person.circle.fill&quot;,
+                title: &quot;Username&quot;,
+                text: $username
+            )
+            IconPrefixedTextField(
+                iconName: &quot;envelope.circle.fill&quot;,
+                title: &quot;Email&quot;,
+                text: $email
+            )
+            ...
+        }
+    }
+}
+</code></pre>
+<p>然而，尽管上面的改变将使我们能够在SignUpForm之外重用新的IconPrefixedTextField类型，但它是否最终改善了我们的原始代码还是值得怀疑的。 毕竟，我们并没有使注册表单的实现变得更简单——事实上，上面的调用站点看起来比它之前做的要复杂得多。</p>
+<p>相反，让我们从SwiftUI自己的API设计中汲取一些灵感，看看如果我们将文本视图配置代码实现为视图扩展会是什么样子。这样，任何视图都可以用一个图标作为前缀，只需调用以下方法:</p>
+<pre><code class="language-swift">extension View {
+    func prefixedWithIcon(named name: String) -&gt; some View {
+        HStack {
+            Image(systemName: name)
+            self
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以将任何SF Symbols图标直接添加到SwiftUI的原生文本框视图中——或者其他视图中——就像这样：</p>
+<pre><code class="language-swift">struct SignUpForm: View {
+    ...
+
+    var body: some View {
+        Form {
+            ...
+            TextField(&quot;Username&quot;, text: $username)
+                .prefixedWithIcon(named: &quot;person.circle.fill&quot;)
+            TextField(&quot;Email&quot;, text: $email)
+                .prefixedWithIcon(named: &quot;envelope.circle.fill&quot;)
+            ...
+        }
+    }
+}
+</code></pre>
+<p>在构建一个新的视图实现和一个扩展之间做出选择有时是相当困难的，而且在这里并没有明确的正确或错误的处理方式。然而，当我们发现自己创建的只是将属性传递给其他视图的新视图类型时，可能有必要问问自己，这段代码作为扩展是否会更好地工作。</p>
+<h2 id="modifier-types">Modifier types</h2>
+<p>除了编写视图扩展之外，SwiftUI还允许我们定义自定义的视图修饰符，作为符合ViewModifier协议的类型。这样做使我们能够编写具有自己的属性、状态和生命周期的修饰符——这些修饰符可以用来扩展SwiftUI并提供各种新功能。</p>
+<p>例如，假设我们想要在之前的注册表单中添加内联验证， 一旦用户输入了有效的字符串，就将每个文本字段的边框变成绿色。虽然这是我们可以直接在SignUpForm视图中实现的，但让我们把这个特性构建成一个完全可重用的ViewModifier:</p>
+<pre><code class="language-swift">struct Validation&lt;Value&gt;: ViewModifier {
+    var value: Value
+    var validator: (Value) -&gt; Bool
+
+    func body(content: Content) -&gt; some View {
+        // Here we use Group to perform type erasure, to give our
+        // method a single return type, as applying the 'border'
+        // modifier causes a different type to be returned:
+        Group {
+            if validator(value) {
+                content.border(Color.green)
+            } else {
+                content
+            }
+        }
+    }
+}
+</code></pre>
+<p>看看上面的实现，我们可以看到ViewModifier看起来非常像一个视图，因为它有一个返回某个视图的主体。 区别在于修饰符对现有视图(作为内容传入)进行操作，而不是完全独立。 这样做的好处是，我们现在可以将新的验证功能添加到任何文本字段(或者任何视图，真的)，就像使用视图扩展时一样，而不需要构建任何形式的包装器类型:</p>
+<pre><code class="language-swift">TextField(&quot;Username&quot;, text: $username)
+    .modifier(Validation(value: username) { name in
+        name.count &gt; 4
+    })
+    .prefixedWithIcon(named: &quot;person.circle.fill&quot;)
+</code></pre>
+<p>就像在扩展和全新的视图实现之间进行选择一样，在很多情况下，选择何时将给定的视图配置作为ViewModifier来实现很可能是一个偏好和风格的问题。</p>
+<p>然而，ViewModifier和视图类型都有一个优点，那就是它们可以包含自己的一组状态和属性，而扩展则更加轻量级。在接下来的文章中，我们将更深入地研究基于swift的状态和数据管理。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>就像它的前辈一样，SwiftUI为我们提供了许多构建UI代码和配置各种视图的方法。虽然我们的许多自定义组件可能会作为独立的视图类型来实现，但是构建我们自己的扩展和修改器可以使我们以一种更轻量级的方式跨代码库共享样式和配置 — 可以让我们把这些构型应用到不止一种类型的视图。</p>
+<p><a href="https://www.swiftbysundell.com/articles/configuring-swiftui-views/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/optionals/">
+                  <h3 class="post-title">
+                    Optionals
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Automatic Reference Counting from Swift language guide | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+* 1. [How ARC Works](#HowARCWorks)
+* 2. [ARC in Action](#ARCinAction)
+* 3. [Strong Reference Cycles Between Class Insta..." />
+    <meta name="keywords" content="reference-counting,ARC" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Automatic Reference Counting from Swift language guide</h2>
+            <div class="post-date">2021-05-09</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<pre><code>* 1. [How ARC Works](#HowARCWorks)
+* 2. [ARC in Action](#ARCinAction)
+* 3. [Strong Reference Cycles Between Class Instances](#StrongReferenceCyclesBetweenClassInstances)
+</code></pre>
+<ul>
+<li>
+<ol>
+<li><a href="#ResolvingStrongReferenceCyclesBetweenClassInstances">Resolving Strong Reference Cycles Between Class Instances</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#WeakReferences">Weak References</a></li>
+<li>1.2. <a href="#UnownedReferences"> Unowned References</a></li>
+<li>1.3. <a href="#UnownedOptionalReferences">Unowned Optional References</a></li>
+<li>1.4. <a href="#UnownedReferencesandImplicitlyUnwrappedOptionalProperties">Unowned References and Implicitly Unwrapped Optional Properties</a></li>
+</ul>
+</li>
+<li>
+<ol start="2">
+<li><a href="#StrongReferenceCyclesforClosures">Strong Reference Cycles for Closures</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#ResolvingStrongReferenceCyclesforClosures">Resolving Strong Reference Cycles for Closures</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#DefiningaCaptureList">Defining a Capture List</a></li>
+<li>3.2. <a href="#WeakandUnownedReferences">Weak and Unowned References</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="automatic-reference-counting-from-swift-language-guide">Automatic Reference Counting from Swift language guide</h1>
+<p>Swift使用自动引用计数(ARC)来跟踪和管理应用程序的内存使用情况。在大多数情况下，这意味着内存管理在Swift中“just works”，您不需要自己考虑内存管理。当不再需要类实例时，ARC会自动释放类实例使用的内存。</p>
+<p>然而，在一些情况下，ARC需要更多关于代码各部分之间关系的信息，以便为您管理内存。本章描述了这些情况，并展示了如何让ARC管理应用程序的所有内存。在Swift中使用ARC与<strong>过渡到ARC发布说明</strong>中描述的方法非常相似，用于将ARC与Objective-C一起使用。</p>
+<p>引用计数只应用于类的实例。结构和枚举是值类型，而不是引用类型，不通过引用存储和传递。</p>
+<h3 id="1-a-namehowarcworksahow-arc-works">1. <a name='HowARCWorks'></a>How ARC Works</h3>
+<p>每次创建一个类的新实例时，ARC都会分配一块内存来存储关于该实例的信息。该内存保存有关实例类型的信息，以及与该实例关联的任何存储属性的值。</p>
+<p>此外，当不再需要一个实例时，ARC会释放该实例所使用的内存，以便该内存可以用于其他目的。这确保类实例不再需要时不会占用内存空间。</p>
+<p>然而，如果ARC释放了一个仍在使用中的实例，它将不再可能访问该实例的属性，或调用该实例的方法。实际上，如果您试图访问该实例，您的应用程序很可能会崩溃。</p>
+<p>为了确保实例在仍然需要时不会消失，ARC会跟踪每个类实例当前引用了多少属性、常量和变量。只要至少有一个对该实例的有效引用存在，ARC就不会释放该实例。</p>
+<p>为了实现这一点，每当您将类实例赋给属性、常量或变量时，该属性、常量或变量都会对该实例进行强引用。该引用被称为“强”引用，因为它牢牢地持有该实例，并且只要该强引用还存在，就不允许释放该实例。</p>
+<h3 id="2-a-namearcinactionaarc-in-action">2. <a name='ARCinAction'></a>ARC in Action</h3>
+<p>下面是一个自动引用计数工作的例子。这个例子从一个简单的类<strong>Person</strong>开始，它定义了一个名为name的存储常量属性:</p>
+<pre><code class="language-swift">class Person {
+    let name: String
+    init(name: String) {
+        self.name = name
+        print(&quot;\(name) is being initialized&quot;)
+    }
+    deinit {
+        print(&quot;\(name) is being deinitialized&quot;)
+    }
+}
+</code></pre>
+<p><strong>Person</strong>类有一个初始化器，该初始化器设置实例的name属性，并打印消息来指示正在进行初始化。<strong>Person</strong>类还有一个析构器，用于在类的实例销毁时打印消息。</p>
+<p>下一个代码片段定义了三个类型为<strong>Person?</strong>，用于在后续代码片段中设置对新Person实例的多个引用。因为这些变量是可选类型<strong>Person?</strong>，它们会自动用nil值初始化，并且当前不会引用Person实例。</p>
+<pre><code class="language-swift">var reference1: Person?
+var reference2: Person?
+var reference3: Person?
+</code></pre>
+<p>您现在可以创建一个新的Person实例，并将其分配给以下三个变量之一:</p>
+<pre><code class="language-swift">reference1 = Person(name: &quot;John Appleseed&quot;)
+// Prints &quot;John Appleseed is being initialized&quot;
+</code></pre>
+<p>请注意，“<em>John Appleseed is being initialized</em>”的消息是在调用Person类的初始化式时打印出来的。这确认了初始化已经发生。</p>
+<p>因为新的Person实例已经分配给了reference1变量，所以现在有一个从reference1到新的Person实例的强引用。因为至少有一个强引用，ARC会确保这个Person被保存在内存中，而不会被释放。</p>
+<p>如果将同一个Person实例赋值给另外两个变量，则会建立对该实例的两个强引用:</p>
+<pre><code class="language-swift">reference2 = reference1
+reference3 = reference1
+</code></pre>
+<p>现在有<strong>三个</strong>对这个Person实例的强引用。</p>
+<p>如果你通过给两个变量赋值nil来破坏其中的两个强引用(包括原始引用)，则会保留一个强引用，而Person实例不会被释放:</p>
+<pre><code class="language-swift">reference1 = nil
+reference2 = nil
+</code></pre>
+<p>直到第三个也是最后一个强引用被破坏，ARC才会释放Person实例，此时你就不再使用Person实例了:</p>
+<pre><code class="language-swift">reference3 = nil
+// Prints &quot;John Appleseed is being deinitialized&quot;
+</code></pre>
+<h3 id="3-a-namestrongreferencecyclesbetweenclassinstancesastrong-reference-cycles-between-class-instances">3. <a name='StrongReferenceCyclesBetweenClassInstances'></a>Strong Reference Cycles Between Class Instances</h3>
+<p>在上面的例子中，ARC能够跟踪您创建的新的Person实例的引用数量，并在不再需要Person实例时释放该Person实例。</p>
+<p>然而，也有可能在编写的代码中，类的实例永远不会达到没有强引用的地步。如果两个类实例彼此持有强引用，这样每个实例都使另一个实例保持alive，就会发生这种情况。这被称为循环强引用。</p>
+<p>解析强引用循环时，可以将类之间的一些关系定义为弱或无主引用，而不是强引用。这个过程在类实例之间的强引用循环解析中描述。但是，在您学习如何解决强参考循环之前，了解这种循环是如何引起的是很有用的。</p>
+<p>这里有一个强参考循环是如何意外产生的例子。这个例子定义了两个类Person和Apartment，它们建模一个公寓和它的居民:</p>
+<pre><code class="language-swift">class Person {
+    let name: String
+    init(name: String) { self.name = name }
+    var apartment: Apartment?
+    deinit { print(&quot;\(name) is being deinitialized&quot;) }
+}
+
+class Apartment {
+    let unit: String
+    init(unit: String) { self.unit = unit }
+    var tenant: Person?
+    deinit { print(&quot;Apartment \(unit) is being deinitialized&quot;) }
+}
+</code></pre>
+<p>每个Person实例都有一个String类型的name属性和一个初始为nil的可选公寓属性。公寓属性是可选的，因为一个人不一定总有一间公寓。</p>
+<p>类似地，每个公寓实例都有一个String类型的unit属性和一个初始为nil的可选租户属性。租户属性是可选的，因为公寓不一定总是有租户。</p>
+<p>这两个类还定义了一个析构器，它打印出该类的一个实例正在被释放的事实。这使您能够查看Person和Apartment的实例是否如预期的那样被释放。</p>
+<p>下一个代码片段定义了两个可选类型的变量john和unit4A，它们将被设置为下面的一个特定的Apartment和Person实例。由于是可选的，这两个变量的初始值都是nil:</p>
+<pre><code class="language-swift">var john: Person?
+var unit4A: Apartment?
+</code></pre>
+<p>现在你可以创建一个特定的Person实例和Apartment实例，并将这些新实例分配给john和unit4A变量:</p>
+<pre><code class="language-swift">john = Person(name: &quot;John Appleseed&quot;)
+unit4A = Apartment(unit: &quot;4A&quot;)
+</code></pre>
+<p>以下是创建和分配这两个实例后的强引用。john变量现在有了一个新的Person实例的强引用，unit4A变量有了一个新的Apartment实例的强引用:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqbzgkagn9j30iu05t0t9.jpg" alt="avatar" loading="lazy"></figure>
+<p>您现在可以将两个实例连接在一起，这样这个人就拥有一个公寓，而这个公寓又拥有一个租户。请注意，感叹号(!)用于解包和访问存储在john和unit4A可选变量内的实例，以便可以设置这些实例的属性:</p>
+<pre><code class="language-swift">john!.apartment = unit4A
+unit4A!.tenant = john
+</code></pre>
+<p>以下是强引用在你将两个实例连接在一起之后的样子:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqbzgket9jj30ij05wgmb.jpg" alt="avatar" loading="lazy"></figure>
+<p>不幸的是，链接这两个实例会在它们之间创建一个强引用循环。Person实例现在有了对Apartment实例的强引用，而Apartment实例也有了对Person实例的强引用。因此，当你打破john和unit4A变量持有的强引用时，引用计数不会降为零，并且实例不会被ARC释放:</p>
+<pre><code class="language-swift">john = nil
+unit4A = nil
+</code></pre>
+<p>注意，当您将这两个变量设置为nil时，没有一个析构器被调用。强引用循环防止Person和Apartment实例被释放，从而导致应用程序中的内存泄漏。</p>
+<p>以下是你将john和unit4A变量设为nil后的强引用:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqbzgkjisjj30ik060wf4.jpg" alt="avatar" loading="lazy"></figure>
+<p>Person实例和Apartment实例之间的强引用保持不变，不能被破坏。</p>
+<h2 id="1-a-nameresolvingstrongreferencecyclesbetweenclassinstancesaresolving-strong-reference-cycles-between-class-instances">1. <a name='ResolvingStrongReferenceCyclesBetweenClassInstances'></a>Resolving Strong Reference Cycles Between Class Instances</h2>
+<p>当您处理类类型的属性时，Swift提供了两种解析强引用循环的方法:weak references and unowned references。</p>
+<p>弱引用和无主引用允许引用循环中的一个实例引用另一个实例，而不保持强控制。然后实例可以相互引用，而无需创建强引用循环。</p>
+<p>当另一个实例的生存期较短时，即可以先释放另一个实例时，使用弱引用。在上面的公寓示例中，公寓在其生命周期的某个时刻没有租户是合适的，因此在这种情况下，弱引用是打破引用循环的合适方式。相反，当另一个实例具有相同的生存期或更长的生存期时，使用无主引用。</p>
+<h3 id="11-a-nameweakreferencesaweak-references">1.1. <a name='WeakReferences'></a>Weak References</h3>
+<p>弱引用是指没有对它所引用的实例保持强持有的引用，因此不会阻止ARC处理被引用的实例。此行为防止引用成为强引用循环的一部分。通过在属性或变量声明之前放置var关键字来指示弱引用。</p>
+<p>因为弱引用不会对它所引用的实例保持强持有，所以当弱引用仍然引用该实例时，该实例可能被释放。因此，当ARC引用的实例被释放时，它会自动将弱引用设置为nil。而且，因为弱引用需要允许在运行时将其值更改为nil，所以它们总是被声明为可选类型的变量，而不是常量。</p>
+<p>您可以检查弱引用中是否存在某个值，就像任何其他可选值一样，并且您永远不会得到一个对不再存在的无效实例的引用。</p>
+<blockquote>
+<p>注意：当ARC将弱引用设置为nil时，属性观察者不会被调用。</p>
+</blockquote>
+<p>下面的示例与上面的Person and Apartment示例相同，但有一个重要的区别。这一次，Apartment类型的tenant属性被声明为弱引用:</p>
+<pre><code class="language-swift">class Person {
+    let name: String
+    init(name: String) { self.name = name }
+    var apartment: Apartment?
+    deinit { print(&quot;\(name) is being deinitialized&quot;) }
+}
+
+class Apartment {
+    let unit: String
+    init(unit: String) { self.unit = unit }
+    weak var tenant: Person?
+    deinit { print(&quot;Apartment \(unit) is being deinitialized&quot;) }
+}
+</code></pre>
+<p>来自两个变量(john和unit4A)的强引用和两个实例之间的链接像以前一样创建:</p>
+<pre><code class="language-swift">var john: Person?
+var unit4A: Apartment?
+
+john = Person(name: &quot;John Appleseed&quot;)
+unit4A = Apartment(unit: &quot;4A&quot;)
+
+john!.apartment = unit4A
+unit4A!.tenant = john
+</code></pre>
+<p>下面是引用的样子，现在你已经把两个实例连接在一起了:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqbzufyxvkj30hs05ywf6.jpg" alt="avatar" loading="lazy"></figure>
+<p>Person实例仍然具有对公寓实例的强引用，但公寓实例现在具有对Person实例的弱引用。这意味着当你把john变量的强引用设为nil时，就不再有对Person实例的强引用了:</p>
+<pre><code class="language-swift">john = nil
+// Prints &quot;John Appleseed is being deinitialized&quot;
+</code></pre>
+<p>因为不再有对Person实例的强引用，它被释放，租户属性被设置为nil:</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqc00tsvt2j30ig05wdgc.jpg" alt="avatar" loading="lazy"></figure>
+<p>对公寓实例剩下的唯一强引用来自unit4A变量。如果你打破了这个强引用，就不再有对公寓实例的强引用了:</p>
+<pre><code class="language-swift">unit4A = nil
+// Prints &quot;Apartment 4A is being deinitialized&quot;
+</code></pre>
+<p>因为不再有对公寓实例的强引用，它也被释放了:</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqc03lv6pyj30i305pgm0.jpg" alt="avatar" loading="lazy"></figure>
+<blockquote>
+<p>注意：在使用垃圾收集的系统中，弱指针有时用于实现简单的缓存机制，因为没有强引用的对象只有在内存压力触发垃圾收集时才被释放。然而，在ARC中，值在最后一个强引用被删除后就会被释放，这使得弱引用不适合这样做。</p>
+</blockquote>
+<h3 id="12-a-nameunownedreferencesa-unowned-references">1.2. <a name='UnownedReferences'></a> Unowned References</h3>
+<p>与弱引用一样，无主引用不会对它所引用的实例保持强持有。但是，与弱引用不同的是，当另一个实例具有相同的生存期或更长的生存期时，使用无主引用。通过在属性或变量声明之前放置无主关键字来指示无主引用。</p>
+<p>与弱引用不同，无主引用预期总是有一个值。因此，将一个值标记为无主并不意味着它是可选的，并且ARC从不将一个无主引用的值设置为nil。</p>
+<blockquote>
+<p>只有当您确定该引用总是引用一个尚未释放的实例时，才使用无主引用。<br>
+如果您试图在取消分配实例后访问一个无主引用的值，则会得到一个运行时错误。</p>
+</blockquote>
+<p>下面的示例定义了两个类，Customer和CreditCard，它们为银行客户和该客户的可能的信用卡建模。这两个类都存储另一个类的实例作为属性。这种关系有可能创造一个强大的参考循环。</p>
+<p>Customer和CreditCard之间的关系与上面弱参考示例中看到的Apartment和Person之间的关系略有不同。在这个数据模型中，客户可能有也可能没有信用卡，但是信用卡总是与客户相关联的。CreditCard实例的寿命永远不会超过它所引用的客户。为了表示这一点，Customer类有一个<strong>可选的</strong>card属性，但是CreditCard类有一个无主(<strong>且非可选</strong>)的Customer属性。</p>
+<p>此外，只能通过将数字值和客户实例传递给自定义CreditCard初始化器来创建新的CreditCard实例。这确保了在创建CreditCard实例时，CreditCard实例总是有一个与之关联的客户实例。</p>
+<p>因为信用卡总是有一个客户，你将其客户属性定义为一个无主引用，以避免强引用循环:</p>
+<pre><code class="language-swift">class Customer {
+    let name: String
+    var card: CreditCard?
+    init(name: String) {
+        self.name = name
+    }
+    deinit { print(&quot;\(name) is being deinitialized&quot;) }
+}
+
+class CreditCard {
+    let number: UInt64
+    unowned let customer: Customer
+    init(number: UInt64, customer: Customer) {
+        self.number = number
+        self.customer = customer
+    }
+    deinit { print(&quot;Card #\(number) is being deinitialized&quot;) }
+}
+</code></pre>
+<blockquote>
+<p>CreditCard类的number属性定义为UInt64类型，不定义Int类型，以保证在32位和64位系统上都能存储16位卡号。</p>
+</blockquote>
+<p>下一个代码片段定义了一个名为john的可选Customer变量，该变量将用于存储对特定客户的引用。这个变量的初始值为nil，因为它是可选的:</p>
+<pre><code class="language-swift">var john: Customer?
+</code></pre>
+<p>您现在可以创建一个Customer实例，并使用它初始化一个新的CreditCard实例，并将其分配为该客户的card属性:</p>
+<pre><code class="language-swift">john = Customer(name: &quot;John Appleseed&quot;)
+john!.card = CreditCard(number: 1234_5678_9012_3456, customer: john!)
+</code></pre>
+<p>下面是引用的样子，现在你已经链接了两个实例:</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqc0bflsyvj30ia05v3z6.jpg" alt="avatar" loading="lazy"></figure>
+<p>Customer实例现在有一个对CreditCard实例的强引用，CreditCard实例有一个对Customer实例的无主引用。</p>
+<p>由于无主客户引用，当你打破john变量持有的强引用时，就不再有对customer实例的强引用了:</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqc0bfggoqj30i905vjs0.jpg" alt="avatar" loading="lazy"></figure>
+<p>因为不再有对Customer实例的强引用，所以它被释放了。在此之后，不再有对CreditCard实例的强引用，它也被释放:</p>
+<pre><code class="language-swift">john = nil
+// Prints &quot;John Appleseed is being deinitialized&quot;
+// Prints &quot;Card #1234567890123456 is being deinitialized&quot;
+</code></pre>
+<p>上面最后的代码片段显示了Customer实例和CreditCard实例的去初始化器都在john变量设置为nil之后打印它们的“析构化”消息。</p>
+<blockquote>
+<p>上面的例子展示了如何使用safe unowned references。Swift还为需要禁用运行时安全检查的情况提供unsafe unowned references——例如，出于性能原因。与所有不安全操作一样，您需要负责检查代码的安全性。 通过写unowned(unsafe)来指示unsafe unowned reference。如果您试图访问一个unsafe unowned reference，在它所引用的实例被释放后，您的程序将尝试访问该实例曾经所在的内存位置，这是一个不安全的操作。</p>
+</blockquote>
+<h3 id="13-a-nameunownedoptionalreferencesaunowned-optional-references">1.3. <a name='UnownedOptionalReferences'></a>Unowned Optional References</h3>
+<p>可以将对类的可选引用标记为无主。根据ARC的所有权模型，一个无主的可选引用和一个弱引用都可以在相同的上下文中使用。不同之处在于，当你使用一个无主可选引用时，你有责任确保它总是指向一个有效的对象或被设置为nil。</p>
+<p>下面是一个记录学校特定部门提供的课程的例子:</p>
+<pre><code class="language-swift">class Department {
+    var name: String
+    var courses: [Course]
+    init(name: String) {
+        self.name = name
+        self.courses = []
+    }
+}
+
+class Course {
+    var name: String
+    unowned var department: Department
+    unowned var nextCourse: Course?
+    init(name: String, in department: Department) {
+        self.name = name
+        self.department = department
+        self.nextCourse = nil
+    }
+}
+</code></pre>
+<p>本系对本系提供的每门课程都有很强的参考价值。在ARC所有权模型中，一个部门拥有它的课程。这门课有两个无主参考文献，一个是关于系里的，一个是关于学生应该上的下一门课的;一个课程不拥有这两个对象。每门课程都是某个系的一部分，所以系属性不是可选的。但是，因为有些课程没有推荐的后续课程，所以nextCourse属性是可选的。</p>
+<p>下面是使用这些类的一个例子:</p>
+<pre><code class="language-swift">let department = Department(name: &quot;Horticulture&quot;)
+
+let intro = Course(name: &quot;Survey of Plants&quot;, in: department)
+let intermediate = Course(name: &quot;Growing Common Herbs&quot;, in: department)
+let advanced = Course(name: &quot;Caring for Tropical Plants&quot;, in: department)
+
+intro.nextCourse = intermediate
+intermediate.nextCourse = advanced
+department.courses = [intro, intermediate, advanced]
+</code></pre>
+<p>上面的代码创建了一个部门及其三个课程。入门和中级课程都在其nextCourse属性中存储了一个建议的下一门课程，该属性维护了学生在完成该课程后应该学习的无主可选引用。</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqci3v0ao5j30ib0cidhh.jpg" alt="avatar" loading="lazy"></figure>
+<p>一个无主可选引用不会对它封装的类的实例保持强控制，因此它不会阻止ARC释放该实例。它的行为与在ARC中无主引用的行为相同，除了无主可选引用可以为nil。</p>
+<p>与非可选的无主引用一样，您有责任确保nextCourse始终引用尚未释放的课程。在这种情况下，例如，当您从系中删除一个课程时。您还需要删除其他课程可能有的任何对它的引用。</p>
+<blockquote>
+<p>可选值的基础类型是optional，它是Swift标准库中的枚举。然而，值类型不能被标记为无主的规则的一个例外是可选值。封装类的可选对象不使用引用计数，因此不需要维护对可选对象的强引用。</p>
+</blockquote>
+<h3 id="14-a-nameunownedreferencesandimplicitlyunwrappedoptionalpropertiesaunowned-references-and-implicitly-unwrapped-optional-properties">1.4. <a name='UnownedReferencesandImplicitlyUnwrappedOptionalProperties'></a>Unowned References and Implicitly Unwrapped Optional Properties</h3>
+<p>上面的弱引用和无主引用的例子涵盖了两种更常见的情况，在这两种情况下需要打破强引用循环。</p>
+<p>Person和Apartment示例显示了一种情况，<strong>1.(住户和公寓) 其中允许为nil的两个属性有可能导致强引用循环。这种情况最好使用weak reference 来解决</strong>。</p>
+<p>Customer和CreditCard示例显示了一种情况，<strong>2. (用户和信用卡) 其中一个允许为nil的属性和另一个不允许为nil的属性有可能导致强引用循环。这种情况最好使用unowned reference来解决</strong>。</p>
+<p>然而，还有第三种情况，在这种情况下，<strong>3. （国家和城市）两个属性都应该始终有一个值，而且一旦初始化完成，两个属性都不应该为nil。在这种情况下，将一个类上的unowned属性与另一个类上的隐式解包装的可选属性结合起来是很有用的</strong>。</p>
+<p>这样就可以在初始化完成后直接访问这两个属性(无需可选解包)，同时仍然避免了引用循环。本节将向您展示如何建立这样的关系。</p>
+<p>下面的示例定义了两个类，Country和City，每个类都将另一个类的实例存储为属性。在这个数据模型中，每个国家必须始终有一个首都城市，每个城市必须始终属于一个国家。为了表示这一点，Country类有一个capitalCity属性，而City类有一个Country属性:</p>
+<pre><code class="language-swift">class Country {
+    let name: String
+    var capitalCity: City!
+    init(name: String, capitalName: String) {
+        self.name = name
+        self.capitalCity = City(name: capitalName, country: self)
+    }
+}
+
+class City {
+    let name: String
+    unowned let country: Country
+    init(name: String, country: Country) {
+        self.name = name
+        self.country = country
+    }
+}
+</code></pre>
+<p>为了设置两个类之间的相互依赖关系，City的初始化式接受一个Country实例，并将该实例存储在其Country属性中。</p>
+<p>City的初始化是从Country的初始化式内部调用的。但是，在新的Country实例完全初始化之前，Country的初始化器不能将self传递给City初始化器，如两阶段初始化中所述。</p>
+<p>为了处理这个需求，您将Country的capitalCity属性声明为一个隐式展开的可选属性，通过其类型注释(City!)末尾的感叹号来指示。这意味着capitalCity属性的默认值为nil，就像任何其他可选属性一样，但可以访问它而不需要像隐式Unwrapped optional中描述的那样打开它的值。</p>
+<p><strong>因为capitalCity有一个默认的nil值，所以当Country实例在其初始化器中设置其name属性时，就会认为一个新的Country实例已完全初始化。这意味着一旦设置了name属性，Country初始化器就可以开始引用并传递隐式的self属性</strong>。因此，当Country初始化器设置自己的capitalCity属性时，Country初始化器可以将self作为City初始化器的参数之一传递。</p>
+<p>所有这些都意味着你可以在一个语句中创建Country和City实例，而不需要创建强引用循环，并且capitalCity属性可以直接访问，而不需要使用感叹号来打开它的可选值:</p>
+<pre><code class="language-swift">var country = Country(name: &quot;Canada&quot;, capitalName: &quot;Ottawa&quot;)
+print(&quot;\(country.name)'s capital city is called \(country.capitalCity.name)&quot;)
+// Prints &quot;Canada's capital city is called Ottawa&quot;
+</code></pre>
+<p>在上面的例子中，使用隐式unwrapped可选意味着所有两阶段类初始化的要求都得到了满足。一旦初始化完成，capitalCity属性就可以像非可选值一样被使用和访问，同时仍然可以避免强引用循环。</p>
+<h2 id="2-a-namestrongreferencecyclesforclosuresastrong-reference-cycles-for-closures">2. <a name='StrongReferenceCyclesforClosures'></a>Strong Reference Cycles for Closures</h2>
+<p>前面已经看到，当两个类实例属性彼此持有强引用时，如何创建强引用循环。您还了解了如何使用弱引用和无主引用来打破这些强引用循环。</p>
+<p>如果将闭包赋给类实例的属性，并且闭包的主体捕获该实例，也会发生强引用循环。之所以会发生这种捕获，是因为闭包的主体访问实例的一个属性，比如self。或者是因为闭包调用了实例上的一个方法，比如self.someMethod()。在任何一种情况下，这些访问都会导致闭包“捕获”self，从而创建一个强引用循环。</p>
+<p>之所以会出现这种强引用循环，是因为闭包和类一样，也是引用类型。当您将闭包分配给属性时，您就是在分配对该闭包的引用。<strong>本质上，这和上面的问题是一样的——两个强引用是相互维系的。但是，这次不是两个类实例，而是一个类实例和一个闭包，使彼此保持alive</strong>。</p>
+<p>Swift为这个问题提供了一个优雅的解决方案，称为闭包捕获列表(a closure capture list)。但是，在学习如何使用闭包捕获列表打破强引用循环之前，了解这种循环是如何引起的是很有帮助的。</p>
+<p>下面的示例展示了在使用引用self的闭包时如何创建强引用循环。这个例子定义了一个名为HTMLElement的类，它为HTML文档中的单个元素提供了一个简单的模型:</p>
+<pre><code class="language-swift">class HTMLElement {
+
+    let name: String
+    let text: String?
+
+    lazy var asHTML: () -&gt; String = {
+        if let text = self.text {
+            return &quot;&lt;\(self.name)&gt;\(text)&lt;/\(self.name)&gt;&quot;
+        } else {
+            return &quot;&lt;\(self.name) /&gt;&quot;
+        }
+    }
+
+    init(name: String, text: String? = nil) {
+        self.name = name
+        self.text = text
+    }
+
+    deinit {
+        print(&quot;\(name) is being deinitialized&quot;)
+    }
+
+}
+</code></pre>
+<p>HTMLElement类定义了一个name属性，它表示元素的名称，比如标题元素的“h1”，段落元素的“p”，或者换行元素的“br”。HTMLElement还定义了一个可选的文本属性，您可以将其设置为一个表示HTML元素中要呈现的文本的字符串。</p>
+<p>除了这两个简单的属性之外，HTMLElement类还定义了一个惰性属性asHTML。此属性引用一个将名称和文本组合成HTML字符串片段的闭包。asHTML属性的类型是()-&gt; String，或“一个没有参数的函数，返回一个String值”</p>
+<p>默认情况下，为asHTML属性分配一个闭包，该闭包返回HTML标记的字符串表示。如果存在，这个标记包含可选的text值，如果不存在，则不包含text内容。对于段落元素，闭包将返回&quot;<p>some text</p>&quot;或&quot;<p />&quot;，这取决于text属性是等于&quot;some text&quot;还是nil。</p>
+<p>asHTML属性的命名和使用有点像实例方法。但是，<strong>因为asHTML是一个闭包属性而不是一个实例方法，所以如果您想更改特定HTML元素的HTML呈现，可以用自定义闭包替换asHTML属性的默认值</strong>。</p>
+<p>例如，可以将asHTML属性设置为一个闭包，如果文本属性为nil，则默认为某些文本，以防止返回空的HTML标记:</p>
+<pre><code class="language-swift">let heading = HTMLElement(name: &quot;h1&quot;)
+let defaultText = &quot;some default text&quot;
+heading.asHTML = {
+    return &quot;&lt;\(heading.name)&gt;\(heading.text ?? defaultText)&lt;/\(heading.name)&gt;&quot;
+}
+print(heading.asHTML())
+// Prints &quot;&lt;h1&gt;some default text&lt;/h1&gt;&quot;
+</code></pre>
+<blockquote>
+<p>asHTML属性被声明为惰性属性，因为只有当元素实际需要作为某个HTML输出目标的字符串值呈现时才需要它。<em><strong>asHTML是一个惰性属性的事实意味着您可以在默认闭包中引用self，因为惰性属性只有在初始化完成并知道self存在之后才会被访问</strong></em>。</p>
+</blockquote>
+<p>HTMLElement类提供了一个初始化方法，它接受一个name参数和(如果需要的话)一个text参数来初始化一个新元素。该类还定义了一个析构器，当HTMLElement实例被销毁时，它打印一条消息来显示。</p>
+<p>下面是你如何使用HTMLElement类来创建和打印一个新实例:</p>
+<pre><code class="language-swift">var paragraph: HTMLElement? = HTMLElement(name: &quot;p&quot;, text: &quot;hello, world&quot;)
+print(paragraph!.asHTML())
+// Prints &quot;&lt;p&gt;hello, world&lt;/p&gt;&quot;
+</code></pre>
+<p>上面的段落变量被定义为一个可选的HTMLElement，所以下面可以将它设置为nil，以显示强引用循环的存在。</p>
+<p>不幸的是，如上所述，HTMLElement类在HTMLElement实例与其默认asHTML值所使用的闭包之间创建了一个强引用循环。这个周期看起来是这样的:</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqcizmrlpgj30i106jt9a.jpg" alt="avatar" loading="lazy"></figure>
+<p>实例的asHTML属性持有对其闭包的强引用。但是，因为闭包在其主体内引用self(作为引用self.name和self.text的一种方式)，所以闭包捕获self，这意味着它持有对HTMLElement实例的强引用。两者之间产生了一个强参考循环。(有关在闭包中捕获值的更多信息，请参见<a href="https://docs.swift.org/swift-book/LanguageGuide/Closures.html#ID103">捕获值</a>。)</p>
+<blockquote>
+<p>尽管闭包多次引用self，但它只捕获对HTMLElement实例的一个强引用。</p>
+</blockquote>
+<p>如果你将段落变量设为nil并中断其对HTMLElement实例的强引用，由于强引用循环，HTMLElement实例和它的闭包都不会被释放:</p>
+<pre><code class="language-swift">paragraph = nil
+</code></pre>
+<p>请注意，HTMLElement析构器中的消息没有被打印出来，这表明HTMLElement实例没有被释放。</p>
+<h2 id="3-a-nameresolvingstrongreferencecyclesforclosuresaresolving-strong-reference-cycles-for-closures">3. <a name='ResolvingStrongReferenceCyclesforClosures'></a>Resolving Strong Reference Cycles for Closures</h2>
+<p>通过将捕获列表定义为闭包定义的一部分，可以解决闭包和类实例之间的强引用循环。捕获列表定义了在闭包的主体中捕获一个或多个引用类型时使用的规则。与两个类实例之间的强引用循环一样，您将每个捕获的引用声明为弱或无主引用，而不是强引用。弱或无主的适当选择取决于代码不同部分之间的关系。</p>
+<blockquote>
+<p>Swift requires you to write self.someProperty or self.someMethod() (rather than just someProperty or someMethod()) whenever you refer to a member of self within a closure. This helps you remember that it’s possible to capture self by accident - (一句话，闭包中使用属性或方法必须带上self).</p>
+</blockquote>
+<h3 id="31-a-namedefiningacapturelistadefining-a-capture-list">3.1. <a name='DefiningaCaptureList'></a>Defining a Capture List</h3>
+<p>捕获列表中的每一项都是弱或无主关键字与对类实例(如self)或用某个值初始化的变量(如delegate = self.delegate)的引用的配对。这些对被写在一对方括号中，用逗号分隔。</p>
+<p>将捕获列表放在闭包的参数列表之前，如果提供了它们，则返回类型:</p>
+<pre><code class="language-swift">lazy var someClosure = {
+    [unowned self, weak delegate = self.delegate]
+    (index: Int, stringToProcess: String) -&gt; String in
+    // closure body goes here
+}
+</code></pre>
+<p>如果闭包没有指定参数列表或返回类型(因为它们可以从上下文推断出来)，则将捕获列表放在闭包的最开头，后面跟着in关键字:</p>
+<pre><code class="language-swift">lazy var someClosure = {
+    [unowned self, weak delegate = self.delegate] in
+    // closure body goes here
+}
+</code></pre>
+<h3 id="32-a-nameweakandunownedreferencesaweak-and-unowned-references">3.2. <a name='WeakandUnownedReferences'></a>Weak and Unowned References</h3>
+<p>当闭包和它捕获的实例总是相互引用时，将闭包中的捕获定义为一个无主引用，并且总是同时被释放。</p>
+<p>相反，当捕获的引用可能在将来某个时候变成nil时，将捕获定义为弱引用。弱引用始终是可选类型，并且在其引用的实例被释放时自动变成nil。这使您能够检查它们是否存在于闭包的主体中。</p>
+<blockquote>
+<p>如果捕获的引用永远不会变成nil，那么它应该始终作为一个unowned引用而不是一个weak引用被捕获。</p>
+</blockquote>
+<p>一个无主引用是一个合适的捕获方法，可以用来解析HTMLElement示例中的强引用循环，该示例来自于上面的闭包强引用循环。下面是如何编写HTMLElement类来避免循环:</p>
+<pre><code class="language-swift">class HTMLElement {
+
+    let name: String
+    let text: String?
+
+    lazy var asHTML: () -&gt; String = {
+        [unowned self] in
+        if let text = self.text {
+            return &quot;&lt;\(self.name)&gt;\(text)&lt;/\(self.name)&gt;&quot;
+        } else {
+            return &quot;&lt;\(self.name) /&gt;&quot;
+        }
+    }
+
+    init(name: String, text: String? = nil) {
+        self.name = name
+        self.text = text
+    }
+
+    deinit {
+        print(&quot;\(name) is being deinitialized&quot;)
+    }
+
+}
+</code></pre>
+<p>HTMLElement的这个实现与前面的实现相同，只是在asHTML闭包中添加了一个捕获列表。在这种情况下，捕获列表是[unowned self]，这意味着“捕获self作为无主引用，而不是强引用”。</p>
+<p>你可以像以前一样创建和打印HTMLElement实例:</p>
+<pre><code class="language-swift">var paragraph: HTMLElement? = HTMLElement(name: &quot;p&quot;, text: &quot;hello, world&quot;)
+print(paragraph!.asHTML())
+// Prints &quot;&lt;p&gt;hello, world&lt;/p&gt;&quot;
+``
+
+下面是在捕获列表到位时引用的样子:
+
+![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gqcjg0ef10j30hx06i3z4.jpg)
+
+这一次，闭包捕获的self是一个无主引用，并没有对它捕获的HTMLElement实例保持强控制。如果你把段落变量的强引用设为nil, HTMLElement实例就会被释放，如下面的例子中打印的去初始化器消息所示:
+
+```swift
+paragraph = nil
+// Prints &quot;p is being deinitialized&quot;
+</code></pre>
+<p>有关捕获列表的更多信息，请参见<a href="https://docs.swift.org/swift-book/ReferenceManual/Expressions.html#ID544">捕获列表</a>。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/MoRWSpCAg/" class="tag">
+                    reference-counting
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/kuGYjSnpLR/" class="tag">
+                    ARC
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-zhong-de-lazy-bian-liang/">
+                  <h3 class="post-title">
+                    Swift中的Lazy变量
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

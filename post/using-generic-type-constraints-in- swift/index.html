@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using generic type constraints in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="泛型可以说是使用Swift而不是Objective-C的主要好处之一。通过将泛型类型与集合之类的东西相关联，我们可以编写更可预测和更安全的代码。就像switch语句一样(上周我们已经看过了)，泛型也不是一个新概念——但是Swift强大的类型..." />
+    <meta name="keywords" content="generics" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using generic type constraints in Swift</h2>
+            <div class="post-date">2017-10-01</div>
+            
+            <div class="post-content" v-pre>
+              <p>泛型可以说是使用Swift而不是Objective-C的主要好处之一。通过将泛型类型与集合之类的东西相关联，我们可以编写更可预测和更安全的代码。就像switch语句一样(上周我们已经看过了)，泛型也不是一个新概念——但是Swift强大的类型系统将泛型提升到了一个新的层次，并启用了一些非常酷的特性。</p>
+<p>其中一个特性就是泛型类型约束。使用它们，您只能向匹配特定约束集的泛型类型的实现者添加特定的api和行为。本周，让我们来看看一些由于类型约束而成为可能的技术和模式，以及在实践中如何使用它们 - 专注于Swift 3.1和4最近引入的一些新功能。</p>
+<h2 id="the-basic-idea">The basic idea</h2>
+<p>让我们通过一个示例从基础开始。假设我们有一个数组要求和。不必使用sum(_ numbers: [Int])函数，当元素类型(即给定数组的元素类型)符合数字协议时，可以对数组定义类型约束扩展，如下所示:</p>
+<pre><code class="language-swift">extension Array where Element: Numeric {
+    func sum() -&gt; Element {
+        return reduce(0, +)
+    }
+}
+</code></pre>
+<p>上面，我们在数组上使用了reduce方法(这是一个集合操作，通过对所有元素调用函数，不断地改变初始值——在本例中是0)。因为我们已经将扩展限制为数字协议，所以我们可以访问+操作符，我们可以将其作为函数传递给reduce。很酷😎!</p>
+<p>这样构造API(作为扩展而不是顶级函数)的主要优点是，它在API和它所使用的类型之间创建了更紧密的关联。不需要搜索哪些函数可以使用，您可以在类型中找到它们。比较使用顶级函数和扩展的调用站点:</p>
+<pre><code class="language-swift">let totalPrice = sum(itemPrices)
+let totalPrice = itemPrices.sum()
+</code></pre>
+<h2 id="same-type-constraints">Same type constraints</h2>
+<p>在Swift 3.1之前，类型约束仅限于协议(如上面的例子)和子类。虽然这对于大多数用例来说已经足够强大了，但是我们现在可以使用一些创造性的方法来解决许多常见的问题，我们也可以添加相同的类型约束。</p>
+<p>例如，假设我们想计算任何包含字符串的集合中的所有单词。我们可以通过在Collection上添加一个扩展来轻松实现这一点，该扩展受到String类型元素的约束，如下所示:</p>
+<pre><code class="language-swift">extension Collection where Element == String {
+    func countWords() -&gt; Int {
+        return reduce(0) { count, string in
+            let components = string.components(separatedBy: .whitespacesAndNewlines)
+            return count + components.count
+        }
+    }
+}
+</code></pre>
+<p>能够使用相同类型约束的另一个很酷(但不太为人所知)的副作用是，我们甚至可以在约束中使用闭包类型 。例如，我们可以在Sequence上添加一个扩展，让我们可以很容易地调用其中包含的所有闭包:</p>
+<pre><code class="language-swift">extension Sequence where Element == () -&gt; Void {
+    func callAll() {
+        for closure in self {
+            closure()
+        }
+    }
+}
+</code></pre>
+<p>生成了一些非常漂亮和紧凑的代码，例如在处理观察者时:</p>
+<pre><code class="language-swift">observers.callAll()
+</code></pre>
+<h2 id="type-constraints-in-generic-protocols">Type constraints in generic protocols</h2>
+<p>类型约束真正有用的另一种情况是在使用协议定义api时。对于可测试性和关注点分离等方面，这通常是一种很好的做法，但当您需要嵌套类型来保持灵活性时，有时可能会有点棘手。</p>
+<p>假设我们想为所有负责管理应用程序中各种模型的对象定义一个共享API。为此，我们定义了一个名为ModelManager的协议，它有一个关联的模型类型，如下所示:</p>
+<pre><code class="language-swift">protocol ModelManager {
+    associatedtype Model
+}
+</code></pre>
+<p>现在，假设我们想更进一步，定义一个API来查询给定的模型管理器以获取模型集合。 我们可以通过使用具体的类型，如查询String和结果[Model]，像这样:</p>
+<pre><code class="language-swift">protocol ModelManager {
+    associatedtype Model
+
+    func models(matching query: String) -&gt; [Model]
+}
+</code></pre>
+<p>上面的方法有效，但不是很灵活，而且可以用一个让大多数Swift开发人员发抖的短语来描述:字符串类型😱。 相反，让我们使用泛型约束来利用类型系统来实现更多的灵活性，并允许在管理器上执行强类型查询。</p>
+<p>为此，我们将在协议上引入两个新的关联类型，一个用于Query类型，它可以是实现者想要用来表达查询的任何类型——例如enum。接下来，我们将添加一个集合类型，我们将对它进行类型约束，以保证返回的集合的元素类型与管理器的模型类型相匹配。最终的结果是这样的:</p>
+<pre><code class="language-swift">protocol ModelManager {
+    associatedtype Model
+    associatedtype Collection: Swift.Collection where Collection.Element == Model
+    associatedtype Query
+
+    func models(matching query: Query) -&gt; Collection
+}
+</code></pre>
+<p>现在，通过上面的方法，我们可以自由地实现模型管理器，它们都提供完全相同的API——但仍然可以使用符合它们需要的类型和集合。例如，要为用户模型实现ModelManager，我们可以选择使用Array作为我们的集合类型，并使用查询枚举，以允许我们通过姓名或年龄匹配用户:</p>
+<pre><code class="language-swift">class UserManager: ModelManager {
+    typealias Model = User
+
+    enum Query {
+        case name(String)
+        case ageRange(Range&lt;Int&gt;)
+    }
+
+    func models(matching query: Query) -&gt; [User] {
+        ...
+    }
+}
+</code></pre>
+<p>对于其他模型，使用Dictionary作为集合类型可能更合适。这是另一个根据电影类型跟踪电影的经理，并允许我们查询匹配名称或导演的电影:</p>
+<pre><code class="language-swift">class MovieManager: ModelManager {
+    typealias Model = (key: Genre, value: Movie)
+
+    enum Query {
+        case name(String)
+        case director(String)
+    }
+
+    func models(matching query: Query) -&gt; [Genre : Movie] {
+       ...
+    }
+}
+</code></pre>
+<p>通过使用受约束的关联类型，我们可以访问面向协议编程的强大功能，并支持更容易的模拟和可测试性，同时在实现具体类型时仍然有很大的灵活性👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift 4中的类型约束比以往任何时候都要强大，它们使我们能够使用一些非常有趣的技术来充分利用类型系统，即使在编写更多的泛型代码时也是如此。</p>
+<p>在处理泛型(和其他高级语言特性)时，一定要保持一定的谨慎，并预先做好计划——这样就不会编写过于一般化、难以理解的代码。并不是所有东西都需要抽象和一般化，有时在多个地方内联实现实际上会简单得多，也更好。 但是，当您确实希望以更通用的方式编写内容时，使用类型约束可以提供一种很好的方法。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-generic-type-constraints-in-swift-4/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-power-of-switch-statements-in-swift/">
+                  <h3 class="post-title">
+                    The power of switch statements in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

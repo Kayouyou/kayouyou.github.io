@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Logic controllers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="大多数Swift开发者经常面临的一个大挑战就是如何处理海量的视图控制器。 无论我们谈论的是UIViewController的子类在iOS和tvOS或NSViewController在Mac上，这种类型的类倾向于增长非常大-在范围和代码行数方..." />
+    <meta name="keywords" content="mvc,design pattern,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Logic controllers in Swift</h2>
+            <div class="post-date">2018-05-06</div>
+            
+            <div class="post-content" v-pre>
+              <p>大多数Swift开发者经常面临的一个大挑战就是如何处理海量的视图控制器。 无论我们谈论的是UIViewController的子类在iOS和tvOS或NSViewController在Mac上，这种类型的类倾向于增长非常大-在范围和代码行数方面。</p>
+<p>许多视图控制器实现的问题是它们有太多的责任。它们管理视图、执行布局和处理事件——但也管理网络、图像加载、缓存和许多其他事情。 有些人可能会说，这个问题是MVC设计模式的结构所固有的——它鼓励大量的控制器类，因为它们是视图和模型之间的中心点。</p>
+<p>除了苹果默认的MVC架构之外，其他架构当然也有自己的位置，并且在很多情况下可以作为一个很好的工具来分解大型视图控制器，也有很多方法可以解决这个问题，而不需要完全切换架构。本周，让我们来看看其中的一种方式——使用逻辑控制器。</p>
+<h2 id="composition-vs-extraction">Composition vs extraction</h2>
+<p>一般来说，我们可以采用两种方法将一个大类型分解为多个部分——组合和提取。</p>
+<p>使用复合，我们可以将多个类型组合在一起形成新的功能。我们不是创建具有多个职责的大型类型，而是创建更多的模块化构建块，它们可以组合起来提供我们需要的特性。如，在“在Swift中使用子视图控制器作为插件”中，我们使用组合创建了小型的、可重用的视图控制器，可以很容易地插入到其他视图控制器中。下面是那篇文章中的一个代码示例，我们添加了LoadingViewController作为子控件，以便显示加载指示器:</p>
+<pre><code class="language-swift">class ListViewController: UITableViewController {
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadItems()
+    }
+
+    private func loadItems() {
+        let loadingViewController = LoadingViewController()
+        add(loadingViewController)
+
+        dataLoader.loadItems { [weak self] result in
+            loadingViewController.remove()
+            self?.handle(result)
+        }
+    }
+}
+</code></pre>
+<p>虽然创建通用的、可组合的视图控制器很适合载入视图和可重用列表，但它并不是万能的。有时候，把一个视图控制器分解成小的、模块化的子控制器是不太实际的——而且可能会增加很多复杂性，但收效甚微。在这种情况下，将功能提取到一个单独的、专用的类型中是更好的选择。</p>
+<p>使用提取，我们可以将一个大型类型的部分提取为一个单独的类型，该类型仍然与原始类型紧密耦合。这是一些体系结构模式所关注的——包括像MVVM(模型-视图-视图模型)和MVP(模型-视图-表示器)这样的东西。在MVVM的情况下，引入了一个视图模型类型来处理大部分的模型——&gt;视图转换逻辑——当使用MVP时，使用一个演示器来包含所有的视图表示逻辑。</p>
+<p>在以后的文章中，我们将进一步研究MVVM和MVP(以及其他架构模式)，让我们看看如何在使用MVC的同时使用extract。</p>
+<h2 id="logic-and-views">Logic and views</h2>
+<p>让ViewController类型有点尴尬的一件事是它同时属于视图层和控制器层(我的意思是，它就在名称中;ViewController)。但就像子视图控制器组合向我们展示没有什么能阻止我们使用多个视图控制器来形成单个UI，也没有什么能阻止我们拥有多个控制器类型。</p>
+<p>一种方法是将一个视图控制器分成一个视图部分和一个控制器部分。一个控制器仍然是UIViewController的子类，并包含所有与视图相关的功能，而另一个控制器可以与UI本身解耦，转而专注于处理我们的逻辑。</p>
+<p>例如，假设我们正在构建一个ProfileViewController，我们将使用它来在我们的应用程序中显示当前用户的配置文件。它是UI中一个相对复杂的部分，因为它需要执行几个不同的任务:</p>
+<p>加载用户的概要文件并显示它。<br>
+允许用户更改他们的个人资料照片和显示名称。<br>
+允许用户注销应用程序。</p>
+<p>如果我们将上述所有功能放到ProfileViewController类型本身中，我们几乎知道它最终会变得非常庞大和复杂。相反，让我们为概要文件屏幕创建两个控制器——一个ProfileViewController和一个ProfileLogicController。</p>
+<h2 id="logic-controllers">Logic controllers</h2>
+<p>让我们从定义逻辑控制器开始。它的API将包含所有可以在视图中执行的操作，对于每个操作，一个新的状态将作为完成处理程序的一部分返回。意味着我们的逻辑控制器可以变得或多或少无状态，这意味着它将更容易测试。下面是我们的ProfileLogicController最终的样子:</p>
+<pre><code class="language-swift">class ProfileLogicController {
+    typealias Handler = (ProfileState) -&gt; Void
+
+    func load(then handler: @escaping Handler) {
+        // Load the state of the view and then run a completion handler
+    }
+
+    func changeDisplayName(to name: String, then handler: @escaping Handler) {
+        // Change the user's display name and then run a completion handler
+    }
+
+    func changeProfilePhoto(to photo: UIImage, then handler: @escaping Handler) {
+        // Change the user's profile photo and then run a completion handler
+    }
+
+    func logout() {
+        // Log the user out, then re-direct to the login screen
+    }
+}
+</code></pre>
+<p>正如您在上面所看到的，我们的概要屏幕的状态类型称为ProfileState。我们会用它来告诉ProfileViewController渲染什么。我们将使用“建模Swift状态”中的技术，为每个状态创建一个具有不同情况的枚举，如下所示:</p>
+<pre><code class="language-swift">enum ProfileState {
+    case loading
+    case presenting(User)
+    case failed(Error)
+}
+</code></pre>
+<p>每当UI中发生一个事件时，我们的ProfileViewController将调用ProfileLogicController来处理该事件并返回一个新的ProfileState供视图控制器渲染。 例如，当profile视图即将出现在屏幕上时，我们将在逻辑控制器上调用load()来检索视图的状态——然后我们将渲染它:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let logicController: ProfileLogicController
+
+    init(logicController: ProfileLogicController) {
+        self.logicController = logicController
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        render(.loading)
+
+        logicController.load { [weak self] state in
+            self?.render(state)
+        }
+    }
+}
+</code></pre>
+<p>我们现在可以将所有与加载视图状态相关的逻辑放到逻辑控制器中，而不必将其与视图设置和布局代码混合在一起。例如，我们可能想要检查是否有一个缓存的用户模型可以简单地返回，或者通过网络加载一个-像这样:</p>
+<pre><code class="language-swift">class ProfileLogicController {
+    func load(then handler: @escaping Handler) {
+        let cacheKey = &quot;user&quot;
+
+        if let existingUser: User = cache.object(forKey: cacheKey) {
+            handler(.presenting(existingUser))
+            return
+        }
+
+        dataLoader.loadData(from: .currentUser) { [cache] result in
+            switch result {
+            case .success(let user):
+                cache.insert(user, forKey: cacheKey)
+                handler(.presenting(user))
+            case .failure(let error):
+                handler(.failed(error))
+            }
+        }
+    }
+}
+</code></pre>
+<p>这个方法的美妙之处在于，我们的视图控制器不需要知道它的状态是如何加载的，它只需要接受逻辑控制器给它的任何状态并渲染它。 通过将我们的逻辑与UI代码解耦，测试起来也变得容易得多。要测试上面的load方法，我们需要做的就是模拟数据加载器和缓存，并断言在缓存、成功和错误情况下返回正确的状态。</p>
+<h2 id="simply-a-renderer">Simply a renderer</h2>
+<p>每次加载一个新的状态时，我们都会调用视图控制器的render()方法来渲染它。这使我们能够或多或少地像对待一个简单的渲染器一样对待我们的视图控制器，通过响应地处理每个进入的状态，像这样:</p>
+<pre><code class="language-swift">private extension ProfileViewController {
+    func render(_ state: ProfileState) {
+        switch state {
+        case .loading:
+            // Show a loading spinner, for example using a child view controller
+        case .presenting(let user):
+            // Bind the user model to the view controller's views
+        case .failed(let error):
+            // Show an error view, for example using a child view controller
+        }
+    }
+}
+</code></pre>
+<p>像我们在视图控制器即将出现在屏幕上时在逻辑控制器上调用load()一样，我们在处理UI事件时也可以使用相同的模式——比如当用户在文本字段中输入一个新的显示名。在这里，我们将通知逻辑控制器(它反过来可以调用我们的服务器来更新用户的显示名)并呈现新的、更新后的状态:</p>
+<pre><code class="language-swift">extension ProfileViewController: UITextFieldDelegate {
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        guard let newDisplayName = textField.text else {
+            return
+        }
+
+        logicController.changeDisplayName(to: newDisplayName) {
+            [weak self] state in
+            self?.render(state)
+        }
+    }
+}
+</code></pre>
+<p>无论视图控制器正在处理哪种类型的事件，它都执行相同的两个操作:通知逻辑控制器和呈现结果状态。因此，视图控制器与它的逻辑控制器之间的关系非常相似，就像将网站分割成前端(浏览器)和后端(服务器)组件一样。每一方都可以专注于他们最擅长的事情。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>将一个视图控制器的核心逻辑提取到一个匹配的逻辑控制器中是避免大量视图控制器问题的好方法，同时仍然坚持MVC模式。当然，用于该技术的一些概念与使用MVVM应用视图模型时类似，在以后的文章中，我们将看看这些方法之间的区别和相似之处。</p>
+<p>无论我们如何切片我们的视图控制器-它是使用子视图控制器，专用的UIView子类，视图模型，展示器或逻辑控制器-目标都是一样的，让我们的uiviewcontroller集中精力做他们最擅长的事-控制视图。</p>
+<p>哪种方法最适合你的应用在很大程度上取决于你的需求，和往常一样，我建议尝试多种技术，找出最适合你需求的方法。同样重要的是，并不是所有的视图控制器都需要分解——一些屏幕可能非常简单，使用单个视图控制器就可以很好地完成工作。</p>
+<p><a href="https://www.swiftbysundell.com/articles/logic-controllers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/AqpRd4fEA/" class="tag">
+                    mvc
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4g5XtbTAR/" class="tag">
+                    design pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/delegation-in-swift/">
+                  <h3 class="post-title">
+                    Delegation in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

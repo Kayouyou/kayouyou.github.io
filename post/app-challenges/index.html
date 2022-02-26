@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>App&#39;s challenges - Part Two | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+CHALLENGES DUE TO APP COMPLEXITY
+
+
+1.1. NAVIGATION ARCHITECTURE WITHIN LARGE APPS
+1.2. APPLICATION STATE &amp; EVENT..." />
+    <meta name="keywords" content="app-challenge-2" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">App&#39;s challenges - Part Two</h2>
+            <div class="post-date">2021-04-28</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.pexels.com/photos/3077882/pexels-photo-3077882.jpeg?auto=compress&amp;cs=tinysrgb&amp;dpr=2&amp;w=500')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#CHALLENGESDUETOAPPCOMPLEXITY">CHALLENGES DUE TO APP COMPLEXITY</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#NAVIGATIONARCHITECTUREWITHINLARGEAPPS">NAVIGATION ARCHITECTURE WITHIN LARGE APPS</a></li>
+<li>1.2. <a href="#APPLICATIONSTATEEVENT-DRIVENCHANGES">APPLICATION STATE &amp; EVENT-DRIVEN CHANGES</a></li>
+<li>1.3. <a href="#LOCALIZATION">LOCALIZATION</a></li>
+<li>1.4. <a href="#MODULARARCHITECTUREDEPENDENCYINJECTION">MODULAR ARCHITECTURE &amp; DEPENDENCY INJECTION</a></li>
+<li>1.5. <a href="#AUTOMATEDTESTING">AUTOMATED TESTING</a></li>
+<li>1.6. <a href="#MANUALTESTING">MANUAL TESTING</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namechallengesduetoappcomplexityachallenges-due-to-app-complexity">1. <a name='CHALLENGESDUETOAPPCOMPLEXITY'></a>CHALLENGES DUE TO APP COMPLEXITY</h2>
+<p>随着应用的发展，事情开始变得有趣。你在不断为应用添加新功能的同时，也在调整现有的功能。很快，过去只有几个屏幕的应用程序变得非常复杂，如果你在导航流程图上打印出屏幕，它将覆盖整面墙。</p>
+<p>在开发大型复杂应用时，你确实会遇到额外的挑战。如何处理日益复杂的导航模式?那么非确定性事件组合呢?</p>
+<p>你怎样跨多种语言进行本地化，你如何扩展自动化和手动测试?</p>
+<h3 id="11-a-namenavigationarchitecturewithinlargeappsanavigation-architecture-within-large-apps">1.1. <a name='NAVIGATIONARCHITECTUREWITHINLARGEAPPS'></a>NAVIGATION ARCHITECTURE WITHIN LARGE APPS</h3>
+<p>手机应用中的导航与深层次挑战一样，都是一个被低估的问题领域。当应用程序很小的时候，我们往往不会太关注它。随着应用的发展，我们意识到，随着屏幕和过渡动画数量的增加，导航架构已经成为需要驯服的野兽。</p>
+<p>虽然iOS和Android都提供了基本的导航概念，但他们把导航架构的定义留给了工程师。反过来，我们倾向于在导航上重新发明轮子。这主要是出于必要，因为无论是iOS还是Android都没有提供超越简单应用的导航方法。</p>
+<p>对于任何大小合适的应用来说，拥有一个良好定义的应用导航策略以及良好的应用状态分离是关键。是什么触发了点击和手势之间的动画?导航是否独立于应用状态?</p>
+<p>许多团队只有在自己编写代码时才会创建这个地图，他们发现自己创建了不一致的导航解决方案，当用户处于意想不到的状态时，就会产生bug。</p>
+<p>不一致的导航可以与应用使用弹出窗口、toast、全屏模式或不一致的屏幕一样明显。这可能意味着不同的动画在不同的屏幕之间使用。这通常也意味着在指导应用导航时会出现大量代码重复</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpyjaios66j30u80u0gtg.jpg" alt="avatar" loading="lazy"></figure>
+<p><strong>异步导航</strong>是一个常见的问题，很少有工程师会考虑提前交付。异步导航，我的意思是在导航继续之前，有些事情需要完成。登录应用程序或提交表单就是这样的例子。</p>
+<p>当用户在这一阶段试图离开时会发生什么?”如果你没有为这种情况做计划和测试，应用程序可能会进入奇怪的状态。当使用<a href="https://github.com/uber/RIBs/wiki">RIBs</a>时，<a href="https://github.com/uber/RIBs/wiki/iOS-Tutorial-4#deeplinking-and-workflows">工作流</a>为这个问题提供了一个优雅的解决方案。</p>
+<p>一个导航框架或一致的导航方法，你会发现自己可以为更复杂的应用构建、执行或利用现有的组件。</p>
+<p>在iOS上，没有一个本地导航组件可以使用。虽然有几个开源项目提供了帮助，但在这个平台上导航还远远没有解决问题。正如John Sundell在文章<a href="https://www.swiftbysundell.com/articles/navigation-in-swift/">Swift中的导航</a>中总结的那样:“用一种很好的方式来执行导航，而又不把你画到角落里，这真的很棘手。</p>
+<p>Android可能领先一步。Jetpack导航体系结构组件正在成为首选的开箱即用的导航库。除了缺乏对某些边缘情况的支持外，它工作得很好。《Jetpack》于2018年发布。那些在activity和Fragments上构建自己解决方案的应用，通常需要决定是维护自己的栈，还是迁移过来。即使没有《Jetpack》，Android在导航方法上也更加固执己见，就像关于向上和后退键的指导方针，并在适当的位置设置一个后退堆栈。</p>
+<p>手机和平板电脑导航的差异是一个有趣的边缘案例。如果你的应用有更大的屏幕和表单，移动设备可能会有多个步骤或屏幕，而平板电脑版本只使用一个。iOS更有可能出现这种情况，因为手机和平板电脑的尺寸都有明确的定义。支持这种情况并不太难，但只要你有所计划就可以了</p>
+<h3 id="12-a-nameapplicationstateevent-drivenchangesaapplication-state-event-driven-changes">1.2. <a name='APPLICATIONSTATEEVENT-DRIVENCHANGES'></a>APPLICATION STATE &amp; EVENT-DRIVEN CHANGES</h3>
+<p>是什么推动着你的手机应用UI发生变化?它可以是用户点击它的某些部分，数据从后端到达，或者可能是一个定时功能。正如我们在状态管理一章中讨论的那样，大多数变化都是由事件驱动的。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpyjkr3cjbj30vk0i243z.jpg" alt="avatar" loading="lazy"></figure>
+<p>随着应用程序的复杂性增加，可能状态的数量也在增加。一些状态变化可能触发其他状态变化。例如，组件在用户点击后改变其状态可能会触发页面或应用程序的状态改变。</p>
+<p>移动应用通常比网页或厚客户端应用拥有更多状态。这是由于它们需要支持各种生命周期事件，如应用锁定、应用切换和后台模式，更不用说支持离线模式添加其他一些状态。</p>
+<p>Web应用程序有更少的生命周期事件，很少广泛支持脱机模式，而厚客户机应用程序有更少的生命周期事件。与移动设备相比，连通性下降的情况更为罕见。</p>
+<p>应用程序越大、越复杂，漏洞就越有可能是由不同寻常的事件组合造成的。异常事件的问题是它们很难计划或测试。例如，一个导致组件状态改变的后台推送通知可能会在用户锁定应用的屏幕后立即到达，导致不同的状态改变。一个比较罕见的入站事件可能被独立组件/团队使用，这种组合会导致外来bug。</p>
+<p>“遵循状态管理最佳实践，以保持由于状态更改问题而出现的bug数量较低。尽可能保持状态不变，并将模型存储为发出状态变化的不变对象。</p>
+<p><strong>用信息记录无效的状态，以便回放或调试，这样你就可以详细了解出了什么问题以及如何重现问题</strong>。使用bug报告供应商工具是最简单的开始方式，有很多选择。一些崩溃报告工具还附带bug报告组件。</p>
+<p>通常情况下，bug报告工具会显示给测试用户以提交问题。在提交bug报告时，还需要包括导致问题发生的一系列事件和足够的信息，以便调试所发生的事情。大多数错误报告工具将允许你附加在会话期间发出的日志，你的挑战将是发出足够的日志使错误重现成为可能。</p>
+<p>自动重放、暂停、倒带和调试用户的会话;这是调试应用程序状态问题的理想工具。您需要有一个日志，不仅是用户事件的日志，还有传入网络通知的日志。为了调试跨线程问题，能够在每个线程的基础上这样做很重要。虽然在网络上有这样的会话回放工具;不幸的是，在iOS和Android上，我们要么不得不构建定制工具来完成上述工作，要么在可预见的未来使用调试日志和内存转储。</p>
+<h3 id="13-a-namelocalizationalocalization">1.3. <a name='LOCALIZATION'></a>LOCALIZATION</h3>
+<p>iOS和Android都提供了执行本土化的方法。iOS支持为翻译导出本地化内容，而Android则构建在资源字符串之上。工具略有不同，但概念是相似的。要本地化你的应用程序并定义字符串，你需要本地化并将本地化后的字符串作为一个单独的二进制资源发送。不过，在大型应用和许多地区，这种工作流程很快就会遇到挑战。</p>
+<p><strong>决定应用的本土化内容与后端本土化内容</strong>是任何发展中的应用所面临的首要挑战之一。通过使用“默认的”iOS和Android本地化方法，你在应用中本地化的资源将被二进制文件“卡住”:你不能改变短语或更新错误。如果你从供应商的解决方案或后端执行本地化字符串，你在这方面就有了更多的灵活性，你只需要同时针对iOS和Android进行一次本地化。</p>
+<p>关于移动应用应该有多“智能”以及这里应该有什么样的字符串，而不是仅仅从后端获取它们，话题需要更加深入。我们将在第3部分:后端驱动的移动应用中进行更详细的讨论。后端本地化越多越好。后端繁重的本地化能够保持较低的客户端逻辑，并减少用于移动平台本地化的资源数量。虽然在iOS和Android应用流程中，将更多本土化工作委托给后端需要更多工作，但从长远来看，这将简化可维护性。</p>
+<p><strong>当你支持大量地区设置时</strong>，你需要确保所有本地化翻译都在发布到应用商店之前完成。你可能会使用第三方本地化服务或内部团队。假设您有一个构建过程，您希望只在所有新资源本地化后才允许该过程继续进行。</p>
+<p>确保iOS和Android使用相同的语言和本土化是另一个挑战。对于大品牌来说，重要的是iOS和Android应用都使用相同的语言，或者至少是相似的语言。一种一致的语言不仅有利于品牌，也有助于客户支持处理用户报告的问题。如果没有一些共享的本土化工具或iOS和Android团队之间的紧密合作，我们便很难确保这种一致性。  让同一个设计师和PM监督这两个应用程序也有帮助。使用相同的本土化id或关键字是减少重复的好方法，这需要iOS和Android团队达成共识。</p>
+<p>在Uber，我们在iOS、Android、后端和网页上使用了内部本地化工具。该工具用于生成iOS和Android资源，并追踪本土化的完整性。为本土化创造一个专用工具是否有些过分?对于优步多年前复杂的使用案例，我不这么认为。当时，几乎没有适合所有业务的本地化工具。</p>
+<p>但这个领域已经发生了变化，在手机领域有许多本地化供应商。在建立自己的项目之前，看看能否找到一款符合自己需求的项目是值得的。</p>
+<p>本地化自定义字体是一个经常被忽视的领域。对于大公司和那些拥有强大品牌标识的公司来说，使用自定义字体是很常见的。然而，这种自定义字体并不总是支持应用程序所支持的语言集的所有字形。</p>
+<p>确认你的自定义字体缺少哪些语言和字符的支持是非常棘手的。当使用这些字体来显示用户生成的内容时，这就更成问题了，因为您无法控制这些输入。一旦您确定了您的用例和边缘用例，您要么需要添加这种支持，要么(更常见的是)为不支持的地区使用不同的字体。基于每种字体所支持的语言，管理一致的、跨平台的字体和语言映射变得更加困难。当使用自定义字体时，你需要将这些内容包含在二进制文件中，以增加应用的大小。我们将在本系列的第3部分中更详细地讨论应用规模。</p>
+<p><strong>iOS和Android在某些地区的货币格式不同</strong>是多语言、多平台应用呈现货币价值的另一个痛点。Web也有类似的不一致性问题;印度卢比的价值就是一个很好的例子。当使用货币类型添加或减去值时，这个问题尤其明显。一个可能的解决方案是，后端将所有货币数据格式化到该地区，而客户端不做任何数学操作，或格式化货币字符串。</p>
+<p>日期和时间格式对货币也有类似的挑战。不同的国家和地区将以不同的方式显示日期和时间。你需要确保应用程序对此负责。</p>
+<p>支持从右到左(RTL)语言通常不仅仅是翻译。大多数读这本书的人要么会使用LTR和拉丁语言，要么会说得足够流利。然而，当为阿拉伯语、希伯来语等RTL语言设计ui时，需要镜像的不仅仅是字符串;应用程序的布局可能需要改变。“镜像”布局是一种常见的方法，但这可能会导致母语为英语的用户和用户产生奇怪的ui。最好让当地人参与这个过程，无论是开发还是测试。</p>
+<p>独特的地点总是值得额外关注的。根据我的经验，日语和德语是值得进行更多检查的语言环境，因为它们都比英语冗长，你需要确保布局、填充和换行符仍然适用于这些语言环境。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpykwdne3yj30wo0mwdub.jpg" alt="avatar" loading="lazy"></figure>
+<p>测试本地化是一项不小的努力。在理想情况下，以英语为母语的人会在每次本土化更改后经历应用的每个流程。在现实中，这种情况很少发生，因为这样做太昂贵了。大多数大公司依赖于beta测试人员使用不同地区的应用程序来报告明显的不一致。例如，在Uber，我们可以依靠这种方法及早发现本地化问题。每周都有成千上万的优步员工和beta测试者一起品尝这款应用</p>
+<p>本土化问题总是在应用被推向应用商店之前就被发现了。</p>
+<p>您可能需要定义一个工作流来验证本地化更改。当本地化的字符串在应用中发生变化时，会发生什么?这是否应该触发手动检查更改的操作?是否应该通知屏幕开发人员?发布经理是否应该发布应用程序的新版本，即使没有其他变化?这些问题似乎都不重要。他们不是。尤其是当翻译字符串的人独立于编写代码的工程师工作时。我们需要定义一个工作流，不只是添加内容，还要更新和测试本地化内容。</p>
+<p>快照测试是一种被低估的本地化测试工具。通过快照测试，您可以在任何语言环境(甚至使用伪本地化)中快速、轻松地为屏幕生成快照。工程师可以更快地发现布局问题，并使用参考图像来展示问题。除了帮助工程师之外，你还可以将测试截图分享给翻译人员，这样他们就可以了解翻译文本的呈现方式。</p>
+<p>伪本地化是一种测试本地化是否有效的聪明方法，无需进行本地化练习。这意味着将所有可本地化的元素替换为开发人员可读的伪语言，但它包含其他语言的大多数“棘手”元素，如特殊字符或更长的字符串。</p>
+<p>例如，“Find Help”的伪本地化版本可以显示为“[ƒîîîกี้ðððð Ĥéééééļþ]”。微软在开发Windows Vista时采用了这种方法，Netflix在其产品开发周期中也采用了这种方法。Shopify建立了一个ruby工具来生成这样的字符串，你可以找到一个npm包，它的灵感来自Netflix。</p>
+<p><strong>不应该本地化的短语是最后的边缘情况</strong>。在优步，我们决定不本地化某些品牌术语，如优步现金或优步钱包。有些团队没有意识到这个请求，而是继续在某些屏幕上翻译字符串，这意味着拥有这些问题的团队必须在所有地区进行测试。一些测试人员也报告了缺乏这些翻译的情况。这是我们必须控制的一点噪音。</p>
+<p>有很多供应商可以帮助我们进行手机本土化。只有iOS和Android平台上的本土化工作才会独立完成;它通常作为一个整体来完成，包括网络、电子邮件和其他面向客户的属性。本地化供应商包括POEditor, Loco, Transifex, Crowdin, Phrase, Lokalise, OneSky, Wordbee, Text United等。</p>
+<p>更多阅读:</p>
+<ul>
+<li><a href="https://medium.com/m/global-identity?redirectUrl=https%3A%2F%2Fnetflixtechblog.com%2Fpseudo-localization-netflix-12fff76fbcbe">伪本地化</a> from Netflix</li>
+<li><a href="https://www.shopify.com/partners/blog/pseudo-localization">为什么要关注伪本地化</a> from Shopify</li>
+<li><a href="https://medium.com/dropbox-design/design-for-internationalization-24c12ea6b38f">设计国际化</a> from Dropbox</li>
+<li><a href="https://www.shopify.com/partners/blog/internationalization">实践的国际化的建议</a> from Shopify</li>
+<li><a href="https://slack.engineering/localizing-slack/">跨多个平台进行本地化</a> from Slack</li>
+<li><a href="https://medium.com/m/global-identity?redirectUrl=https%3A%2F%2Fblog.picnic.nl%2Flocalizing-native-apps-made-easy-with-localicious-5063d02d3511">使用Localicious本地化本地应用</a> from Picnic</li>
+<li><a href="https://proandroiddev.com/the-ultimate-guide-to-android-app-internationalization-and-localization-89b6c33fe741">Android本地化指南</a> from ProAndroidDev</li>
+<li><a href="https://cocoaengineering.com/2018/02/11/how-to-use-adaptive-width-strings-for-localization-on-ios/">在iOS本地化中使用自适应宽度字符串</a> from Daniel Martín</li>
+</ul>
+<h3 id="14-a-namemodulararchitecturedependencyinjectionamodular-architecture-dependency-injection">1.4. <a name='MODULARARCHITECTUREDEPENDENCYINJECTION'></a>MODULAR ARCHITECTURE &amp; DEPENDENCY INJECTION</h3>
+<p>随着应用程序变得越来越大，将应用程序的某些部分构建为可重用的组件或模块通常是有意义的。对于拥有多个应用程序或多个移动团队的大公司来说，重用另一个团队拥有的代码是显而易见的。例如，一个移动平台团队可能拥有网络和共享架构组件。Money团队将建立并拥有支付组件——这就是我在Uber的团队!-一个地图团队将拥有所有与地图相关的东西。应用中的组件和模块通常会与公司团队的结构相对应，这反映了被称为<a href="https://en.wikipedia.org/wiki/Conway%27s_law">康威定律</a>的观察结果。</p>
+<p>对于多个模块，模块需要有一种方法来定义它们的依赖关系，无论是在模块级还是在类级。这个概念就是依赖注入，它是<a href="https://en.wikipedia.org/wiki/Inversion_of_control">控制反转</a>的一种形式。这是一个<a href="https://medium.com/ios-os-x-development/dependency-injection-in-swift-a959c6eee0ab">简单的概念</a>，但在手机开发中经常被低估，在后端和网页项目中更是如此。</p>
+<p>依赖注入的一个主要挑战是，如果你不使用框架来解决这个问题，修改或更新依赖项所需要的工作量。即使没有使用框架，这一耗费时间的本质也是为了更清晰的抽象和良好的可测试性。</p>
+<p><strong>依赖注入是跨代码库维护可测试代码一致性的强大工具</strong>。有了依赖注入，具有多个依赖项的类可以通过在实例化它们时传递模拟依赖项类来进行单元测试。更大的模块化应用往往会以某种方式引入这个概念。</p>
+<p>手动依赖注入——创建所有接口，然后硬编码所有依赖项——在这种依赖项很少的情况下工作得很好。然而，随着组件数量和依赖项数量的增加，维护和更新依赖项变得更加困难。发现像循环依赖这样的东西也变得棘手，使用依赖注入框架开始变得更有意义</p>
+<p>Android有一个成熟的依赖注入框架，叫做Dagger2，可以分析依赖项的编译时。谷歌最近推出了匕首柄;基于Dagger的依赖框架，Koin在Kotlin中越来越受欢迎。</p>
+<p>在iOS上，历史上并没有类似的框架。在Uber，我们基于类似的理念创建、使用并开源了<a href="https://github.com/uber/needle">Needle</a>。在没有依赖注入的情况下，如果有100多名工程师在同一个代码库上工作，我们将很难扩展代码。我们使用这个工具来明确所有类的依赖关系，使单元测试变得容易——并且对于大多数代码来说是不可协商的——并且在团队之间重用组件。</p>
+<h3 id="15-a-nameautomatedtestingaautomated-testing">1.5. <a name='AUTOMATEDTESTING'></a>AUTOMATED TESTING</h3>
+<p>如果你不能在大型应用上进行适当程度的自动化测试，那么你就是在自掘坟墓。所谓大型应用程序，我指的是一个复杂的代码库或许多人的贡献。</p>
+<p>针对移动设备的自动化测试有以下几种:</p>
+<ul>
+<li>
+<p><strong>单元测试</strong>: 所有自动化测试中最简单的一种，测试一个孤立的组件，也称为“单元”。对于iOS和Android，这通常意味着测试类上方法的行为，或者类的特定行为。这些测试编写和理解都很简单，运行起来也很快。</p>
+</li>
+<li>
+<p><strong>集成测试</strong>比单元测试更复杂。它们测试多个互动“单元”的行为。这些测试比单元测试更复杂，运行时间更长。他们可能使用，也可能不使用mock。下面是John Sundell关于移动<a href="https://www.swiftbysundell.com/articles/integration-tests-in-swift/">集成测试</a>的概述。</p>
+</li>
+<li>
+<p><strong>快照测试</strong>: 将UI元素或页面的布局与参考图像进行比较。这是一种廉价而快速的方法，可以确保代码更改不会导致意外的UI更改。流行的快照测试框架包括<a href="https://github.com/uber/ios-snapshot-test-case">iOSSnapshotTestCase</a>、<a href="https://github.com/pointfreeco/swift-snapshot-testing">SwiftSnapshotTesting</a>和Android的截图测试。</p>
+</li>
+<li>
+<p><strong>单元测试是可持续工程的基本工具</strong>，假设你有一个工程师团队和一个被认为是复杂的移动应用程序。单元测试业务逻辑与代码审查相结合，可以降低错误率，保持代码整洁，并增加团队内的知识共享。它也是进行有意义的重构和能够继续清理技术债务的安全网。单元测试带来了一系列的好处。我在<a href="https://blog.pragmaticengineer.com/unit-testing-benefits-pyramid/">单元测试好处的金字塔</a>这篇文章中更详细地描述了这些复合好处。</p>
+</li>
+</ul>
+<p>当你继承了一个没有多少测试的应用程序，而应用程序的各个部分不是以可测试的方式构建的，你通常别无选择，只能添加集成测试，并缓慢地为新代码块添加单元测试。改造应用程序的现有部分可能没有什么意义。</p>
+<p><strong>集成测试</strong>比单元测试更复杂。您将测试两个或多个类、模块或其他单元如何一起工作。集成测试最常见的情况是确保库集成按预期工作。集成测试对于您编写的其他应用程序部件将重用的库和模块特别有用。集成测试将测试库/模块的公共API，并确认组件按预期工作。</p>
+<p>集成测试的一个特例是UI测试应用的某些部分，但不是端到端的。例如，测试按钮点击导航到特定屏幕(iOS) /活动(Android)便是一种整合测试。</p>
+<p>集成测试的编写和维护比单元测试更昂贵，尽管它们也可能更有价值，因为它们测试的表面积更大。对于您是应该更多地依赖这些测试还是单元测试，并没有黄金法则。这完全取决于你的环境和项目。</p>
+<p><strong>快照测试</strong>是自动化测试的下一行。它们是一种特殊形式的集成或UI/端到端测试。页面被旋转起来，截屏并与存储的图像进行比较。使用的数据通常被嘲笑。如果是不同的，则测试失败，附加新的映像作为失败的原因。</p>
+<p>快照测试的构建成本很低，可以帮助工程师更快的迭代周期。当您更改UI中的某些内容后，您将重新运行测试，并将结果与更改后的UI现在的样子进行比较。</p>
+<p>在Uber，我们从Facebook手中收购了iOSSnapshotTestCase，并大量使用这个工具，但仅限于iOS平台。当时，Android团队决定不进行快照测试，因为他们觉得在这个平台上进行“适当的”快照测试的工作量太大了，这要归功于Android设备的各种尺寸。</p>
+<p>如果快照测试的参考图像存储在回购中，这可能会成为一个问题，因为有更多这样的测试。成千上万的测试用例，这些图像占用了大量的空间，减慢了回购签出和更新。在Uber，我们最终将快照图像从回购中移除，创建了一个CI工作来跟踪快照的变化，因为PRs在主界面上合并了。如果检测到更改，CI将创建一个任务。如果改变是预期的，开发人员可以关闭门票。如果没有，他们可以创建一个后续差异来解决问题。这种方法涉及构建自定义工具。</p>
+<p>尽管快照测试越来越多地被各种应用和团队所采用，但它并不是一种适合所有人的工具。这些测试的有用性很大程度上取决于你的应用。覆盖那些你不想在不知情的情况下改变的“核心”流程，是这些测试的良好开端。</p>
+<p><strong>自动化UI测试</strong>是本地移动工具在规模上受到限制的地方。苹果提供了<a href="https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/testing_with_xcode/chapters/09-ui_testing.html">开箱即用的UI测试</a>，这是一个手动记录过程，然后回放。这个工具对于一些测试用例工作得很好。对于较大的应用程序，必须设计一个更健壮的解决方案，并使用诸如机器人或页面对象之类的方法。Capital One展示了一个用于<a href="https://www.capitalone.com/tech/software-engineering/robot-pattern-testing-for-xcuitest/">机器人模式测试</a>的很好的参考实现，wantly共享了一个用于<a href="https://medium.com/wantedly-engineering/introducing-page-object-pattern-in-ios-74e46c664d26">页面对象模式</a>方法的很好的参考实现。使用机器人或页面对象构建自己的系统并不太难，而且伸缩性很好。</p>
+<p>Android原生支持使用Espresso和UI Automator测试框架进行UI测试。这些都是适用于大型应用的强大解决方案。</p>
+<p>一旦您遇到了几十个或更多的测试用例，现有的工具就会感到有些有限。首先，这些测试框架都不支持模拟网络响应，你必须使用其他工具，如iOS上的Mocker或Android上的OkHttp的MockWebServer功能。您必须选择模拟方法，并决定如何管理模拟测试数据。</p>
+<p>任何编写超过20-30个UI测试的团队都会遇到运行这些测试需要多长时间的问题。以及在合并到master之前是否执行这些测试的困境，或者只是偶尔。这个问题突出了两件事:</p>
+<ul>
+<li>
+<p>考虑在测试金字塔的上下文中，<strong>您将测试工作的重点放在哪里</strong>。是的，UI测试很重要，但它们是编写和维护成本最高、运行最慢的测试。你对其他测试的投入程度合适吗?</p>
+</li>
+<li>
+<p><strong>解决大规模运行UI测试的问题有很多好处</strong>。工程师不必过度考虑添加新的UI测试，可以自信地这么做。演讲《两年的UI测试》概述了一些可能的解决方案。在Uber，我们花费了大量的时间和精力来并行化UI测试执行，检测不可靠的测试，并跟踪/报告UI测试的成本和收益。</p>
+</li>
+</ul>
+<p><strong>Mock实时数据</strong>测试是自动化测试的另一个复杂性，使用mock数据有几个优势:</p>
+<ul>
+<li>
+<p><strong>速度</strong>。与实时获取数据相比，在预先模拟数据时测试运行得更快。实时数据需要通过网络传输。</p>
+</li>
+<li>
+<p><strong>边界情况</strong>。比起使用实时数据，设置模拟数据代表边界情况场景要容易得多。</p>
+</li>
+<li>
+<p><strong>可靠性</strong>。当使用实时数据时，测试可能会由于网络或后端问题而失败。虽然在某些情况下这可能是一件好事——特别是如果后端应该一直处于运行状态——但它也可能产生噪音。</p>
+</li>
+<li>
+<p><strong>频率</strong>。当测试速度很快时，在每次更改时都运行它们是有意义的。本地运行测试，测试所更改的代码。这意味着工程师可以立即得到反馈。当测试较慢时，它们通常只会在合并前运行。反馈循环变得更长，这也使得开发循环更长。</p>
+</li>
+</ul>
+<p>使用mock数据会带来一些需要解决的问题，特别是随着测试用例数量的增长:</p>
+<ul>
+<li>
+<p><strong>实时数据和模拟数据不同步</strong>。如果测试通过了，那么测试就没有多大价值，但应用程序却失败了。您希望以某种方式检测实时数据何时发生更改，并且需要更新模拟。说起来容易做起来难。</p>
+</li>
+<li>
+<p><strong>测试数据管理</strong>。一旦您有了许多使用模拟数据的测试，您就需要想出一种结构化的方法来存储这些数据，并标记它们支持的用例。没有确定的解。一些团队将数据保存在代码中，一些团队使用人类可读的格式，如JSON，还有一些团队将数据保存在文件层次结构中。选择一种解决方案，使理解和修改测试数据都变得容易，同时又不会使添加新的模拟数据和测试用例变得太困难。</p>
+</li>
+<li>
+<p><strong>动态数据的经验</strong>。对于更复杂的UI测试，您通常希望设置一个数据动态更改的场景。例如，您可能希望使用一组属性模拟用户，然后重置应用程序并使用另一组属性进行模拟。本例是对如何管理测试数据的扩展。随着场景数量的增加，保持数据和测试易于维护变得更加棘手。</p>
+</li>
+</ul>
+<p>不同公司和团队的测试策略有很大差异。每个小组将有不同的限制和目标，并将利用不同类型的测试来实现这一点。以下是一些基于<a href="https://github.com/MobileNativeFoundation/discussions/discussions/6">Mobile Native Foundation</a>讨论的关于2021年某些公司如何进行测试的数据:</p>
+<p>Spotify有大约32,000个单元和集成测试，大约1,600个快照测试和大约500个UI测试。 Airbnb有大约1万个单元测试和大约3万个截图测试。 Robinhood有数千个单元测试，大约400个快照测试和大约15个阻塞端到端测试。 诺德斯特龙有大约29800个单元测试，大约1500个UI测试和少量手动测试。 Shopify有<sub>8400个单元测试，</sub>2300个截图测试和~20个端到端测试。 Ford (Ford Pass / Lincoln Way)有大约20,000个单元测试、大量快照测试、没有UI测试和大量手动测试。 Target有大约10,000个单元测试，有大约10,000人参与的全面beta测试。</p>
+<p>使用真实设备的自动化测试基础设施是每个公司需要以适合自己的方式解决的另一个挑战。较大的地方可能会投资建立自己的设备实验室，这是一个需要大量前期和持续成本的方法。</p>
+<p>基于云计算的智能手机农场对许多团队来说将更加实用。这方面的例子包括谷歌的Firebase Test Lab，或微软的App Center Test，以及许多大大小小的供应商。</p>
+<p>自动化测试可以是一篇文章或一本书!-就其本身而言。这里有更多来自不同来源的思想食粮:</p>
+<p>-<a href="https://medium.com/airbnb-engineering/better-android-testing-at-airbnb-3f5b90b9c40a">Better Android Testing Series</a> from Airbnb</p>
+<p>-<a href="https://doordash.engineering/2020/08/19/speedy-and-scalable-development-of-android-mobile-ui-tests/">A Framework For Speedy and Scalable Development Of Android UI Tests</a> from Doordash</p>
+<p>-<a href="https://engineering.linkedin.com/blog/2020/mobile-test-orchestrator">Faster testing on Android with Mobile Test Orchestrator</a> from LinkedIn</p>
+<p>-<a href="https://slack.engineering/android-ui-automation-part-1-building-trust/">Android UI automation</a> from Slack</p>
+<p>-<a href="https://engineering.linkedin.com/blog/2016/11/ios--test-pyramid">The iOS test pyramid</a> from LinkedIn</p>
+<p>-<a href="https://developer.android.com/training/testing/unit-testing">Build effective unit tests</a> from Google</p>
+<p>-<a href="https://www.capitalone.com/tech/software-engineering/robot-pattern-testing-for-xcuitest/">Robot pattern testing on iOS</a> from Capital One</p>
+<p>-<a href="https://medium.com/wantedly-engineering/introducing-page-object-pattern-in-ios-74e46c664d26">The page object pattern</a> from Wantedly Engineering</p>
+<p>-<a href="https://www.youtube.com/watch?v=kO2XwAd9RaA">Two Years of UI testing</a> by Tomas Camin and Francesco Bigagnoli (Swift Heroes, 2018)</p>
+<p>-<a href="https://www.youtube.com/watch?v=2WG32k9_c48">Testing for success in the real world</a> by Donn Felker (Android Summit 2019)</p>
+<p>-<a href="https://github.com/MobileNativeFoundation/discussions/discussions/6">Testing strategies discussions</a> at the Mobile Native Foundation</p>
+<h3 id="16-a-namemanualtestingamanual-testing">1.6. <a name='MANUALTESTING'></a>MANUAL TESTING</h3>
+<p>当你开始开发一款小型应用时，手动测试每个版本是一个可行的方法。随着应用程序的发展，这种努力变得越来越乏味。就规模而言，对于一款每周发布一次、有许多工程师参与开发的应用来说，这种方法是行不通的。我们的目标是始终拥有一个不依赖手工测试，或者接近于零依赖于手工测试的可发行主机。</p>
+<p>即使手动测试是通过选择来完成的，也会有一些挑战，要么是因为它(还)不是一个很大的开销，要么是因为没有足够的自动化测试来允许这种测试。</p>
+<ul>
+<li>
+<p>**谁来做手动测试?**当我开始在Uber工作时，工程团队拥有所有对他们的功能进行手动测试的能力。我们保留了一个简单的谷歌表单，包含基本的说明，记录“通过”或“不通过”。作为构建过程的一部分，我们每周都重复检查清单。当然，随着我们的成长，这种方法并不能很好地扩展，我们开始依赖于发行/测试团队。</p>
+</li>
+<li>
+<p><strong>你如何保持测试指令的更新?</strong> 无论谁进行测试——工程师还是专职人员——您都希望得到明确而简单的指示。您还需要测试帐户、它们的登录信息以及在每个测试步骤中输入的数据。你要把它放在哪里?谁来更新它?在优步，平台团队建立了一个手动测试管理系统，工程团队将记录测试指令，测试人员将每周标记测试执行或失败。</p>
+</li>
+<li>
+<p><strong>将手工测试保持在内部，外包，还是混合使用</strong>?在优步，我计算了我们工程师每周执行手动测试的成本。这个数字非常高，足以证明需要专门的人员来完成这项工作。在我任职期间，我们使用了像Applause这样的第三方，以及一个专门的内部质量团队。内部团队更容易上手，可以访问内部系统。另一方面，第三方可能更可靠，可以根据您需要的测试量进行扩展或缩小。</p>
+</li>
+<li>
+<p><strong>如何在构建过程和发布过程中集成手动测试</strong>? 如何处理发现的问题? 什么类型的问题应该阻止发布，什么东西不会? 您需要将手动测试步骤合并到您的发布工作流中。</p>
+</li>
+</ul>
+<p><strong>手工测试的一个常见问题是，如何在发布前的最后一刻发现回归</strong>。这仍然比发布新的回归要好。尽管如此，它还是会给工程师施加压力，要求他们迅速修复漏洞，避免发布被推迟。这个bug的根本原因通常很难找到，因为自从错误代码被合并后，可能已经有一周或更长时间了</p>
+<p>如果“最后一分钟的bug报告”问题经常困扰您或您的团队，请考虑减少获取反馈的时间。例如，手动测试可以更早开始吗?它能与发展并行吗?它能在关键场景中持续发生吗?工程师应该执行一些基本的测试吗? 自动化能提供更多帮助吗?</p>
+<p>当你拥有一个手动测试过程时，请确保留出足够的时间，不仅用于测试，还用于修复任何高影响的bug。你可以提前进行手动测试，留出缓冲时间进行修复，或者灵活地推迟应用发布时间(如果发现倒退)。</p>
+<p>在某些情况下，<strong>手动测试对于移动应用程序来说仍然是必不可少的</strong>，即使是那些投资于一流自动化技术并不遗余力地投入时间和精力的公司也同意这一点。</p>
+<ul>
+<li>
+<p><strong>与物质世界相连接</strong>。当依赖于摄像头输入来识别模式时，比如QR码、文档扫描或AR，你可以自动进行很多测试，但仍然需要手动验证。这同样适用于使用NFC的应用程序。</p>
+</li>
+<li>
+<p><strong>支付系统的端到端测试</strong>。我在优步花了四年时间研究支付。支付测试的自动化有一个“22号军规”:支付欺诈系统足够复杂，可以检测和禁止可疑的模式，比如看起来自动化的东西。这意味着他们会很快禁止自动测试。您可以针对支付提供商的测试工具进行测试，但是您不会针对产品进行测试。决定是投资于应对支付欺诈系统，还是投资于监控、警报和分期推出支付变化，将取决于你的情况。</p>
+</li>
+<li>
+<p><strong>探索性测试</strong>。优秀的QA团队和供应商擅长这种情况。他们试图用一些创造性的步骤来“破坏”这款应用，这些步骤虽然不是工程师们想出来的，但最终用户还是会使用。除了不像用户——他们经常静静地搅动并且不报告任何事情——这些测试人员将提供重现所有问题的详细步骤。对于拥有数百万用户的应用，探索性测试是值得投资的领域。唯一的问题是多久做一次，花多少预算或时间去做。</p>
+</li>
+</ul>
+<p>关于测试还有很多要讨论的，我推荐<a href="https://twitter.com/dnlkntt">Daniel Knott</a>所著的<a href="https://www.amazon.com/Hands-Mobile-App-Testing-Involved-ebook/dp/B00XC89WMO?tag=gregdoesit-20&amp;geniuslink=true">Hands-On Mobile App testing</a>一书来更深入地介绍自动化和手动测试。这本书涵盖了测试策略、工具、快速移动发布周期、贯穿应用生命周期的测试等等。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/z_FJmZGWf/" class="tag">
+                    app-challenge-2
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/yi-dong-ying-yong-de-tiao-zhan-part-one/">
+                  <h3 class="post-title">
+                    App&#39;s challenges - Part One
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

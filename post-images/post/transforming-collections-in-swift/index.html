@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Transforming collections in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="几乎每个Swift程序都以这样或那样的方式使用集合。无论是存储要以某种形式的列表显示的值，还是跟踪观察者，还是缓存数据——集合无处不在。
+在使用集合时，在操作序列上使用相同的数据集，并不断地将其转换为新值是非常常见的。例如，我们可能下载一些..." />
+    <meta name="keywords" content="collections,data transformation" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Transforming collections in Swift</h2>
+            <div class="post-date">2018-01-21</div>
+            
+            <div class="post-content" v-pre>
+              <p>几乎每个Swift程序都以这样或那样的方式使用集合。无论是存储要以某种形式的列表显示的值，还是跟踪观察者，还是缓存数据——集合无处不在。</p>
+<p>在使用集合时，在操作序列上使用相同的数据集，并不断地将其转换为新值是非常常见的。例如，我们可能下载一些JSON数据，然后将其转换为一个字典数组，最后转换为一个模型集合。</p>
+<p>本周，让我们来看看一些标准库api，它们让我们能够以一种非常实用的方式轻松地转换集合。</p>
+<h2 id="mapping-and-flatmapping">Mapping and flatMapping</h2>
+<p>让我们从基础开始——使用map和flatMap。它们都允许我们使用函数或闭包将集合转换为另一个集合，不同之处是flatMap会自动跳过nil值。</p>
+<p>令人高兴的是，这两个转换api都在重新抛出，这意味着它们将自动抛出转换过程中生成的任何错误(并且在转换闭包本身不抛出的情况下，它们不会抛出任何错误)。</p>
+<p>假设我们想扩展Bundle类，以提供一种很好的、简单的方式来按名称加载文件数组。为此，我们可以编写一个for循环，遍历每个名称，并将加载的文件收集到一个可变数组中，但这有什么乐趣呢?😉</p>
+<p>让我们用map和flatMap来代替——为我们自己构建一个很好的转换链:</p>
+<pre><code class="language-swift">extension Bundle {
+    func loadFiles(named fileNames: [String]) throws -&gt; [File] {
+        return try fileNames
+            // Since flatMap returns a new sequence of all non-nil
+            // values returned from its closure, it lets us automatically
+            // skip all files that don't exist.
+            .flatMap({ name in
+                return url(forResource: name, withExtension: nil)
+            })
+            .map(Data.init)
+            .map(File.init)
+    }
+}
+</code></pre>
+<p>上面我们还利用了Swift的第一个类函数功能(我们两周前看过)，通过将数据和文件的初始化器作为一个闭包传递给map函数。</p>
+<p>结果是一个更具声明性的设置，其中我们想要在集合上执行的每个转换都有非常清晰的定义。 然而，有人可能会说它也会影响可读性，特别是对于那些可能不太熟悉这类概念的开发人员。</p>
+<p>让我们来看看如何在仍然使用标准库所提供的一切的同时，提高这类转换的可读性——看一下reduce API。</p>
+<h2 id="reducing">Reducing</h2>
+<p>使用reduce方法可以将集合减少为单个值。转换为一个新的集合(如使用map和flatMap时)不同，您将在对集合中的每个元素应用闭包的基础上得到单个结果。</p>
+<p>假设我们正在创造一款游戏，在每个回合结束时，我们希望通过迭代游戏中的所有关卡模型并添加他们的得分来计算玩家的总得分。</p>
+<p>同样，这可以用可变Int和for循环来完成，但就像使用map和flatMap时一样，我们可以使用reduce一次性执行这个操作，这让我们可以避免任何可变状态。</p>
+<p>使用reduce，你传递一个初始值作为起始值，以及一个函数，通过获取当前值并转换它来返回一个新值，就像这样:</p>
+<pre><code class="language-swift">extension Game {
+    func calculateTotalScore() -&gt; Int {
+        return levels.reduce(0) { result, level in
+            // On each iteration we take the previous result
+            // and add the current level's score.
+            return result + level.score
+        }
+    }
+}
+</code></pre>
+<p>在标准库提供的所有转换api中，reduce可以说是最难理解的一个，有时会产生一些令人困惑的代码。 通过看上面的内容，它看起来像是我们试图减少数字0，这没有多大意义😅。</p>
+<p>让我们看看如何改进上述代码的可读性。 让我们看看如何改进上述代码的可读性。一种方法是在调用reduce之前将关卡分数映射到一个新的Int数组中，它让我们简单地将+操作符作为闭包传递 (因为现在我们需要传递一个(Int, Int) -&gt;的Int闭包，即+操作符):</p>
+<pre><code class="language-swift">extension Game {
+    func calculateTotalScore() -&gt; Int {
+        return levels.map({ $0.score }).reduce(0, +)
+    }
+}
+</code></pre>
+<p>好一点了，但我们还可以做得更好!由于(到目前为止)reduce最常见的用例是将数字相加，那么在Sequence中添加一个sum函数，让我们传入一个属性，该属性将用于reduce，如下所示:</p>
+<pre><code class="language-swift">extension Sequence {
+    func sum&lt;N: Numeric&gt;(by valueProvider: (Element) -&gt; N) -&gt; N {
+        return reduce(0) { result, element in
+            return result + valueProvider(element)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的扩展，我们现在可以简单地传递我们想要总结的属性，留给我们一个非常漂亮和干净的调用站点:</p>
+<pre><code class="language-swift">extension Game {
+    func calculateTotalScore() -&gt; Int {
+       return levels.sum { $0.score }
+    }
+}
+</code></pre>
+<p>很好,对吧?😀</p>
+<h2 id="zipping">Zipping</h2>
+<p>最后，让我们看看如何使用zip将两个序列组合为一个序列。当您有两个序列且您不确定它们的元素数是否匹配时，这特别有用。</p>
+<p>假设我们想要在一个视图中渲染一个视图模型，我们有一个ImageViews数组来渲染一系列的图像。如果使用经典的for循环，则必须进行边界检查，以确保没有访问数组中的下标越界:</p>
+<pre><code class="language-swift">func render(_ viewModel: ViewModel) {
+    for (index, imageName) in viewModel.imageNames.enumerated() {
+        let image = UIImage(named: imageName)
+
+        // Since we might have more images than we have place for
+        // in the UI, we need to add this bounds-check.
+        guard index &lt; imageViews.count else {
+            return
+        }
+
+        imageViews[index].image = image
+    }
+}
+</code></pre>
+<p>如果我们使用zip，我们可以免费进行边界检查。只有当两个序列的每个索引都有一个匹配的元素时，迭代才会继续，所以我们可以简单地这样写迭代</p>
+<pre><code class="language-swift">func render(_ viewModel: ViewModel) {
+    let images = viewModel.imageNames.flatMap(UIImage.init)
+
+    for (image, imageView) in zip(images, imageViews) {
+        imageView.image = image
+    }
+}
+</code></pre>
+<p>Very nice and clean 👍</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在序列和集合上使用函数转换可能是一把双刃剑。一方面，它可以让您大大减少执行一系列转换所需编写的代码数量，但另一方面，它也会让您的代码更难于阅读。</p>
+<p>和往常一样，决定什么时候部署这种特性是一种权衡，使用扩展在标准库之上添加您自己的方便api也是一种很好的解决方案。</p>
+<p>一个额外的好处是，由于Swift面向协议的特性，上面所有的api都可以在你可能创建的任何自定义集合上工作。要了解更多信息，请查看“在Swift中创建自定义收藏”。</p>
+<p><a href="https://www.swiftbysundell.com/articles/transforming-collections-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/J3hVc8gY-/" class="tag">
+                    collections
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/XJfPSb1BFK/" class="tag">
+                    data transformation
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/first-class-functions-in-swift/">
+                  <h3 class="post-title">
+                    First class functions in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

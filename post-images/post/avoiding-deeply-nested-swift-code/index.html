@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Avoiding deeply nested Swift code | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="代码风格和结构可以说是编程中最棘手的两个主题。这并不是因为它们需要任何特殊的技能或构建软件的丰富经验，而是因为它们在本质上是如此令人难以置信的主观。 一个人可能认为世界上最易读、结构最优美的代码，另一个人可能会觉得它神秘而复杂。
+然而，有一..." />
+    <meta name="keywords" content="maintenance,code structure,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Avoiding deeply nested Swift code</h2>
+            <div class="post-date">2020-05-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>代码风格和结构可以说是编程中最棘手的两个主题。这并不是因为它们需要任何特殊的技能或构建软件的丰富经验，而是因为它们在本质上是如此令人难以置信的主观。 一个人可能认为世界上最易读、结构最优美的代码，另一个人可能会觉得它神秘而复杂。</p>
+<p>然而，有一些技术可以使我们编写的代码更容易被其他人访问(即使他们可能不同意我们对特定风格的选择)。本周，让我们来看看一些这样的技术，它们都有相同的目标——减少代码中的缩进。</p>
+<h2 id="early-returns-and-code-extraction">Early returns and code extraction</h2>
+<p>让我们首先看一个相对简单的示例，说明如何在函数中使用早期返回对代码的整体可读性有相当大的影响 - 即使我们的表达式的形成方式，或我们的api的设计方式没有任何额外的变化。</p>
+<p>举个例子，我们用一个简短但有用的方法来扩展DocumentLibraryViewController，这个方法可以过滤文档数组，只包含当前用户未读和可访问的文档:</p>
+<pre><code class="language-swift">extension DocumentLibraryViewController {
+    func unreadDocuments(from list: [Document]) -&gt; [Document] {
+        list.filter { document in
+            if user.accessLevel &gt;= document.requiredAccessLevel {
+                if !user.readDocumentIDs.contains(document.id) {
+                    if document.expirationDate &gt; Date() {
+                        return true
+                    }
+                }
+            }
+    
+            return false
+        }
+    }
+}
+</code></pre>
+<p>虽然上面的代码按照预期的方式工作，但它有大量缩进的事实可以说使它比必须的“心理解析”更加困难。所以，让我们看看我们是否可以通过使用Swift的guard语句尽可能早来代替退出我们的方法：</p>
+<pre><code class="language-swift">extension DocumentLibraryViewController {
+    func unreadDocuments(from list: [Document]) -&gt; [Document] {
+        list.filter { document in
+            guard user.accessLevel &gt;= document.requiredAccessLevel else {
+                return false
+            }
+    
+            guard !user.readDocumentIDs.contains(document.id) else {
+                return false
+            }
+    
+            return document.expirationDate &gt; date
+        }
+    }
+}
+</code></pre>
+<p>尽管我们的逻辑仍然完全相同，但是现在可以更容易地快速了解函数的实际情况 - 因为它们现在从上到下列在同一缩进级别。</p>
+<p>除了使我们的代码更易于阅读和理解之外，做上述类型的重组的一个主要好处是，它经常让我们发现新的方法，我们可以进一步改进代码的整体结构。</p>
+<p>例如，由于函数的三个条件中有两个对文档实例起作用，我们可以将这些条件移到单独的扩展中-这不仅使代码更容易阅读和测试隔离，它也使我们可以重用它在我们的代码库的其他部分:</p>
+<pre><code class="language-swift">extension Document {
+    func isAccessible(for user: User, date: Date = .init()) -&gt; Bool {
+        guard user.accessLevel &gt;= requiredAccessLevel else {
+            return false
+        }
+
+        return expirationDate &gt; date
+    }
+}
+</code></pre>
+<p>请注意，我们现在还注入了当前日期，而不是内联创建它，这进一步提高了代码的可测试性(例如通过“时间旅行”)。</p>
+<p>同样，因为我们的主要unreadDocuments(from:)方法是直接操作文档数组的-并且只需要用户实例和当前日期-我们也可以选择从我们的DocumentLibraryViewController中提取它，并在任何包含Document元素的Sequence的扩展中实现它，如下所示:</p>
+<pre><code class="language-swift">extension Sequence where Element == Document {
+    func unread(for user: User, date: Date = .init()) -&gt; [Document] {
+        filter { document in
+            guard document.isAccessible(for: user, date: date) else {
+                return false
+            }
+
+            return !user.readDocumentIDs.contains(document.id)
+        }
+    }
+}
+</code></pre>
+<p>对上述API进行单元测试现在只是简单地创建一组文档值，以及一个用户实例和一个日期，这取决于我们希望测试的逻辑的哪一部分，然后验证我们的方法是否返回一个正确过滤过的文档数组。</p>
+<p>有了以上的调整，我们现在不仅将我们的逻辑建模为独立的函数，可以独立使用和测试，我们也使我们的调用站点读取得非常好:</p>
+<pre><code class="language-swift">let unreadDocuments = allDocuments.unread(for: user)
+</code></pre>
+<p>虽然我们最终做的不仅仅是减少上面的缩进，但当我们决定对大量缩进的代码做一些事情时，一切都开始了。这就是重构的神奇之处——为了简化而修改实现往往也会带来全新的改进空间。</p>
+<h2 id="untangling-nested-logic-branches">Untangling nested logic branches</h2>
+<p>然而，并不是所有的逻辑都可以被建模为一个简单的布尔条件序列——有时我们需要处理大量的状态和排列，这反过来可能要求我们将逻辑分支为几个嵌套的if和else语句。</p>
+<p>例如，这里我们正在处理一个ProductViewController，它在收到一个新的产品模型后使用一个私有的更新方法来填充它的视图。因为我们的UI最终的整体状态取决于许多因素——比如用户当前是否登录， 如果有任何折扣，等等-我们目前已经结束了一个相当长的，嵌套的实现，看起来像这样:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    private let sessionController: SessionController
+    private lazy var descriptionLabel = UILabel()
+    private lazy var favoriteButton = UIButton()
+    private lazy var priceView = PriceView()
+    private lazy var buyButton = UIButton()
+    
+    ...
+
+    private func update(with product: Product) {
+        if let user = sessionController.loggedInUser {
+            if let discount = product.discount(in: user.region) {
+                let lowerPrice = product.price - discount
+                priceView.amountLabel.text = String(lowerPrice)
+                priceView.discountLabel.text = String(discount)
+            } else {
+                priceView.amountLabel.text = String(product.price)
+                priceView.discountLabel.text = &quot;&quot;
+            }
+
+            if user.favoriteProductIDs.contains(product.id) {
+                favoriteButton.setTitle(&quot;Remove from favorites&quot;,
+                    for: .normal
+                )
+            } else {
+                favoriteButton.setTitle(&quot;Add to favorites&quot;,
+                    for: .normal
+                )
+            }
+
+            favoriteButton.isHidden = false
+        } else {
+            favoriteButton.isHidden = true
+            priceView.amountLabel.text = String(product.price)
+            priceView.discountLabel.text = &quot;&quot;
+        }
+
+        priceView.currencyLabel.text = product.currency.symbol
+        descriptionLabel.text = product.description
+    }
+}
+</code></pre>
+<p>乍一看，鉴于需要处理的条件和不同状态的数量，上面的方法似乎是我们能做到的最好的方法 - 但是，就像之前一样，一旦我们开始把我们的实现分成几个部分，我们很可能会发现我们可以采取的新方法。</p>
+<p>首先，让我们将所有产品绑定逻辑移到Product上的私有扩展中。这样，我们就可以独立地执行这些计算，并简单地返回表示应用程序当前状态的值——像这样:</p>
+<pre><code class="language-swift">// By keeping this extension private, we're able to implement
+// logic that's specific to our product view within it:
+private extension Product {
+    typealias PriceInfo = (price: Double, discount: Double)
+
+    func priceInfo(in region: Region?) -&gt; PriceInfo {
+        guard let discount = region.flatMap(discount) else {
+            return (price, 0)
+        }
+
+        return (price - discount, discount)
+    }
+
+    func favoriteButtonTitle(for user: User) -&gt; String {
+        if user.favoriteProductIDs.contains(id) {
+            return &quot;Remove from favorites&quot;
+        } else {
+            return &quot;Add to favorites&quot;
+        }
+    }
+}
+</code></pre>
+<p>上面的ProductInfo类型是作为一个元组实现的，这为在Swift中创建轻量级类型提供了很好的方法。</p>
+<p>接下来，让我们将所有视图状态计算封装到专用类型中。 我们将其称为ProductViewState，因为它的唯一用途是以只读方式表示我们的产品视图的当前状态。我们将用一个Product和一个可选的User来初始化它，然后使用我们刚刚实现的私有Product api来计算视图的当前状态:</p>
+<pre><code class="language-swift">struct ProductViewState {
+    // By making all of our properties constants, the compiler
+    // will generate an error if we forget to assign a value to
+    // one of them (including those that are optionals):
+    let priceText: String
+    let discountText: String
+    let currencyText: String
+    let favoriteButtonTitle: String?
+    let description: String
+
+    init(product: Product, user: User?) {
+        let priceInfo = product.priceInfo(in: user?.region)
+        priceText = String(priceInfo.price)
+        discountText = priceInfo.discount &gt; 0 ? String(priceInfo.discount) : &quot;&quot;
+        currencyText = product.currency.symbol
+        favoriteButtonTitle = user.map(product.favoriteButtonTitle) ?? &quot;&quot;
+        description = product.description
+    }
+}
+</code></pre>
+<p>我们还可以将上述类型建模为只读视图模型，将其称为ProductViewModel。</p>
+<p>有了上述两部分，我们现在可以回到视图控制器的update方法，并极大地简化它。所有嵌套的if和else语句都消失了，同样的属性也不再有重复的赋值。此外，我们的实现现在可以很容易地从上到下读取，因为我们已经将所有决策条件提取为独立的、更小的函数:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    ...
+
+    private func update(with product: Product) {
+        let state = ProductViewState(
+            product: product,
+            user: sessionController.loggedInUser
+        )
+
+        priceView.amountLabel.text = state.priceText
+        priceView.discountLabel.text = state.discountText
+        priceView.currencyLabel.text = state.currencyText
+
+        favoriteButton.setTitle(state.favoriteButtonTitle, for: .normal)
+        favoriteButton.isHidden = (state.favoriteButtonTitle == nil)
+
+        descriptionLabel.text = state.description
+    }
+}
+</code></pre>
+<p>就像当我们以前提取Document-related方法到单独的api,上面的重构的一个最大好处是,它使得单元测试更简单,现在我们所有的逻辑结构为纯函数,可以单独开发和测试。</p>
+<h2 id="swiftui-views">SwiftUI views</h2>
+<p>最后，让我们看看如何在使用SwiftUI构建视图时使用与上面相同的一些技术。</p>
+<p>由于SwiftUI的DSL使用闭包来封装各种视图的构造，所以很容易以一个大量缩进的实现结束，即使在构建一个相对简单的列表视图时——比如下面这个:</p>
+<pre><code class="language-swift">struct EventListView: View {
+    @ObservedObject var manager: EventManager
+    var body: some View {
+        NavigationView {
+            List(manager.upcomingEvents) { event in
+                NavigationLink(
+                    destination: EventView(event: event),
+                    label: {
+                        HStack {
+                            Image(event.iconName)
+                            VStack(alignment: .leading) {
+                                Text(event.title)
+                                Text(event.location.name)
+                            }
+                        }
+                    }
+                )
+            }
+            .navigationBarTitle(&quot;Upcoming events&quot;)
+        }
+    }
+}
+</code></pre>
+<p>虽然在使用嵌套的SwiftUI视图时，上述的“代码金字塔”看起来是不可避免的，但是在这种情况下，我们还是有很多方法可以极大地扁平化(和简化)我们的代码。</p>
+<p>就像我们前面将各种逻辑的部分提取为不同的类型和函数一样，我们在这里也可以做同样的事情——例如创建一个专用类型来呈现上面列表中的行。由于SwiftUI视图只是对UI的轻量级描述，所以通常只需将有问题的代码移动到符合视图的新类型中就可以了——像这样:</p>
+<pre><code class="language-swift">struct EventListRow: View {
+    var event: Event
+
+    var body: some View {
+        HStack {
+            Image(event.iconName)
+            VStack(alignment: .leading) {
+                Text(event.title)
+                Text(event.location.name)
+            }
+        }
+    }
+}
+</code></pre>
+<p>除了创建独立的视图类型外，使用私有工厂方法也是将SwiftUI视图拆分为独立部分的好方法。例如，下面是我们如何定义一个方法来包装我们新的EventListRow类型的实例到NavigationLink中，使它准备好显示在我们的列表中:</p>
+<pre><code class="language-swift">private extension EventListView {
+    func makeRow(for event: Event) -&gt; some View {
+        NavigationLink(
+            destination: EventView(event: event),
+            label: {
+                EventListRow(event: event)
+            }
+        )
+    }
+}
+</code></pre>
+<p>很酷的是，有了上面的两个调整，我们现在可以从EventListView中移除几乎所有的缩进-通过在创建列表时传递上面的makeRow方法作为第一个类函数，像这样:</p>
+<pre><code class="language-swift">struct EventListView: View {
+    @ObservedObject var manager: EventManager
+
+    var body: some View {
+        NavigationView {
+            List(manager.upcomingEvents, rowContent: makeRow)
+                .navigationBarTitle(&quot;Upcoming events&quot;)
+        }
+    }
+}
+</code></pre>
+<p>虽然总是删除所有的缩进源并不是一个好的目标——因为适当的缩进量也可以帮助我们提高给定类型或函数的可读性-看到Swift在代码结构方面给了我们多大的灵活性是很有趣的，这反过来又让我们能够根据给定的情况调整我们的结构选择。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然在代码库的某些部分中，大量的缩进似乎是不可避免的，但实际上很少出现这种情况-通常有多种方法，我们可以采取的方式来构建我们的逻辑，不仅减少所需的缩进量，同时也让我们的逻辑流程更容易理解。</p>
+<p>一旦我们开始理清一段大量缩进的代码，我们也很可能会发现构建、重用和测试代码的新方法-这可以使重构成为一种非常自然和整洁的方式来提出共享的抽象，并提高代码库的整体可测试性。</p>
+<p><a href="https://www.swiftbysundell.com/articles/avoiding-deeply-nested-swift-code/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5VmnTv3Lu/" class="tag">
+                    maintenance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/building-an-observable-type-for-swiftui-views/">
+                  <h3 class="post-title">
+                    Building an Observable type for SwiftUI views
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

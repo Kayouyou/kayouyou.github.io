@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Modular Architecture in iOS - Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Modular Architecture in iOS - Part 1
+
+
+1.1. Intro
+1.2. Motivation
+1.3. External Dependencies
+1.4. Architecture
+1.5. ..." />
+    <meta name="keywords" content="modular,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Modular Architecture in iOS - Part 1</h2>
+            <div class="post-date">2021-05-11</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#ModularArchitectureiniOS-Part1">Modular Architecture in iOS - Part 1</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Intro">Intro</a></li>
+<li>1.2. <a href="#Motivation">Motivation</a></li>
+<li>1.3. <a href="#ExternalDependencies">External Dependencies</a></li>
+<li>1.4. <a href="#Architecture">Architecture</a></li>
+<li>1.5. <a href="#Settinguptheworkspace">Setting up the workspace</a></li>
+<li>1.6. <a href="#Creatingamodule.">Creating a module.</a></li>
+<li>1.7. <a href="#AddingaModuleasaDependencyoftheApp.">Adding a Module as a Dependency of the App.</a></li>
+<li>1.8. <a href="#Addinginter-moduledependencies.">Adding inter-module dependencies.</a></li>
+<li>1.9. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namemodulararchitectureinios-part1amodular-architecture-in-ios-part-1">1. <a name='ModularArchitectureiniOS-Part1'></a>Modular Architecture in iOS - Part 1</h2>
+<h3 id="11-a-nameintroaintro">1.1. <a name='Intro'></a>Intro</h3>
+<p>在大型项目中，以及任何项目中，独立创建、运行和测试部件的能力都是必要的。一个部分的改变不应该要求重新编译整个应用程序，直到它确实需要。</p>
+<p>在本文中，我将解释如何使用Cocoapods和Xcode创建模块化架构。</p>
+<p>就像这样:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqdaycixxfj30ug0u0n1w.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="12-a-namemotivationamotivation">1.2. <a name='Motivation'></a>Motivation</h3>
+<p>想象一下，我们需要在屏幕上做一个小的改变，并尝试它，看看这个改变是否有效。如果我们正在开发的应用程序是作为单个产品独立构建的，那么我们将需要重新编译整个代码库以查看结果。这个过程既费时又乏味。我们应该能够独立地编译和运行部分。</p>
+<p>有时，应用程序的一部分非常复杂和庞大，足以被单独视为产品。我们可以称之为模块。模块化是实现可伸缩和随时间推移而维护的软件的关键。</p>
+<p>尽管它可能在项目的开始时添加复杂性,从长远来看,我们以模块化的解决方案可能会发现很多好处:更改后重新编译时更少的构建时间,清晰的开发区域/责任,isolation of changes,能够使用playgrounds来构建和测试界面,等等。</p>
+<h3 id="13-a-nameexternaldependenciesaexternal-dependencies">1.3. <a name='ExternalDependencies'></a>External Dependencies</h3>
+<p>如今，大多数iOS应用程序都使用Cocoapods或Carthage作为外部依赖管理器。这篇文章的重点是Cocoapods，但这种方法也可以用于Carthage。</p>
+<p>据我所知，最重要的区别是，在干净的构建中，Carthage可能产生更低的编译时间。Carthage在应用的构建阶段之外编译框架，只有当我们运行update或install时。</p>
+<p>我还没有尝试过Xcode 11、iOS13和Swift Package Manager。似乎用这样的工具构建一个模块化的体系结构是很容易的。这可能是事实，但所有的应用程序都能针对iOS 13拥有这些功能还需要一段时间。所以，Cocoapods和Carthage还会在这里待上一段时间。</p>
+<p>那么，我们如何使用Cocoapods作为依赖管理器来实现模块化呢?</p>
+<h3 id="14-a-namearchitectureaarchitecture">1.4. <a name='Architecture'></a>Architecture</h3>
+<p>该方法包含一个包含多个项目的工作空间。一个项目为最终产品(应用程序)和一个项目为每个模块。应用程序依赖于模块，而模块也可以相互依赖。最后，Cocoapods提供外部依赖。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqdb3jbnz6j30g40wsjwb.jpg" alt="avatar" loading="lazy"></figure>
+<p>每个模块编译为目标应用程使用的框架。模块可以相互依赖(虽然没有循环依赖)，也可以依赖由Cocoapods处理的第三方sdk。</p>
+<p>我们在一个Podfile中定义了外部依赖关系。当我们安装pods时，工作空间将被一个pods项目填充。Pods将输出每个模块和应用程序所依赖的框架。</p>
+<p>在下一节中，我将解释如何 创建这样一个结构。</p>
+<h3 id="15-a-namesettinguptheworkspaceasetting-up-the-workspace">1.5. <a name='Settinguptheworkspace'></a>Setting up the workspace</h3>
+<ol>
+<li>创建一个工作区。</li>
+<li>为应用程序创建一个项目。</li>
+<li>初始化Cocoapods和命名的应用程序 依赖关系。</li>
+<li>将PodIle放在根级 工作区，工作区Ile所在的位置。</li>
+<li>(可选)我喜欢PodIle和 PodIle。锁在工作空间内。</li>
+<li>(可选)我喜欢有一个操场 每个模块都要尝试一下。</li>
+<li>确保应用程序编译和使用 外部依赖。</li>
+</ol>
+<p>工作空间看起来应该像这样:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqdb5ivcmpj30r80howif.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="16-a-namecreatingamoduleacreating-a-module">1.6. <a name='Creatingamodule.'></a>Creating a module.</h3>
+<ol>
+<li>创建一个项目，并将其放在 工作区。</li>
+<li>将模块的依赖项添加到 Podfile。</li>
+<li>将步骤2的依赖项也添加到应用程序的pods中。</li>
+<li>运行pod安装并编译模块，以确保它可以使用外部依赖项。</li>
+<li>添加模块作为项目的依赖项(请参见添加 模块作为App的依赖项)。</li>
+</ol>
+<p>At this time, your Workspace, PodIle, and<br>
+Folder structure should look like this:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqdb9sn5tbj31ah0u04au.jpg" alt="avatar" loading="lazy"></figure>
+<!-- <iframe title="vimeo-player" src="https://player.vimeo.com/video/350956692" width="640" height="289" frameborder="0" allowfullscreen></iframe> -->
+<p><a href="https://player.vimeo.com/video/350956692">操作视频</a></p>
+<h3 id="17-a-nameaddingamoduleasadependencyoftheappaadding-a-module-as-a-dependency-of-the-app">1.7. <a name='AddingaModuleasaDependencyoftheApp.'></a>Adding a Module as a Dependency of the App.</h3>
+<ol>
+<li>
+<p>创建一个没有文件夹的组，并命名为“Dependencies”或任何你喜欢的名称。</p>
+</li>
+<li>
+<p>将要依赖的项目拖到上一步中创建的组中。</p>
+</li>
+<li>
+<p>(仅第一次)创建一个复制文件构建阶段到框架 - Create a Copy Files Build Phase to Frameworks</p>
+</li>
+<li>
+<p>将框架产品添加到第3步中创建的复制框架构建阶段。</p>
+</li>
+</ol>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqdbb7hlylj317y0u0426.jpg" alt="avatar" loading="lazy"></figure>
+<!-- <iframe title="vimeo-player" src="https://player.vimeo.com/video/350960412" width="640" height="288" frameborder="0" allowfullscreen></iframe> -->
+<p><a href="https://player.vimeo.com/video/350960412">操作视频</a></p>
+<h3 id="18-a-nameaddinginter-moduledependenciesaadding-inter-module-dependencies">1.8. <a name='Addinginter-moduledependencies.'></a>Adding inter-module dependencies.</h3>
+<p>当一个模块依赖于另一个内部模块时，请执行此操作。例如，Feature X依赖于Core。</p>
+<ol>
+<li>In the target module (Feature X), create a group without folder and name it “Dependencies” or whatever you like.</li>
+<li>Drag the project you want to depend upon (Core) to the group created in the previous step.</li>
+<li>Drag the framework product to the embedded binaries</li>
+<li>Add the framework product to the copy frameworks build phase created in step 3.</li>
+</ol>
+<h3 id="19-a-nameconclusionaconclusion">1.9. <a name='Conclusion'></a>Conclusion</h3>
+<p>我认为，不仅大型项目可以从这种架构中获益。能够编译应用的独立部分并在不同的playgrounds运行它们确实是非常棒的。这并不难实现，而且随着时间的推移，你可以享受到好处。</p>
+<p>一旦你掌握了诀窍，配置Xcode工作区来使用模块并不复杂。这种方法也可以用于新项目和现有项目中。</p>
+<p>这种模块化的影响超过了单纯的实用性，改变了我们内部设计和编码的方式。当一个对象依赖于不属于特定层或模块的东西时，这就变得很明显了。设计错误变得更加明显，整体质量得到提高。</p>
+<p><a href="https://e.coding.net/kayouyou/kayouyoublog/MultiProjects.git">代码地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/GAkD_BWre/" class="tag">
+                    modular
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/automatic-reference-counting-from-swift-language-guide/">
+                  <h3 class="post-title">
+                    Automatic Reference Counting from Swift language guide
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

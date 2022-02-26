@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Why SwiftUI primitives have body type Never? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+The View protocol
+
+
+
+
+Never
+
+
+
+
+Is Never a View?
+
+
+
+
+Conclusions
+
+
+
+
+
+当定义一个SwiftUI视图时，它会自动写入struct MyView: view，后跟va..." />
+    <meta name="keywords" content="never,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Why SwiftUI primitives have body type Never?</h2>
+            <div class="post-date">2021-10-12</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#TheViewprotocol">The View protocol</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Never">Never</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#IsNeveraView">Is Never a View?</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Conclusions">Conclusions</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>当定义一个SwiftUI视图时，它会自动写入<strong>struct MyView: view</strong>，后跟<strong>var body: some view{…}</strong>．我们所有的views都是由其他views组成的。在某些时候，SwiftUI需要在屏幕上绘制一些东西: 什么时候结束? SwiftUI如何知道它已经到达视图层次结构的底部?</p>
+<p>在本文中，让我们继续探索SwiftUI的内部工作原理。</p>
+<h2 id="1-a-nametheviewprotocolathe-view-protocol">1. <a name='TheViewprotocol'></a>The View protocol</h2>
+<p>每个SwiftUI视图都是符合<em>view</em>协议的类型:</p>
+<pre><code class="language-swift">public protocol View {
+  associatedtype Body: View
+  @ViewBuilder var body: Self.Body { get }
+}
+</code></pre>
+<p>由于这是一个Swift协议，我们可以使任何类型都符合它，例如String:</p>
+<pre><code class="language-swift">extension String: View {
+  public var body: some View {
+    Text(self)
+  }
+}
+</code></pre>
+<blockquote>
+<p>这只是一个例子，不是建议，也不是最佳实践。</p>
+</blockquote>
+<p>它允许我们直接将<em>String</em>写入视图声明:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    &quot;Hello world!&quot;
+  }
+}
+</code></pre>
+<p>当我们在<em>String</em>的主体中使用Text原语时，这将像预期的那样工作，但如果我们不这样做呢? 让我们构建一个不使用SwiftUI原语的新视图:</p>
+<pre><code class="language-swift">struct MyView: View {
+  var body: some View {
+    self
+  }
+}
+</code></pre>
+<p>在这个例子中，我们定义了一个名为<em>MyView</em>的新视图，我们在ContentView中使用它:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    MyView()
+  }
+}
+</code></pre>
+<p>构建完成。然而，由于<em>MyView</em>的主体是视图本身，我们陷入了无限递归，这将使SwiftUI终止我们的应用。</p>
+<p>尽管<em>View</em>协议允许我们遵循它，但如果我们想在SwiftUI中使用这些声明，我们必须使用SwiftUI原语，否则我们的应用程序就会崩溃。</p>
+<p>这些SwiftUI原语有什么独特之处，让我们能够打破我们所处的无限递归? 答案就在他们的<strong>body type</strong>:<em>Never</em>。</p>
+<h2 id="2-a-nameneveranever">2. <a name='Never'></a>Never</h2>
+<p>Swift 3.0给我们带来了Never，一种类型:<strong>Never</strong>是一种没有值的类型，因此我们不可能获得或创建实例。</p>
+<p>我们也许见过 <strong>Never：</strong></p>
+<ul>
+<li>在<em>Combine's Publishers</em>中，通常表示给定的<em>publisher</em>不能抛出错误</li>
+<li>作为**preconditionFailure(<em>:file:line:)或fatalError(</em>:file:line:)**的返回类型，表示一旦调用，就没有出路了</li>
+</ul>
+<p>让我们声明一个body类型为Never的视图:</p>
+<pre><code class="language-swift">struct ImpossibleView: View {
+  var body: Never
+}
+</code></pre>
+<p>然而，我们不能使用它:我们不能实例化它而不传递类似**fatalError()**的东西。不管怎样，让我们实现body并运行我们的应用程序:</p>
+<pre><code class="language-swift">struct ImpossibleView: View {
+  var body: Never {
+    fatalError(&quot;This will make our app 💥&quot;)
+  }
+}
+</code></pre>
+<p>这是我们ContentView:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    ImpossibleView()
+  }
+}
+</code></pre>
+<p>不出意外，我们的应用程序将再次崩溃，然而，崩溃的原因是致命错误:<em>ImpossibleView may not have Body == Never: file SwiftUI, line 0,</em> 而不是 <em>This will make our app 💥</em></p>
+<p>在读取整个堆栈跟踪信息时，我们会看到SwiftUI的<em>BodyAccessor.makeBody(container:inputs:fields:)<em>方法内部有一个</em>assertionFailure</em>，它不喜欢我们的ImpossibleView体类型。</p>
+<blockquote>
+<p>如果传递的是类实例而不是值类型，这个方法也会导致应用程序崩溃。</p>
+</blockquote>
+<p>只有在SwiftUI中声明的视图才允许拥有<em>body</em>类型为<em>Never</em>。尽管不能访问<em>BodyAccessor</em>的代码，但很明显，这些视图要么传递这个断言，要么采取不同的、特殊的路径。</p>
+<p>SwiftUI不能一直要求视图bodies:它需要一组特殊的视图，也就是一组原语，它可以在不要求其body的情况下绘制它们。这就是为什么<strong>Text, ZStack, Color</strong>等等，<strong>Never</strong>作为他们的<em>body</em>类型。</p>
+<h2 id="3-a-nameisneveraviewais-never-a-view">3. <a name='IsNeveraView'></a>Is Never a View?</h2>
+<p>符合View的类型需要返回的主体也是View: <strong>Never</strong>是一个视图。</p>
+<p>SwiftUI知道不要请求body类型为Never的视图的body，如果它不是一个原语或做其他事情，就会崩溃。然而，由于我们必须使代码能够编译，SwiftUI需要扩展<strong>Never to be a View</strong>:终极的、不可能的视图。</p>
+<p>为了证实这一点，我们可以检查SwiftUI的头文件，在那里我们会发现以下声明(分散在几个地方):</p>
+<pre><code class="language-swift">extension Never: View {
+  public typealias Body = Never
+  public var body: Never { get }
+}
+</code></pre>
+<p>SwiftUI团队本可以宣布使用另一种特殊类型而不是Never。然而，我发现这个解决方案非常优雅，非常适合用例。</p>
+<h2 id="4-a-nameconclusionsaconclusions">4. <a name='Conclusions'></a>Conclusions</h2>
+<p>在本文中，我们探讨了SwiftUI如何在绘制视图时打破无限递归的挑战，以及它如何使用特殊的Swift的Never类型来优雅地实现这一点。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1Ry6gxsFF/" class="tag">
+                    never
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/custom-build-state/">
+                  <h3 class="post-title">
+                    Custom build State
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

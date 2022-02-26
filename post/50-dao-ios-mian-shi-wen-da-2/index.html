@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>50道iOS面试问答 - 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+50道iOS面试问答 - 2
+
+1- Please explain Method Swizzling in Swift
+2- What is the difference Non-Escaping and Escaping Closur..." />
+    <meta name="keywords" content="interview" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">50道iOS面试问答 - 2</h2>
+            <div class="post-date">2021-05-25</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gquph9xve9j30sg0sgwfl.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#50%E9%81%93ios%E9%9D%A2%E8%AF%95%E9%97%AE%E7%AD%94---2">50道iOS面试问答 - 2</a>
+<ul>
+<li><a href="#1--please-explain-method-swizzling-in-swift">1- Please explain Method Swizzling in Swift</a></li>
+<li><a href="#2--what-is-the-difference-non-escaping-and-escaping-closures">2- What is the difference Non-Escaping and Escaping Closures?</a></li>
+<li><a href="#3--explain-weak-self-and-unowned-self-">3- Explain [weak self] and [unowned self] ?</a></li>
+<li><a href="#4--what-is-arc-">4- What is ARC ?</a></li>
+<li><a href="#5--explain-keypath-">5- Explain #keyPath() ?</a></li>
+<li><a href="#6--explain-difference-between-scenedelegate-and-appdelegate">6- Explain Difference between SceneDelegate and AppDelegate</a></li>
+<li><a href="#7--what-makes-react-native-special-for-ios-react-native%E4%B8%BA%E4%BD%95%E9%80%82%E5%90%88ios">7- What makes React Native special for iOS? (React Native为何适合iOS?)</a></li>
+<li><a href="#8--what-is-nsfetchrequest">8- What is NSFetchRequest?</a></li>
+<li><a href="#9--explain-nspersistentcontainer">9- Explain NSPersistentContainer</a></li>
+<li><a href="#10--explain-nsfetchedresultscontroller">10- Explain NSFetchedResultsController</a></li>
+<li><a href="#11--what-is-the-three-major-debugging-improvements-in-xcode-8">11- What is the three major debugging improvements in Xcode 8?</a></li>
+<li><a href="#12--what-is-the-test-driven-development-of-three-simple-rules">12- What is the Test Driven Development of three simple rules?</a></li>
+<li><a href="#13--please-explain-final-keyword-into-the-class">13- Please explain final keyword into the class?</a></li>
+<li><a href="#14--what-does-yak-shaving-mean-%E8%96%85%E7%89%9B%E6%AF%9B%E4%BB%80%E4%B9%88%E6%84%8F%E6%80%9D">14- What does Yak Shaving mean? (薅牛毛什么意思)</a></li>
+<li><a href="#15--what-is-the-difference-open--public-access-level">15- What is the difference open &amp; public access level?</a></li>
+<li><a href="#16--what-is-the-difference-fileprivate-private-and-public-privateset-access-level-">16- What is the difference fileprivate, private and public private(set) access level ?</a></li>
+<li><a href="#17--what-is-internal-access-">17- What is Internal access ?</a></li>
+<li><a href="#18--what-is-the-difference-between-bdd-and-tdd">18- What is the difference between BDD and TDD?</a></li>
+<li><a href="#19--please-explain-arrange-act-assert">19- Please explain “Arrange-Act-Assert”</a></li>
+<li><a href="#20--what-is-the-benefit-of-writing-tests-in-ios-apps">20- What is the benefit of writing tests in iOS apps?</a></li>
+<li><a href="#21--what-is-five-essential-practical-guidelines-to-improve-your-typographic-quality-of-mobile-product-designs">21- What is five essential practical guidelines to improve your typographic quality of mobile product designs?</a></li>
+<li><a href="#22--explain-forced-unwrapping">22- Explain Forced Unwrapping</a></li>
+<li><a href="#23--how-to-educate-app-with-context">23- How to educate app with Context?</a></li>
+<li><a href="#24--what-is-bitcode-">24- What is bitcode ?</a></li>
+<li><a href="#25--explain-swift-standard-library-protocol-">25- Explain Swift Standard Library Protocol ?</a></li>
+<li><a href="#26--what-is-the-difference-svn-and-git-">26- What is the difference SVN and Git ?</a></li>
+<li><a href="#27--what-is-the-difference-collectionviews--tableviews">27- What is the difference CollectionViews &amp; TableViews?</a></li>
+<li><a href="#28--what-is-alamofire-doing">28- What is Alamofire doing?</a></li>
+<li><a href="#29--rest-http-json--whats-that">29- REST, HTTP, JSON — What’s that?</a></li>
+<li><a href="#30--what-problems-does-delegation-solve">30- What problems does delegation solve?</a></li>
+<li><a href="#31--what-is-the-major-purposes-of-frameworks">31- What is the major purposes of Frameworks?</a></li>
+<li><a href="#32--explain-swift-package-manager">32- Explain Swift Package Manager</a></li>
+<li><a href="#33--what-is-the-difference-between-a-delegate-and-an-nsnotification">33- What is the difference between a delegate and an NSNotification?</a></li>
+<li><a href="#34--explain-sirikit-limitations">34- Explain SiriKit Limitations</a></li>
+<li><a href="#35--why-do-we-use-a-delegate-pattern-to-be-notified-of-the-text-fields-events">35- Why do we use a delegate pattern to be notified of the text field’s events?</a></li>
+<li><a href="#36--how-is-an-inout-parameter-different-from-a-regular-parameter">36- How is an inout parameter different from a regular parameter?</a></li>
+<li><a href="#37--explain-view-controller-lifecycle-events-order">37- Explain View Controller Lifecycle events order?</a></li>
+<li><a href="#38--what-is-the-difference-between-llvm-and-clang">38- What is the difference between LLVM and Clang?</a></li>
+<li><a href="#39--what-is-class-">39- What is Class ?</a></li>
+<li><a href="#40--what-is-object">40- What is Object?</a></li>
+<li><a href="#41--what-is-interface">41- What is interface?</a></li>
+<li><a href="#42--when-and-why-do-we-use-an-object-as-opposed-to-a-struct">42- When and why do we use an object as opposed to a struct?</a></li>
+<li><a href="#43--what-is-uistackview">43- What is UIStackView?</a></li>
+<li><a href="#44--what-are-the-states-of-an-ios-app">44- What are the states of an iOS App?</a></li>
+<li><a href="#45--what-are-the-most-important-application-delegate-methods-a-developer-should-handle">45- What are the most important application delegate methods a developer should handle?</a></li>
+<li><a href="#46--what-is-the-difference-between-property-and-instance-variable">46- What is the difference between property and instance variable?</a></li>
+<li><a href="#47--how-can-we-add-uikit-for-swift-package-manager">47- How can we add UIKit for Swift Package Manager?</a></li>
+<li><a href="#48--explain-the-difference-between-sdk-and-framework">48- Explain the difference between SDK and Framework</a></li>
+<li><a href="#49--what-is-downcasting-%E5%90%91%E4%B8%8B%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E6%98%AF%E4%BB%80%E4%B9%88">49- What is Downcasting? (向下类型转换是什么?)</a></li>
+<li><a href="#50--explain-labeled-statements-%E8%A7%A3%E9%87%8A%E6%A0%87%E8%AE%B0%E8%AF%AD%E5%8F%A5">50- Explain Labeled Statements (解释标记语句)</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="50道ios面试问答-2">50道iOS面试问答 - 2</h2>
+<!-- ![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gquph9xve9j30sg0sgwfl.jpg) -->
+<h3 id="1-please-explain-method-swizzling-in-swift">1- Please explain Method Swizzling in Swift</h3>
+<p>方法混合(Method swizling)是Objective-C和其他支持动态方法调度的语言中的一个著名实践。通过混合，可以在运行时用不同的方法替换方法的实现，方法的实现可以通过更改特定#selector(方法)和包含其实现的函数之间的映射来实现。</p>
+<p>要在你的Swift类中使用方法混调，有两个要求你必须遵守:</p>
+<ul>
+<li>包含要混合的方法的类必须扩展NSObject</li>
+<li>你想要混合的方法必须有dynamic属性</li>
+</ul>
+<h3 id="2-what-is-the-difference-non-escaping-and-escaping-closures">2- What is the difference Non-Escaping and Escaping Closures?</h3>
+<p>非逃逸闭包的生命周期很简单:</p>
+<ol>
+<li>向函数传递闭包</li>
+<li>函数运行闭包(或不运行)</li>
+<li>函数返回</li>
+</ol>
+<p><strong>逃离闭包意味着</strong>, 在函数内部，您仍然可以运行(或不运行)闭包;  闭包的额外部分被存储在某个地方，它的寿命比函数长。有几种方法可以让逃逸闭包包含它的函数:</p>
+<ul>
+<li>Asynchronous execution: 如果在分派队列上异步执行闭包，该队列将为您保留该闭包。您不知道闭包何时执行，也不能保证它在函数返回之前完成。</li>
+<li>Storage:  将闭包存储到一个全局变量、属性或函数调用之后的任何其他存储位意味着闭包也已逃逸。</li>
+</ul>
+<p><a href="https://swiftunboxed.com/lang/closures-escaping-noescape-swift3/">更多细节</a></p>
+<h3 id="3-explain-weak-self-and-unowned-self">3- Explain [weak self] and [unowned self] ?</h3>
+<p><strong>unowned</strong>(非强引用)和弱引用一样，只有一个例外:变量不会变成nil，而且不能是可选的。</p>
+<p>您试图在变量的实例已被释放后访问该变量时。这意味着，只有当您确定在对应的实例被释放后该变量将永远不会被访问时，您才应该使用<strong>unowned</strong>变量。</p>
+<p>但是，如果您不希望该变量是弱的，并且您确定在相应的实例被释放后无法访问该变量，那么您可以使用<strong>unowned</strong>。</p>
+<ul>
+<li>每次与非可选类型一起使用</li>
+<li>每次与let连用</li>
+</ul>
+<p>通过声明它[<strong>weak self</strong>]你可以处理这种情况，它可能在闭包内的某个点为nil，因此变量必须是可选的。在一个异步网络请求中使用 <strong>[weak self]</strong> 的例子，是在一个视图控制器中，该请求被用来填充视图。</p>
+<h3 id="4-what-is-arc">4- What is ARC ?</h3>
+<p>ARC是一个编译时特性，是苹果版本的自动内存管理。它代表自动引用计数。这意味着它只在对象没有强引用/时释放对象的内存。</p>
+<h3 id="5-explain-keypath">5- Explain #keyPath() ?</h3>
+<p>使用#keyPath()，将通过将键路径字面量字符串用作StaticString或StringLiteralConvertible来执行静态类型检查。此时，将检查它以确保它是正确的</p>
+<ol>
+<li>
+<p>真的是一种存在的东西吗</p>
+</li>
+<li>
+<p>正确地使用Objective-C。</p>
+</li>
+</ol>
+<h3 id="6-explain-difference-between-scenedelegate-and-appdelegate">6- Explain Difference between SceneDelegate and AppDelegate</h3>
+<p>AppDelegateis 是UIKit框架的一部分。 The SceneDelegatetakes 在iOS13中从AppDelegate中接管了这个角色。窗口的概念被场景的概念所取代。多个场景让我们能够在iOS和iPadOS上构建多窗口应用。</p>
+<h3 id="7-what-makes-react-native-special-for-ios-react-native为何适合ios">7- What makes React Native special for iOS? (React Native为何适合iOS?)</h3>
+<ol>
+<li>
+<p>(不像PhoneGap)与React Native你的应用逻辑是在JavaScript中编写和运行，而你的应用UI是完全本地的;因此，你没有HTML5 UI的典型妥协。</p>
+</li>
+<li>
+<p>另外(与Titanium不同)，React引入了一种新颖、激进且功能强大的方法来构建用户界面。简而言之，应用程序UI只是表示为当前应用程序状态的函数。</p>
+</li>
+</ol>
+<h3 id="8-what-is-nsfetchrequest">8- What is NSFetchRequest?</h3>
+<p>NSFetchRequest是负责从Core Data获取数据的类。获取请求既强大又灵活。 您可以使用获取请求来获取一组符合所提供的条件、单个值等的对象。</p>
+<h3 id="9-explain-nspersistentcontainer">9- Explain NSPersistentContainer</h3>
+<p>持久化容器创建并返回一个容器，将应用程序的存储加载到该容器中。 此属性是可选的，因为存在可能导致存储创建失败的合法错误条件。</p>
+<h3 id="10-explain-nsfetchedresultscontroller">10- Explain NSFetchedResultsController</h3>
+<p>NSFetchedResultsController是一个控制器，但不是视图控制器。它没有用户界面。它的目的是为了简化开发人员的工作，抽象出同步一个表视图和一个由Core data支持的数据源所需的大量代码。</p>
+<p>正确地设置NSFetchedResultsController，你的表就会模仿它的数据源，而不需要写几行代码。</p>
+<h3 id="11-what-is-the-three-major-debugging-improvements-in-xcode-8">11- What is the three major debugging improvements in Xcode 8?</h3>
+<p>视图调试器让我们可视化我们的布局，并在运行时查看约束定义。虽然从Xcode 6开始就有了，但是Xcode 8为约束冲突和其他非常方便的特性引入了一些方便的新警告。</p>
+<p>线程杀毒器是Xcode 8中一个全新的运行时工具，它可以提醒你线程问题——尤其是潜在的竞争条件。</p>
+<p>内存图形调试器也是Xcode 8的新功能。 它提供了可视化的应用程序的内存图在时间点和标志泄漏在问题导航器。</p>
+<h3 id="12-what-is-the-test-driven-development-of-three-simple-rules">12- What is the Test Driven Development of three simple rules?</h3>
+<ol>
+<li>
+<p>您不允许编写任何产品代码，除非它是为了使失败的单元测试通过。</p>
+</li>
+<li>
+<p>您不允许编写任何足以失败的单元测试; 编译失败就是失败。</p>
+</li>
+<li>
+<p>除了能够通过一个失败的单元测试之外，您不允许编写更多的产品代码。</p>
+</li>
+</ol>
+<h3 id="13-please-explain-final-keyword-into-the-class">13- Please explain final keyword into the class?</h3>
+<p>通过在方法名前添加关键字final，我们可以防止方法被重写。 如果我们可以将最后一个class关键字替换为一个单词static并获得相同的行为。</p>
+<h3 id="14-what-does-yak-shaving-mean-薅牛毛什么意思">14- What does Yak Shaving mean? (薅牛毛什么意思)</h3>
+<p>“薅牛毛”是一个编程术语，指的是一个项目进入下一个里程碑之前需要执行的一系列任务。</p>
+<h3 id="15-what-is-the-difference-open-public-access-level">15- What is the difference open &amp; public access level?</h3>
+<ul>
+<li>
+<p><strong>open</strong>允许其他模块使用该类并继承该类; 对于成员，它允许其他模块使用该成员并覆盖它。有关更多信息,参考Apple官方指南。</p>
+</li>
+<li>
+<p><strong>public</strong> 只允许其他模块使用公共类和公共成员。公共类不能再被子类化，也不能重写公共成员。</p>
+</li>
+</ul>
+<h3 id="16-what-is-the-difference-fileprivate-private-and-public-privateset-access-level">16- What is the difference fileprivate, private and public private(set) access level ?</h3>
+<p><strong>fileprivate</strong> 在当前文件中是否可以从不同的类或结构访问, <strong>private</strong> 可在当前声明中访问。它在文件外不可见。</p>
+<p><strong>public private(set)</strong> 意思是getter是公共的，setter是私有的。</p>
+<h3 id="17-what-is-internal-access">17- What is Internal access ?</h3>
+<p>内部访问允许实体在其定义模块的任何源文件中使用，但不能在模块外部的任何源文件中使用。</p>
+<p>内部访问是默认的访问级别。因此，即使我们没有在代码中编写任何访问控制说明符，我们的代码在默认情况下已经处于内部级别。</p>
+<h3 id="18-what-is-the-difference-between-bdd-and-tdd">18- What is the difference between BDD and TDD?</h3>
+<p>BDD和TDD之间的主要区别在于BDD测试用例可以被非工程师阅读，这在团队中非常有用。</p>
+<p>iOS我更喜欢Quick BDD框架和它的“匹配器框架”，叫做Nimble。</p>
+<h3 id="19-please-explain-arrange-act-assert">19- Please explain “Arrange-Act-Assert”</h3>
+<p>AAA是一种在单元测试中安排和格式化代码的模式。 如果我们要编写XCTests，每个测试将把这些功能部分分组，用空白行分隔:</p>
+<ul>
+<li>安排所有必要的先决条件和输入。</li>
+<li>作用于被测试的对象或方法。</li>
+<li>断言预期的结果已经发生。</li>
+</ul>
+<h3 id="20-what-is-the-benefit-of-writing-tests-in-ios-apps">20- What is the benefit of writing tests in iOS apps?</h3>
+<ul>
+<li>
+<p>首先编写测试让我们对API设计有了一个清晰的视角，在API存在之前就成为它的客户。</p>
+</li>
+<li>
+<p>好的测试可以作为预期行为的优秀文档。</p>
+</li>
+<li>
+<p>它给了我们不断重构代码的信心，因为我们知道，如果我们破坏了任何东西，我们的测试就会失败。</p>
+</li>
+<li>
+<p>如果测试很难编写，通常可以改进标识体系结构。遵循RGR (Red - Green - Refactor)可以帮助你在早期做出改进。</p>
+</li>
+</ul>
+<h3 id="21-what-is-five-essential-practical-guidelines-to-improve-your-typographic-quality-of-mobile-product-designs">21- What is five essential practical guidelines to improve your typographic quality of mobile product designs?</h3>
+<p>(什么是五个基本的实用指南来提高你的移动产品设计的排版质量?)</p>
+<ol>
+<li>从选择正文字体开始。</li>
+<li>尽量避免混合字体。</li>
+<li>注意你的线长度。</li>
+<li>平衡线高和点尺寸。</li>
+<li>使用适当的撇号和破折号。</li>
+</ol>
+<h3 id="22-explain-forced-unwrapping">22- Explain Forced Unwrapping</h3>
+<p>当我们将一个变量定义为可选时，为了从这个变量中获得值，我们必须解包它。这只是意味着在变量的末尾加一个感叹号。隐式unwrapped可选类型的例子是我们为视图控制器创建的IBOutlets。</p>
+<p>当我们知道一个可选对象有一个值时，我们必须使用Forced Unwrapping。</p>
+<h3 id="23-how-to-educate-app-with-context">23- How to educate app with Context?</h3>
+<p>上下文技术教育帮助用户以一种他们以前没有这样做过的方式与元素或表面进行交互。这种技术通常包括轻微的视觉提示和微妙的动画。</p>
+<h3 id="24-what-is-bitcode">24- What is bitcode ?</h3>
+<p>Bitcode是指发送到iTunes Connect的代码类型“LLVM Bitcode”。这允许苹果使用特定的计算来重新优化应用(例如:可能缩小可执行文件的大小)。 如果苹果需要修改你的可执行文件，他们可以在不上传新版本的情况下完成。</p>
+<h3 id="25-explain-swift-standard-library-protocol">25- Explain Swift Standard Library Protocol ?</h3>
+<p>有一些不同的协议。 Equatable协议，它决定了我们如何区分两个相同类型的实例。  这意味着我们可以进行分析。 如果数组中有一个特定的值。comparable协议，比较相同类型和序列的两个实例:prefix(while:)和drop(while:)[SE-0045].</p>
+<p>Swift 4引入了一个新的Codable协议，允许我们序列化和反序列化自定义数据类型，而无需编写任何特殊代码。</p>
+<h3 id="26-what-is-the-difference-svn-and-git">26- What is the difference SVN and Git ?</h3>
+<p>SVN采用集中式版本管理系统。它是一个生成工作副本的中央存储库，需要通过网络连接进行访问。</p>
+<p>Git依赖于分布式系统进行版本管理。您将拥有一个可以在其上工作的本地存储库，只需要一个网络连接来进行同步。</p>
+<h3 id="27-what-is-the-difference-collectionviews-tableviews">27- What is the difference CollectionViews &amp; TableViews?</h3>
+<p>Tableview以单列、垂直的方式显示项目列表，并且仅限于垂直或水平滚动.</p>
+<p>CollectionViews还显示项目列表，但是，它们可以有多列和多行。</p>
+<h3 id="28-what-is-alamofire-doing">28- What is Alamofire doing?</h3>
+<p>Alamofire在后台使用URL加载系统，所以它与苹果提供的所有网络开发机制集成得很好。 这意味着，它提供了可链接的请求/响应方法、JSON参数和响应序列化、身份验证和许多其他特性。它有线程机制，在后台线程上执行请求，在主线程上调用完成块。</p>
+<h3 id="29-rest-http-json-whats-that">29- REST, HTTP, JSON — What’s that?</h3>
+<p><strong>HTTP</strong> 是应用协议或一组规则，网站用于从web服务器传输数据到客户端。客户端(你的web浏览器或应用程序)用来指示想要的动作:</p>
+<ul>
+<li><strong>GET</strong>: 用于检索数据，如网页，但不改变服务器上的任何数据。</li>
+<li><strong>HEAD</strong>: 与GET相同，但只返回头，不返回实际数据。</li>
+<li><strong>POST</strong>: 用于向服务器发送数据，通常在填写表单和单击提交时使用。</li>
+<li><strong>PUT</strong>: 用于将数据发送到提供的特定位置。</li>
+<li><strong>DELETE</strong>: 从提供的特定位置删除数据。</li>
+</ul>
+<p><strong>REST</strong>, 具象状态传输(REpresentational State Transfer)是一套用于设计一致、易于使用和维护的web api的规则。<br>
+<strong>JSON</strong> 表示JavaScript对象表示法;它为在两个系统之间传输数据提供了一种简单的、人类可读的和可移植的机制。 Apple提供了JSONSerialization类来帮助将内存中的对象转换为JSON，反之亦然。</p>
+<h3 id="30-what-problems-does-delegation-solve">30- What problems does delegation solve?</h3>
+<ul>
+<li>避免对象的紧密耦合</li>
+<li>修改行为和外观而不需要子类化对象</li>
+<li>允许将任务移交给任何任意对象</li>
+</ul>
+<h3 id="31-what-is-the-major-purposes-of-frameworks">31- What is the major purposes of Frameworks?</h3>
+<p>框架有三个主要目的:</p>
+<ul>
+<li>封装</li>
+<li>模块化</li>
+<li>代码重用</li>
+</ul>
+<p>您可以与其他应用程序、团队成员或iOS社区共享您的框架。当与Swift的访问控制相结合时，框架有助于在代码模块之间定义强大的、可测试的接口。</p>
+<h3 id="32-explain-swift-package-manager">32- Explain Swift Package Manager</h3>
+<p>Swift Package Manager将极大地改善Swift的生态系统，使Swift更容易在没有Xcode的平台上使用和部署，比如Linux。Swift Package Manager还解决了使用许多相互依赖的库时可能发生的依赖地狱问题。</p>
+<p>Swift Package Manager只支持使用主分支。Swift Package Manager现在支持Swift, C, c++和Objective-C的包。</p>
+<h3 id="33-what-is-the-difference-between-a-delegate-and-an-nsnotification">33- What is the difference between a delegate and an NSNotification?</h3>
+<p>委托和NSNotifications可以用来完成几乎相同的功能。然而，委托是一对一的，而NSNotifications是一对多的。</p>
+<h3 id="34-explain-sirikit-limitations">34- Explain SiriKit Limitations</h3>
+<ul>
+<li>SiriKit不能使用所有应用类型</li>
+<li>不是一个完整的应用程序的替代品，只是一个扩展</li>
+<li>Siri需要持续的互联网连接才能工作</li>
+<li>Siri服务需要与苹果服务器通信。</li>
+</ul>
+<h3 id="35-why-do-we-use-a-delegate-pattern-to-be-notified-of-the-text-fields-events">35- Why do we use a delegate pattern to be notified of the text field’s events?</h3>
+<p>因为最多只有一个对象需要知道这个事件。</p>
+<h3 id="36-how-is-an-inout-parameter-different-from-a-regular-parameter">36- How is an inout parameter different from a regular parameter?</h3>
+<p>Inout按引用传递，而常规参数按值传递。</p>
+<h3 id="37-explain-view-controller-lifecycle-events-order">37- Explain View Controller Lifecycle events order?</h3>
+<p>There are a few different lifecycle events</p>
+<ul>
+<li>loadView</li>
+</ul>
+<blockquote>
+<p>创建控制器管理的视图。它只在视图控制器被创建时被调用，并且只在以编程方式完成时被调用。它首先负责使视图属性存在。</p>
+</blockquote>
+<ul>
+<li>viewDidLoad</li>
+</ul>
+<blockquote>
+<p>在控制器的视图加载到内存后调用。它只在视图创建时被调用。</p>
+</blockquote>
+<ul>
+<li>viewWillAppear</li>
+</ul>
+<blockquote>
+<p>每当视图显示在屏幕上时，它就被调用。在这一步中，视图定义了边界，但没有应用方向。</p>
+</blockquote>
+<ul>
+<li>viewWillLayoutSubviews</li>
+</ul>
+<blockquote>
+<p>调用它来通知视图控制器它的视图将要布局它的子视图。每次帧发生变化时都会调用此方法</p>
+</blockquote>
+<ul>
+<li>viewDidLayoutSubviews</li>
+</ul>
+<blockquote>
+<p>调用它来通知视图控制器它的视图已经布局了它的子视图。在视图布局它的子视图之后，在这里做一些额外的更改。</p>
+</blockquote>
+<ul>
+<li>viewDidAppear</li>
+</ul>
+<blockquote>
+<p>通知视图控制器其视图已被添加到视图层次结构中。</p>
+</blockquote>
+<ul>
+<li>viewWillDisappear</li>
+</ul>
+<blockquote>
+<p>在过渡到下一个视图控制器和原始视图控制器从屏幕上移除之前，这个方法会被调用。</p>
+</blockquote>
+<ul>
+<li>viewDidDisappear</li>
+</ul>
+<blockquote>
+<p>当视图控制器从屏幕上移除后，这个方法会被调用。当视图控制器不在屏幕上时，你通常会重写这个方法来停止不应该运行的任务。</p>
+</blockquote>
+<ul>
+<li>viewWillTransition(to:with:)</li>
+</ul>
+<blockquote>
+<p>当界面方向改变时，UIKit会在窗口的根视图控制器上调用这个方法，然后再改变窗口的大小。然后根视图控制器通知它的子视图控制器，在视图控制器层次结构中传播消息。</p>
+</blockquote>
+<h3 id="38-what-is-the-difference-between-llvm-and-clang">38- What is the difference between LLVM and Clang?</h3>
+<p>Clang是LLVM工具链的前端(“Clang”C语言家族前端LLVM)。  每个编译器有三个部分。</p>
+<ol>
+<li>前端(词法分析、解析)</li>
+<li>优化器(优化抽象语法树)</li>
+<li>后端(机器码生成)</li>
+</ol>
+<p>前端(Clang)获取源代码并生成抽象语法树(LLVM IR)。</p>
+<h3 id="39-what-is-class">39- What is Class ?</h3>
+<p>类是用来定义对象及其工作方式的。这样，类就像是对象的蓝图。</p>
+<h3 id="40-what-is-object">40- What is Object?</h3>
+<p>对象是类的实例。</p>
+<h3 id="41-what-is-interface">41- What is interface?</h3>
+<p>Objective-C中的@interface与Java接口无关。它只是声明一个类的公共接口，即它的公共API。</p>
+<h3 id="42-when-and-why-do-we-use-an-object-as-opposed-to-a-struct">42- When and why do we use an object as opposed to a struct?</h3>
+<p>结构是值类型。类(对象)是引用类型。</p>
+<h3 id="43-what-is-uistackview">43- What is UIStackView?</h3>
+<p>UIStackView提供了一种水平或垂直布局一系列视图的方法。我们可以定义包含的视图如何根据可用空间调整自身。不要错过<a href="https://www.raywenderlich.com/2198310-uistackview-tutorial-for-ios-introducing-stack-views">这篇文章</a>。</p>
+<h3 id="44-what-are-the-states-of-an-ios-app">44- What are the states of an iOS App?</h3>
+<ul>
+<li>非运行-应用程序没有运行。</li>
+<li>非活跃-应用程序正在前台运行，但没有接收事件。iOS应用程序可以被置于非激活状态，例如，当收到电话或短信时。</li>
+<li>活跃-应用程序在前台运行，并接收事件。</li>
+<li>后台-应用程序在后台运行，并执行代码。</li>
+<li>挂起-应用程序在后台，但没有代码正在执行。</li>
+</ul>
+<h3 id="45-what-are-the-most-important-application-delegate-methods-a-developer-should-handle">45- What are the most important application delegate methods a developer should handle?</h3>
+<p>操作系统在应用程序委托中调用特定的方法，以促进不同状态之间的转换。开发者应该处理的七个最重要的应用委托方法是: 省略</p>
+<h3 id="46-what-is-the-difference-between-property-and-instance-variable">46- What is the difference between property and instance variable?</h3>
+<p>属性是一个更抽象的概念。 实例变量实际上就是一个存储槽，就像结构中的槽一样。 通常其他对象不应该直接访问它们。通常，一个属性将返回或设置一个实例变量，但它可以使用来自多个实例变量的数据，或者根本不使用。</p>
+<h3 id="47-how-can-we-add-uikit-for-swift-package-manager">47- How can we add UIKit for Swift Package Manager?</h3>
+<p>Swift Package Manager不支持UIKit。我们可以为其他项目创建文件模板或框架。</p>
+<h3 id="48-explain-the-difference-between-sdk-and-framework">48- Explain the difference between SDK and Framework</h3>
+<p>SDK是一套软件开发工具。该集合用于创建应用程序。 框架基本上是一个用于开发软件应用程序的平台。它为特定平台的程序开发提供了必要的基础。SDK和Framework是相辅相成的，SDK可以用于框架。</p>
+<h3 id="49-what-is-downcasting-向下类型转换是什么">49- What is Downcasting? (向下类型转换是什么?)</h3>
+<p>当我们在Objective-C中将对象转换为另一种类型时，这很简单，因为只有一种方法。但在Swift身上，有两种投角色的方式——一种是安全的，另一种则不是。</p>
+<ul>
+<li>as used for upcasting and type casting to bridged type</li>
+<li>as? 用于安全类型转换，如果失败返回nil</li>
+<li>as! 用于强制转换，失败时崩溃。应该只在我们知道向下转换会成功的时候才使用。</li>
+</ul>
+<h3 id="50-explain-labeled-statements-解释标记语句">50- Explain Labeled Statements (解释标记语句)</h3>
+<p>使用labelled语句，我们可以指定要中断的控制结构，无论循环嵌套的深度有多深。这也适用于continue。如果我们有一个包含嵌套的for循环的复杂结构，标记语句将允许我们从外部循环中中断，并继续执行该方法。</p>
+<p><strong>#define</strong></p>
+<pre><code class="language-swift">label name: while condition {
+    statements
+}
+</code></pre>
+<p><strong>demo</strong></p>
+<pre><code class="language-swift">gameLoop: while square != finalSquare {
+    diceRoll += 1
+    if diceRoll == 7 { diceRoll = 1 }
+    switch square + diceRoll {
+    case finalSquare:
+        // diceRoll will move us to the final square, so the game is over
+        break gameLoop
+    case let newSquare where newSquare &gt; finalSquare:
+        // diceRoll will move us beyond the final square, so roll again
+        continue gameLoop
+    default:
+        // this is a valid move, so find out its effect
+        square += diceRoll
+        square += board[square]
+    }
+}
+print(&quot;Game over!&quot;)
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1UYNOQrST/" class="tag">
+                    interview
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/50-dao-ios-mian-shi-wen-da-1/">
+                  <h3 class="post-title">
+                    50道iOS面试问答 - 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

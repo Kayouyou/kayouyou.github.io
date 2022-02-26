@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Generating automatic placeholders for SwiftUI views | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="SwiftUI现在提供了一个新的、内置的修饰符，可以很容易地为任何视图自动生成一个占位符。例如，假设我们正在开发一个阅读文章的应用程序，它包含以下视图:
+struct ArticleView: View {
+    var iconName..." />
+    <meta name="keywords" content="swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Generating automatic placeholders for SwiftUI views</h2>
+            <div class="post-date">2020-07-23</div>
+            
+            <div class="post-content" v-pre>
+              <p>SwiftUI现在提供了一个新的、内置的修饰符，可以很容易地为任何视图自动生成一个占位符。例如，假设我们正在开发一个阅读文章的应用程序，它包含以下视图:</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    var iconName: String
+    var title: String
+    var authorName: String
+    var description: String
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Image(systemName: iconName)
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Circle().fill(Color.secondary))
+                VStack(alignment: .leading) {
+                    Text(title).font(.title)
+                    Text(&quot;By &quot; + authorName)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+            }
+            Text(description).padding(.top)
+        }
+        .padding()
+    }
+}
+</code></pre>
+<p>要为上面的视图生成一个占位符，我们现在要做的就是对它应用编辑修饰符，指定.placeholder作为编辑原因:</p>
+<pre><code class="language-swift">let placeholder = ArticleView(
+    iconName: &quot;doc&quot;,
+    title: &quot;Placeholder&quot;,
+    authorName: &quot;Placeholder author&quot;,
+    description: String(repeating: &quot;Placeholder &quot;, count: 5)
+)
+.redacted(reason: .placeholder)
+</code></pre>
+<p>当这个修改器被应用时，所有在视图中显示的文本将被灰色的矩形所取代，所以我们在上面传递的实际字符串将只被用来确定这些矩形的大小。</p>
+<p>值得注意的是，视图中包含的任何图像(比如ArticleView中显示的图标)仍然会像往常一样显示。 但是，我们可以使用新的redactionReasons环境值来调整这一行为——例如，通过实现一个包装器视图来读取该值，然后有条件地对给定视图应用一个modifier闭包，就像这样</p>
+<pre><code class="language-swift">struct RedactingView&lt;Input: View, Output: View&gt;: View {
+    var content: Input
+    var modifier: (Input) -&gt; Output
+
+    @Environment(\.redactionReasons) private var reasons
+
+    var body: some View {
+        if reasons.isEmpty {
+            content
+        } else {
+            modifier(content)
+        }
+    }
+}
+</code></pre>
+<p>有了上述两部分，我们现在可以在需要的时候轻松地应用我们自己的自定义编校逻辑，例如，当生成一个占位符时，可以在ArticleView中隐藏图像；</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    ...
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Image(systemName: iconName)
+                    .foregroundColor(.white)
+                    .whenRedacted { $0.hidden() }
+                    .padding()
+                    .background(Circle().fill(Color.secondary))
+                ...
+            }
+            Text(description).padding(.top)
+        }
+        .padding()
+    }
+}
+</code></pre>
+<p>SwiftUI还提供了一种方法来取消编辑给定的子视图——这将使它像正常情况下一样渲染，即使它的父视图正在被编辑。下面是我们如何使用这个特性来始终显示我们的文章视图的标题，即使是在生成一个占位符的时候:</p>
+<pre><code class="language-swift">struct ArticleView: View {
+    ...
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Image(systemName: iconName)
+                    ...
+                VStack(alignment: .leading) {
+                    Text(title).font(.title).unredacted()
+                    ...
+                }
+            }
+            Text(description).padding(.top)
+        }
+        .padding()
+    }
+}
+</code></pre>
+<p>新的修订后的修饰符和它的兄弟api都是swift的内置功能中非常受欢迎的补充；当我们想要渲染一个正在加载内容的UI的“骨架”版本时，或者当创建一个小部件的预览实例时，它都是非常有用的。</p>
+<p><a href="https://www.swiftbysundell.com/tips/swiftui-automatic-placeholders/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/five-powerful-yet-lesser-known-ways-to-use-swift-enums/">
+                  <h3 class="post-title">
+                    Five powerful, yet lesser-known ways to use Swift enums
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

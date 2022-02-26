@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 02: Side Effects | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Hidden outputs
+
+
+
+
+Introducing &gt;=&gt;
+
+
+
+
+Hidden inputs
+
+
+
+
+Mutation
+
+
+
+
+Introducing &lt;&gt;
+
+
+..." />
+    <meta name="keywords" content="PointFree,Side Effects" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 02: Side Effects</h2>
+            <div class="post-date">2021-10-21</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Hiddenoutputs">Hidden outputs</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Introducing">Introducing &gt;=&gt;</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Hiddeninputs">Hidden inputs</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Mutation">Mutation</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Introducing-1">Introducing &lt;&gt;</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 02: Side Effects -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>我们已经讲了一整集关于函数的内容，我们强调了查看函数的输入和输出类型以理解它们是如何组成的重要性，但是一个函数可以做很多事情不仅仅是它的签名。这些东西被称为“<strong>side effects</strong>”。</p>
+<p><strong>Side Effects</strong>是代码复杂性的最大来源之一，更糟糕的是，它们很难测试，而且不能很好地编写。我们已经从上一集中看到，我们从使用函数组合中获得了很多好处，但副作用会给它带来麻烦。</p>
+<p>在这一集中，我们将介绍几种副作用，说明它们为什么如此难以测试，为什么它们不组合，并尝试以一种良好的方式解决这些问题。</p>
+<p><strong>Side Effects</strong>是一个相当重载的术语，所以为了定义它，让我们先看看一个没有副作用的函数:</p>
+<pre><code class="language-swift">func compute(_ x: Int) -&gt; Int {
+  return x * x + 1
+}
+</code></pre>
+<p>当调用我们的函数时，我们得到一个返回结果:</p>
+<pre><code class="language-swift">compute(2) // 5
+</code></pre>
+<p>没有副作用的函数的一个非常好的特性是，无论我们调用多少次具有相同输入的函数，我们总是得到相同的输出:</p>
+<pre><code class="language-swift">compute(2) // 5
+compute(2) // 5
+compute(2) // 5
+</code></pre>
+<p>这种可预测性使得为它们编写测试变得非常简单。</p>
+<pre><code class="language-swift">assertEqual(5, compute(2)) // ✅
+</code></pre>
+<p>如果我们用错误的期望或错误的输入编写测试，它总是会失败。</p>
+<pre><code class="language-swift">assertEqual(4, compute(2)) // ❌
+assertEqual(5, compute(3)) // ❌
+</code></pre>
+<p>让我们给函数添加一个副作用。</p>
+<pre><code class="language-swift">func computeWithEffect(_ x: Int) -&gt; Int {
+  let computation = x * x + 1
+  print(&quot;Computed \(computation)&quot;)
+  return computation
+}
+</code></pre>
+<p>我们在中间插入了一个print语句。</p>
+<p>当我们调用<em>computewitheeffect</em>时，输入和之前一样，我们得到相同的输出:</p>
+<pre><code class="language-swift">computeWithEffect(2) // 5
+</code></pre>
+<p>我们在中间插入了一个print语句。</p>
+<p>当我们调用<em>computewitheeffect</em>时，输入和之前一样，我们得到相同的输出:</p>
+<pre><code class="language-swift">computeWithEffect(2) // 5
+</code></pre>
+<p>但如果我们看控制台，这里有一些额外的输出。</p>
+<pre><code class="language-swift">Computed 5
+</code></pre>
+<p>如果我们比较函数签名，<em>computewitheeffect和compute</em>是完全一样的，但是我们所做的工作无法通过单独看签名来解释。print函数正在走向世界并做出改变，在这种情况下，打印到我们的控制台。副作用需要了解函数体才能知道它们隐藏在那里。</p>
+<p>让我们为这个函数编写一个测试:</p>
+<pre><code class="language-swift">assertEqual(5, computeWithEffect(2)) // ✅
+</code></pre>
+<p>它通过了! 但是现在我们在控制台中有了额外的一行。</p>
+<pre><code class="language-swift">Computed 5
+Computed 5
+</code></pre>
+<p>这是我们无法测试的行为。这里我们只打印到控制台,所以好像不是一个大问题,但如果我们交换打印效果,如写入磁盘,调用一个API请求,或分析跟踪,我们开始关心更多,这种行为发生,我们可以测试它。</p>
+<p>副作用也会破坏我们构建的组合直觉。在函数一节中，我们讨论了映射两个函数的数组与映射两个函数的组合的数组是一样的:</p>
+<pre><code class="language-swift">[2, 10].map(compute).map(compute) // [26, 10202]
+[2, 10].map(compute &gt;&gt;&gt; compute)  // [26, 10202]
+</code></pre>
+<p>现在让我们用<em>computewiththeeffect</em>来试试:</p>
+<pre><code class="language-swift">[2, 10].map(computeWithEffect).map(computeWithEffect)
+// [26, 10202]
+[2, 10].map(computeWithEffect &gt;&gt;&gt; computeWithEffect)
+// [26, 10202]
+</code></pre>
+<p>返回值是相等的，但是当我们查看控制台时，行为是不相等的!</p>
+<pre><code class="language-swift">Computed 5
+Computed 101
+Computed 26
+Computed 10202
+--
+Computed 5
+Computed 26
+Computed 101
+Computed 10202
+</code></pre>
+<p>我们再也不能在不考虑副作用的情况下利用这一特性了。我们进行这种重构的能力是真实的性能优化:我们只遍历一次数组，而不是遍历两次数组。但是，如果我们的函数有副作用，它们将不会以相同的顺序执行，而顺序可能是我们所依赖的! 在有副作用的情况下进行这种性能优化可能会破坏我们的代码!</p>
+<h2 id="2-a-namehiddenoutputsahidden-outputs">2. <a name='Hiddenoutputs'></a>Hidden outputs</h2>
+<p>让我们来看看控制这种副作用的最简单的方法。我们可以返回一个额外的值来描述需要打印的内容，而不是在函数体中执行该效果。 一个函数可以打印很多东西，所以我们将使用一个字符串数组来建模。</p>
+<pre><code class="language-swift">func computeAndPrint(_ x: Int) -&gt; (Int, [String]) {
+  let computation = x * x + 1
+  return (computation, [&quot;Computed \(computation)&quot;])
+}
+
+computeAndPrint(2) // (5, [&quot;Computed 5&quot;])
+</code></pre>
+<p>我们得到的结果不仅是计算结果，还包括我们想要打印的日志数组。</p>
+<p>让我们编写一个测试:</p>
+<pre><code class="language-swift">assertEqual(
+  (5, [&quot;Computed 5&quot;]),
+  computeAndPrint(2)
+)
+// ✅
+</code></pre>
+<p>现在我们得到的不仅仅是计算，还有我们想要执行的效果! 如果副作用以一种意想不到的形式出现，我们的测试将会失败。</p>
+<pre><code class="language-swift">assertEqual(
+  (5, [&quot;Computed 3&quot;]),
+  computeAndPrint(2)
+)
+// ❌
+</code></pre>
+<p>这里的数据非常简单，但请记住，它可能是描述API请求或分析事件的更关键的数据，我们可以断言这些效果是按照我们期望的方式准备的。</p>
+<p>从这个角度来看，改变外部世界的副作用只不过是函数的一个隐藏的、隐式的输出。当涉及到编程时，隐式通常不是一件好事。</p>
+<p>现在你可能会问，“那是谁做的呢?” 通过将该副作用拉出到返回类型中，我们将该副作用的责任推给了调用该函数的人。例如:</p>
+<pre><code class="language-swift">let (computation, logs) = computeAndPrint(2)
+logs.forEach { print($0) }
+</code></pre>
+<p>但是，我们可能不希望调用者有副作用，所以它可能也要传递这些副作用。也许它的调用者不想有副作用，等等! 这听起来像是一个混乱的问题，但有很好的方法来解决它。不过，在我们解决这个问题之前，我们需要详细了解这个问题。</p>
+<p>似乎我们已经解决了副作用问题:我们只需要在函数的输出中用描述替换它们。不幸的是，我们破坏了函数最重要的特性之一:组合。</p>
+<p>我们的<em>compute</em>函数很好，因为它与自身正向组合。</p>
+<pre><code class="language-swift">compute &gt;&gt;&gt; compute // (Int) -&gt; Int
+</code></pre>
+<p>我们的<em>computewitheeffect</em>函数其实很好因为它也和自己进行正向合成。</p>
+<pre><code class="language-swift">computeWithEffect &gt;&gt;&gt; computeWithEffect // (Int) -&gt; Int
+</code></pre>
+<p>我们可以将值导入它们并得到结果。</p>
+<pre><code class="language-swift">2 |&gt; compute &gt;&gt;&gt; compute // 26
+2 |&gt; computeWithEffect &gt;&gt;&gt; computeWithEffect // 26
+</code></pre>
+<p>当然，现在我们又回到了<strong>computewitheeffect</strong>打印到控制台。</p>
+<pre><code class="language-swift">Computed 5
+Computed 26
+</code></pre>
+<p>与此同时，我们试图解决这个问题<em>computeAndPrint</em>，却没有组合：</p>
+<pre><code class="language-swift">computeAndPrint &gt;&gt;&gt; computeAndPrint
+// Cannot convert value of type '(Int) -&gt; (Int, [String])' to expected argument type '((Int, [String])) -&gt; (Int, [String])'
+</code></pre>
+<p><em>computeAndPrint</em>的输出是一个元组(Int， [String])，但输入只是Int。</p>
+<p>我们将反复看到这种情况:每当我们有一个函数需要执行一个副作用时，我们将增加返回类型来描述这个效果，并且我们将中断函数的组合。然后我们的工作就是想出某种方法来增强这些功能的构成。</p>
+<p>在函数返回元组的情况下，我们可以很好地修复组合，甚至比我们的<em>computeAndPrint</em>函数更普遍。让我们定义一个函数，它的全部工作就是组合这些类型的函数。</p>
+<pre><code class="language-swift">func compose&lt;A, B, C&gt;(
+  _ f: @escaping (A) -&gt; (B, [String]),
+  _ g: @escaping (B) -&gt; (C, [String])
+  ) -&gt; (A) -&gt; (C, [String]) {
+
+  // …
+}
+</code></pre>
+<p>这看起来有点眼熟。它有一个类似于&gt;&gt;&gt;函数的签名:我们看到(a) -&gt; B， (B) - &gt;c，和(a) - &gt;c，但是在旁边有一些额外的信息。</p>
+<p>我们可以通过查看函数的类型和我们可以使用的值来实现这个函数。</p>
+<pre><code class="language-swift">func compose&lt;A, B, C&gt;(
+  _ f: @escaping (A) -&gt; (B, [String]),
+  _ g: @escaping (B) -&gt; (C, [String])
+  ) -&gt; (A) -&gt; (C, [String]) {
+
+  return { a in
+    let (b, logs) = f(a)
+    let (c, moreLogs) = g(b)
+    return (c, logs + moreLogs)
+  }
+}
+</code></pre>
+<p>我们知道我们正在返回一个函数，所以我们从打开它并绑定a开始，我们还有一个函数f，它接受a，所以我们传递它a并绑定返回值，在这个例子中，是b和一些<em>logs</em>。现在我们把b很好地代入到函数g中，它返回c和一些logs。现在我们有了一个c，我们可以从函数中返回它。我们可以返回<em>logs或moreLogs</em>，但在本例中，返回两者的连接是有意义的。</p>
+<p>我们来构造函数吧!</p>
+<pre><code class="language-swift">compose(computeAndPrint, computeAndPrint)
+// (Int) -&gt; (Int, [String])
+</code></pre>
+<p>我们现在创建了一个全新的函数，它调用<em>computeAndPrint</em>两次。 当我们向它输入数据时，我们得到的不仅是最终的计算结果，还有整个过程中每一步的日志。</p>
+<pre><code class="language-swift">2 |&gt; compose(computeAndPrint, computeAndPrint)
+// (26, [&quot;Computed 5&quot;, &quot;Computed 26&quot;])
+</code></pre>
+<h2 id="3-a-nameintroducingaintroducing">3. <a name='Introducing'></a>Introducing &gt;=&gt;</h2>
+<p>似乎我们已经恢复了复合，完全解决了问题，但当我们组合两个以上的函数时，事情就开始变得混乱了。</p>
+<pre><code class="language-swift">2 |&gt; compose(compose(computeAndPrint, computeAndPrint), computeAndPrint)
+</code></pre>
+<p>更糟糕的是，同样的组合有两种不同的方法:</p>
+<pre><code class="language-swift">2 |&gt; compose(compose(computeAndPrint, computeAndPrint), computeAndPrint)
+2 |&gt; compose(computeAndPrint, compose(computeAndPrint, computeAndPrint))
+</code></pre>
+<p>括号似乎总是组合的敌人。括号的敌人是什么? 中缀操作符。</p>
+<p>我们知道我们想要能够在一行中组合多次，我们知道我们想要能够将值通过管道送到这些组合中，所以让我们定义一个比|&gt;操作符更高的结合优先级组。</p>
+<pre><code class="language-swift">precedencegroup EffectfulComposition {
+  associativity: left
+  higherThan: ForwardApplication
+}
+</code></pre>
+<p>现在我们可以定义一个看起来有点熟悉的中缀运算符。</p>
+<pre><code class="language-swift">infix operator &gt;=&gt;: EffectfulComposition
+</code></pre>
+<p>它非常接近&gt;&gt;&gt;，但是我们把内部的箭头换成了管状的=。这个操作符的一个有趣的名字是“fish”操作符。</p>
+<p>现在，我们可以重命名<em>compose</em>函数，并且可以将副作用函数粘在一起，而不必考虑括号的噪音和负担。</p>
+<pre><code class="language-swift">func &gt;=&gt; &lt;A, B, C&gt;(
+  _ f: @escaping (A) -&gt; (B, [String]),
+  _ g: @escaping (B) -&gt; (C, [String])
+  ) -&gt; (A) -&gt; (C, [String]) {
+
+  return { a in
+    let (b, logs) = f(a)
+    let (c, moreLogs) = g(b)
+    return (c, logs + moreLogs)
+  }
+}
+computeAndPrint &gt;=&gt; computeAndPrint &gt;=&gt; computeAndPrint // (Int) -&gt; (Int, [String])
+</code></pre>
+<p>我们可以通过管道传递值，并使用多行创建从上到下读取良好的管道。</p>
+<pre><code class="language-swift">2
+  |&gt; computeAndPrint
+  &gt;=&gt; computeAndPrint
+  &gt;=&gt; computeAndPrint
+</code></pre>
+<p>将合成带入运算符世界的另一件好事是，它能更好地与&gt;&gt;&gt;等现有运算符合作。</p>
+<pre><code class="language-swift">2
+  |&gt; computeAndPrint
+  &gt;=&gt; (incr &gt;&gt;&gt; computeAndPrint)
+  &gt;=&gt; (square &gt;&gt;&gt; computeAndPrint)
+</code></pre>
+<p>在这里，我们可以将有效函数的结果应用到没有副作用的函数上，所有这些都是通过组合实现的。我们有一个新的括号问题，但我们可以解决它! 函数组合可能是最强大的组合形式，给定括号的位置，以及输入和输出类型，我们可以得出结论，它应该始终具有更高的优先级。 这意味着我们需要更新<em>effecfulcomposition</em>优先组。</p>
+<pre><code class="language-swift">precedencegroup EffectfulComposition {
+  associativity: left
+  higherThan: ForwardApplication
+  lowerThan: ForwardComposition
+}
+</code></pre>
+<p>我们不再需要圆括号，我们可以进一步流水线我们的组合。</p>
+<pre><code class="language-swift">2
+  |&gt; computeAndPrint
+  &gt;=&gt; incr
+  &gt;&gt;&gt; computeAndPrint
+  &gt;=&gt; square
+  &gt;&gt;&gt; computeAndPrint
+</code></pre>
+<p>现在，每行都用提供意义的操作符进行注释。以&gt;&gt;&gt;为前缀的行处理的是一个没有副作用的函数的结果，而以&gt;=&gt;为前缀的行则有点可疑:它们处理的是一个有效计算的结果。</p>
+<p>我们已经引入了一个新的操作符，所以现在是时候向代码中添加它了。</p>
+<ol>
+<li>该操作符在Swift中是否存在意义? 不。没有机会重载现有的意义。</li>
+<li>这个操作者是否有现有技术并且它是否有一个漂亮的描述形状? 是的! <em>fish</em>操作符随Haskell和PureScript一起发布，许多其他编程语言社区也在函数库中采用了它。 它的形状很漂亮，特别是在&gt;&gt;&gt;旁边，它的不同足以表明有别的东西在发生。</li>
+<li>这是一个通用操作符还是仅仅解决一个特定领域的问题? 现在定义运算符的方式是专门用于处理元组的，但它所描述的形状在编程中一直都在出现。我们甚至可以在几个Swift类型上定义操作符:</li>
+</ol>
+<pre><code class="language-swift">func &gt;=&gt; &lt;A, B, C&gt;(
+  _ f: @escaping (A) -&gt; B?,
+  _ g: @escaping (B) -&gt; C?
+  ) -&gt; ((A) -&gt; C?) {
+
+  return { a in
+    fatalError() // an exercise for the viewer
+  }
+}
+</code></pre>
+<p>我们已经用可选项替换了元组，现在有了一个操作符，可以帮助组合返回可选项的函数。 我们现在可以将几个失败的初始化器链接在一起:</p>
+<pre><code class="language-swift">String.init(utf8String:) &gt;=&gt; URL.init(string:)
+// (UnsafePointer&lt;Int8&gt;) -&gt; URL?
+</code></pre>
+<p>我们还可以免费获得一个全新的可失败初始化器!</p>
+<p>也可以使用该操作符来增强返回数组的函数的组合:</p>
+<pre><code class="language-swift">func &gt;=&gt; &lt;A, B, C&gt;(
+  _ f: @escaping (A) -&gt; [B],
+  _ g: @escaping (B) -&gt; [C]
+  ) -&gt; ((A) -&gt; [C]) {
+
+  return { a in
+    fatalError() // an exercise for the viewer
+  }
+}
+</code></pre>
+<p>如果使用Promise或Future类型，则可以使用该操作符来组合返回Promise的函数。</p>
+<pre><code class="language-swift">func &gt;=&gt; &lt;A, B, C&gt;(
+  _ f: @escaping (A) -&gt; Promise&lt;B&gt;,
+  _ g: @escaping (B) -&gt; Promise&lt;C&gt;
+  ) -&gt; ((A) -&gt; Promise&lt;C&gt;) {
+
+  return { a in
+    fatalError() // an exercise for the viewer
+  }
+}
+</code></pre>
+<p>我们会看到这个形状一次又一次地出现。在一些具有非常强大的类型系统的语言中，一次性定义这个操作符并立即获得所有这些实现是可能的。Swift还没有这些功能，所以我们必须为新的类型定义它们。尽管如此，我们仍然能够对这个形状建立一种直觉，并将它分享给很多很多类型的人。 现在，当我们看到*&gt;=&gt;*时，我们可以知道它是连锁的，形成某种效应。</p>
+<h2 id="4-a-namehiddeninputsahidden-inputs">4. <a name='Hiddeninputs'></a>Hidden inputs</h2>
+<p>我们已经介绍了导致隐藏输出的副作用，并展示了如何通过在函数中显式地显示输出来控制它，同时保持可组合性。还有另一种副作用有点棘手。</p>
+<p>让我们来看一个为用户生成问候语的简单函数。</p>
+<pre><code class="language-swift">func greetWithEffect(_ name: String) -&gt; String {
+  let seconds = Int(Date().timeIntervalSince1970) % 60
+  return &quot;Hello \(name)! It's \(seconds) seconds past the minute.&quot;
+}
+
+greetWithEffect(&quot;Blob&quot;)
+// &quot;Hello Blob! It's 14 seconds past the minute.&quot;
+</code></pre>
+<p>当我们再次运行这段代码时，我们可能会得到一个不同的值。这与我们的计算函数的可预测性相反。</p>
+<p>如果我们编写一个测试，它几乎总是会失败。</p>
+<pre><code class="language-swift">assertEqual(
+  &quot;Hello Blob! It's 32 seconds past the minute.&quot;,
+  greetWithEffect(&quot;Blob&quot;)
+)
+// ❌
+</code></pre>
+<p>这是一个特别糟糕的副作用。在前面的例子中，我们至少可以针对它的输出编写断言，只是我们没有覆盖整个故事。在这种情况下，我们甚至不能编写测试，因为输出一直在变化。</p>
+<p>我们之前的副作用是<em>print</em>，这是一个接受输入但没有返回值的函数。在本例中，我们有<em>Date</em>，这是一个具有返回值但不接受输入的函数。</p>
+<p>我们来看看能否用类似的方法来解决这个副作用。前面我们在<em>compute</em>的返回值中显式地显示了<em>print</em>的效果，这里我们可以将<em>Date</em>的效果显式地作为函数的参数。</p>
+<pre><code class="language-swift">func greet(at date: Date, name: String) -&gt; String {
+  let seconds = Int(date.timeIntervalSince1970) % 60
+  return &quot;Hello \(name)! It's \(seconds) seconds past the minute.&quot;
+}
+
+greet(at: Date(), name: &quot;Blob&quot;)
+</code></pre>
+<p>这个函数的行为与以前相同，但有一个关键的区别:我们现在可以控制日期，并有一个始终通过的测试。</p>
+<pre><code class="language-swift">assertEqual(
+  &quot;Hello Blob! It's 39 seconds past the minute.&quot;,
+  greet(at: Date(timeIntervalSince1970: 39), name: &quot;Blob&quot;)
+)
+// ✅
+</code></pre>
+<p>我们已经恢复了可测试性，代价是使用了一些样板。 函数的调用者需要显式地传递日期，这在我们的测试之外似乎是不必要的。我们可能会试图通过指定一个默认参数来隐藏这个实现细节，并将这个对当前日期的依赖注入到函数中来清理调用站点。</p>
+<pre><code class="language-swift">func greet(at date: Date = Date(), name: String) -&gt; String {
+  let s = Int(date.timeIntervalSince1970) % 60
+  return &quot;Hello \(name)! It's \(s) seconds past the minute.&quot;
+}
+
+greet(name: &quot;Blob&quot;)
+</code></pre>
+<p>这样读起来更好，但我们有一个更大的问题:我们又破坏了组合。</p>
+<p>们的第一个<em>gretwitheeffect</em>函数有一个很好的*(String) -&gt; String*形状，可以与其他返回字符串的函数和接受字符串作为输入的函数组合。</p>
+<p>让我们以一个简单的函数为例，将字符串大写:</p>
+<pre><code class="language-swift">func uppercased(_ string: String) -&gt; String {
+  return string.uppercased()
+}
+</code></pre>
+<p>这在<em>greetwitheeffect</em>的两边构成了很好的效果。</p>
+<pre><code class="language-swift">uppercased &gt;&gt;&gt; greetWithEffect
+greetWithEffect &gt;&gt;&gt; uppercased
+</code></pre>
+<p>我们可以通过管道传入一个名称，并为每个组合获得不同的行为。</p>
+<pre><code class="language-swift">&quot;Blob&quot; |&gt; uppercased &gt;&gt;&gt; greetWithEffect
+// &quot;Hello BLOB! It's 56 seconds past the minute.&quot;
+&quot;Blob&quot; |&gt; greetWithEffect &gt;&gt;&gt; uppercased
+// &quot;HELLO BLOB! IT'S 56 SECONDS PAST THE MINUTE.&quot;
+</code></pre>
+<p>然而，我们的问候功能并不能组合。</p>
+<pre><code class="language-swift">&quot;Blob&quot; |&gt; uppercased &gt;&gt;&gt; greet
+&quot;Blob&quot; |&gt; greet &gt;&gt;&gt; uppercased
+// Cannot convert value of type '(Date, String) -&gt; String' to expected argument type '(_) -&gt; _'
+</code></pre>
+<p>它有两个输入，所以没有办法把函数的输出组合进去。 如果我们忽略Date输入，我们仍然可以看到(String) -&gt; String形状。实际上，我们可以使用一些技巧来从签名中提取Date:我们可以重写greet以接受Date作为输入，但从(String)——&gt; String返回一个全新的函数，它处理实际的问候逻辑:</p>
+<pre><code class="language-swift">func greet(at date: Date) -&gt; (String) -&gt; String {
+  return { name in
+    let s = Int(date.timeIntervalSince1970) % 60
+    return &quot;Hello \(name)! It's \(s) seconds past the minute.&quot;
+  }
+}
+</code></pre>
+<p>现在我们可以用日期调用greet函数并得到一个全新的(String) -&gt; String函数。</p>
+<pre><code class="language-swift">greet(at: Date()) // (String) -&gt; String
+</code></pre>
+<p>函数组合在一起了!</p>
+<pre><code class="language-swift">uppercased &gt;&gt;&gt; greet(at: Date()) // (String) -&gt; String
+greet(at: Date()) &gt;&gt;&gt; uppercased // (String) -&gt; String
+</code></pre>
+<p>我们可以通过管道传递值!</p>
+<pre><code class="language-swift">&quot;Blob&quot; |&gt; uppercased &gt;&gt;&gt; greet(at: Date())
+// &quot;Hello BLOB! It's 37 seconds past the minute.&quot;
+&quot;Blob&quot; |&gt; greet(at: Date()) &gt;&gt;&gt; uppercased
+// &quot;HELLO BLOB! IT'S 37 SECONDS PAST THE MINUTE.&quot;
+</code></pre>
+<p>我们恢复了成分，仍然具有可测试性。</p>
+<pre><code class="language-swift">assertEqual(
+  &quot;Hello Blob! It's 37 seconds past the minute.&quot;,
+  &quot;Blob&quot; |&gt; greet(at: Date(timeIntervalSince1970: 37))
+)
+// ✅
+</code></pre>
+<p>所以现在我们遇到了一个无法测试的效果我们可以通过将情境移动到函数的输入中来控制它，这是我们之前遇到的效果的双重版本。我们的第一个效果延伸到世界并做出了改变，这有点像一个隐藏的输出，而这个效果取决于外部世界的某种状态，这有点像一个隐藏的输入! 所有的效果都以这种方式表现出来。</p>
+<h2 id="5-a-namemutationamutation">5. <a name='Mutation'></a>Mutation</h2>
+<p>让我们来看一种非常特殊的效应并真正分析它:<em>mutation</em>。我们都必须处理代码中的<em>mutation</em>，它会导致很多复杂性。幸运的是，Swift提供了一些类型级别的特性来帮助控制变异，并正确地记录变异发生的方式和位置。</p>
+<p>这里有一个例子，说明<em>mutation</em>是如何变得混乱的。这个示例的灵感来自于我们过去编写的实际代码，它变得越来越丑陋，越来越痛苦，直到我们最终重写它以控制<em>mutation</em>。</p>
+<pre><code class="language-swift">let formatter = NumberFormatter()
+
+func decimalStyle(_ format: NumberFormatter) {
+  format.numberStyle = .decimal
+  format.maximumFractionDigits = 2
+}
+
+func currencyStyle(_ format: NumberFormatter) {
+  format.numberStyle = .currency
+  format.roundingMode = .down
+}
+
+func wholeStyle(_ format: NumberFormatter) {
+  format.maximumFractionDigits = 0
+}
+</code></pre>
+<p>这里我们有一个来自Foundation的NumberFormatter和几个用特定样式配置数字格式化器的函数。 要使用这些样式化函数，可以直接将它们应用到格式化程序中。</p>
+<pre><code class="language-swift">decimalStyle(formatter)
+wholeStyle(formatter)
+formatter.string(for: 1234.6) // &quot;1,235&quot;
+
+currencyStyle(formatter)
+formatter.string(for: 1234.6) // &quot;$1,234&quot;
+</code></pre>
+<p>如果现在重新应用第一组格式化器，就会出现问题。</p>
+<pre><code class="language-swift">decimalStyle(formatter)
+wholeStyle(formatter)
+formatter.string(for: 1234.6) // &quot;1,234&quot;
+</code></pre>
+<p>输出从&quot; 1,235 &quot;变成了&quot; 1,234 &quot;改变的原因是什么? mutation。 <em>currencyStyle</em>函数的更改已经影响到格式化程序的其他用途，导致在更大的上下文中可能难以追踪的bug。</p>
+<p>这就是为什么<em>mutation</em>如此棘手的一个例子。 我们不可能知道一行在做什么，直到我们回溯到了解每一行之前它做了什么。<em>mutation</em>是我们到目前为止遇到的两种副作用的一种表现，在函数之间传递的可变数据是一个隐藏的输入和输出!</p>
+<p>我们看到这种特殊类型的mutation的原因是<em>NumberFormatter</em>是一个“引用”类型。在Swift中，类是引用类型。引用类型的实例是单个对象，当发生突变时，该对象已为持有或可能持有该对象的引用的代码基的任何部分更改。没有简单的方法来跟踪代码库的哪些部分可能保持对对象的相同引用，当涉及到<em>mutation</em>时，这可能会导致很多混乱。如果在应用程序中使用我们的示例代码，并且编写了一个依赖于该格式化程序的新特性，那么微妙的错误可能会渗入到代码库的全新部分。</p>
+<p>Swift也有“<em>value</em>”类型。这就是Swift控制<em>mutation</em>的答案。当您赋值时，您将得到一个用于给定范围的全新副本。 所有的<em>mutation</em>都是局部的，任何保持上游相同值的东西都不会看到这些变化。</p>
+<p>让我们重构这段代码以使用值。</p>
+<p>我们将从一个结构开始，它是一个包装<em>NumberFormatter</em>配置的结构。</p>
+<pre><code class="language-swift">struct NumberFormatterConfig {
+  var numberStyle: NumberFormatter.Style = .none
+  var roundingMode: NumberFormatter.RoundingMode = .up
+  var maximumFractionDigits: Int = 0
+
+  var formatter: NumberFormatter {
+    let result = NumberFormatter()
+    result.numberStyle = self.numberStyle
+    result.roundingMode = self.roundingMode
+    result.maximumFractionDigits = self.maximumFractionDigits
+    return result
+  }
+}
+</code></pre>
+<p>它有一些很好的默认值和一个<em>formatter computed</em>属性，我们可以使用它派生新的“诚实的”NumberFormatters。将样式化函数更新为使用<em>NumberFormatterConfig</em>会是什么样子?</p>
+<pre><code class="language-swift">func decimalStyle(_ format: NumberFormatterConfig) -&gt; NumberFormatterConfig {
+  var format = format
+  format.numberStyle = .decimal
+  format.maximumFractionDigits = 2
+  return format
+}
+
+func currencyStyle(_ format: NumberFormatterConfig) -&gt; NumberFormatterConfig {
+  var format = format
+  format.numberStyle = .currency
+  format.roundingMode = .down
+  return format
+}
+
+func wholeStyle(_ format: NumberFormatterConfig) -&gt; NumberFormatterConfig {
+  var format = format
+  format.maximumFractionDigits = 0
+  return format
+}
+</code></pre>
+<p>每个样式化函数都接受一个<em>NumberFormatterConfig</em>，使用var关键字复制它，并在将其返回给调用者之前更改本地副本。</p>
+<p>使用它看起来有点不同。</p>
+<pre><code class="language-swift">let config = NumberFormatterConfig()
+
+wholeStyle(decimalStyle(config))
+  .formatter
+  .string(for: 1234.6)
+// &quot;1,235&quot;
+
+currencyStyle(config)
+  .formatter
+  .string(for: 1234.6)
+// &quot;$1,234&quot;
+
+wholeStyle(decimalStyle(config))
+  .formatter
+  .string(for: 1234.6)
+// &quot;1,235&quot;
+</code></pre>
+<p>这一次，每当我们将<em>config</em>传递给样式函数时，我们就会得到一个全新的副本，bug也就消失了!</p>
+<p>对于引用类型，我们可以使用实现NSCopying并显式返回此副本的类的copy方法来做类似的事情:</p>
+<pre><code class="language-swift">func decimalStyle(_ format: NumberFormatter) -&gt; NumberFormatter {
+  let format = format.copy() as! NumberFormatter
+  format.numberStyle = .decimal
+  format.maximumFractionDigits = 2
+  return format
+}
+</code></pre>
+<p>不幸的是，在这里，编译器不能保证我们不会改变原始格式化程序。 在此之上，调用者可能希望得到一个副本，可以自由地进行进一步的更改，并从那里构建复杂性!</p>
+<p>因为引用类型不会自动复制，所以它们确实有一些很好的性能优势。幸运的是，Swift提供了一种很好的语义方式来就地更改值:<em>inout</em>关键字。</p>
+<p>让我们修改配置样式函数来使用<em>inout</em>。</p>
+<pre><code class="language-swift">func inoutDecimalStyle(_ format: inout NumberFormatterConfig) {
+  format.numberStyle = .decimal
+  format.maximumFractionDigits = 2
+}
+
+func inoutCurrencyStyle(_ format: inout NumberFormatterConfig) {
+  format.numberStyle = .currency
+  format.roundingMode = .down
+}
+
+func inoutWholeStyle(_ format: inout NumberFormatterConfig) {
+  format.maximumFractionDigits = 0
+}
+</code></pre>
+<p>这看起来很像<em>NumberFormatter</em>上原始的、变化的函数。我们可以立即执行<em>mutations</em>，而不必担心复制值或返回值。让我们尝试以使用原始样式函数的方式使用这些样式函数。</p>
+<pre><code class="language-swift">let config = NumberFormatterConfig()
+
+inoutDecimalStyle(config)
+inoutWholeStyle(config)
+config.formatter.string(from: 1234.6)
+</code></pre>
+<p>我们得到一个编译错误!</p>
+<pre><code class="language-swift">Cannot pass immutable value as inout argument: 'config' is a 'let' constant
+</code></pre>
+<p>Swift甚至提出为我们解决这个问题，将let转换为var。</p>
+<pre><code class="language-swift">var config = NumberFormatterConfig()
+
+inoutDecimalStyle(config)
+inoutWholeStyle(config)
+config.formatter.string(from: 1234.6)
+</code></pre>
+<p>但这还不够。我们有另一个编译错误!</p>
+<pre><code class="language-swift">Passing value of type 'NumberFormatterConfig' to an inout parameter requires explicit '&amp;'
+</code></pre>
+<p>Swift要求我们在调用处标注我们同意让这些数据发生变异。</p>
+<pre><code class="language-swift">inoutDecimalStyle(&amp;config)
+inoutWholeStyle(&amp;config)
+config.formatter.string(from: 1234.6) // &quot;1,235&quot;
+</code></pre>
+<p>我们可以继续以类似的方式调用不断变化的样式函数。</p>
+<pre><code class="language-swift">inoutCurrencyStyle(&amp;config)
+config.formatter.string(from: 1234.6) // &quot;$1,234&quot;
+
+inoutDecimalStyle(&amp;config)
+inoutWholeStyle(&amp;config)
+config.formatter.string(from: 1234.6) // &quot;1,234&quot;
+</code></pre>
+<p>这又是我们的漏洞，但现在涉及的代码有很多“<em>mutation</em>”的语法，这使得这类漏洞更容易追踪。</p>
+<p>Swift为<em>mutation</em>问题提供了一个很好的解决方案，它提供了类型级别的特性来控制突变发生的位置和传播的距离。但是，如果我们想要使用它，我们仍然有一个问题要解决。</p>
+<p>我们使用的样式函数返回的全新副本有一个漂亮的形状:</p>
+<pre><code class="language-swift">(NumberFormatterConfig) -&gt; NumberFormatterConfig
+</code></pre>
+<p>它们有相同的输入和输出，这意味着它们相互组合，它们与任何其他返回或接受<em>NumberFormatterConfig</em>的函数组合!</p>
+<pre><code class="language-swift">decimalStyle &gt;&gt;&gt; currencyStyle
+// (NumberFormatterConfig) -&gt; NumberFormatterConfig
+</code></pre>
+<p>现在我们有了一个全新的造型功能，它是由更小的部件组成的。</p>
+<p>与此同时，我们的<em>inout</em>函数没有这种形状:它们的输入和输出不匹配，通常它们没有许多函数组成。 不过，这些函数具有相同的逻辑，因此必须有一种方法将内外世界与函数世界连接起来。</p>
+<p>我们可以定义一个名为<em>toInout</em>的函数，它将具有相同输入和输出类型的函数转换为<em>inout</em>函数。</p>
+<pre><code class="language-swift">func toInout&lt;A&gt;(
+  _ f: @escaping (A) -&gt; A
+  ) -&gt; ((inout A) -&gt; Void) {
+
+  return { a in
+    a = f(a)
+  }
+}
+</code></pre>
+<p>我们也可以定义一个对偶函数，<em>fromInout</em>，它做逆变换。</p>
+<pre><code class="language-swift">func fromInout&lt;A&gt;(
+  _ f: @escaping (inout A) -&gt; Void
+  ) -&gt; ((A) -&gt; A) {
+
+  return { a in
+    var copy = a
+    f(&amp;copy)
+    return copy
+  }
+}
+</code></pre>
+<p>我们在这里看到的是(A) -&gt; A函数和(inout A) -&gt; Void函数之间有一个自然的对应关系。来自(A) -&gt; A的函数组合得非常好，因此通过这种通信，我们希望来自(inout A) -&gt; Void的函数能够共享这些组合特性。</p>
+<h2 id="6-a-nameintroducing-1aintroducing">6. <a name='Introducing-1'></a>Introducing &lt;&gt;</h2>
+<p>即使我们看到(A) -&gt; A函数使用&gt;&gt;&gt;组合，我们不应该重用这个操作符，因为它有太多的自由度。我们看到的是一个更加受限的，单一类型的组合。让我们定义一个新的运算符。让我们从优先级组开始。</p>
+<pre><code class="language-swift">precedencegroup SingleTypeComposition {
+  associativity: left
+  higherThan: ForwardApplication
+}
+</code></pre>
+<p>我们来定义算符。</p>
+<pre><code class="language-swift">infix operator &lt;&gt;: SingleTypeComposition
+</code></pre>
+<p>这个操作符的一个有趣的名字是“<em>diamond</em>”操作符。</p>
+<p>我们可以简单地对*(A) -&gt; A*定义运算符:</p>
+<pre><code class="language-swift">func &lt;&gt; &lt;A&gt;(
+  f: @escaping (A) -&gt; A,
+  g: @escaping (A) -&gt; A)
+  -&gt; ((A) -&gt; A) {
+
+  return f &gt;&gt;&gt; g
+}
+</code></pre>
+<p>仅仅用一个操作符包装另一个操作符可能看起来很愚蠢，但我们已经限制了它的使用方式，并对其进行了一些编码:当我们看到这个操作符时，我们知道我们在处理单一类型!</p>
+<p>让我们为inout函数定义&lt;&gt;:</p>
+<pre><code class="language-swift">func &lt;&gt; &lt;A&gt;(
+  f: @escaping (inout A) -&gt; Void,
+  g: @escaping (inout A) -&gt; Void)
+  -&gt; ((inout A) -&gt; Void) {
+
+  return { a in
+    f(&amp;a)
+    g(&amp;a)
+  }
+}
+</code></pre>
+<p>我们之前的组合生效了</p>
+<pre><code class="language-swift">decimalStyle &lt;&gt; currencyStyle
+</code></pre>
+<p>更好的是，我们可以编写我们的<em>inout</em>样式函数!</p>
+<pre><code class="language-swift">inoutDecimalStyle &lt;&gt; inoutCurrencyStyle
+</code></pre>
+<p>当我们开始将值管道化到我们的合成中时会发生什么?</p>
+<pre><code class="language-swift">config |&gt; decimalStyle &lt;&gt; currencyStyle
+config |&gt; inoutDecimalStyle &lt;&gt; inoutCurrencyStyle
+</code></pre>
+<p>我们的inout版本产生一个错误。</p>
+<pre><code class="language-swift">Cannot convert value of type '(inout Int) -&gt; ()' to expected argument type '(_) -&gt; _'
+</code></pre>
+<p>这是因为|&gt;在inout中还不能工作，但是我们可以定义一个重载。</p>
+<pre><code class="language-swift">func |&gt; &lt;A&gt;(a: inout A, f: (inout A) -&gt; Void) -&gt; Void {
+  f(&amp;a)
+}
+</code></pre>
+<p>现在我们可以自由地将值输送到这些可变管道中。</p>
+<pre><code class="language-swift">config |&gt; inoutDecimalStyle &lt;&gt; inoutCurrencyStyle
+</code></pre>
+<p>这是伟大的! 我们不必牺牲可组合性来利用一些不错的Swift特性。 我们已经用另一个操作符的代价解决了这个问题，所以是时候检查一下了。</p>
+<ol>
+<li>Swift中是否存在该操作符? 没有，所以这里没有混淆的可能。</li>
+<li>有现有技术吗? 是的。它存在于Haskell、PureScript和其他已经采用了它的强大函数社区的语言中。它有一个很好的形状，指向两个方向，某种程度上表示连接在一起。</li>
+<li>这是一个通用操作符还是仅仅解决一个特定领域的问题? 到目前为止我们为(A) - &gt;A函数和(inout) - &gt; Void函数只定义该操作符,但事实证明,*&lt;&gt;*更通常用于将相同类型的两个东西组合成一个,这是一种最基本的计算单位。</li>
+</ol>
+<h2 id="7-a-namewhatsthepointawhats-the-point">7. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>是时候放慢脚步，问问自己:“这有什么意义?” 我们遇到过许多将复杂性引入代码并使其更难以测试的效果。我们决定通过做一点前期工作来解决这个问题，使输入和输出类型的效果显式，但随后我们破坏了合成。然后我们介绍了辅助合成的操作符，专门用于合成效果。这值得吗?</p>
+<p>我们会这样说! 我们能够提升我们的有效代码，这是不可测试的，并且很难单独推理，进入一个效果是明确的世界，我们可以测试和理解一行，而不需要理解它之前的任何一行。我们在没有破坏组合的情况下完成了这一切。这真的很强大!</p>
+<p>与此同时，我们额外的前期工作将为我们节省大量的时间，包括调试包含复杂突变网络的代码，修复散布在各处的副作用漏洞，以及让代码变得可测试的时间。</p>
+<p>副作用是一个很大的话题，而我们只触及了表面。我们将在未来探索许多有趣的方法来控制副作用。请继续关注!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/IpflSHHKW/" class="tag">
+                    Side Effects
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-01-functions/">
+                  <h3 class="post-title">
+                    PointFree Episode 01: Functions
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

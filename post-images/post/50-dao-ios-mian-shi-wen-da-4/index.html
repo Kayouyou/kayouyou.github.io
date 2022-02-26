@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>50道iOS面试问答 - 4 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+50道iOS面试问答 - 4
+
+1- What is Functional programming?
+2- Explain Dynamic Type
+3- What is ARC and how is it different from..." />
+    <meta name="keywords" content="interview" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">50道iOS面试问答 - 4</h2>
+            <div class="post-date">2021-05-26</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gqvmpgvtqmj31900u0tco.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#50%E9%81%93ios%E9%9D%A2%E8%AF%95%E9%97%AE%E7%AD%94---4">50道iOS面试问答 - 4</a>
+<ul>
+<li><a href="#1--what-is-functional-programming">1- What is Functional programming?</a></li>
+<li><a href="#2--explain-dynamic-type">2- Explain Dynamic Type</a></li>
+<li><a href="#3--what-is-arc-and-how-is-it-different-from-autorelease">3- What is ARC and how is it different from AutoRelease?</a></li>
+<li><a href="#4--explain-differences-between-foundation-and-corefoundation">4- Explain differences between Foundation and CoreFoundation</a></li>
+<li><a href="#5--whats-accessibilityhint">5- What’s accessibilityHint?</a></li>
+<li><a href="#6--explain-place-holder-constraint-%E8%A7%A3%E9%87%8A%E5%8D%A0%E4%BD%8D%E7%AC%A6%E7%BA%A6%E6%9D%9F">6- Explain place holder constraint (解释占位符约束)</a></li>
+<li><a href="#7--are-you-using-charlesproxy--whywhy-not-">7- Are you using CharlesProxy ? Why/why not ?</a></li>
+<li><a href="#8--explain-unwind-segue">8- Explain unwind segue</a></li>
+<li><a href="#9--what-is-the-relation-between-ivar-and-property">9- What is the relation between iVar and @property?</a></li>
+<li><a href="#10--explain-unnotification-content">10- Explain UNNotification Content</a></li>
+<li><a href="#11--whats-the-difference-between-android-and-ios-designs">11- What’s the difference between Android and iOS designs?</a></li>
+<li><a href="#12--what-is-webhooks-">12- What is Webhooks ?</a></li>
+<li><a href="#13--explain-difference-dependency-injection-and-inject-dependencies-%E8%A7%A3%E9%87%8A%E4%B8%8D%E5%90%8C%E7%9A%84%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E5%92%8C%E6%B3%A8%E5%85%A5%E4%BE%9D%E8%B5%96">13- Explain difference dependency injection and inject dependencies (解释不同的依赖注入和注入依赖)</a></li>
+<li><a href="#14--explain-caemitterlayer-and-caemittercell">14- Explain CAEmitterLayer and CAEmitterCell</a></li>
+<li><a href="#15--why-do-we-need-to-specify-self-to-refer-to-a-stored-property-or-a-method-when-writing-asynchronous-code">15- Why do we need to specify self to refer to a stored property or a method When writing asynchronous code?</a></li>
+<li><a href="#16--explain-nsmanagedobjectcontext">16- Explain NSManagedObjectContext</a></li>
+<li><a href="#17--explain-service-extension">17- Explain service extension</a></li>
+<li><a href="#18--explain-content-extension">18- Explain content extension</a></li>
+<li><a href="#19--what-is-intrinsic-content-size">19- What is intrinsic content size?</a></li>
+<li><a href="#20--what-is-instruments">20- What is Instruments?</a></li>
+<li><a href="#21--what-is-deep-linking">21- What is Deep Linking?</a></li>
+<li><a href="#22--what-is-optional-binding-">22- What is Optional Binding ?</a></li>
+<li><a href="#23--explain-super-keyword-in-child-class">23- Explain super keyword in child class</a></li>
+<li><a href="#24--explain-polymorphism">24- Explain Polymorphism</a></li>
+<li><a href="#25--explain-in-app-purchase-products-and-subscriptions">25- Explain In-app Purchase products and subscriptions</a></li>
+<li><a href="#26--what-is-healthkit-">26- What is HealthKit ?</a></li>
+<li><a href="#27--what-is-protocol">27- What is Protocol?</a></li>
+<li><a href="#28--explain-neural-networks-with-core-ml">28- Explain Neural networks with Core ML</a></li>
+<li><a href="#29--explain-libssl_ios-and-libcrypto_ios">29- Explain libssl_iOS and libcrypto_iOS</a></li>
+<li><a href="#30--explain-jsonencoder-and-jsondecoder-in-swift4">30- Explain JSONEncoder and JSONDecoder in Swift4</a></li>
+<li><a href="#31--what-is-cocoatouch-">31- What is CocoaTouch ?</a></li>
+<li><a href="#32--what-is-notificationcenter-">32- What is NotificationCenter ?</a></li>
+<li><a href="#33--why-is-inheritance-bad-in-swift">33- Why is inheritance bad in swift?</a></li>
+<li><a href="#34--explain-sequence-in-swift">34- Explain Sequence in Swift</a></li>
+<li><a href="#35--what-is-receipt-validation-">35- What is Receipt Validation ?</a></li>
+<li><a href="#36--explain-generic-function-zip__">36- Explain generic function zip(<em>:</em>😃</a></li>
+<li><a href="#37--what-kind-of-benefits-does-xcode-server-have-for-developers">37- What kind of benefits does Xcode server have for developers?</a></li>
+<li><a href="#38--what-is-xcode-bot">38- What is Xcode Bot?</a></li>
+<li><a href="#39--explain-gitignore">39- Explain .gitignore</a></li>
+<li><a href="#40--what-is-strategy-pattern">40- What is Strategy Pattern?</a></li>
+<li><a href="#41--what-is-an-app-id-and-a-bundle-id-">41- What is an “app ID” and a “bundle ID” ?</a></li>
+<li><a href="#42--what-is-factory-method-pattern">42- What is Factory method pattern?</a></li>
+<li><a href="#43--what-is-corespotlight">43- What is CoreSpotlight?</a></li>
+<li><a href="#44--what-are-layer-objects">44- What are layer objects?</a></li>
+<li><a href="#45--explain-avfoundation-framework">45- Explain AVFoundation framework</a></li>
+<li><a href="#46--whats-the-difference-between-accessibilitylabel-and-accessibilityidentifier">46- What’s the difference between accessibilityLabel and accessibilityIdentifier?</a></li>
+<li><a href="#47--how-to-find-the-distance-between-two-points-1x-1y-and-2x-2y">47- How to find the distance between two points (1x, 1y and 2x, 2y)?</a></li>
+<li><a href="#48--explain-property-observer">48- Explain Property Observer</a></li>
+<li><a href="#49--whats-the-difference-between-a-xib-and-a-storyboard">49- What’s the difference between a xib and a storyboard?</a></li>
+<li><a href="#50--explain-how-to-add-frameworks-in-xcode-project">50- Explain how to add frameworks in Xcode project?</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="50道ios面试问答-4">50道iOS面试问答 - 4</h2>
+<!-- ![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gqvmpgvtqmj31900u0tco.jpg) -->
+<h3 id="1-what-is-functional-programming">1- What is Functional programming?</h3>
+<p>一种通过分解复杂过程来解决问题的方法。其目标是避免在其范围之外更改状态或更改值。主要有三个概念。这些概念是:分离函数和数据、不变性和一级函数。</p>
+<h3 id="2-explain-dynamic-type">2- Explain Dynamic Type</h3>
+<p>动态类型允许我们的应用程序的文本根据用户的喜好增加或减少大小，提高可视性和可访问性。 当用户从设置菜单中选择一个大的可访问性尺寸。 我们可以观察到内容大小类别确实改变了通知，但由于iOS 10有一个更好的方式使用特性集合UITraitCollection。</p>
+<h3 id="3-what-is-arc-and-how-is-it-different-from-autorelease">3- What is ARC and how is it different from AutoRelease?</h3>
+<p>自动释放仍然使用ARC。 ARC是在作用域内使用的，自动释放是在作用域外使用的功能。</p>
+<h3 id="4-explain-differences-between-foundation-and-corefoundation">4- Explain differences between Foundation and CoreFoundation</h3>
+<p>Foundation是用于运行数字、字符串和集合的类的集合。  它还描述了协议、函数、数据类型和常量。 CoreFoundation是Foundation的一个基于c的替代方案。Foundation本质上是一个CoreFoundation。我们有一个与NS对应的自由桥。</p>
+<h3 id="5-whats-accessibilityhint">5- What’s accessibilityHint?</h3>
+<p>可访问性提示描述与用户界面元素交互的结果。只有当交互的结果从元素的标签来看不明显时，才应该提供提示。</p>
+<h3 id="6-explain-place-holder-constraint-解释占位符约束">6- Explain place holder constraint (解释占位符约束)</h3>
+<p>这告诉Interface Builder在构建和运行此代码时继续并删除约束。 它允许布局引擎找出基本布局，然后我们可以在运行时修改基本布局。</p>
+<h3 id="7-are-you-using-charlesproxy-whywhy-not">7- Are you using CharlesProxy ? Why/why not ?</h3>
+<p>如果我需要一个代理服务器，包括完整的请求和响应以及HTTP头，那么我使用CharlesProxy。通过CharlesProxy，我们可以支持二进制协议、重写和流量调节。</p>
+<h3 id="8-explain-unwind-segue">8- Explain unwind segue</h3>
+<p>unwind segue通过一个或多个segue向后移动，将用户返回到一个由现有视图控制器管理的场景。</p>
+<h3 id="9-what-is-the-relation-between-ivar-and-property">9- What is the relation between iVar and @property?</h3>
+<p>iVar是一个实例变量。除非创建访问器(由@property生成)，否则不能访问它。 iVar和它对应的@property可以有不同的名称。 iVar总是可以通过KVC访问。</p>
+<h3 id="10-explain-unnotification-content">10- Explain UNNotification Content</h3>
+<p>UNNotification Content将通知内容存储在预定的或已发送的通知中。它是只读的。</p>
+<h3 id="11-whats-the-difference-between-android-and-ios-designs">11- What’s the difference between Android and iOS designs?</h3>
+<p>开放性问题</p>
+<h3 id="12-what-is-webhooks">12- What is Webhooks ?</h3>
+<p>webhook允许在存储库中发生某些事件时通知外部服务。(push, pull-request, fork)</p>
+<h3 id="13-explain-difference-dependency-injection-and-inject-dependencies-解释不同的依赖注入和注入依赖">13- Explain difference dependency injection and inject dependencies (解释不同的依赖注入和注入依赖)</h3>
+<p>对视图模型或视图控制器使用依赖注入很容易，但向屏幕上的每个视图注入依赖将是一项重要的工作，需要管理更多的代码行。</p>
+<h3 id="14-explain-caemitterlayer-and-caemittercell">14- Explain CAEmitterLayer and CAEmitterCell</h3>
+<p>UIKit提供了两个类来创建粒子效果:CAEmitterLayer and CAEmitterCell.<br>
+CAEmitterLayer是发射、动画和渲染粒子系统的层。<br>
+CAEmitterCell表示粒子的来源，并定义了发射粒子的方向和属性。</p>
+<h3 id="15-why-do-we-need-to-specify-self-to-refer-to-a-stored-property-or-a-method-when-writing-asynchronous-code">15- Why do we need to specify self to refer to a stored property or a method When writing asynchronous code?</h3>
+<p>由于代码被分派到后台线程，我们需要捕获对正确对象的引用。</p>
+<h3 id="16-explain-nsmanagedobjectcontext">16- Explain NSManagedObjectContext</h3>
+<p>它的主要职责是管理被管理对象的集合。</p>
+<h3 id="17-explain-service-extension">17- Explain service extension</h3>
+<p>服务扩展让我们有机会在通知呈现之前更改通知中的内容。</p>
+<h3 id="18-explain-content-extension">18- Explain content extension</h3>
+<p>内容扩展给了我们工具，我们在应用中有设计通知的工具。</p>
+<h3 id="19-what-is-intrinsic-content-size">19- What is intrinsic content size?</h3>
+<p>每个包含内容的视图都可以计算其内在内容的大小。 内部内容大小是通过每个UIView实例上的方法计算的。这个方法返回一个CGSize实例。</p>
+<h3 id="20-what-is-instruments">20- What is Instruments?</h3>
+<p>Instrument是一个强大的性能调优工具，用于分析性能、内存占用、平滑动画、电量使用、泄漏和文件/网络活动。</p>
+<h3 id="21-what-is-deep-linking">21- What is Deep Linking?</h3>
+<p>深度链接是一种将数据从任何平台(如网站或任何其他应用程序)传递到应用程序的方式。通过点击一次链接，您可以将必要的数据传递到您的应用程序。</p>
+<h3 id="22-what-is-optional-binding">22- What is Optional Binding ?</h3>
+<p>我们将取可选的值并将其绑定为非可选的常量。我们使用了If let结构或Guard语句。</p>
+<h3 id="23-explain-super-keyword-in-child-class">23- Explain super keyword in child class</h3>
+<p>在设置了子类存储属性之后，我们使用super关键字来调用父类初始化器。</p>
+<h3 id="24-explain-polymorphism">24- Explain Polymorphism</h3>
+<p>多态是类实例被其子类之一的类实例所取代的能力。</p>
+<h3 id="25-explain-in-app-purchase-products-and-subscriptions">25- Explain In-app Purchase products and subscriptions</h3>
+<p>消费产品: 可以购买多次，使用过的物品将不得不重新购买。</p>
+<p>非消耗品产品: 用户将能够恢复这个功能在未来，如果他们需要重新安装应用程序的任何原因。我们还可以在应用中添加订阅功能。</p>
+<p>Non-Renewing Subscription: 用于一定的时间和一定的内容。</p>
+<p>Auto-Renewing Subscription: 用于周期性的每月订阅。</p>
+<h3 id="26-what-is-healthkit">26- What is HealthKit ?</h3>
+<p>HealthKit是一个iOS框架。它将健康和健身数据存储在一个中心位置。它从多个来源接收数据，这些来源可能是不同的设备。它允许用户控制对其数据的访问，并维护用户数据的隐私。你的手机和手表之间的数据同步。</p>
+<h3 id="27-what-is-protocol">27- What is Protocol?</h3>
+<p>协议定义了适合特定任务或功能的方法、属性和其他需求的蓝图。然后，类、结构或枚举可以采用该协议来提供这些需求的实际实现。</p>
+<h3 id="28-explain-neural-networks-with-core-ml">28- Explain Neural networks with Core ML</h3>
+<p>神经网络和深度学习目前为图像识别、语音识别和自然语言处理中的许多问题提供了最好的解决方案。<br>
+Core ML是iOS 11自带的一个iOS框架，帮助处理你的应用中的人脸检测模型。<br>
+For more information follow this guideline https://developer.apple.com/machine-learning/</p>
+<h3 id="29-explain-libssl_ios-and-libcrypto_ios">29- Explain libssl_iOS and libcrypto_iOS</h3>
+<p>这些文件将帮助我们在设备验证我们的收据验证文件与应用内购买。</p>
+<h3 id="30-explain-jsonencoder-and-jsondecoder-in-swift4">30- Explain JSONEncoder and JSONDecoder in Swift4</h3>
+<p>Decodable协议，它允许我们获取数据并创建对象的实例，填充从服务器传递下来的数据。</p>
+<p>Encodable协议来获取对象的实例并将其转换为数据。有了这些数据，我们可以把它存储到文件中，发送到服务器上，不管你想怎么处理它。</p>
+<h3 id="31-what-is-cocoatouch">31- What is CocoaTouch ?</h3>
+<p>CocoaTouch是一个用于在iOS上构建可执行应用程序的库。CocoaTouch是iOS上的一个抽象层。</p>
+<h3 id="32-what-is-notificationcenter">32- What is NotificationCenter ?</h3>
+<p>NotificationCenter是一个观察者模式，NSNotificationCenter单例允许我们使用一个名为NSNotification的对象来广播信息。</p>
+<p>KVO和NotificationCenter之间最大的区别是kvo track对对象的特定更改，而NotificationCenter用于跟踪一般事件。</p>
+<h3 id="33-why-is-inheritance-bad-in-swift">33- Why is inheritance bad in swift?</h3>
+<ul>
+<li>
+<p>不能对Swift值类型使用父类或继承。</p>
+</li>
+<li>
+<p>Upfront modelling</p>
+</li>
+<li>
+<p>继承的自定义是不精确的</p>
+</li>
+</ul>
+<h3 id="34-explain-sequence-in-swift">34- Explain Sequence in Swift</h3>
+<p>序列是Swift中的一种基本类型，用于定义按顺序分布在一行中的元素的聚合。所有的集合类型都继承自Sequence，比如Array, Set, Dictionary。</p>
+<h3 id="35-what-is-receipt-validation">35- What is Receipt Validation ?</h3>
+<p>应用程序或应用程序内购买的收据是应用程序的销售记录和任何应用程序内购买的记录。 您可以在应用程序中添加收据验证代码，以防止应用程序的未经授权的副本运行</p>
+<h3 id="36-explain-generic-function-zip">36- Explain generic function zip(<em>:</em>😃</h3>
+<p>根据swift文档，zip创建由两个底层构建的对序列。 这意味着，我们可以创建一个包含两个数组的字典。</p>
+<h3 id="37-what-kind-of-benefits-does-xcode-server-have-for-developers">37- What kind of benefits does Xcode server have for developers?</h3>
+<p>Xcode服务器会自动签出我们的项目，构建应用程序，运行测试，并将应用程序存档以便发布。</p>
+<h3 id="38-what-is-xcode-bot">38- What is Xcode Bot?</h3>
+<p>Xcode Server使用bot自动构建你的项目。 机器人表示单个远程存储库、项目和方案。 我们还可以控制机器人使用的构建配置，并选择机器人将使用哪些设备和模拟器。</p>
+<h3 id="39-explain-gitignore">39- Explain .gitignore</h3>
+<p>gitignore是一个文件扩展名，可以告诉Git服务器有关文档类型和文件夹的信息，这些文件夹是您不希望添加到项目中或不希望跟踪Git服务器项目中的更改的。</p>
+<h3 id="40-what-is-strategy-pattern">40- What is Strategy Pattern?</h3>
+<p>策略模式允许您在运行时改变算法的行为。 通过使用接口，我们可以定义一系列算法，封装每个算法，并使它们可以互换，从而允许我们选择在运行时执行哪种算法。</p>
+<h3 id="41-what-is-an-app-id-and-a-bundle-id">41- What is an “app ID” and a “bundle ID” ?</h3>
+<p>bundle ID是单个应用程序的标识符。例如，如果您的组织的域名是xxx.com，而您创建了一个名为Facebook的应用程序，您可以将字符串com.xxx.facebook指定为应用程序的bundle ID。</p>
+<p>应用程序ID是由两部分组成的字符串，用于标识来自单个开发团队的一个或多个应用程序。你需要苹果开发者账号作为应用ID</p>
+<h3 id="42-what-is-factory-method-pattern">42- What is Factory method pattern?</h3>
+<p>工厂方法模式使代码库在添加或删除新类型时更加灵活。要添加新类型，我们只需要为该类型创建一个新类，并创建一个新工厂来生成它，如下所示。要了解更多信息，请查看这个。</p>
+<h3 id="43-what-is-corespotlight">43- What is CoreSpotlight?</h3>
+<p>CoreSpotlight允许我们在我们的应用程序中索引任何内容。而NSUserActivity对于保存用户的历史是有用的，有了这个API，你可以索引任何你喜欢的数据。它提供了对用户设备上CoreSpotlight索引的访问。</p>
+<h3 id="44-what-are-layer-objects">44- What are layer objects?</h3>
+<p>层对象是表示可视内容的数据对象，视图使用它来呈现其内容。还可以将自定义层对象添加到界面中，以实现复杂的动画和其他类型的复杂视觉效果。</p>
+<h3 id="45-explain-avfoundation-framework">45- Explain AVFoundation framework</h3>
+<p>我们可以创建、播放音频和视频媒体。AVFoundation允许我们在基于时间的视听数据的详细水平上工作。 有了它，我们可以创建、编辑、分析和重新编码媒体文件。AVFoundation有两套API，一套是视频，一套是音频。</p>
+<h3 id="46-whats-the-difference-between-accessibilitylabel-and-accessibilityidentifier">46- What’s the difference between accessibilityLabel and accessibilityIdentifier?</h3>
+<p>accessabilitylabel是VoiceOver读给最终用户的值。因此，这应该是一个本地化的字符串。文本也应该大写。因为这有助于语音的发音。无障碍标签用于测试和视力受损用户。</p>
+<p>可访问性标识符通过可访问性标识元素，但与可访问性label不同的是，可访问性标识符的目的纯粹是用作UI自动化测试的标识符。我们在测试过程中使用一个值。</p>
+<h3 id="47-how-to-find-the-distance-between-two-points-1x-1y-and-2x-2y">47- How to find the distance between two points (1x, 1y and 2x, 2y)?</h3>
+<p>我们需要计算点之间的距离，我们可以省略sqrt()，这会让它更快一点。这个问题的背景是勾股定理。我们可以用CGPoint找到结果。</p>
+<h3 id="48-explain-property-observer">48- Explain Property Observer</h3>
+<p>属性观察者观察并响应属性值的变化。 使用属性观察者，我们不需要每次属性改变时重置控件。</p>
+<h3 id="49-whats-the-difference-between-a-xib-and-a-storyboard">49- What’s the difference between a xib and a storyboard?</h3>
+<p>它们都在Xcode中用于布局屏幕(视图控制器)。 xib定义了一个单一的视图或视图控制器屏幕，而故事板显示了许多视图控制器，并显示了它们之间的关系。</p>
+<h3 id="50-explain-how-to-add-frameworks-in-xcode-project">50- Explain how to add frameworks in Xcode project?</h3>
+<p>首先，从项目窗口左侧的项目导航器中选择项目文件</p>
+<p>然后在项目设置编辑器中选择要添加框架的目标</p>
+<p>选择“Build Phases”选项卡，然后选择“Link Binary With Libraries”来查看所有的框架</p>
+<p>要添加框架，点击列表下方的“+”号，选择框架，然后点击添加按钮。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1UYNOQrST/" class="tag">
+                    interview
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/50-dao-ios-mian-shi-wen-da-3/">
+                  <h3 class="post-title">
+                    50道iOS面试问答 - 3
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

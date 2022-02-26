@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Wrapping sequences in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift面向协议设计的一个主要好处是，它使我们能够编写与多种类型兼容的通用代码，而不是仅为一种类型专门实现。特别是当这些泛型代码的目标是在标准库中找到的协议之一时——这将使它可以在内置类型和用户定义类型中使用。
+这种协议的一个例子是Seq..." />
+    <meta name="keywords" content="algorithms" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Wrapping sequences in Swift</h2>
+            <div class="post-date">2019-05-12</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift面向协议设计的一个主要好处是，它使我们能够编写与多种类型兼容的通用代码，而不是仅为一种类型专门实现。特别是当这些泛型代码的目标是在标准库中找到的协议之一时——这将使它可以在内置类型和用户定义类型中使用。</p>
+<p>这种协议的一个例子是Sequence，它被所有可以遍历的标准库类型所采用，例如Array、Dictionary、Set等等。本周，让我们看看如何在通用容器中封装序列，这将让我们在易于使用的api后面封装各种算法。</p>
+<h2 id="the-art-of-being-lazy">The art of being lazy</h2>
+<p>人们很容易陷入这样的误区，认为所有的序列都像数组一样，在序列创建时，所有的元素都立即加载到内存中。 然而，由于序列协议的唯一要求是采用者应该能够被迭代，所以我们不能对未知序列的元素如何加载或存储做出任何假设。</p>
+<p>例如，就像我们在“Swift序列:懒惰的艺术”中看到的那样，序列有时可以惰性地加载它们的元素——要么是出于性能原因，或者因为不能保证整个序列都能装入内存。以下是一些可能做到这一点的序列的例子:</p>
+<pre><code class="language-swift">// A sequence of database records, in which pages of records are
+// loaded as an iteration goes on, to avoid loading all search
+// results into memory in order to iterate over them.
+let records = database.records(matching: searchQuery)
+
+// A sequence of subfolders within a folder on disk, in which each
+// folder is only opened once the iteration has reached it.
+let folders = folder.subfolders
+
+// A sequence of nodes within a graph, which is lazy so that we
+// don't need to evaluate the entire graph at the beginning of
+// each iteration.
+let nodes = node.children
+```swift
+
+ 由于上述所有序列都是惰性的，所以我们不希望将它们强制放入数组中，例如通过调用array (folder.subfolders)。但是，我们仍然可能希望以不同的方式修改和使用这些序列——因此，让我们看看如何通过创建序列包装器类型来实现这一点。
+
+## Building a base
+
+让我们首先构建一个基类型，我们可以使用它在任何序列上创建各种方便的api。我们将它命名为WrappedSequence，它将是一个泛型，包含我们要包装的序列的类型，以及我们希望新序列产生的元素类型。
+
+包装器的核心特性将是它的IteratorFunction，它将使我们能够控制底层序列的迭代——通过改变每个迭代所使用的迭代器:
+```swift
+struct WrappedSequence&lt;Wrapped: Sequence, Element&gt;: Sequence {
+    typealias IteratorFunction = (inout Wrapped.Iterator) -&gt; Element?
+
+    private let wrapped: Wrapped
+    private let iterator: IteratorFunction
+
+    init(wrapping wrapped: Wrapped,
+         iterator: @escaping IteratorFunction) {
+        self.wrapped = wrapped
+        self.iterator = iterator
+    }
+
+    func makeIterator() -&gt; AnyIterator&lt;Element&gt; {
+        var wrappedIterator = wrapped.makeIterator()
+        return AnyIterator { self.iterator(&amp;wrappedIterator) }
+    }
+}
+</code></pre>
+<p>如上所述，Sequence使用工厂模式，通过makeIterator()方法，让每个序列为每个迭代创建一个新的迭代器实例。</p>
+<p>上面我们使用了标准库的AnyIterator类型，这是一种类型删除的迭代器，可以使用任何底层迭代器协议实现来生成元素值。在我们的例子中，我们将通过调用IteratorFunction生成一个元素，并将包装序列自身的迭代器作为参数传递——由于该参数标记为inout，我们可以在函数中就地改变底层迭代器。</p>
+<p>因为WrappedSequence也是一个序列，所以我们可以使用标准库的所有序列绑定功能——比如遍历它，或者使用map转换它的值:</p>
+<pre><code class="language-swift">let folderNames = WrappedSequence(wrapping: folders) { iterator in
+    return iterator.next()?.name
+}
+
+for name in folderNames {
+    ...
+}
+
+let uppercasedNames = folderNames.map { $0.uppercased() }
+</code></pre>
+<p>现在，让我们开始使用新的WrappedSequence进行旋转!</p>
+<h2 id="prefixing-and-suffixing">Prefixing and suffixing</h2>
+<p>在处理序列时，很常见的情况是想要在我们正在处理的序列中插入一个前缀或后缀——但如果我们能够在不改变底层序列的情况下这么做不是很好吗? 既可以带来更好的性能，也可以让我们向任何序列添加前缀和后缀——而不仅仅是向常见类型(如数组)添加前缀和后缀。</p>
+<p>使用WrappedSequence，我们可以很容易地做到这一点。我们所要做的就是使用一个方法来扩展Sequence，该方法产生一个包装序列，给定一个要作为前缀插入的元素数组。然后，在执行迭代时，首先遍历所有带有前缀的元素，然后再执行底层序列，如下所示:</p>
+<pre><code class="language-swift">extension Sequence {
+    func prefixed(
+        with prefixElements: Element...
+    ) -&gt; WrappedSequence&lt;Self, Element&gt; {
+        var prefixIndex = 0
+
+        return WrappedSequence(wrapping: self) { iterator in
+            // If we still have prefixed elements left to serve,
+            // then return the next one by incrementing our index:
+            guard prefixIndex &gt;= prefixElements.count else {
+                let element = prefixElements[prefixIndex]
+                prefixIndex += 1
+                return element
+            }
+
+            // Otherwise, return an element from our underlying
+            // sequence's own iterator:
+            return iterator.next()
+        }
+    }
+}
+</code></pre>
+<p>上面我们使用了可变参数(通过添加…可以将一个或多个元素传递给同一个方法。</p>
+<p>类似地，我们也可以创建一个方法，将一组给定的后缀添加到序列的末尾——首先完成基础序列自己的迭代，然后遍历带后缀的元素:</p>
+<pre><code class="language-swift">extension Sequence {
+    func suffixed(
+        with suffixElements: Element...
+    ) -&gt; WrappedSequence&lt;Self, Element&gt; {
+        var suffixIndex = 0
+
+        return WrappedSequence(wrapping: self) { iterator in
+            guard let next = iterator.next() else {
+                // This is our exit condition, in which we return
+                // nil after both the underlying iteration, and
+                // the suffixed one, have been completed:
+                guard suffixIndex &lt; suffixElements.count else {
+                    return nil
+                }
+
+                let element = suffixElements[suffixIndex]
+                suffixIndex += 1
+                return element
+            }
+
+            return next
+        }
+    }
+}
+</code></pre>
+<p>有了上述两个方法，我们现在可以向任何想要的序列添加前缀和后缀。以下是我们的新api可能使用的一些例子:</p>
+<pre><code class="language-swift">// Including the parent folder in a subfolder iteration:
+let allFolders = rootFolder.subfolders.prefixed(with: rootFolder)
+
+// Append a draft as a suffix to a message sequence:
+let messages = inbox.messages.suffixed(with: composer.message)
+
+// Enclosing a string in brackets before iterating over it,
+// without having to create any new string instances:
+let characters = code.prefixed(with: &quot;{&quot;).suffixed(with: &quot;}&quot;)
+</code></pre>
+<p>虽然上面的所有示例都可以使用具体类型(如数组和字符串)实现，但使用WrappedSequence类型的好处是所有事情都可以惰性地完成 - 我们不会为了添加前缀和后缀而执行任何突变或评估任何序列 - 在性能关键的情况下，或者在处理大型数据集时，这是非常有益的。</p>
+<h2 id="segmentation">Segmentation</h2>
+<p>接下来，让我们看看如何包装序列以创建它们的分段版本。在某些迭代中，仅仅知道当前元素是什么是不够的——我们可能还需要知道下一个和之前的元素。</p>
+<p>当处理有索引的序列时，我们通常可以通过使用enumerated() API来实现这一点——它也使用序列包装来让我们访问当前元素及其索引:</p>
+<pre><code class="language-swift">for (index, current) in list.items.enumerated() {
+    let previous = (index &gt; 0) ? list.items[index - 1] : nil
+    let next = (index &lt; list.items.count - 1) ? list.items[index + 1] : nil
+    ...
+}
+</code></pre>
+<p>然而，上述技术不仅在调用站点上非常冗长，而且它还再次依赖于使用数组——或者至少某种形式的序列，使我们能够随机访问其元素——而许多序列，尤其是惰性序列，通常不会这样做。</p>
+<p>相反，让我们再次使用WrappedSequence——通过跟踪之前和当前的元素，并随着迭代的继续更新，来创建一个包装序列，它惰性地将分段视图提供到其底层序列中:</p>
+<pre><code class="language-swift">extension Sequence {
+    typealias Segment = (
+        previous: Element?,
+        current: Element,
+        next: Element?
+    )
+
+    var segmented: WrappedSequence&lt;Self, Segment&gt; {
+        var previous: Element?
+        var current: Element?
+        var endReached = false
+
+        return WrappedSequence(wrapping: self) { iterator in
+            // Here our exit condition is either that we've
+            // reached the end of the underlying sequence, or
+            // that a first current element couldn't be created,
+            // because the sequence was empty.
+            guard !endReached,
+                  let element = current ?? iterator.next() else {
+                return nil
+            }
+
+            let next = iterator.next()
+            let segment = (previous, element, next)
+
+            // Before we return the new segment, we update our
+            // iteration state to be ready for the next element:
+            previous = element
+            current = next
+            endReached = (next == nil)
+
+            return segment
+        }
+    }
+}
+</code></pre>
+<p>现在，我们可以使用上面的API来创建任何序列的分段版本，无论何时我们需要在执行迭代时向前或向后看。例如，以下是我们如何使用分割来方便地确定我们何时到达了列表的末尾:</p>
+<pre><code class="language-swift">for segment in list.items.segmented {
+    addTopBorder()
+    addView(for: segment.current)
+
+    if segment.next == nil {
+        // We've reached the end, time to add a bottom border
+        addBottomBorder()
+    }
+}
+</code></pre>
+<p>分段序列对于可视化地图、路径或图表也非常有用。这里我们使用片段来计算和渲染路径中每个节点的进入和退出方向:</p>
+<pre><code class="language-swift">for segment in path.nodes.segmented {
+    let directions = (
+        enter: segment.previous?.direction(to: segment.current),
+        exit: segment.next.map(segment.current.direction)
+    )
+
+    let nodeView = NodeView(directions: directions)
+    nodeView.center = segment.current.position.cgPoint
+    view.addSubview(nodeView)
+}
+</code></pre>
+<p>现在，我们开始看到包装序列的真正威力——它们让我们可以将越来越复杂的算法隐藏在真正简单的API后面。调用者要对序列进行分段所需要做的就是访问任何序列上的分段属性，我们的底层实现负责其余的工作。</p>
+<h2 id="recursion">Recursion</h2>
+<p>最后，让我们看看如何通过包装序列对递归迭代建模。假设我们想提供一种简单的方法来递归地遍历一个值层次结构——其中层次结构中的每个元素都包含一组子元素。这是一件非常棘手的事情，所以如果我们能够在代码库中使用单个实现来执行所有此类迭代，那就太好了。</p>
+<p>使用WrappedSequence，我们可以通过使用使用相同类型泛型约束的方法扩展Sequence来实现这一点，以确保每个元素都能够提供一个嵌套序列，该序列具有与原始序列相同的迭代器类型。为了能够动态访问每个嵌套序列，我们还将要求调用者提供应该用于递归的属性的KeyPath——给我们一个像这样的实现:</p>
+<pre><code class="language-swift">extension Sequence {
+    func recursive&lt;S: Sequence&gt;(
+        for keyPath: KeyPath&lt;Element, S&gt;
+    ) -&gt; WrappedSequence&lt;Self, Element&gt; where S.Iterator == Iterator {
+        var parentIterators = [Iterator]()
+
+        func moveUp() -&gt; (iterator: Iterator, element: Element)? {
+            guard !parentIterators.isEmpty else {
+                return nil
+            }
+
+            var iterator = parentIterators.removeLast()
+
+            guard let element = iterator.next() else {
+                // We'll keep moving up our chain of parents
+                // until we find one that can be advanced to
+                // its next element:
+                return moveUp()
+            }
+
+            return (iterator, element)
+        }
+
+        return WrappedSequence(wrapping: self) { iterator in
+            // We either use the current iterator's next element,
+            // or we move up the chain of parent iterators in
+            // order to obtain the next element in the sequence:
+            let element = iterator.next() ?? {
+                return moveUp().map {
+                    iterator = $0
+                    return $1
+                }
+            }()
+
+            // Our recursion is performed depth-first, meaning
+            // that we'll dive as deep as possible within the
+            // sequence before advancing to the next element on
+            // the level above.
+            if let nested = element?[keyPath: keyPath].makeIterator() {
+                let parent = iterator
+                parentIterators.append(parent)
+                iterator = nested
+            }
+
+            return element
+        }
+    }
+}
+</code></pre>
+<p>使用上面的方法，我们现在能够递归地迭代任何序列，不管它是如何在内部构造的——并且不必预先加载整个层次结构。例如，下面是我们如何使用这个新的API来递归地遍历文件夹层次结构:</p>
+<pre><code class="language-swift">let allFolders = folder.subfolders.recursive(for: \.subfolders)
+
+for folder in allFolders {
+    try loadContent(from: folder)
+}
+</code></pre>
+<p>我们还可以使用它来遍历树中的所有节点，或者递归遍历一组数据库记录——例如枚举组织中的所有用户组:</p>
+<pre><code class="language-swift">let allNodes = tree.recursive(for: \.children)
+let allGroups = database.groups.recusive(for: \.subgroups)
+</code></pre>
+<p>一件事我们必须小心在递归迭代最终是不要循环引用,当某一路径使我们回到我们已经遇到了一个元素,这将导致我们遍历循环反复。</p>
+<p>解决这个问题的一种方法是跟踪所有遇到的元素(但这可能在内存方面有问题)，以确保我们的数据集中不存在循环引用，或在每个调用站点处理此类情况(通过使用break、continue或return结束任何循环迭代)。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Sequence是标准库中最简单的协议之一——它只有一个方法要求——但它仍然是最强大的协议之一，尤其是当我们在它之上创建多少功能时。就像标准库为枚举等内容包含包装序列一样，我们也可以创建自己的包装器——这让我们可以将高级功能隐藏在真正简单的api背后。</p>
+<p>而抽象从来都不是免费的,重要的是要考虑(和或许更重要的是,当不是)引入一个,如果我们可以构建抽象上的标准库提供了使用相同的约定,那么这些抽象概念通常更有可能经受住时间的考验。</p>
+<p><a href="https://www.swiftbysundell.com/articles/wrapping-sequences-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/qdJBgIYtC/" class="tag">
+                    algorithms
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pure-functions-in-swift/">
+                  <h3 class="post-title">
+                    Pure functions in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

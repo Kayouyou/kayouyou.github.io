@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A deep dive into Swift’s result builders | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift的result builders 功能可以说是该语言最近添加的最有趣的功能之一， 因为它在swift的声明性、类DSLAPI的工作方式中扮演着核心⻆色。事实上，result builders 最初是作为一种半官方的语言特性“fun..." />
+    <meta name="keywords" content="functions,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A deep dive into Swift’s result builders</h2>
+            <div class="post-date">2021-04-07</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift的result builders 功能可以说是该语言最近添加的最有趣的功能之一， 因为它在swift的声明性、类DSLAPI的工作方式中扮演着核心⻆色。事实上，result builders 最初是作为一种半官方的语言特性“function builders”引入的，它是Swift 5.1版本的一部分，伴随着Swift的引入， 但在Swift 5.4中被提升为语言的正式组成部分。</p>
+<p>在本文中，让我们进一步了解result builders是如何工作的，以及我们如何使用它们，以及它们如何为我们提供一些真正有价值的⻅解，让我们了解SwiftUI的API是如何幕后运作的。</p>
+<h2 id="setting-things-up">Setting things up</h2>
+<p>对我来说，真正了解Swift特性如何工作的最好方法之一就是用它来构建一些东⻄，这就是我们将要做的。举个例子，假设我们正在开发一个应用程序，它包含一个API来定义各种设置⸺使用的设置类型如下所示:</p>
+<pre><code class="language-swift">struct Setting {
+    var name: 
+    var value: Value
+}
+# The basics of how result builders work
+extension Setting {
+    enum Value {
+        case bool(Bool)
+        case int(Int)
+        case string(String)
+        case group([Setting])
+    }
+}
+</code></pre>
+<p>上面的示例类型使用关联的enum值来确保完整的类型安全，即使各种设置可以包含不同类型的值。</p>
+<p>由于上述类型包括对嵌套设置的支持(通过其组值)，我们可以使用它来构建层次结构。例如，这里我们为所有实验性的设置创建了一个专⻔的组:</p>
+<pre><code class="language-swift">let settings = [
+    Setting(name: &quot;Offline mode&quot;, value: .bool(false)),
+    Setting(name: &quot;Search page size&quot;, value: .int(25)),
+    Setting(name: &quot;Experimental&quot;, value: .group([
+        Setting(name: &quot;Default name&quot;, value: .string(&quot;Untitled&quot;)),
+        Setting(name: &quot;Fluid animations&quot;, value: .bool(true))
+    ]))
+]
+</code></pre>
+<p>虽然上面的API确实没有什么问题(事实上，它非常好!)，让我们看看如果我们对它进行“结果构建器改造”，它最终会变成什么样子 - 这反过来可以让我们把它转变成一个DSL，就像SwiftUI所提供的那样。</p>
+<h2 id="the-basics-of-how-result-builders-work">The basics of how result builders work</h2>
+<p>正如它的名字所暗示的那样，Swift的结果构建器功能本质上允许我们通过将多个表达式组合成一个值来构建结果。在SwiftUI中，它用于将其众多容器中的一个(如HStack或VStack)的内容转换为单个封闭视图，可以通过在这样的容器实例上调用type(of:)函数来查看:</p>
+<pre><code class="language-swift">import SwiftUI
+
+let stack = VStack {
+    Text(&quot;Hello&quot;)
+    Text(&quot;World&quot;)
+    Button(&quot;I'm a button&quot;) {}
+}
+
+// Prints 'VStack&lt;TupleView&lt;(Text, Text, Button&lt;Text&gt;)&gt;&gt;'
+print(type(of: stack))
+</code></pre>
+<p>通常，当我们使用SwiftUI时，只要看到TupleView，就意味着使用了结果生成器将多个视图组合成一个视图。</p>
+<p>SwiftUI使用了许多不同的 result builder 实现，比如ViewBuilder和SceneBuilder，但由于我们无法查看这些类型的源代码，让我们为上面介绍的设置API构建自己的result builder。</p>
+<p>就像property wrapper 一样，result builder被实现为普通的Swift类型，在本例中带有特殊属性- @resultBuilder注释。然后，使用特定的方法名来实现它的各种功能。 例如，一个名为buildBlock的方法使用零参数来构建一个空函数或闭包的结果:</p>
+<pre><code class="language-swift">@resultBuilder
+struct SettingsBuilder {
+    static func buildBlock() -&gt; [Setting] { [] }
+}
+</code></pre>
+<p>然后，上述函数的返回类型(在本例中是一个设置值数组)决定了我们的构建器可以应用到的函数或闭包的类型。例如，我们可以选择将顶层设置API作为一个全局函数来实现，这个全局函数将新的SettingsBuilder应用于传递给它的任何闭包，就像这样:</p>
+<pre><code class="language-swift">func makeSettings(@SettingsBuilder _ content: () -&gt; [Setting]) -&gt; [Setting] {
+    content()
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以用一个空的结尾闭包调用makeSettings，我们将得到一个空数组:</p>
+<pre><code class="language-swift">let settings = makeSettings {}
+</code></pre>
+<p>虽然我们的新API还不是很有用，但它已经向我们展示了result builder如何工作的几个方面。但是现在，让我们开始构建一些正确的结果。</p>
+<h2 id="combining-multiple-values-into-a-single-result">Combining multiple values into a single result</h2>
+<p>为了使SettingsBuilder能够接受输入，我们需要做的就是声明额外的buildBlock重载，并使用与我们希望接收的输入相匹配的参数。在我们的例子中，我们将简单地实现一个方法，它接受一系列设置值，然后我们将以数组的形式返回⸺像这样:</p>
+<pre><code class="language-swift">extension SettingsBuilder {
+    static func buildBlock(_ settings: Setting...) -&gt; [Setting] {
+        settings
+    }
+}
+</code></pre>
+<p>上面我们使用了可变参数列表，这是SwiftUI目前不能使用的，因为它的视图协议包含一个关联的类型。相反，SwiftUI的ViewBuilder定义了 10 个不同的buildBlock重载，每个重载都有不同数量的参数-这就是为什么SwiftUI视图不能有超过 10 个子视图。 然而，这个限制不适用于SettingsBuilder。</p>
+<p>有了这个新的buildBlock重载，我们现在可以用设定值填充我们传递给makeSettings的任何闭包， 而我们的result builder(在编译器的帮助下)将把所有这些表达式组合成一个数组，然后返回:</p>
+<pre><code class="language-swift">let settings = makeSettings {
+    Setting(name: &quot;Offline mode&quot;, value: .bool(false))
+    Setting(name: &quot;Search page size&quot;, value: .int(25))
+
+    Setting(name: &quot;Experimental&quot;, value: .group([
+        Setting(name: &quot;Default name&quot;, value: .string(&quot;Untitled&quot;)),
+        Setting(name: &quot;Fluid animations&quot;, value: .bool(true))
+    ]))
+}
+</code></pre>
+<p>虽然上面的方法与我们之前使用的内联数组相比已经有了一些改进，让我们继续从SwiftUI中汲取灵感，还添加了一个结果构建器支持的API，用于定义组。<br>
+为了实现这一点，让我们首先定义一个新的SettingsGroup类型，它还使用@SettingsBuilder属性注释一个闭包(这次存储在一个属性中)，以便将其连接到我们的result builder:</p>
+<pre><code class="language-swift">struct SettingsGroup {
+    var name: String
+    @SettingsBuilder var settings: () -&gt; [Setting]
+}
+</code></pre>
+<p>另一种方法是实现一个自定义初始化器(而不是依赖Swift的memberwise初始化器特性)，然后立即调用我们的settings closure并存储它的结果，而不是存储对closure本身的引用。这样做的好处是避免了必须对闭包进行转义，而代价是实现稍微繁琐一些，这可能会有更好的性能，但也没有那么灵活(因为闭包现在只会被预先调用一次):</p>
+<pre><code class="language-swift">struct SettingsGroup {
+    var name: String
+    var settings: [Setting]
+
+    init(name: String,
+         @SettingsBuilder builder: () -&gt; [Setting]) {
+        self.name = name
+        self.settings = builder()
+    }
+}
+</code></pre>
+<p>有了上述两种实现中的任何一种(现在让我们使用第一种)，我们现在就能够以定义顶级设置时完全相同的方式定义组 - 通过简单地在闭包中表达每个嵌套的设置，像这样:</p>
+<pre><code class="language-swift">SettingsGroup(name: &quot;Experimental&quot;) {
+    Setting(name: &quot;Default name&quot;, value: .string(&quot;Untitled&quot;))
+    Setting(name: &quot;Fluid animations&quot;, value: .bool(true))
+}
+</code></pre>
+<p>然而，如果我们真的尝试将上述组放在我们的makeSettings闭包中，我们最终会得到一个编译器错误 -由于我们的结果生成器的buildBlock方法目前需要一个设置值的可变列表，而我们的新SettingsGroup是一个完全不同的类型。</p>
+<p>为了解决这个问题，让我们引入一个可以在Setting和SettingsGroup之间共享的细抽象， 例如，协议的形式允许我们将这些类型的任何实例转换为一个设置值数组:</p>
+<pre><code class="language-swift">protocol SettingsConvertible {
+    func asSettings() -&gt; [Setting]
+}
+
+extension Setting: SettingsConvertible {
+    func asSettings() -&gt; [Setting] { [self] }
+}
+
+extension SettingsGroup: SettingsConvertible {
+    func asSettings() -&gt; [Setting] {
+        [Setting(name: name, value: .group(settings()))]
+    }
+}
+</code></pre>
+<p>然后，我们只需修改结果生成器的buildBlock实现以接受SettingsConvertible实例， 而不是具体的Setting值，然后我们将使用flatMap来平铺新的参数列表:</p>
+<pre><code class="language-swift">extension SettingsBuilder {
+    static func buildBlock(_ values: SettingsConvertible...) -&gt; [Setting] {
+        values.flatMap { $0.asSettings() }
+    }
+}
+</code></pre>
+<p>有了上面的这些，我们现在可以用一种非常“类似于SwiftUI”的方式来定义所有的设置，通过构造组，就像我们使用栈和其他容器来组织各种swift视图一样:</p>
+<pre><code class="language-swift">let settings = makeSettings {
+    Setting(name: &quot;Offline mode&quot;, value: .bool(false))
+    Setting(name: &quot;Search page size&quot;, value: .int(25))
+
+    SettingsGroup(name: &quot;Experimental&quot;) {
+        Setting(name: &quot;Default name&quot;, value: .string(&quot;Untitled&quot;))
+        Setting(name: &quot;Fluid animations&quot;, value: .bool(true))
+    }
+}
+</code></pre>
+<p>因此，buildBlock重载一个给定的result builder所包含的表达式，直接决定了我们能够在每个被注释为使用该生成器的闭包或函数中放置什么类型的表达式。</p>
+<h2 id="conditionals">Conditionals</h2>
+<p>接下来，让我们看看如何在结果生成器支持的闭包中添加对条件求值的支持。一开始，这看起来应该“刚刚好”，因为Swift本身支持各种不同的条件句。然而，情况并非如此⸺因此，在我们当前的SettingsBuilder实现中，如果我们尝试这样做，最终会得到一个编译器错误:</p>
+<pre><code class="language-swift">let shouldShowExperimental: Bool = ...
+
+let settings = makeSettings {
+    Setting(name: &quot;Offline mode&quot;, value: .bool(false))
+    Setting(name: &quot;Search page size&quot;, value: .int(25))
+
+    // Compiler error: Closure containing control flow statement
+    // cannot be used with result builder 'SettingsBuilder'.
+    if shouldShowExperimental {
+        SettingsGroup(name: &quot;Experimental&quot;) {
+            Setting(name: &quot;Default name&quot;, value: .string(&quot;Untitled&quot;))
+            Setting(name: &quot;Fluid animations&quot;, value: .bool(true))
+        }
+    }
+}
+</code></pre>
+<p>上面的例子再次向我们展示了在一个带有result builder注解的闭包中执行的代码并没有像“正常”Swift代码那样被对待-因为每个表达式都需要由我们的生成器显式地处理，包括条件语句，如if语句。</p>
+<p>要添加这类处理代码，我们需要实现buildIf方法，编译器将每个独立的if语句映射到这个方法。因为每个这样的语句都可以求值为true或false，我们将得到它的body表达式作为可选参数传递⸺在我们的例子中，它看起来像这样:</p>
+<pre><code class="language-swift">// Here we extend Array to make it conform to our SettingsConvertible
+// protocol, in order to be able to return an empty array from our
+// 'buildIf' implementation in case a nil value was passed:
+extension Array: SettingsConvertible where Element == Setting {
+    func asSettings() -&gt; [Setting] { self }
+}
+
+extension SettingsBuilder {
+    static func buildIf(_ value: SettingsConvertible?) -&gt; SettingsConvertible {
+        value ?? []
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们之前的if语句就可以像我们预期的那样工作了。但是，我们还要添加对组合if/else语句的支持，这可以通过实现buildEither方法的两个重载来实现 一个参数标号为first，另一个参数标号为second，分别对应给定if/else语句的第一个和第二个分支:</p>
+<pre><code class="language-swift">extension SettingsBuilder {
+    static func buildEither(first: SettingsConvertible) -&gt; SettingsConvertible {
+        first
+    }
+
+    static func buildEither(second: SettingsConvertible) -&gt; SettingsConvertible {
+        second
+    }
+}
+</code></pre>
+<p>我们现在可以在前面的if语句中添加else子句，例如，为了让用户请求访问我们的应用程序的实验设置，如果那些还没有显示:</p>
+<pre><code class="language-swift">let settings = makeSettings {
+    Setting(name: &quot;Offline mode&quot;, value: .bool(false))
+    Setting(name: &quot;Search page size&quot;, value: .int(25))
+
+    if shouldShowExperimental {
+        SettingsGroup(name: &quot;Experimental&quot;) {
+            Setting(name: &quot;Default name&quot;, value: .string(&quot;Untitled&quot;))
+            Setting(name: &quot;Fluid animations&quot;, value: .bool(true))
+        }
+    } else {
+        Setting(name: &quot;Request experimental access&quot;, value: .bool(false))
+    }
+}
+</code></pre>
+<p>最后，我们刚刚实现的那些buildEither方法(从Swift 5.3开始)也允许switch语句在结果生成器上下文中使用，而不需要任何额外的构建方法。</p>
+<p>例如，我们想要将上面的shouldShowExperimental布尔值重构为enum，以支持多个访问级别。然后我们可以简单地在我们的makeSettings闭包中打开enum, Swift编译器会自动将这些表达式路由到我们之前的buildEither方法中:</p>
+<pre><code class="language-swift">enum UserAccessLevel {
+    case restricted
+    case normal
+    case experimental
+}
+
+let accesssLevel: UserAccessLevel = ...
+
+let settings = makeSettings {
+    Setting(name: &quot;Offline mode&quot;, value: .bool(false))
+    Setting(name: &quot;Search page size&quot;, value: .int(25))
+
+    switch accesssLevel {
+    case .restricted:
+        Setting.Empty()
+    case .normal:
+        Setting(name: &quot;Request experimental access&quot;, value: .bool(false))
+    case .experimental:
+        SettingsGroup(name: &quot;Experimental&quot;) {
+            Setting(name: &quot;Default name&quot;, value: .string(&quot;Untitled&quot;))
+            Setting(name: &quot;Fluid animations&quot;, value: .bool(true))
+        }
+    }
+}
+</code></pre>
+<p>关于上面的代码还有一件值得注意的事情，那就是我们正在使用一个新的设置。switch语句的.restricted case中的空类型。这是因为我们(还)不能在结果生成器切换语句中使用break关键字，因此，我们需要在每个代码分支中表达某种值。就像SwiftUI有EmptyView一样，我们新的设置API现在有了一个设置。空类型用于这些情况:</p>
+<pre><code class="language-swift">extension Setting {
+    struct Empty: SettingsConvertible {
+        func asSettings() -&gt; [Setting] { [] }
+    }
+}
+</code></pre>
+<p>这样，我们新的结果生成器驱动的设置API现在就完成了! 使用这个新的语言特性来构建一个类似于swiftui的DSL只需要很少的代码，这真的很吸引人。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>通过属性包装和结果构建器等特性，Swift正在进入一些非常有趣的新领域，它让我们能够将自己的逻辑添加到各种基本的语言机制中-例如如何计算表达式，或如何分配和存储属性。</p>
+<p>当然，这些新特性也让Swift变得更加复杂，即使(至少在最好的情况下)，它们也可以让库的设计者⸺无论是在苹果还是在更广泛的开发者社区⸺把这种复杂性隐藏在格式良好的api背后。</p>
+<p><a href="https://www.swiftbysundell.com/articles/deep-dive-into-swift-function-builders/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L76CX3exv/" class="tag">
+                    functions
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/exploring-some-of-the-lesser-known-built-in-formatter-type/">
+                  <h3 class="post-title">
+                    Exploring some of the lesser-known, built-in Formatter type
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

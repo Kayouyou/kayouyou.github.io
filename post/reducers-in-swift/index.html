@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Reducers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在转换值序列时，通常会对每个元素执行某种操作，以便将该序列转换为新形式，例如使用map、sort或filter等api。 然而，尽管这些api真的很有用，但有时我们并不是在寻找另一个值序列——而是将所有的值缩减为一个值。
+这正是reduce..." />
+    <meta name="keywords" content="combine,data transformation" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Reducers in Swift</h2>
+            <div class="post-date">2019-09-08</div>
+            
+            <div class="post-content" v-pre>
+              <p>在转换值序列时，通常会对每个元素执行某种操作，以便将该序列转换为新形式，例如使用map、sort或filter等api。 然而，尽管这些api真的很有用，但有时我们并不是在寻找另一个值序列——而是将所有的值缩减为一个值。</p>
+<p>这正是reducers的作用，本周，让我们来看看它们在Swift中的几种不同用法 - 从调用标准库的reduce函数，到使用苹果新的Combine框架积累异步值，等等。</p>
+<h2 id="lets-start-with-a-summary">Let’s start with a summary</h2>
+<p>Swift中使用reducer的一种非常常见的方法是在集合中对一系列嵌套的数值求和。例如，假设我们正在构建一个电子邮件应用程序，并希望在所有邮箱中显示用户的未读邮件总数。一种方法是简单地遍历每个邮箱，并将未读邮件的数量添加到一个变量中，该变量跟踪总计数:</p>
+<pre><code class="language-swift">func totalUnreadCount() -&gt; Int {
+    var unreadCount = 0
+    for mailbox in mailboxes {
+        unreadCount += mailbox.unreadMessages.count
+    }
+    return unreadCount
+}
+</code></pre>
+<p>虽然上面的方法可以工作，但是对于这样一个常见的任务来说，它有点冗长，并且需要我们跟踪可变的局部变量。这时就需要简化函数了，特别是标准库的reduce函数，它适用于所有符合序列的类型。使用该函数，可以将邮箱数组减少为单个Int值，表示未读邮件总数——如下所示:</p>
+<pre><code class="language-swift">func totalUnreadCount() -&gt; Int {
+    return mailboxes.reduce(0) { count, mailbox in
+        // Reduce closures get passed the previous value, as well
+        // as the next element within the sequence that's being
+        // reduced, and then returns a new value.
+        count + mailbox.unreadMessages.count
+    }
+}
+</code></pre>
+<p>上面传递给reduce的0是初始值，它将与序列的第一个元素一起传递给我们的闭包。</p>
+<p>由于数字求和是如此常见的用例，我们甚至想更进一步，为这个任务引入一个基于键路径的API， 这将使我们可以轻松地将任何序列简化为符合Numeric的任何类型(所有标准库数字类型，如Int和Double，都是这样做的):</p>
+<pre><code class="language-swift">extension Sequence {
+    func sum&lt;T: Numeric&gt;(for keyPath: KeyPath&lt;Element, T&gt;) -&gt; T {
+        return reduce(0) { sum, element in
+            sum + element[keyPath: keyPath]
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以快速地对序列中的任何嵌套数字求和，这在很多不同的情况下都非常有用:</p>
+<pre><code class="language-swift">let unreadCount = mailboxes.sum(for: \.unreadMessages.count)
+let totalScore = levels.sum(for: \.playerScore)
+let meetingDuration = today.meetings.sum(for: \.duration)
+</code></pre>
+<p>当然，任何序列都可以简化为任何类型的值，而不仅仅是数字。例如，下面是我们如何使用与上面完全相同的模式来转换图像-通过reducing一个数组的转换值到我们正在寻找的最终图像:</p>
+<pre><code class="language-swift">extension Image {
+    func applying(_ transforms: [Transform]) -&gt; Image {
+        return transforms.reduce(self) { image, transform in
+            transform.apply(to: image)
+        }
+    }
+}
+</code></pre>
+<p>因此，当我们希望同步地将一系列值转换为单个结果时，标准库的reduce函数可以非常有用——但这只是更大编程概念的一个例子。</p>
+<h2 id="reducing-asynchronous-values">Reducing asynchronous values</h2>
+<p>当我们想要将多个异步结果组合为一个结果时，reducers的概念可以真正有用的另一种情况。例如，我们可能需要调用多个服务器端点来加载一个视图需要的所有数据，或者我们可能希望将网络调用的结果与存储在用户设备本地的数据结合起来。</p>
+<p>在2019年全球开发者大会(WWDC)上，苹果推出了一个全新的框架，用于处理异步值，名为Combine。遵循与流行的响应式编程框架(如React和Rx)中的许多相同的模式，Combine本质上允许我们将异步数据加载管道视为一系列随时间变化的值。</p>
+<p>这意味着，与让每个操作只产生一个结果不同，可以在新数据或事件出现时发布多个值——这让我们可以编写代码，订阅并自动响应状态的变化。</p>
+<p>虽然我们将在以后的文章中更深入地研究Combine，但让我们看看它的核心价值流模式如何与reducers的概念结合起来，从而为我们提供一种处理多个异步值的真正强大的方式。</p>
+<p>现在让我们假设我们正在开发一个音乐应用程序，并且我们已经实现了一个SongLoader，它允许我们基于id数组加载一系列歌曲组。为此，我们首先将每个组ID转换为一个合并的发布者，该发布者执行加载该组的网络请求，然后将所有这些发布者合并到一个Song.Group values流中-像这样:</p>
+<pre><code class="language-swift">import Combine
+
+class SongLoader {
+    private let urlSession: URLSession
+
+    func loadSongs(in groupIDs: [Song.Group.ID]) -&gt; AnyPublisher&lt;Song.Group, Error&gt; {
+        let publishers = groupIDs.map(loadSongs)
+
+        // We merge all of our network request publishers into
+        // a single stream of values, which we set to complete
+        // after all of our song groups have been loaded:
+        return Publishers.MergeMany(publishers)
+            .prefix(groupIDs.count)
+            .eraseToAnyPublisher()
+    }
+
+    func loadSongs(in groupID: Song.Group.ID) -&gt; AnyPublisher&lt;Song.Group, Error&gt; {
+        let url = makeURLForSongGroup(withID: groupID)
+
+        // Perform our network request as a Combine publisher,
+        // then extract the response data and decode it as JSON:
+        return urlSession.dataTaskPublisher(for: url)
+            .map { $0.data }
+            .decode(type: Song.Group.self, decoder: JSONDecoder())
+            .eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>使用上面的实现，我们将发出每首歌曲。一旦数据流可用，就对其进行分组，这在某些情况下非常有用——然而，有时我们确实希望等待我们的数据流完成后再对其采取行动。</p>
+<p>例如，在我们的应用程序的一部分，我们可能想要加载一系列的歌曲组，以形成一个视图模型，然后我们将其传递给视图控制器或SwiftUI视图进行渲染 - 为了避免多个渲染通道，我们只想在每个加载会话中发出一个ViewModel值。</p>
+<p>这是另一个关于reducer的很好的用例，在这个例子中，它会将所有异步加载的歌曲组累加到一个ViewModel值中，就像我们之前减少同步值的方式一样:</p>
+<pre><code class="language-swift">func loadViewModel() -&gt; AnyPublisher&lt;ViewModel, Error&gt; {
+    let groupPublisher = songLoader.loadSongs(in: [
+        .recentlyPlayed, .favorites, .recommended
+    ])
+
+    let viewModelPublisher = groupPublisher.reduce(ViewModel()) {
+        viewModel, group in
+        
+        var viewModel = viewModel
+        viewModel.songs[group.id] = group.songs
+        return viewModel
+    }
+
+    return viewModelPublisher.eraseToAnyPublisher()
+}
+</code></pre>
+<p>除了是一种使用reducer模式的整洁方式外，上面的例子还说明了Combine的一个主要优势——它的API设计反映了许多标准库的同步转换函数。很难说我们是在减少上面提到的异步值，因为Combine的reduce版本与Sequence提供的版本完全相同——这对于一致性和学习都是一件很棒的事情。</p>
+<h2 id="encapsulating-mutations">Encapsulating mutations</h2>
+<p>最后，让我们看一下与reducer模式稍有不同的情况，它使我们能够封装改变给定状态块以响应某种形式的事件或操作的方式。</p>
+<p>举个例子，假设我们正在为一个应用程序构建一个同步引擎，我们使用SyncState类型来跟踪引擎当前的状态:</p>
+<pre><code class="language-swift">struct SyncState {
+    var isActive: Bool
+    var interval: TimeInterval
+    var lastSync: Date?
+}
+</code></pre>
+<p>为了让我们的app成为一个“好平台公民”，不浪费宝贵的系统资源，我们希望在收到某些信号时，比如用户的设备电量不足，或者不再连接WiFi时，修改上述状态。我们还希望在同步会话结束时更新lastSync日期。</p>
+<p>虽然我们可以简单地在代码库的不同部分执行上述更改，但让我们看看是否可以通过在一个中心位置执行所有更改，使事情更有组织性和可预测性。要做到这一点，我们首先要定义一个枚举，它包含所有可能影响同步引擎状态的信号:</p>
+<pre><code class="language-swift">enum SyncAffectingSignal {
+    case wiFiStatusChanged(isOnWiFi: Bool)
+    case powerStatusChanged(hasLowPower: Bool)
+    case syncCompleted
+}
+</code></pre>
+<p>然后，为了执行状态变化，我们将再次使用一个reducer——只是这次我们不会调用任何系统提供的函数，而是定义我们自己的函数。就像我们之前使用的reducer一样，我们的新函数将减少两部分数据——之前的状态和接收到的信号——并返回一个全新的状态，如下所示:</p>
+<pre><code class="language-swift">func reduce(_ state: SyncState,
+            with signal: SyncAffectingSignal,
+            currentDate: Date = Date()) -&gt; SyncState {
+    var state = state
+
+    switch signal {
+    case .wiFiStatusChanged(let isOnWiFi):
+        state.interval = isOnWiFi ? 600 : 3600
+    case .powerStatusChanged(let hasLowPower):
+        state.isActive = !hasLowPower
+    case .syncCompleted:
+        state.lastSync = currentDate
+    }
+
+    return state
+}
+</code></pre>
+<p>上面的模式不仅让我们更容易跟踪我们在哪里执行状态突变——它还把代码变成了一个纯粹的函数，这使得测试变得非常简单:</p>
+<pre><code class="language-swift">func testLowPowerPausesSync() {
+    // All that we have to do in order to test our new reducer
+    // is to create an intial state, pass it through our
+    // reducer along with a signal, and verify that the correct
+    // state is returned as output:
+    let firstState = SyncState(isActive: true)
+    let newState = reduce(firstState, with: .powerStatusChanged(hasLowPower: true))
+    XCTAssertEqual(newState, SyncState(isActive: false))
+}
+</code></pre>
+<p>很酷的!当编写具有单向数据流的应用程序时(我们将在以后的文章中探索这一技术)，上述简化程序的“味道”是非常常见的，但即使没有任何全面的架构更改，将特定的状态突变建模为简化程序仍然是非常优雅的。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>无论我们是在处理一组值、一组数据流、一个状态变化，还是其他什么东西——简化器使我们能够以一种非常简洁的方式封装将一组输入转换为单个输出的逻辑。简化程序还提倡使用纯函数，这反过来可以帮助我们提高代码的可预测性和可测试性。</p>
+<p>然而，虽然减少器在某些情况下是一种出色的工具，但如果我们不小心，它们也可能成为歧义的来源，在没有明确上下文的情况下，“reduce”这个词没有多大意义，但有时构建一个简单的包装(就像我们对值求和所做的那样)在这方面确实有帮助。</p>
+<p><a href="https://www.swiftbysundell.com/articles/reducers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/XJfPSb1BFK/" class="tag">
+                    data transformation
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/picking-the-right-data-structure-in-swift/">
+                  <h3 class="post-title">
+                    Picking the right data structure in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

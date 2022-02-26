@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Observers in Swift - Part 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="本周，我们将继续探索在Swift中实现观察者模式的各种方法。上周我们看了一下如何使用NotificationCenter API和观察协议来让AudioPlayer被观察，本周，我们将做同样的事情，但是将重点放在多种基于闭包的技术上。
+Cl..." />
+    <meta name="keywords" content="observers,design pattern" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Observers in Swift - Part 2</h2>
+            <div class="post-date">2018-04-22</div>
+            
+            <div class="post-content" v-pre>
+              <p>本周，我们将继续探索在Swift中实现观察者模式的各种方法。上周我们看了一下如何使用NotificationCenter API和观察协议来让AudioPlayer被观察，本周，我们将做同样的事情，但是将重点放在多种基于闭包的技术上。</p>
+<h2 id="closures">Closures</h2>
+<p>闭包是现代API设计的重要组成部分。从带有回调的异步api，到函数操作(比如在集合上使用forEach或map)——闭包无处不在，无论是在Swift标准库中，还是我们作为第三方开发者编写的应用程序中。</p>
+<p>闭包的美妙之处在于，它允许API用户捕获他们所在的当前上下文，并在对事件做出反应时使用它 - 在当前的情况下，当我们的音频播放器的状态改变时。这支持一个更“轻量级”的调用站点，可以导致更简单的代码——但是闭包也有自己的一套权衡。</p>
+<p>让我们看看如何将基于闭包的观察API添加到我们的AudioPlayer中。 我们将从定义一个元组开始，我们将使用它来跟踪观察——启动、暂停和停止——我们的三个事件组成的观察闭包数组，如下所示:</p>
+<pre><code class="language-swift">class AudioPlayer {
+    private var observations = (
+        started: [(AudioPlayer, Item) -&gt; Void](),
+        paused: [(AudioPlayer, Item) -&gt; Void](),
+        stopped: [(AudioPlayer) -&gt; Void]()
+    )
+}
+</code></pre>
+<p>当然，我们可以在上面使用单独的属性——但就像我们在“在Swift中使用元组作为轻量级类型”中看到的那样。-使用元组将相关的属性组合在一起是一种非常简洁的方式来组织事物。</p>
+<p>接下来，让我们定义我们的观察方法。与前面的方法一样，我们将为每个观察事件定义一个方法，使事物清晰地分开。每个方法都有一个闭包，我们将继续传递当前播放项目给开始和暂停的观察者，而只是传递播放器本身给停止的:</p>
+<pre><code class="language-swift">extension AudioPlayer {
+    func observePlaybackStarted(using closure: @escaping (AudioPlayer, Item) -&gt; Void) {
+        observations.started.append(closure)
+    }
+
+    func observePlaybackPaused(using closure: @escaping (AudioPlayer, Item) -&gt; Void) {
+        observations.paused.append(closure)
+    }
+
+    func observePlaybackStopped(using closure: @escaping (AudioPlayer) -&gt; Void) {
+        observations.stopped.append(closure)
+    }
+}
+</code></pre>
+<p>通常情况下，让player自己进入所有关闭机制是一种很好的做法，可以避免意外的保留循环- 如果player是在自己的观察闭包中使用，我们就会忘记微弱地捕捉它。更多信息，请查看“捕捉Swift闭包中的对象”。</p>
+<p>有了上述设置，剩下的就是当玩家的状态发生变化时，调用匹配事件的所有观察闭包，如下:</p>
+<pre><code class="language-swift">private extension AudioPlayer {
+    func stateDidChange() {
+        switch state {
+        case .idle:
+            observations.stopped.forEach { closure in
+                closure(self)
+            }
+        case .playing(let item):
+            observations.started.forEach { closure in
+                closure(self, item)
+            }
+        case .paused(let item):
+            observations.paused.forEach { closure in
+                closure(self, item)
+            }
+        }
+    }
+}
+</code></pre>
+<p>让我们来看看我们的新API吧!当我们使用新的基于闭包的观察API时，我们的NowPlayingViewController(第一部分)看起来是这样的:</p>
+<pre><code class="language-swift">class NowPlayingViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        let titleLabel = self.titleLabel
+        let durationLabel = self.durationLabel
+
+        player.observePlaybackStarted { player, item in
+            titleLabel.text = item.title
+            durationLabel.text = &quot;\(item.duration)&quot;
+        }
+    }
+}
+</code></pre>
+<p>又漂亮又干净!👍</p>
+<p>然而，上述方法有一个主要的缺点——无法移除观察结果。虽然这对于拥有他们正在观察的对象的对象很好(因为被观察的对象将与它的所有者一起被分配)，但对于共享对象(我们的AudioPlayer很可能是)并不理想，因为新增的观测数据将会永远存在。</p>
+<h2 id="tokens">Tokens</h2>
+<p>一种允许删除观察数据的方法是使用标记。就像我们在“使用令牌处理异步Swift代码”中所做的那样，我们可以在每次添加一个观察闭包时返回一个ObservationToken-稍后可以用来取消观察和移除闭包。</p>
+<p>让我们从创建token类本身开始，它只是作为一个封装器，可以调用它来取消一个观察:</p>
+<pre><code class="language-swift">class ObservationToken {
+    private let cancellationClosure: () -&gt; Void
+
+    init(cancellationClosure: @escaping () -&gt; Void) {
+        self.cancellationClosure = cancellationClosure
+    }
+
+    func cancel() {
+        cancellationClosure()
+    }
+}
+</code></pre>
+<p>因为闭包并没有真正的标识概念，所以我们需要添加一些方法来惟一地标识一个观察，以便能够删除它。一种方法是将之前的闭包数组转换成字典，用UUID值作为键，像这样:</p>
+<pre><code class="language-swift">class AudioPlayer {
+    private var observations = (
+        started: [UUID : (AudioPlayer, Item) -&gt; Void](),
+        paused: [UUID : (AudioPlayer, Item) -&gt; Void](),
+        stopped: [UUID : (AudioPlayer) -&gt; Void]()
+    )
+}
+</code></pre>
+<p>然后，当每个闭包被插入时，我们将为它分配一个新的UUID值。为了简化这个过程，当键类型为UUID时，我们可以在Dictionary上添加一个简单的扩展，使我们可以一次执行插入和创建标识符的操作:</p>
+<pre><code class="language-swift">private extension Dictionary where Key == UUID {
+    mutating func insert(_ value: Value) -&gt; UUID {
+        let id = UUID()
+        self[id] = value
+        return id
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们就可以更新观察方法以返回令牌了。我们将使用@discardableResult使实际使用返回的令牌成为可选的，以避免在观察观察者自身拥有的对象时产生任何警告。</p>
+<p>在每个方法中，我们都将使用上面提到的insert方法，然后创建一个ObservationToken实例，并用闭包来删除这个观察，如下所示:</p>
+<pre><code class="language-swift">extension AudioPlayer {
+    @discardableResult
+    func observePlaybackStarted(using closure: @escaping (AudioPlayer, Item) -&gt; Void)
+        -&gt; ObservationToken {
+        let id = observations.started.insert(closure)
+
+        return ObservationToken { [weak self] in
+            self?.observations.started.removeValue(forKey: id)
+        }
+    }
+
+    @discardableResult
+    func observePlaybackPaused(using closure: @escaping (AudioPlayer, Item) -&gt; Void)
+        -&gt; ObservationToken {
+        let id = observations.paused.insert(closure)
+
+        return ObservationToken { [weak self] in
+            self?.observations.paused.removeValue(forKey: id)
+        }
+    }
+
+    @discardableResult
+    func observePlaybackStopped(using closure: @escaping (AudioPlayer) -&gt; Void)
+        -&gt; ObservationToken {
+        let id = observations.stopped.insert(closure)
+
+        return ObservationToken { [weak self] in
+            self?.observations.stopped.removeValue(forKey: id)
+        }
+    }
+}
+</code></pre>
+<p>在我们准备好给我们新的基于令牌的API一个尝试之前，我们需要对我们的播放器的stateDidChange方法做一个轻微的修改，当迭代每个字典时使用values属性(因为我们不感兴趣在这里的键):</p>
+<pre><code class="language-swift">private extension AudioPlayer {
+    func stateDidChange() {
+        switch state {
+        case .idle:
+            observations.stopped.values.forEach { closure in
+                closure(self)
+            }
+        case .playing(let item):
+            observations.started.values.forEach { closure in
+                closure(self, item)
+            }
+        case .paused(let item):
+            observations.paused.values.forEach { closure in
+                closure(self, item)
+            }
+        }
+    }
+}
+</code></pre>
+<p>我们现在可以让我们的NowPlayingViewController在它被释放的时候把它自己注销为一个观察者，像这样:</p>
+<pre><code class="language-swift">class NowPlayingViewController: UIViewController {
+    private var observationToken: ObservationToken?
+
+    deinit {
+        observationToken?.cancel()
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        let titleLabel = self.titleLabel
+        let durationLabel = self.durationLabel
+
+        observationToken = player.observePlaybackStarted { player, item in  
+            titleLabel.text = item.title
+            durationLabel.text = &quot;\(item.duration)&quot;
+        }
+    }
+}
+</code></pre>
+<p>当你想动态地创建和删除多个对象的观察时，基于令牌的API是非常好的，正如你在上面看到的，当我们想要做的只是添加一个简单的观察时，这变得有点麻烦。忘记对令牌调用cancel也是一个常见的错误，它要求我们在观察者中保持更多的状态(通过存储令牌)。</p>
+<p>让我们看看是否能找到改进方案的方法。🤔</p>
+<h2 id="the-best-of-both-worlds">The best of both worlds</h2>
+<p>让我们探索一种方法来保持我们的基于令牌的API(因为它通过让我们对观察结果进行更细粒度的控制而增加了价值)，但仍然减少样板。</p>
+<p>一种方法是将一个观察闭包与观察者自身的生命周期绑定在一起，而不需要观察者遵守特定的协议(就像我们上周对AudioPlayerObserver所做的那样)。我们要做的是添加一个API，让我们把任何对象作为观察者传递，同时也像之前一样传递一个闭包。<br>
+然后我们将弱地捕获该对象，并防止它为nil，以确定观察是否仍然有效，如下所示:</p>
+<pre><code class="language-swift">extension AudioPlayer {
+    @discardableResult
+    func addPlaybackStartedObserver&lt;T: AnyObject&gt;(
+        _ observer: T,
+        closure: @escaping (T, AudioPlayer, Item) -&gt; Void
+    ) -&gt; ObservationToken {
+        let id = UUID()
+
+        observations.started[id] = { [weak self, weak observer] player, item in
+            // If the observer has been deallocated, we can
+            // automatically remove the observation closure.
+            guard let observer = observer else {
+                self?.observations.started.removeValue(forKey: id)
+                return
+            }
+
+            closure(observer, player, item)
+        }
+
+        return ObservationToken { [weak self] in
+            self?.observations.started.removeValue(forKey: id)
+        }
+    }
+}
+</code></pre>
+<p>通过以上的方法，我们可以说是两全其美。如果需要或喜欢使用令牌，我们可以使用令牌，而且当对象被回收时，我们还可以自动删除它注册的任何观察值。现在我们可以安全地在NowPlayingViewController中观察我们的玩家，就像这样:</p>
+<pre><code class="language-swift">lass NowPlayingViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        player.addPlaybackStartedObserver(self) {
+            vc, player, item in
+
+            vc.titleLabel.text = item.title
+            vc.durationLabel.text = &quot;\(item.duration)&quot;
+        }
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>在这篇分两部分的文章中，我们尝试了多种方法来给对象添加观察功能——通过使用通知、观察协议、闭包和标记。当然，Swift中还有很多使用观察者的方式——包括使用函数式响应式编程和事件调度，所以这肯定是我们在以后的文章中会讨论的话题。</p>
+<p><a href="https://www.swiftbysundell.com/articles/observers-in-swift-part-2/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/3kIoTw_PC/" class="tag">
+                    observers
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4g5XtbTAR/" class="tag">
+                    design pattern
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/observers-in-swift-part-1/">
+                  <h3 class="post-title">
+                    Observers in Swift - Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

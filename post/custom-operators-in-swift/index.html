@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Custom operators in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="很少有Swift功能像使用自定义操作符那样引发如此激烈的争论。有些人认为它们对于减少代码冗长或实现轻量级语法扩展非常有用，而另一些人则认为应该完全避免使用它们。
+喜欢或讨厌它们——无论哪种方式，我们都可以用自定义操作符做一些非常有趣的事情-..." />
+    <meta name="keywords" content="operators" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Custom operators in Swift</h2>
+            <div class="post-date">2018-02-04</div>
+            
+            <div class="post-content" v-pre>
+              <p>很少有Swift功能像使用自定义操作符那样引发如此激烈的争论。有些人认为它们对于减少代码冗长或实现轻量级语法扩展非常有用，而另一些人则认为应该完全避免使用它们。</p>
+<p>喜欢或讨厌它们——无论哪种方式，我们都可以用自定义操作符做一些非常有趣的事情-我们是重载现有的还是定义我们自己的。本周，让我们来看看一些可以使用自定义操作符的情况，以及使用它们的优缺点。</p>
+<h2 id="numeric-containers">Numeric containers</h2>
+<p>有时我们定义的值类型实际上只是其他更原始值的容器。例如，在我正在开发的一款战略游戏中，玩家可以收集两种资源——木材和金子。为了在代码中建模这些资源，我使用了一个资源结构，作为一对木材和黄金价值的容器，像这样:</p>
+<pre><code class="language-swift">struct Resources {
+    var gold: Int
+    var wood: Int
+}
+</code></pre>
+<p>每当我引用一组资源时，我就会使用这个结构——例如，跟踪一个玩家当前可用的资源:</p>
+<pre><code class="language-swift">struct Player {
+    var resources: Resources
+}
+</code></pre>
+<p>你可以在游戏中投入资源的一件事就是为你的军队训练新的单位。 当执行这一操作时，我只需从当前玩家的资源中减去该单位的黄金和木材成本:</p>
+<pre><code class="language-swift">func trainUnit(ofKind kind: Unit.Kind) {
+    let unit = Unit(kind: kind)
+    board.add(unit)
+
+    currentPlayer.resources.gold -= kind.cost.gold
+    currentPlayer.resources.wood -= kind.cost.wood
+}
+</code></pre>
+<p>上述做法完全可行，但因为游戏中有许多行动会影响玩家的资源，所以代码库中有许多地方需要重复使用黄金和木材的减法。这不仅会让我们很容易漏掉这些值的减法，还会让我们很难引入新的资源类型(比如silver)，因为我必须遍历整个代码库，更新所有处理资源的地方。</p>
+<h2 id="operator-overloading">Operator overloading</h2>
+<p>让我们尝试使用操作符重载来解决上述问题。在使用大多数语言(包括Swift)中的操作符时，您有两种选择。 要么重载现有的操作符，要么创建一个新的操作符。重载的工作方式与方法重载类似，因为您可以创建具有新输入或输出的操作符的新版本。</p>
+<p>在本例中，我们将定义-=操作符的重载，它作用于两个资源值，如下所示:</p>
+<pre><code class="language-swift">extension Resources {
+    static func -=(lhs: inout Resources, rhs: Resources) {
+        lhs.gold -= rhs.gold
+        lhs.wood -= rhs.wood
+    }
+}
+</code></pre>
+<p>就像符合Equatable一样，Swift中的操作符重载只是可以在类型上声明的普通静态函数。 在-=的情况下，操作符的左边是一个inout形参，它是我们要修改的值。</p>
+<p>操作符重载到位后，我们现在可以直接在当前玩家的资源上调用-=，就像我们在任何原始数值上所做的那样:</p>
+<pre><code class="language-swift">currentPlayer.resources -= kind.cost
+
+</code></pre>
+<p>这不仅读起来很好，还帮助我们消除了代码重复的问题。因为我们总是希望所有外部逻辑作为一个整体来改变资源实例，所以我们可以继续，让所有其他类型的gold和wood属性为只读:</p>
+<pre><code class="language-swift">struct Resources {
+    private(set) var gold: Int
+    private(set) var wood: Int
+
+    init(gold: Int, wood: Int) {
+        self.gold = gold
+        self.wood = wood
+    }
+}
+```swift
+
+上述工作归功于Swift 4的改变，它赋予了在相同文件中定义的扩展名私有特权。 因此，我们的-=操作符重载(以及我们为资源定义的任何其他操作符或api)可以改变属性，而不需要它们是公开可变的。. Pretty sweet 👍!
+
+## Mutating functions as an alternative
+
+解决上述资源问题的另一种方法是使用变异函数，而不是操作符重载。我们可以添加一个函数，通过另一个实例减少资源值的属性，像这样:
+```swift
+extension Resources {
+    mutating func reduce(by resources: Resources) {
+        gold -= resources.gold
+        wood -= resources.wood
+    }
+}
+</code></pre>
+<p>这两种解决方案都有各自的优点，可以认为突变函数方法更明确。 然而，您也不希望数字的标准减法API是5.reduce(by: 3) 之类的，因此，在这种情况下，重载操作符可能是很有意义的。</p>
+<h2 id="layout-calculations">Layout calculations</h2>
+<p>让我们看看另一个场景，在这个场景中，使用操作符重载可能会很好。尽管我们有自动布局和强大的布局锚点API，有时候，我们会发现自己需要手动进行布局计算。</p>
+<p>在这种情况下，必须对二维值(如CGPoint、CGSize和CGVector)进行计算是很常见的。例如，我们可能需要通过使用图像视图的大小和一些额外的边距来计算标签的起源，如下所示:</p>
+<pre><code class="language-swift">label.frame.origin = CGPoint(
+    x: imageView.bounds.width + 10,
+    y: imageView.bounds.height + 20
+)
+</code></pre>
+<p>如果我们可以简单地将它们加起来(就像我们对资源结构所做的那样)，而不是总是需要扩展点和大小来使用它们的底层组件，这不是很好吗?🤔</p>
+<p>要做到这一点，我们可以重载+操作符，以接受两个CGSize实例作为输入，并输出一个CGPoint值:</p>
+<pre><code class="language-swift">extension CGSize {
+    static func +(lhs: CGSize, rhs: CGSize) -&gt; CGPoint {
+        return CGPoint(
+            x: lhs.width + rhs.width,
+            y: lhs.height + rhs.height
+        )
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以这样写我们的布局计算:</p>
+<pre><code class="language-swift">label.frame.origin = imageView.bounds.size + CGSize(width: 10, height: 20)
+</code></pre>
+<p>这很酷，但是要为页边距创建CGSize有点奇怪。一种更好的方法是定义另一个+重载，它接受一个size和一个包含两个CGFloat值的元组，如下所示:</p>
+<pre><code class="language-swift">extension CGSize {
+    static func +(lhs: CGSize, rhs: (x: CGFloat, y: CGFloat)) -&gt; CGPoint {
+        return CGPoint(
+            x: lhs.width + rhs.x,
+            y: lhs.height + rhs.y
+        )
+    }
+}
+</code></pre>
+<p>让我们用这两种方式来写布局计算</p>
+<pre><code class="language-swift">// Using a tuple with labels:
+label.frame.origin = imageView.bounds.size + (x: 10, y: 20)
+
+// Or without:
+label.frame.origin = imageView.bounds.size + (10, 20)
+</code></pre>
+<p>非常紧凑和漂亮!👍但是现在我们正在接近引起这么多关于操作符争论的核心问题——平衡冗长和可读性。因为我们仍然在和数字打交道，我想大多数人会发现上面的内容很容易读懂，但随着我们转向更多的自定义使用，尤其是当我们开始引入全新的运营商时，情况就会变得更加复杂。</p>
+<p>要了解更多核心图形类型的操作符重载，请查看CGOperators</p>
+<h2 id="a-custom-operator-for-error-handling">A custom operator for error handling</h2>
+<p>到目前为止，我们只是向现有的操作符添加了重载。但是，如果我们想开始为不能真正映射到现有操作符的功能使用操作符，我们需要定义自己的操作符。</p>
+<p>让我们看另一个例子。Swift的do, try, catch错误处理机制在处理失败的同步操作时非常好。它可以让我们在错误发生时轻松安全地退出一个函数，比如在加载保存在磁盘上的模型时:</p>
+<pre><code class="language-swift">class NoteManager {
+    func loadNote(fromFileNamed fileName: String) throws -&gt; Note {
+        let file = try fileLoader.loadFile(named: fileName)
+        let data = try file.read()
+        let note = try Note(data: data)
+        return note
+    }
+}
+</code></pre>
+<p>执行上述操作的唯一主要缺点是，我们将直接向函数的调用者抛出任何潜在错误。 就像我在第一篇博客文章中写到的那样——“提供一个统一的Swift错误API”——减少API抛出的错误通常是一个好主意， 否则，做有意义的错误处理和测试就会变得非常困难。</p>
+<p>理想情况下，我们想要的是给定API可以抛出的有限错误集，这样我们就可以轻松地分别处理每种情况。假设我们还想捕获所有潜在的错误，这是两全其美的。因此，我们定义一个带有显式案例的错误枚举，每个案例都使用对应的错误值，如下所示:</p>
+<pre><code class="language-swift">extension NoteManager {
+    enum LoadingError: Error {
+        case invalidFile(Error)
+        case invalidData(Error)
+        case decodingFailed(Error)
+    }
+}
+</code></pre>
+<p>然而，捕获潜在的错误并将它们转换为我们自己的类型要复杂一些。如果只使用标准的错误处理机制，我们必须这样写:</p>
+<pre><code class="language-swift">class NoteManager {
+    func loadNote(fromFileNamed fileName: String) throws -&gt; Note {
+        do {
+            let file = try fileLoader.loadFile(named: fileName)
+
+            do {
+                let data = try file.read()
+
+                do {
+                    return try Note(data: data)
+                } catch {
+                    throw LoadingError.decodingFailed(error)
+                }
+            } catch {
+                throw LoadingError.invalidData(error)
+            }
+        } catch {
+            throw LoadingError.invalidFile(error)
+        }
+    }
+}
+</code></pre>
+<p>我认为没有人想读上面的代码😅。一种选择是引入一个执行函数(就像我在上面提到的帖子中所做的那样)，我们可以使用它来将一个错误转换成另一个错误:</p>
+<pre><code class="language-swift">class NoteManager {
+    func loadNote(fromFileNamed fileName: String) throws -&gt; Note {
+        let file = try perform(fileLoader.loadFile(named: fileName),
+                               orThrow: LoadingError.invalidFile)
+
+        let data = try perform(file.read(),
+                               orThrow: LoadingError.invalidData)
+
+        let note = try perform(Note(data: data),
+                               orThrow: LoadingError.decodingFailed)
+
+        return note
+    }
+}
+</code></pre>
+<p>更好了，但是我们仍然有很多错误转换代码混淆了我们的实际逻辑。让我们看看引入一个新的运算符是否能帮助我们清理这段代码。</p>
+<h2 id="adding-a-new-operator">Adding a new operator</h2>
+<p>我们将从定义新运算符开始。在本例中，我们将选择~&gt;; 作为符号(动机是这是一个替代返回类型，所以我们正在寻找类似于-&gt;;)由于这是一个可以在两边工作的操作符，我们将其定义为中缀，如下所示:</p>
+<pre><code class="language-swift">infix operator ~&gt;
+</code></pre>
+<p>操作符之所以如此强大，是因为它们可以自动捕捉到双方的上下文。把它和Swift的@autoclosure功能结合起来，我们可以为自己打造一些非常酷的东西。</p>
+<p>让我们实现~ &gt;;作为操作符，接受抛出表达式和错误转换，并抛出或返回与原始表达式相同的类型:</p>
+<pre><code class="language-swift">func ~&gt;&lt;T&gt;(expression: @autoclosure () throws -&gt; T,
+           errorTransform: (Error) -&gt; Error) throws -&gt; T {
+    do {
+        return try expression()
+    } catch {
+        throw errorTransform(error)
+    }
+}
+</code></pre>
+<p>那么上面的例子让我们做什么呢?  由于带关联值的枚举case在Swift中也是静态函数，我们可以简单地添加~&gt;; 在抛出表达式和我们希望将任何潜在错误转换为的错误情况之间的操作符，如下所示:</p>
+<pre><code class="language-swift">class NoteManager {
+    func loadNote(fromFileNamed fileName: String) throws -&gt; Note {
+        let file = try fileLoader.loadFile(named: fileName) ~&gt; LoadingError.invalidFile
+        let data = try file.read() ~&gt; LoadingError.invalidData
+        let note = try Note(data: data) ~&gt; LoadingError.decodingFailed
+        return note
+    }
+}
+</code></pre>
+<p>这很酷!🎉通过使用运算符，我们从逻辑中删除了大量的“混乱”和语法，使我们的代码更加集中。然而，缺点是我们引入了一种新的错误处理语法，这对于未来可能加入我们项目的新开发人员来说可能是完全陌生的。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>自定义操作符和操作符重载是一个非常强大的特性，它可以让我们构建真正有趣的解决方案。它可以让我们在不需要嵌套函数调用的情况下减少冗长，这可能会给我们更清晰的代码。 然而，它也可能导致我们写出晦涩难懂的代码，让其他开发人员感到害怕和困惑。</p>
+<p>就像以更高级的方式使用第一类函数一样，我认为在引入新操作符或创建额外重载之前，三思是很重要的。 从其他开发者那里获得反馈也非常有价值，因为一个对你来说完全有意义的新运营商可能会让别人觉得完全陌生。和很多事情一样，我们需要理解权衡，并为每种情况选择最合适的工具。</p>
+<p><a href="https://www.swiftbysundell.com/articles/custom-operators-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/khcTfccpI/" class="tag">
+                    operators
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/composing-types-in-swift/">
+                  <h3 class="post-title">
+                    Composing types in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

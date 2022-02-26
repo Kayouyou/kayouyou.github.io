@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Deciding whether to adopt new Swift technologies | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="作为Swift开发人员，我们开发应用程序的方式和我们使用的工具都在不断变化。每年，都有大量的新技术、工具、框架和语言特性出现——无论是来自苹果还是第三方开发者——尽管其中许多既有用又令人兴奋，有时，要跟上这种非常快速的变化流是很有挑战性的。..." />
+    <meta name="keywords" content="maintenance,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Deciding whether to adopt new Swift technologies</h2>
+            <div class="post-date">2019-11-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>作为Swift开发人员，我们开发应用程序的方式和我们使用的工具都在不断变化。每年，都有大量的新技术、工具、框架和语言特性出现——无论是来自苹果还是第三方开发者——尽管其中许多既有用又令人兴奋，有时，要跟上这种非常快速的变化流是很有挑战性的。</p>
+<p>由于一切都在快速发展，也没有迹象表明事情真的在放缓，所以做出决定采用什么新技术变得非常重要，尤其是当项目规模和复杂性都在增长的时候。 本周，让我们以决定是否成为SwiftUI的早期使用者为例，来看看在使用新工具和新技术时的一些技巧和思考方式。</p>
+<h2 id="to-be-or-not-to-be-production-ready">To be, or not to be, production-ready</h2>
+<p>每当有新的工具、库或框架出现时，人们往往会经常问一个主要问题:这种新技术是否“可用于生产”?</p>
+<p>虽然这是一个很好的问题，但答案通常是与环境相关的。被认为是生产就绪的东西的标准往往会有很大的不同，不仅因人而异，而且取决于技术将部署在什么样的环境中。 对于一个人来说，产品就绪可能仅仅意味着“它在使用时似乎可以工作”，而其他人可能有一个更广泛的需求列表需要满足。</p>
+<p>因此，与其试图获得一个单一的答案来确定我们正在寻求采用的技术是否普遍适合生产，通常更有效的做法是提出一系列问题，让我们了解它的当前状态，比如:</p>
+<p>有没有这种技术在生产中应用的例子，结果如何?</p>
+<p>我们需要这个新工具来处理什么样的规模，这似乎是目前设计工具的目的吗?</p>
+<p>工具的供应商或创建者自己是如何使用它的，这是否符合我们计划使用它的方式?</p>
+<p>有哪些类型的文档和支持可用，它们是否符合我们的需求?</p>
+<p>在许多方面，选择成为任何东西的早期采用者——无论是硬件还是软件——总是伴随着一定程度的风险。然而，我们的用例与最常见的用例越一致，风险通常就越低-而唯一能确定这是否正确的方法，是在我们开始写代码之前做一些研究。</p>
+<h2 id="non-critical-first-steps">Non-critical first steps</h2>
+<p>一般来说，开始采用新API或新技术的一个好方法是将其部署到项目中相当不关键的部分。这既降低了基本特性被破坏的风险，也让我们能够轻松地使用新工具——在整个项目完全部署它之前，了解它的优点、缺点和边缘情况</p>
+<p>例如，假设我们目前正在决定是否采用SwiftUI，并且我们已经确定对于我们的用例来说，它似乎是‌。然而，由于完全拥抱SwiftUI需要我们放弃对旧操作系统版本的支持-我们首先要测试它，让我们仍然保持完全的向后兼容性。</p>
+<p>就像我们在“Swift范式转换”中看到的那样，实现这一点的一种方法是将我们所有的Swift代码添加到可用性检查后面 - 这将让我们继续运行我们的应用程序在旧的系统版本，在支持swift的设备上运行时，只激活我们的相关代码。</p>
+<p>假设我们的应用程序包含一个功能，让我们向用户展示某种形式的促销， 这并不是我们认为对我们的整体用户体验至关重要的东西-所以我们决定使用这个特性作为SwiftUI的测试平台，将其实现为一个带有@available属性的视图:</p>
+<pre><code class="language-swift">import SwiftUI
+
+@available(iOS 13, *)
+struct PromotionView: View {
+    var body: some View { ... }
+}
+</code></pre>
+<p>如果我们试图在代码路径中使用新的PromotionView，而这些代码路径不能保证只在iOS 13及以上版本中执行，那么执行上述操作将会给我们一个编译器错误-所以为了给编译器保证，我们将在调用站点使用#available检查，像这样:</p>
+<pre><code class="language-swift">func presentPromotion(in presentingViewController: UIViewController) {
+    // Using this statement will let us assume that the rest
+    // of this function will only be executed on iOS 13 and above:
+    guard #available(iOS 13, *) else {
+        return
+    }
+    
+    // We also add a dynamic feature flag that'll let us control
+    // whether our promotion feature will be enabled at runtime,
+    // essentially acting as an additional safety mechanism in
+    // case something goes wrong and we need to disable it:
+    guard featureFlags.enablePromotion else {
+        return
+    }
+
+    // We can now use iOS 13-only APIs without any problems:
+    let view = PromotionView()
+    let viewController = UIHostingController(rootView: view)
+    presentingViewController.present(viewController, animated: true)
+}
+</code></pre>
+<p>在生产环境中部署类似于上述特性的特性，并在一段时间内监视其结果，可能会给我们提供最好的指示，说明某一特定技术是否已经准备好完全采用。这样做还可以让我们开始考虑如何以高度封装的方式将新工具与其余代码库集成在一起 - 如果我们决定不采用新工具，这是很好的，因为它可以让我们很快地删除我们的实验代码。</p>
+<h2 id="wheres-the-escape-hatch">Where’s the escape hatch?</h2>
+<p>在采用新技术时，我们很可能会发现它们提供的各种api之间存在差距 - 特别是和老工具相比，新工具的目标是取代老工具。无论一项新技术有多么优秀，构建一组涵盖大量领域的不同api都需要时间-这绝对是我们在选择采用什么技术时需要考虑的事情。</p>
+<p>然而，工具和框架的创建者可以做的一件事是缓解这个问题，那就是构建某种形式的“逃生口”。-这使我们能够暂时走出工具的领域，以完成给定的任务。拥有这样一个可用的机制可以大大减少我们在采用该技术时陷入困境的可能性，也可以在未来验证它，因为我们将能够扩展它以更好地适应我们的用例。</p>
+<p>再次以SwiftUI为例——因为它完全向后兼容UIKit和AppKit，这本质上就像一个逃生通道。 如果我们遇到了SwiftUI中缺少的东西，或者我们想把一些现有的代码引入到它中，我们可以通过采用uiviewrepresentation来实现。 因为我们也可以自由地混合和匹配基于swift的视图控制器和基于uikit的视图控制器，我们可以有选择地在UI中使用SwiftUI，而在需要的时候仍然使用UIKit(或Mac上的AppKit):</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // This view controller is implemented using UIKit:
+        let header = HeaderViewController()
+        ...
+        add(header)
+
+        // While this one is implemented using SwiftUI:
+        let list = ListView()
+        let listWrapper = UIHostingController(rootView: list)
+        ...
+        add(listWrapper)
+    }
+}
+</code></pre>
+<p>一个特定的工具是否支持某种形式的类似逃生舱口的机制，以及它给了我们多大的灵活性，也是我们能够通过慢慢地采用它来逐渐发现的东西——一个又一个的特性。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>要断言任何新的工具、库或框架已经完全为各种用例做好准备几乎是不可能的-任何一项新技术的效果如何，在很大程度上取决于它将被使用的环境。然而，通过从别人的经验中学习，通过花时间为自己试验和尝试工具，并通过确保我们选择采用的任何新技术都有某种方法可以暂时绕过它的极限 -我们可以大大增加成功的机会，即使我们选择成为早期的采用者。</p>
+<p>同样重要的是要指出，不做一个早期采用者也是一个完全正确的选择——在很多情况下，这甚至是正确的选择。 新技术很可能总是会有问题，虽然它们使用起来可能令人兴奋和有趣，但在技术选择上稍微保守一点没什么坏处——尤其是在使用较大的、现有的代码库时。和以往一样，这一切都是为了在推动我们的技术堆栈向前发展的同时，在不遇到太多问题的情况下找到正确的平衡。</p>
+<p><a href="https://www.swiftbysundell.com/articles/deciding-whether-to-adopt-new-swift-technologies/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5VmnTv3Lu/" class="tag">
+                    maintenance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/default-arguments-in-swift/">
+                  <h3 class="post-title">
+                    Default arguments in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

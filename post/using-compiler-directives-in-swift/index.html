@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using compiler directives in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="尽管Swift在如何验证和类型检查我们编写的代码时有很强的编译时关注点，但它仍然主要用于实现运行时逻辑。
+然而，有时我们可能希望在编译代码时执行某些检查并运行其他类型的自定义逻辑，尽管Swift(还)没有包含一个功能齐全的宏或预处理系统，但..." />
+    <meta name="keywords" content="compiler" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using compiler directives in Swift</h2>
+            <div class="post-date">2020-08-16</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>尽管Swift在如何验证和类型检查我们编写的代码时有很强的编译时关注点，但它仍然主要用于实现运行时逻辑。</p>
+<p>然而，有时我们可能希望在编译代码时执行某些检查并运行其他类型的自定义逻辑，尽管Swift(还)没有包含一个功能齐全的宏或预处理系统，但它提供了一些内置的编译器指令和条件，使我们能够以各种方式影响编译过程。</p>
+<p>本周，让我们来看看其中的一些编译器指令，以及它们在哪些情况下可能特别有用。</p>
+<h2 id="flags-and-environment-checks">Flags and environment checks</h2>
+<p>也许Swift编译器中最常用的指令是#if命令，它允许我们在编译程序时有条件地包含或排除某些代码块。</p>
+<p>例如，我们可以使用这个命令来检查我们的应用程序当前是否正在用它的调试构建配置进行编译，通过检查默认的调试标志是否启用。在这里，我们这样做只是为了在调试构建中有条件地打印给定的表达式:</p>
+<pre><code class="language-swift">func log(_ expression: @autoclosure () -&gt; Any) {
+    #if DEBUG
+    print(expression())
+    #endif
+}
+</code></pre>
+<p>上面的@autoclosure属性用于自动将任何传递到日志函数中的表达式转换为闭包，以避免在发布版本中对其进行执行。要了解更多关于该属性的信息，请参阅“在设计Swift api时使用@autoclosure”。</p>
+<p>尽管调试标志提供了一种非常有用的方式，可以完全删除任何我们不希望包含在应用程序发布二进制文件中的代码，但有时我们可能想要在决定包含或删除哪些代码时使用更细粒度的规则。</p>
+<p>这时自定义编译条件就很有用了，它让我们可以定义自己的、完全自定义的标志，然后可以针对不同的目标或构建配置启用或禁用这些标志。例如，假设我们目前正在为一个应用程序开发一个新的基于swiftui的profile视图，虽然我们还没有准备好将这个新实现发布到app Store，但我们确实想将它包含在我们的应用程序内部构建中(比如TestFlight构建)。</p>
+<p>为了实现这一点，让我们定义一个专用的SWIFTUI_PROFILE编译器条件，只有当我们想要使用新的基于SWIFTUI_PROFILE视图时，我们才会启用这个条件，对于所有其他构建，我们将退回到之前的基于uikit的实现——像这样:</p>
+<pre><code class="language-swift">func makeProfileViewController() -&gt; UIViewController {
+    #if SWIFTUI_PROFILE
+    return UIHostingController(rootView: ProfileView())
+    #else
+    return ProfileViewController()
+    #endif
+}
+</code></pre>
+<p>为了打开或关闭上述标志，我们可以使用Xcode中的Active编译条件构建设置，或者如果我们正在构建一个基于Swift包管理器的项目，那么我们可以通过传递-Xswiftc SWIFTUI_PROFILE到命令行工具如Swift build来启用它。</p>
+<p>除了使用各种各样的标志之外，另一种真正有用的编译条件是targetEnvironment——它允许我们有条件地包含一段代码，只有当我们的应用程序在给定的环境下编译时，例如macCatalyst或模拟器。在这里，我们使用了这个功能，在应用程序的标签栏中包含一个DebugViewController，当它正在为iOS模拟器构建时:</p>
+<pre><code class="language-swift">func setupTabBarController(_ controller: UITabBarController) {
+    var viewControllers = [UIViewController]()
+
+    #if targetEnvironment(simulator)
+    viewControllers.append(DebugViewController())
+    #endif
+
+    controller.viewControllers = viewControllers
+}
+</code></pre>
+<p>正如上面的代码示例所示，当我们想要删除特定于调试或尚未准备好发布的代码时，使用编译器标志和targetEnvironment条件特别有用，同时仍然允许我们将这些代码包含在主代码库中。</p>
+<h2 id="handling-platform-variations-within-cross-platform-code">Handling platform variations within cross-platform code</h2>
+<p>另一种编译器指令和条件编译可以派上用场的情况是，当我们在支持多个平台的代码库上工作时——比如跨平台的Swift包，或者运行在多个苹果平台上的应用程序。</p>
+<p>举个例子，假设我们正在为iOS、macOS和tvOS开发一个基于swiftui的绘图应用，我们希望在这三个平台上共享尽可能多的代码。虽然SwiftUIs API在所有苹果平台上的很多方面都是相同的，这在这种情况下是一个很大的优势，但是我们仍然需要处理特定平台的变化。</p>
+<p>例如，在iOS和macOS上，SwiftUI支持添加一个DragGesture到一个给定的视图，而这个API在tvOS上是完全不可用的——这意味着当我们在该平台上构建应用程序时，以下代码不会被编译:</p>
+<pre><code class="language-swift">struct EditorView: View {
+    ...
+
+    var body: some View {
+        CanvasView().gesture(DragGesture().onChanged { state in
+            ...
+        })
+        ...
+    }
+}
+</code></pre>
+<p>为了解决这个问题，我们可以使用os编译器条件——就像我们前面使用的条件一样——使我们在为特定平台构建应用程序时只包含给定的代码片段。 再加上#if和#else指令，基本上可以让我们在跨平台代码中建立特定于平台的分支——像这样:</p>
+<pre><code class="language-swift">struct EditorView: View {
+    ...
+
+    var body: some View {
+        #if os(tvOS)
+        CanvasView()
+        #else
+        CanvasView().gesture(DragGesture().onChanged { state in
+            ...
+        })
+        #endif
+        ...
+    }
+}
+</code></pre>
+<p>然而，尽管上面的方法可以工作，但它确实有点混乱，而且很容易导致代码难以阅读和维护——因为我们在一个视图实现中混合了跨平台和特定于平台的代码</p>
+<p>因此，让我们看看能否更好地隔离上述编译条件。一种方法是将它移到一个专用的抽象后面，例如为它实现一个自定义修饰符方法，它看起来像这样:</p>
+<pre><code class="language-swift">extension View {
+    func addingDragGestureIfSupported(
+        withHandler handler: @escaping (CGPoint) -&gt; Void
+    ) -&gt; some View {
+        #if os(tvOS)
+        return self
+        #else
+        return gesture(DragGesture().onChanged { state in
+            handler(state.location)
+        })
+        #endif
+    }
+}
+</code></pre>
+<p>因为上面的方法签名并不依赖于任何特定平台的类型，而仅仅是CGPoint(作为CoreGraphics的一部分，可以在所有苹果平台上使用)，我们现在可以在我们的跨平台EditorView中自由调用它，当我们的应用在tvOS上运行时，它不会有任何影响:</p>
+<pre><code class="language-swift">struct EditorView: View {
+    ...
+
+    var body: some View {
+        CanvasView().addingDragGestureIfSupported { location in
+            ...
+        }
+        ...
+    }
+}
+</code></pre>
+<p>在处理上述情况时，需要记住的另一个选项是，创建同一类型的多个特定于平台的变体。在我们的例子中，这可能意味着定义两个单独的EditorView类型，一个用于tvOS，一个用于其他平台，然后可以将它们放置在两个单独的文件中。 然后，我们将只在应用程序的tvOS目标中包含特定于tvOS的文件，而在其他目标中包含另一个文件。</p>
+<p>然而，有时检查给定模块是否存在可能比检查我们的代码正在为哪个平台编译更合适。 这可以通过使用canImport条件来实现，当我们想要扩展一个跨平台API时，这个条件特别有用，因为它依赖于一个非普遍可用的框架——例如Combine在这种情况下:</p>
+<pre><code class="language-swift">#if canImport(Combine)
+import Combine
+
+public extension GitHubSearchService {
+    func publisherForRepisitories(
+        matching query: String
+    ) -&gt; AnyPublisher&lt;[Repository], Error&gt; {
+        ...
+    }
+}
+#endif
+
+</code></pre>
+<p>在上述情况下使用canImport的好处是，我们不需要手动跟踪给定框架可用的平台，而且该块中的代码也非常清楚地定义了特定于框架的API。</p>
+<h2 id="emitting-warnings-and-errors">Emitting warnings and errors</h2>
+<p>故意制造警告和错误的想法在代码库可能看上去有点奇怪,但可以是一个非常有用的工具在各种各样的情况下——例如如果我们想提醒我们把自己的一个快捷方式,或者如果我们想增加一点额外的验证我们发布构建。</p>
+<p>例如，假设我们正在开发一个购物应用程序的深层链接系统，为了快速启动并运行某些东西，我们在从给定URL提取产品ID的代码中做了一些有点冒险的假设。因此，为了提醒我们在提交代码之前回过头来修改代码，我们可以使用#warning指令，它会在每次编译应用程序时发出警告:</p>
+<pre><code class="language-swift">func extractProductID(from url: URL) -&gt; Product.ID {
+    #warning(&quot;Needs validation. Also uses a hard-coded index.&quot;)
+    let components = url.pathComponents
+    let rawID = components[2]
+    return Product.ID(rawID)
+}
+</code></pre>
+<p>另一种选择是使用经典的todo风格的注释，可能会与linter结合使用，以便将这些注释转换为警告 -  但是通过使用上面的方法，我们保证总是会得到Swift编译器本身发出的警告，这反过来减少了上面的快捷方式被忘记的机会，我们的代码将意外地按原来的方式发布。</p>
+<p>为了进一步改善上述警告类型的突出性，我们还可以在应用的发布配置中启用Treat Warnings as Errors 构建设置，当我们在为发布而构建应用时，所有的警告都变成了实际的构建错误——这完全阻止了我们发布任何带有警告标记的未完成代码。</p>
+<p>也有可能告诉编译器直接生成一个错误，通过使用#error指令，例如为了准确地显示使用某种形式的模板生成样板代码后需要手动填写的数据:</p>
+<pre><code class="language-swift">#error(&quot;Enter your public API key here&quot;)
+let service = AmazingAPIClient(apiKey: &quot;&quot;)
+...
+</code></pre>
+<p>我们也可以有条件地发出一个错误，以确保在发布版本中没有任何调试特定的编译器标志被意外启用——像这样:</p>
+<pre><code class="language-swift">#if !DEBUG &amp;&amp; ENABLE_INTERNAL_TOOLS
+#error(&quot;Internal tools must be disabled in RELEASE builds.&quot;)
+#endif
+</code></pre>
+<p>在我们的源代码中添加上述类型的检查似乎有点过分，但特别是当我们经常调整在哪个构建中启用的标志时，添加一些额外的保护措施来防止调试代码在App Store中发布是个不错的主意。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然Swift的编译器指令与其他语言相比可能相当有限，但它们仍然使我们能够执行大量的自定义编译时检查，并在代码中创建各种各样的条件分支。</p>
+<p>然而,尽管每一个指示,在本文中,我们看了看是有用的在某些情况下,同样重要的是不要过度使用他们,因为每一次,我们引入一个条件编译的代码块,我们本质上添加一个新变型的应用程序,需要不断进行测试和维护</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-compiler-directives-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/QtzxE4nD1/" class="tag">
+                    compiler
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/adding-swiftuis-viewbuilder-attribute-to-functions/">
+                  <h3 class="post-title">
+                    Adding SwiftUI’s ViewBuilder attribute to functions
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 05: Higher-Order Functions | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Curry
+
+
+
+
+Flip
+
+
+
+
+Unbound methods
+
+
+
+
+A problem
+
+
+
+
+Zurry
+
+
+
+
+Higher-order
+
+
+
+
+What’s the point?
+
+..." />
+    <meta name="keywords" content="high-order,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 05: Higher-Order Functions</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Curry">Curry</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Flip">Flip</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Unboundmethods">Unbound methods</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Aproblem">A problem</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Zurry">Zurry</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Higher-order">Higher-order</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 05: Higher-Order Functions -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>今天我们将更深入地探讨函数复合。虽然函数组合看起来很简单，但要将我们每天使用的现有函数融入到我们的组合中并不总是那么容易。让我们探索一些可重用的技术，这些技术可以帮助我们将难以组合成合适的组件的功能进行转换。</p>
+<h2 id="2-a-namecurryacurry">2. <a name='Curry'></a>Curry</h2>
+<p>在关于副作用的那一集中，我们通过将对世界的可变状态的依赖转移到函数的<em>inputs</em>来控制函数的副作用。</p>
+<pre><code class="language-swift">func greet(at date: Date, name: String) -&gt; String {
+  let seconds = Int(date.timeIntervalSince1970) % 60
+  return &quot;Hello \(name)! It's \(seconds) seconds past the minute.&quot;
+}
+</code></pre>
+<p>我们不能将其他函数组合到这个函数中，因为它接受两个输入，但我们发现可以通过一个技巧来解决这个问题，即预先依赖Date并立即返回一个全新的合成函数。</p>
+<pre><code class="language-swift">func greet(at date: Date) -&gt; (String) -&gt; String {
+  return { name in
+    let seconds = Int(date.timeIntervalSince1970) % 60
+    return &quot;Hello \(name)! It's \(seconds) seconds past the minute.&quot;
+  }
+}
+</code></pre>
+<p>我们以一种非常特别的方式修正了这个问题，但我们可以一般化这个过程，引入接受多个参数的现有函数，并生成一个接受单个参数的嵌套函数链。 这叫做<strong>currying</strong>(柯里化)。</p>
+<pre><code class="language-swift">func curry&lt;A, B, C&gt;(_ f: @escaping (A, B) -&gt; C) -&gt; (A) -&gt; (B) -&gt; C {
+  return { a in { b in f(a, b) } }
+}
+</code></pre>
+<p>现在我们有一个通用函数，给定一个从两个参数A和B到C的函数，它返回一个在A中有一个参数的函数并返回一个从B到C的新函数。</p>
+<p>让我们看看greet函数。</p>
+<pre><code class="language-swift">greet(at:name:) // (Date, String) -&gt; String
+</code></pre>
+<p>Swift允许我们通过指定参数而省略数据来引用函数或方法。</p>
+<p>当我们向它输入原始的<em>greet</em>函数时会发生什么?</p>
+<pre><code class="language-swift">curry(greet(at:name:)) // (Date) -&gt; (String) -&gt; String
+</code></pre>
+<p>这看起来就像我们的<em>manually-curried</em>版本。</p>
+<pre><code class="language-swift">greet(at:) // (Date) -&gt; (String) -&gt; String
+</code></pre>
+<p>如果你想知道为什么它被称为“<em>curry</em>”，它是以逻辑学家和数学家<strong>Haskell curry</strong>的名字命名的，编程语言Haskell也是以这个名字命名的。 当他推广currying的想法时，摩西<em>Schönfinkel</em>发现了它。有些人想把这个过程称为“<em>Schönfinkelization</em>”，但幸运的是，我们不需要经常拼写这个单词。</p>
+<p>在Swift标准库、核心框架和第三方代码中，我们每天都要处理大量的多参数函数。 通过<em>currying</em>，我们现在可以使用这些函数并将它们放入我们的合成中。</p>
+<p>例如，我们有一个同时接受Data和Encoding的String初始化式:</p>
+<pre><code class="language-swift">String.init(data:encoding:)
+// (Data, String.Encoding) -&gt; String?
+</code></pre>
+<p>Let’s curry it.</p>
+<pre><code class="language-swift">curry(String.init(data:encoding:))
+// (Data) -&gt; (String.Encoding) -&gt; String?
+</code></pre>
+<p>现在我们有了一个全新的函数，它可以更好地组合到我们的管道中。</p>
+<h2 id="3-a-nameflipaflip">3. <a name='Flip'></a>Flip</h2>
+<p>当我们<em>curry</em>这些函数并尝试用它们组合时，我们开始看到一种模式。 多参数函数似乎通常以一种非常特定的方式排列它们的参数:它们将重要的、手边的数据作为第一个参数，然后是任何配置选项。</p>
+<p>在这个String初始化式中，我们有一个函数，它先取数据，然后取编码。当我们curry它的时候，它似乎仍然不能和我们的程序组合。在运行时最相关的数据是data作为输入，可选的String作为输出，但我们这里有一个函数，它将data作为输入并返回一个新函数，(String.Encoding) -&gt; String?作为输出。</p>
+<p>我们可以组合成一个新函数来处理这个配置。</p>
+<pre><code class="language-swift">curry(String.init(data:encoding:)) // (Data) -&gt; (String.Encoding) -&gt; String?
+  &gt;&gt;&gt; { $0(.utf8) }
+// (Data) -&gt; String?
+</code></pre>
+<p>这有点尴尬，特别是当我们考虑到我们必须在使用这些函数的任何地方偷偷地使用这个配置时。我们想要的是没有重复的可重用性。在这种情况下，编码通常是固定的配置，通常是<em>UTF-8</em>，所以减少或对调用者隐藏这个细节是有意义的。 其中一种方法是将配置提前，但<em>curry</em>似乎改变了调用函数时所关心的参数顺序。</p>
+<p>我们应该能够推广翻转函数参数的过程。</p>
+<pre><code class="language-swift">func flip&lt;A, B, C&gt;(_ f: @escaping (A) -&gt; (B) -&gt; C) -&gt; (B) -&gt; (A) -&gt; C {
+  return { b in { a in f(a)(b) } }
+}
+</code></pre>
+<p>让我们试着在String初始化式中使用它。</p>
+<pre><code class="language-swift">flip(curry(String.init(data:encoding:))) // (String.Encoding) -&gt; (Data) -&gt; String?
+</code></pre>
+<p>我们现在可以将其存储在helper中。</p>
+<pre><code class="language-swift">let stringWithEncoding = flip(curry(String.init(data:encoding:)))
+</code></pre>
+<p>我们可以为最常见的情况推出另一个辅助方法。</p>
+<pre><code class="language-swift">let utf8String = stringWithEncoding(.utf8) // (Data) -&gt; String?
+</code></pre>
+<p>现在我们有了更好的组件。Data分散在我们的应用程序中:我们从api获取数据，从磁盘读取数据。 同时，我们可以将<em>UTF-8</em>编码推向极限，因为我们只需要为每个调用配置一次。</p>
+<p>到目前为止，我们只构建了这些工具来处理带有2个参数的函数，但我们可以编写任意数量的<em>curry</em>重载，接受带有3个、4个或更多参数的函数。我们的<em>flip</em>函数也被推广到只翻转<em>curry</em>函数的前两个参数。如果我们想要颠倒3个或更多参数的顺序，事情可能看起来更棘手。我们得留到以后的一集。</p>
+<h2 id="4-a-nameunboundmethodsaunbound-methods">4. <a name='Unboundmethods'></a>Unbound methods</h2>
+<p>在我们的工具链中有了这些通用的<em>flip</em>和<em>curry</em>函数，我们现在可以很容易地将功能组合出来，而这些功能可能不是现成的。但是仍然有大量的代码看起来是不可获取的:methods。</p>
+<p>Swift在这里做了一些很好的事情:<strong>它为类型上的每个实例方法生成静态函数</strong>。这很好，因为我们可以在没有数据的情况下抽象地引用这个功能。让我们看一个示例方法调用:</p>
+<pre><code class="language-swift">&quot;Hello&quot;.uppercased(with: Locale(identifier: &quot;en&quot;)) // &quot;HELLO&quot;
+</code></pre>
+<p>我们可以在类型本身上引用这个方法:</p>
+<pre><code class="language-swift">String.uppercased(with:) // (String) -&gt; (Locale?) -&gt; String
+</code></pre>
+<p>哈!这是怎么回事? We have a curried function from <strong>String</strong> to <strong>Locale?</strong> to <strong>String</strong> again. 我们现在无需数据就可以访问方法逻辑! 让我们试着用一下。</p>
+<pre><code class="language-swift">String.uppercased(with:)(&quot;Hello&quot;) // (Locale?) -&gt; String
+</code></pre>
+<p>现在我们需要插入locale。</p>
+<pre><code class="language-swift">String.uppercased(with:)(&quot;Hello&quot;)(Locale.init(identifier: &quot;en&quot;)) // &quot;HELLO&quot;
+</code></pre>
+<p>它成功了，但我们的<em>ordering</em>问题又来了!  我们被迫提前提供数据，而配置(Locale)则被延迟。 Luckily, we have <strong>flip</strong>!</p>
+<pre><code class="language-swift">flip(String.uppercased(with:)) // (Locale?) -&gt; (String) -&gt; String
+</code></pre>
+<p>这个看起来不错。我们重新排列了配置的优先级，这样，给定一个Locale，我们就有一个可重用的函数来获取数据。我们现在可以从这个基本函数创建<strong>helpers</strong>。</p>
+<pre><code class="language-swift">let uppercasedWithLocale = flip(String.uppercased(with:))
+</code></pre>
+<p>我们可以进一步创建更具体的助手。</p>
+<pre><code class="language-swift">let uppercasedWithEn = uppercasedWithLocale(Locale(identifier: &quot;en&quot;))
+</code></pre>
+<p>我们终于可以输入一些数据了。</p>
+<pre><code class="language-swift">&quot;Hello&quot; |&gt; uppercasedWithEn // &quot;HELLO&quot;
+</code></pre>
+<p>非常神奇!这是一个简单的例子，但我们已经看到这些类型的函数很容易组合! 我们每天都要处理大量现有代码，很高兴看到当这些函数和方法无法组合时，我们可以使用一些小工具来解决这个问题! 看来我们都搞清楚了!</p>
+<h2 id="5-a-nameaproblemaa-problem">5. <a name='Aproblem'></a>A problem</h2>
+<p>不完全是。让我们看另一个例子。<strong>String</strong>上还有另一个大写方法。</p>
+<pre><code class="language-swift">String.uppercased // (String) -&gt; () -&gt; String
+</code></pre>
+<p>这个函数签名看起来有点滑稽，但我们可以理解它。它中间有一个空的参数列表，而不是我们前面看到的<strong>locale</strong>。</p>
+<p>如果我们回想一下静态<strong>curry</strong>方法，<strong>Self</strong>是<strong>String</strong>，它是一个需要被调用的方法，但调用时不带任何参数，也就是<strong>empty()</strong>，在返回<strong>String</strong>之前。</p>
+<p>让我们试试翻转它:</p>
+<pre><code class="language-swift">flip(String.uppercased) // (Locale?) -&gt; (String) -&gt; String
+</code></pre>
+<p>发生了什么事? 该<strong>Locale?<strong>哪里来的? 从何而来? 这个方法在Swift中是重载的，在没有指定参数的情况下，最好使用将与</strong>flip</strong>函数一起编译的版本。我们定义<strong>flip</strong>的方式，对零参数方法不起作用。</p>
+<p>这应该很容易修复!让我们定义一个重载。</p>
+<pre><code class="language-swift">func flip&lt;A, C&gt;(_ f: @escaping (A) -&gt; () -&gt; C) -&gt; () -&gt; (A) -&gt; C {
+  return { { a in f(a)() } }
+}
+</code></pre>
+<p>这看起来有点有趣，但我们的函数现在像我们期望的那样翻转。</p>
+<pre><code class="language-swift">flip(String.uppercased) // () -&gt; (String) -&gt; String
+</code></pre>
+<p>那么我们如何使用这个函数呢?在它当前的状态下，它没有参数，所以我们叫它。</p>
+<pre><code class="language-swift">flip(String.uppercased)() // (String) -&gt; String
+</code></pre>
+<p>这看起来很奇怪，但更好，我们终于可以发送数据了。</p>
+<pre><code class="language-swift">&quot;Hello&quot; |&gt; flip(String.uppercased)() // &quot;HELLO&quot;
+</code></pre>
+<p>让我们再看看这个。</p>
+<pre><code class="language-swift">flip(String.uppercased)   // () -&gt; (String) -&gt; String
+flip(String.uppercased)() // (String) -&gt; String
+</code></pre>
+<p>这些括号。看起来我们有另一个括号的问题。</p>
+<h2 id="6-a-namezurryazurry">6. <a name='Zurry'></a>Zurry</h2>
+<p>那么，我们能用这些函数做什么呢? 我们唯一能做的就是求出它们的值并从中得到<strong>A</strong>类型的值。 你可以把它想象成一个零参数的<strong>Curry</strong>(柯里化):</p>
+<pre><code class="language-swift">func zurry&lt;A&gt;(_ f: () -&gt; A) -&gt; A {
+  return f()
+}
+</code></pre>
+<p>它只是一个<strong>lil helper</strong>函数，它将一个不带参数的函数降低为它返回的值。</p>
+<p>现在我们可以使用翻转的<strong>uppercased</strong>函数并对它进行zury。</p>
+<pre><code class="language-swift">zurry(flip(String.uppercased)) // (String) -&gt; String
+</code></pre>
+<p>我们可以通过管道传输数据。</p>
+<pre><code class="language-swift">&quot;Hello&quot; |&gt; zurry(flip(String.uppercased)) // &quot;HELLO&quot;
+</code></pre>
+<p><strong>Zury</strong>是个不错的主意!它有一个可爱的名字，它是一个具有简单任务的函数，它有助于解决我们的括号问题。我们可以通过直接调用翻转的零参数函数来接受它或放弃它，但无论何时我们处理这个问题时，<strong>zury</strong>仍然是一个有趣的概念。</p>
+<h2 id="7-a-namehigher-orderahigher-order">7. <a name='Higher-order'></a>Higher-order</h2>
+<p>我们从<strong>curry、flip和zury</strong>中获得了很多优势! 有趣的是它们都是以函数为输入，以函数为输出的函数。我们的很多合成函数都是这样做的! 这些函数被称为“<strong>高阶函数（higher order functions）</strong>”，看看它们是如何与复合函数一起工作的，这很有趣。</p>
+<p>让我们来探索另一个例子，一个我们经常使用但可能在方法世界中合成不好的方法:</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .map(incr)
+  .map(square)
+</code></pre>
+<p>在方法的世界里，复合很难看到，所以让我们把它带入自由函数的世界。我们能用我们的新工具吗? 如果我们从<strong>curry</strong>开始，它看起来像什么?</p>
+<pre><code class="language-swift">curry(Array.map)
+// Cannot convert value of type '(Array&lt;_&gt;) -&gt; ((_) throws -&gt; _) throws -&gt; [_]' to expected argument type '(_, _) -&gt; _'
+</code></pre>
+<p>我们有麻烦了。数组是泛型的。我想我们知道这里用的是<strong>Int</strong>，所以我们可以约束它。</p>
+<pre><code class="language-swift">curry([Int].map)
+// Cannot convert value of type '([Int]) -&gt; ((Int) throws -&gt; _) throws -&gt; [_]' to expected argument type '(_, _) -&gt; _'
+</code></pre>
+<p><strong>map</strong>方法的返回值也是泛型的，所以看起来我们需要指定整个东西。</p>
+<pre><code class="language-swift">curry([Int].map as ([Int]) -&gt; ((Int) -&gt; Int) -&gt; [Int])
+// Cannot convert value of type '([Int]) -&gt; ((Int) throws -&gt; _) throws -&gt; [_]' to type '([Int]) -&gt; ((Int) -&gt; Int) -&gt; [Int]' in coercion
+</code></pre>
+<p>它还是不快乐! 有很多我们没考虑到的<strong>throws</strong>。</p>
+<p>这看起来不妙:<strong>curry</strong>(可能还有<strong>flip</strong>)似乎在涉及泛型和抛出的复杂情况下变得不那么有用了。</p>
+<p>让我们避免这些问题，手工编写一个免费的功能版本的<strong>map</strong>。我们可以用自己的术语来定义它! 让我们通过先使用可配置的<strong>transform</strong>函数，将一个新函数从数据数组返回到一个新数组，来<strong>flip</strong>和<strong>curry</strong>内容。</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { $0.map(f) }
+}
+</code></pre>
+<p>让我们试一下。</p>
+<pre><code class="language-swift">map(incr) // ([Int]) -&gt; [Int]
+</code></pre>
+<p>这是整洁的。我们有一个从[Int]到[Int]的全新函数。</p>
+<pre><code class="language-swift">map(square) // ([Int]) -&gt; [Int]
+</code></pre>
+<p>另一个可重用的函数。</p>
+<pre><code class="language-swift">map(incr) &gt;&gt;&gt; map(square) // ([Int]) -&gt; [Int]
+</code></pre>
+<p>通过释放<strong>map</strong>，它以一种非常有趣的方式变得可重用。我们甚至可以改变类型。</p>
+<pre><code class="language-swift">map(incr) &gt;&gt;&gt; map(square) &gt;&gt;&gt; map(String.init) // ([Int]) -&gt; [String]
+</code></pre>
+<p>我们已经建立了另一个没有数据的管道!</p>
+<p>我们以前也讨论过这个问题:组合<strong>map</strong>与一次性组合函数传递给<strong>map</strong>是一样的。</p>
+<pre><code class="language-swift">map(incr &gt;&gt;&gt; square &gt;&gt;&gt; String.init) // ([Int]) -&gt; [String]
+</code></pre>
+<p>这样也更有效率。</p>
+<p>还有其他的高阶函数。像<strong>filter</strong>。</p>
+<pre><code class="language-swift">Array(1...10)
+  .filter { $0 &gt; 5 }
+// [6, 7, 8, 9, 10]
+</code></pre>
+<p>让我们定义一个自由<strong>filter</strong>函数。</p>
+<pre><code class="language-swift">func filter&lt;A&gt;(_ p: @escaping (A) -&gt; Bool) -&gt; ([A]) -&gt; [A] {
+  return { $0.filter(p) }
+}
+</code></pre>
+<p>因为我们对这个函数进行了<strong>curry</strong>处理，并遵循了参数排序的规则，所以我们可以非常容易地构建轻量级的、可重用的过滤函数。</p>
+<pre><code class="language-swift">filter { $0 &gt; 5 } // ([Int]) -&gt; [Int]
+</code></pre>
+<p>此外，这些过滤函数组成了我们的<strong>map</strong>函数。</p>
+<pre><code class="language-swift">filter { $0 &gt; 5 }
+  &gt;&gt;&gt; map(incr)
+// ([Int]) -&gt; [Int]
+</code></pre>
+<p>我们可以进一步按照直觉指导的方式进行创作。</p>
+<pre><code class="language-swift">filter { $0 &gt; 5 }
+  &gt;&gt;&gt; map(incr &gt;&gt;&gt; square)
+// ([Int]) -&gt; [Int]
+</code></pre>
+<p>我们甚至在没有数据的情况下构建了一个很好的功能! 在使用程序逻辑之前，我们可以用一种抽象的方式来描述它。让我们来看看它的作用:</p>
+<pre><code class="language-swift">Array(1...10)
+  |&gt; filter { $0 &gt; 5 }
+  &gt;&gt;&gt; map(incr &gt;&gt;&gt; square)
+// [49, 64, 81, 100, 121]
+</code></pre>
+<p>还有很多其他的高阶函数等着被<strong>curried，flipped，composed</strong>在一起。</p>
+<h2 id="8-a-namewhatsthepointawhats-the-point">8. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>是时候问问我们自己，“这有什么意义?” 我们引入了<strong>curry, zury和flip</strong>作为可重复使用的机器，以改变功能的形状和解锁组成。当它工作时很好，但我们很快就遇到了一些限制。是否值得将这些函数引入到我们的代码库中?</p>
+<p>我们是这样认为的! 当它们发挥作用时，效果非常好，为我们节省了大量的样板文件。当它们不起作用时，我们仍然在使用概念并为它们建立直觉。<strong>currying和flipping</strong>的想法很简单，它们将在未来解锁很多构图。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/yWIJ-9M-V/" class="tag">
+                    high-order
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/building-editable-lists-with-swiftui/">
+                  <h3 class="post-title">
+                    Building editable lists with SwiftUI
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

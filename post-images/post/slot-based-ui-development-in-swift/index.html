@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Slot-based UI development in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="所有程序员必须不断做出的最具挑战性的决定之一是何时一般化一个解决方案，而不是仅仅将它绑定到一个特定的用例上。同样容易陷入过度工程或工程不足的解决方案的陷阱——并且对项目具有潜在的破坏性。
+在这方面，UI开发往往特别棘手 - 我们是否应该建立..." />
+    <meta name="keywords" content="ui developement,composition" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Slot-based UI development in Swift</h2>
+            <div class="post-date">2018-12-16</div>
+            
+            <div class="post-content" v-pre>
+              <p>所有程序员必须不断做出的最具挑战性的决定之一是何时一般化一个解决方案，而不是仅仅将它绑定到一个特定的用例上。同样容易陷入过度工程或工程不足的解决方案的陷阱——并且对项目具有潜在的破坏性。</p>
+<p>在这方面，UI开发往往特别棘手 - 我们是否应该建立一个完全通用的组件库，以适用于任何用例，或者我们应该为每个场景创建高度专业化的视图?</p>
+<p>本周，让我们来看看一种构建ui的方法，它可能会让我们在这两个极端之间取得一个很好的平衡——使用基于插槽的方法。</p>
+<h2 id="backed-into-a-purpose-built-corner">Backed into a purpose-built corner</h2>
+<p>如果说几乎所有项目都有一个共同点的话，那就是它们往往会随着时间而改变。人们会改变他们的想法，产品会发展，公司也会转向。然而，通常我们的UI代码并没有真正准备好处理这些更改，即使它们相对较小 -这会让我们觉得我们把自己逼到了一个死角。</p>
+<p>让我们看一个例子，在这个例子中，我们正在为一个食谱应用程序构建一个UITableViewCell子类。目前，当我们在列表中显示一个食谱时，我们还希望包含一个相关食谱的列表 - 我们在单元格的底部添加了一个RelatedRecipesView，就像这样:</p>
+<pre><code class="language-swift">class RecipeCell: UITableViewCell {
+    let relatedRecipesView = RelatedRecipesView()
+
+    override init(style: UITableViewCell.CellStyle,
+                  reuseIdentifier: String?) {
+        super.init(style: style,
+                   reuseIdentifier: reuseIdentifier)
+
+        addRelatedRecipesView()
+    }
+
+    private func addRelatedRecipesView() {
+        contentView.addSubview(relatedRecipesView)
+
+        // Make the related recipes view stretch the width of
+        // the cell, place it at the bottom, and use its own
+        // intrinsic content size for its height.
+        relatedRecipesView.layout {
+            $0.leading == contentView.leadingAnchor
+            $0.trailing == contentView.trailingAnchor
+            $0.bottom == contentView.bottomAnchor
+        }
+    }
+}
+</code></pre>
+<p>只要我们的需求保持不变，上面的cell实现就可以很好地工作，但如果有一天我们想进行A/B测试，看看添加社交功能是否会改善我们的指标 -用SocialView代替每个recipe cell的RelatedRecipesView。</p>
+<p>由于我们的RecipeCell目前硬连接到总是在底部显示相关食谱列表，我们需要做些改变。这里我们可以采取几种不同的方法。一个是为潜在的SocialView添加另一个属性，并使它和我们当前的RelatedRecipesView属性都是可选的:</p>
+<pre><code class="language-swift">class RecipeCell: UITableViewCell {
+    var relatedRecipesView: RelatedRecipesView?
+    var socialView: SocialView?
+}
+</code></pre>
+<p>这并不理想，因为这样做，我们既引入了歧义，又增加了cell的状态数，使cell变得更复杂。此外，由于这个新的社交功能目前只是一个A/B测试，我们真的应该尽量让整个代码库对它的认识降至最低， 所以把它的细节泄露给我们的核心UI组件可能不是一个好主意。</p>
+<h2 id="opening-up-a-slot">Opening up a slot</h2>
+<p>相反，让我们看看如何通过制作基于插槽的RecipeCell来解决上述困境。当以基于插槽的方式构建一个视图时，我们打开了该视图的某些部分被其他视图填充的可能性。</p>
+<p>这个方法的一个很好的例子实际上是内置在UITableViewCell中-它的accessoryView插槽，它使我们能够放置任何我们想要的视图在一个单元格的后缘，而不需要单元格知道它的任何细节。</p>
+<p>按照同样的设计，我们可以向RecipeCell添加一个底视图槽，这将使配置它的实例的代码能够将它想要的任何视图放置在底部边缘。然后我们观察bottomView属性，并添加必要的约束给任何分配给我们新槽的视图，像这样:</p>
+<pre><code class="language-swift">class RecipeCell: UITableViewCell {
+    var bottomView: UIView? {
+        // The compiler automatically generates a variable called
+        // 'oldValue' in didSet property observations.
+        didSet { bottomViewDidChange(from: oldValue) }
+    }
+
+    private func bottomViewDidChange(from oldView: UIView?) {
+        // === and !== can be used to check if two objects are
+        // the same instance, rather than the same value.
+        guard bottomView !== oldView else {
+            return
+        }
+
+        oldView?.removeFromSuperview()
+
+        guard let newView = bottomView else {
+            return
+        }
+
+        contentView.addSubview(newView)
+
+        newView.layout {
+            $0.leading == contentView.leadingAnchor
+            $0.trailing == contentView.trailingAnchor
+            $0.bottom == contentView.bottomAnchor
+        }
+    }
+}
+</code></pre>
+<p>虽然上面的方法比以前的目的构建方法需要更多的代码——它给了我们更多的自由来发展我们的UI，而不需要让我们的核心组件知道任何特定的特性。它也是一种很好的方法，可以防止我们的视图成为模型感知的，并建立一个更强的关注点分离。</p>
+<p>有了上面的插槽，我们现在可以很容易地配置RecipeCell的实例来显示相关食谱列表，或者根据我们新的社交功能进行调整 - 例如在我们的UITableViewDataSource实现中:</p>
+<pre><code class="language-swift">func tableView(_ tableView: UITableView,
+               cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+    let cell = tableView.dequeueReusableCell(
+        withIdentifier: reuseIdentifier,
+        for: indexPath
+    ) as! RecipeCell
+
+    if featureFlags.enableSocialRecommendations {
+        cell.bottomView = socialView(for: cell, at: indexPath)
+    } else {
+        cell.bottomView = relatedRecipesView(for: cell, at: indexPath)
+    }
+
+    return cell
+}
+</code></pre>
+<p>好消息是，现在我们做了这个改变，实际上没有理由再调用RecipeCell了 - 因为，通过移动到基于插槽的方法，我们已经成功地删除了所有对recipes和其他模型的认识。我们现在可以简单地称它为SlotTableViewCell或类似的东西，因为我们将来可能会向它添加额外的槽。</p>
+<h2 id="retaining-type-safety">Retaining type safety</h2>
+<p>虽然添加插槽而不是使用具体的子视图属性是一种让我们的UI更加模块化和灵活的好方法，但它也可能最终损害代码的类型安全。因为我们现在处理的是UIView?插槽，任何依赖于分配给插槽的视图的具体类型的代码-比如上面的socialView()和relatedRecipesView()方法-需要进行类型转换才能正常工作。</p>
+<p>但是，如果我们能够同时做到这两方面的最好——通过以一种实际上保留类型安全的方式来实现我们的插槽，会怎么样呢?</p>
+<p>让我们看另一个例子。这里我们正在构建一个HeaderView，它目前有两个可分配的槽—一个用于显示在头部上方的视图，另一个显示在头部底部。 就像之前一样，我们观察每个插槽属性，并将正确的布局应用到任何指定的视图——像这样:</p>
+<pre><code class="language-swift">class HeaderView: UIView {
+    var topView: UIView? {
+        didSet { topViewDidChange(from: oldValue) }
+    }
+
+    var bottomView: UIView? {
+        didSet { bottomViewDidChange(from: oldValue) }
+    }
+}
+</code></pre>
+<p>现在，为了保持这两个插槽的类型安全，让我们转向泛型的力量 - 并添加两个泛型类型到我们的HeaderView -一个用于它的顶部视图，一个用于它的底部视图。 通过将每种类型限制为UIView的子类，我们可以在不修改任何内部布局代码的情况下进行更改:</p>
+<pre><code class="language-swift">class HeaderView&lt;Top: UIView, Bottom: UIView&gt;: UIView {
+    var topView: Top? {
+        didSet { topViewDidChange(from: oldValue) }
+    }
+
+    var bottomView: Bottom? {
+        didSet { bottomViewDidChange(from: oldValue) }
+    }
+}
+</code></pre>
+<p>上述方法的美妙之处在于，我们现在可以创建任何类型的专门化头视图，而无需进行任何子类化或引入任何新类型-只需指定我们将使用的顶部和底部视图:</p>
+<pre><code class="language-swift">let movieHeaderView = HeaderView&lt;PosterView, UILabel&gt;()
+let userHeaderView = HeaderView&lt;UIImageView, UIButton&gt;()
+let settingHeaderView = HeaderView&lt;UILabel, UISwitch&gt;()
+</code></pre>
+<p>然而，上面的实现还有一件事我们还没有解决——那就是可发现性。 拥有具体的、特定于模型的视图类的一大好处是，找到它们通常非常容易。</p>
+<p>例如，如果我们想要找到显示电影时应该使用的标题，我们可以简单地在Xcode中搜索“MovieHeaderView”，很有可能我们会很快找到正确的标题。当我们拥有的只是一个通用的HeaderView时，事情会变得更加棘手，我们可能会在整个代码库或代码库中出现不一致。</p>
+<p>但好消息是我们可以把这两种方法结合起来-通过使用类型别名为每个具体用例形成“伪类型”:</p>
+<pre><code class="language-swift">typealias MovieHeaderView = HeaderView&lt;PosterView, UILabel&gt;
+typealias UserHeaderView = HeaderView&lt;UIImageView, UIButton&gt;
+typealias SettingHeaderView = HeaderView&lt;UILabel, UISwitch&gt;
+</code></pre>
+<p>通过上述方法，我们仍然可以使用清晰、具体的命名——同时仍然可以从使用灵活的、基于插槽的设计中获得所有好处。 例如，下面是一个MovieViewController可以简单地引用它的头视图为MovieHeaderView，这实际上只是我们的基于槽位的头视图的一个特殊版本:</p>
+<pre><code class="language-swift">class MovieViewController: UIViewController {
+    private lazy var headerView = MovieHeaderView()
+}
+</code></pre>
+<p>非常酷的👍如果我们想，我们也可以要求HeaderView用它的顶部和底部视图初始化，这样就可以将它们视为非可选的 - 但这真的取决于我们是否总是需要顶部和底部视图，或者我们是否想保留使用其中之一或都不使用的灵活性。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>准确地决定在代码中嵌入何种程度的灵活性，可能仍然是一件困难的事情。因为我们不可能看到未来——让我们的代码过于通用可能会导致我们对永远不存在的用例进行优化， 同时，做太多困难的假设可能会使我们的代码库适应新特性变得缓慢和容易出错。</p>
+<p>虽然使用slots并不是什么灵丹妙药，但它最终会给我们在灵活性和简单性之间找到一个很好的平衡——特别是当它与泛型和类型别名结合在一起时，这让我们仍然可以像构建硬连接视图一样使用基于插槽的视图。 然后，挑战就变成了决定什么时候添加新插槽，什么时候完全添加新视图。</p>
+<p><a href="https://www.swiftbysundell.com/articles/slot-based-ui-development-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/FhUIK00QN/" class="tag">
+                    ui developement
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VT6NEUoHdJ/" class="tag">
+                    composition
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-errors-as-control-flow-in-swift/">
+                  <h3 class="post-title">
+                    Using errors as control flow in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

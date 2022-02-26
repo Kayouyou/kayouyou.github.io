@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Encapsulating SwiftUI view styles | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="不管用什么框架或工具去构建一个给定的UI,为了使UI代码更容易维护和管理，找到一种好方法，将我们各种视图的结构和内部逻辑与应用于它们的样式分离开来，通常是关键
+虽然某些技术提供了一种相当自然的方法来分离UI开发的这两个方面，例如网站如何通过..." />
+    <meta name="keywords" content="ui development,code structure,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Encapsulating SwiftUI view styles</h2>
+            <div class="post-date">2020-09-27</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>不管用什么框架或工具去构建一个给定的UI,为了使UI代码更容易维护和管理，找到一种好方法，将我们各种视图的结构和内部逻辑与应用于它们的样式分离开来，通常是关键</p>
+<p>虽然某些技术提供了一种相当自然的方法来分离UI开发的这两个方面，例如网站如何通过HTML声明其结构，如何使用CSS声明其样式-对于SwiftUI来说，这种分离在一开始似乎并不实用，甚至不受鼓励。</p>
+<p>然而，如果我们开始进一步探索SwiftUI的各种api和约定，事实证明，我们可以使用许多工具和技术在视图层次结构、视图样式和我们希望在给定的项目中重用的这些组件之间创建一个清晰的分离。</p>
+<h2 id="reusable-components">Reusable components</h2>
+<p>举个例子，假设我们正在开发一个LoginView，它允许用户输入用户名和密码来登录我们的应用。 对于这两个文本字段，我们使用系统提供的“圆形边框”样式，对于执行实际登录操作的按钮，我们应用了一系列修饰符来给它一个自定义的外观:</p>
+<pre><code class="language-swift">struct LoginView: View {
+    var handler: (LoginCredentials) -&gt; Void
+    @State private var username = &quot;&quot;
+    @State private var password = &quot;&quot;
+
+    var body: some View {
+        VStack(spacing: 15) {
+            TextField(&quot;Username&quot;, text: $username)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            SecureField(&quot;Password&quot;, text: $password)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            Button(&quot;Log in&quot;) {
+                handler(LoginCredentials(
+                    username: username,
+                    password: password
+                ))
+            }
+            .foregroundColor(.white)
+            .font(Font.body.bold())
+            .padding(10)
+            .padding(.horizontal, 20)
+            .background(Color.blue)
+            .cornerRadius(10)
+        }
+    }
+}
+</code></pre>
+<p>只要上面的按钮只显示在那个特定的视图中，这个设置就可以很好地工作，如果我们想要在我们的应用程序中重用那个按钮样式，我们现在必须手动在每个地方应用相同的修改器集， 这两者都是重复的，并且随着时间的推移可能会导致大量的不一致性， 所以，让我们把这些样式转换成一个可重用的组件，只要需要就可以插入。</p>
+<p>一种方法是提取上面的按钮视图，以及我们应用到它的修饰符，到一个新的视图实现-像这样:</p>
+<pre><code class="language-swift">struct ActionButton: View {
+    var title: String
+    var action: () -&gt; Void
+
+    var body: some View {
+        Button(title, action: action)
+            .foregroundColor(.white)
+            .font(Font.body.bold())
+            .padding(10)
+            .padding(.horizontal, 20)
+            .background(Color.blue)
+            .cornerRadius(10)
+    }
+}
+</code></pre>
+<p>然而，尽管将可重用组件实现为自定义视图类型当然是一种常见且非常有用的模式，但在这种情况下，它确实给我们带来了一些缺点。</p>
+<p>首先，由于我们现在将按钮包装在一个新的、单独的ActionButton类型中，我们必须复制所有我们希望新视图支持的按钮api。 例如，我们已经复制了Button免费提供给我们的标题和动作属性。</p>
+<p>如果我们想模仿之前在LoginView中创建按钮时使用的精确初始化器，我们就必须使用一个自定义初始化器来扩展新的ActionButton类型，该初始化器会删除title属性的外部参数标签。 我们也不能在新类型的实例上直接使用特定于按钮的修饰符，也不能将这些实例传递给任何接受按钮参数的API。</p>
+<p>解决这些问题的一种方法是扩展内置按钮类型，而不是包装它， 例如，通过实现一个类似修饰器的方法，将我们的自定义样式应用到任何按钮实例:</p>
+<pre><code class="language-swift">extension Button {
+    func withActionButtonStyles() -&gt; some View {
+        self.foregroundColor(.white)
+            .font(Font.body.bold())
+            .padding(10)
+            .padding(.horizontal, 20)
+            .background(Color.blue)
+            .cornerRadius(10)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以像以前一样，简单地调用我们的新方法来样式化我们的登录按钮——像这样:</p>
+<pre><code class="language-swift">struct LoginView: View {
+    ...
+
+    var body: some View {
+        VStack(spacing: 15) {
+            ...
+            Button(&quot;Log in&quot;) {
+                handler(LoginCredentials(
+                    username: username,
+                    password: password
+                ))
+            }
+            .withActionButtonStyles()
+        }
+    }
+}
+</code></pre>
+<p>尽管与使用单独的视图类型相比，使用扩展为共享视图样式建模可能会使发现这些样式变得稍微困难一些，但这样做给了我们更多的灵活性，并在实际视图和应用于它们的样式之间创建了一个清晰的分离。</p>
+<h2 id="dedicated-style-types">Dedicated style types</h2>
+<p>解决可发暴露性方面的一个方法是，在保留我们的样式扩展特性的同时，采用SwiftUI本身用于许多自己的内置样式(专用样式类型)的模式。</p>
+<p>大多数内置的SwiftUI控件都附带一个配套协议，可以用来为特定控件实现可重用的样式配置。 实际上，我们已经在LoginView中使用了这个约定，使用RoundedBorderTextFieldStyle样式化两个文本字段。它证明我们也可以用这个系统来创建我们自己的自定义样式。</p>
+<p>例如，ButtonStyle协议让我们能够为自定义动作按钮样式做到这一点:</p>
+<pre><code class="language-swift">struct ActionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -&gt; some View {
+        configuration.label
+            .foregroundColor(.white)
+            .font(Font.body.bold())
+            .padding(10)
+            .padding(.horizontal, 20)
+            .background(Color.blue)
+            .cornerRadius(10)
+    }
+}
+</code></pre>
+<p>有了上面的步骤，我们可以再次轻松地将自定义样式集应用到任何按钮上——只是现在我们要使用内置的buttonStyle修饰符，并结合我们新的ActionButtonStyle类型的实例:</p>
+<pre><code class="language-swift">struct LoginView: View {
+    ...
+
+    var body: some View {
+        VStack(spacing: 15) {
+            ...
+            Button(&quot;Log in&quot;) {
+                handler(LoginCredentials(
+                    username: username,
+                    password: password
+                ))
+            }
+            .buttonStyle(ActionButtonStyle())
+        }
+    }
+}
+</code></pre>
+<p>然而，就像所有编程一样，总是有权衡的。尽管上面的技术可以让我们在特定类型中简洁地封装样式，同时也为我们提供了将这些样式应用到任何按钮的灵活性-因为我们现在使用的是完全自定义的ButtonStyle，系统将不再对上面的按钮应用任何默认的样式或行为。 例如，我们的按钮将不再通过使它的标题更亮来自动响应点击，这可能会使它对用户交互的响应显得不那么灵敏。</p>
+<p>谢天谢地，这个问题可以很容易地解决。我们所要做的就是使用传递到自定义ButtonStyle中的Configuration对象来检查按钮当前是否被按下，然后相应地修改我们的样式-例如这样:</p>
+<pre><code class="language-swift">struct ActionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -&gt; some View {
+        configuration.label
+            .foregroundColor(.white)
+            .font(Font.body.bold())
+            .padding(10)
+            .padding(.horizontal, 20)
+            .background(Color.blue.opacity(
+                configuration.isPressed ? 0.5 : 1
+            ))
+            .cornerRadius(10)
+    }
+}
+</code></pre>
+<p>当按钮的按下状态和默认状态转换时，系统仍然会自动应用动画，所以有了上面的改变，我们的按钮现在看起来就像它最初那样响应迅速和本机-真的很好</p>
+<p>除了所有的封装方面，使用SwiftUI的各种样式协议实现共享视图样式的一个主要优点是，我们可以一次性将它们应用到整个视图层次结构中。例如，我们想要在我们的登录视图中添加第二个按钮，让我们的用户重置他们的密码——我们现在可以通过直接将我们的ActionButtonStyle应用到视图的根VStack上，给这两个按钮相同的样式:</p>
+<pre><code class="language-swift">struct LoginView: View {
+    enum Action {
+        case login(LoginCredentials)
+        case resetPassword
+    }
+
+    var handler: (Action) -&gt; Void
+    @State private var username = &quot;&quot;
+    @State private var password = &quot;&quot;
+
+    var body: some View {
+        VStack(spacing: 15) {
+            TextField(&quot;Username&quot;, text: $username)
+            SecureField(&quot;Password&quot;, text: $password)
+            Button(&quot;Log in&quot;) {
+                handler(.login(LoginCredentials(
+                    username: username,
+                    password: password
+                )))
+            }
+            Button(&quot;Password reset&quot;) {
+                handler(.resetPassword)
+            }
+        }
+        .textFieldStyle(RoundedBorderTextFieldStyle())
+        .buttonStyle(ActionButtonStyle())
+    }
+}
+</code></pre>
+<p>注意，我们现在还可以通过修改根VStack来为两个文本字段应用样式，并且可以使用相同的模式来配置任何支持基于类型的样式的SwiftUI控件。</p>
+<h2 id="variants-and-overrides">Variants and overrides</h2>
+<p>虽然能够使用相同的样式集配置多个视图是非常强大和方便的，但我们偶尔也会想要在每个视图的基础上调整一些样式。</p>
+<p>例如，我们的登录视图中的两个按钮目前具有完全相同的外观，这也使它们在我们的UI中具有相同的显著性。-考虑到我们的密码重置操作应该被认为是登录操作的次要操作，这种情况下我们可能有不想要的东西</p>
+<p>现在有多种方法可以解决这个问题——包括向ActionButtonStyle类型添加各种参数，或向reset password按钮应用一组不同的修饰符。但是，处理此类常见变体的最简单方法可能是创建额外的样式实现来匹配它们</p>
+<p>以下是我们如何在我们的应用程序中的所有次要按钮做到这一点:</p>
+<pre><code class="language-swift">struct SecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -&gt; some View {
+        // Our secondary style uses less horizontal padding and
+        // a gray background color, rather than a blue one:
+        configuration.label
+            .foregroundColor(.white)
+            .font(Font.caption.bold())
+            .padding(10)
+            .background(
+                Color.gray.opacity(configuration.isPressed ? 0.5 : 1)
+            )
+            .cornerRadius(10)
+    }
+}
+
+</code></pre>
+<p>如果我们将ActionButtonStyle类型从以前重新重命名为PrimaryButtonStyle，我们现在可以分别为两个按钮设置样式，或者执行以下操作-并将我们默认的主要样式作为一个整体应用到我们的视图层次结构中，同时也覆盖了用于密码重置按钮的ButtonStyle，像这样:</p>
+<pre><code class="language-swift">struct LoginView: View {
+    &lt;!-- ... --&gt;
+
+    var body: some View {
+        VStack(spacing: 15) {
+            Button(&quot;Log in&quot;) {
+                handler(.login(LoginCredentials(
+                    username: username,
+                    password: password
+                )))
+            }
+            Button(&quot;Password reset&quot;) {
+                handler(.resetPassword)
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .textFieldStyle(RoundedBorderTextFieldStyle())
+        .buttonStyle(PrimaryButtonStyle())
+    }
+}
+</code></pre>
+<p>这也是swift的样式系统如此强大的另一个原因——我们总是可以为视图层次结构的特定部分覆盖任何特定的样式，同时仍然将最常用的样式集指定为默认值。</p>
+<p>然而，虽然将我们的各种风格作为单独的类型来实现通常可以使我们的代码保持简单和不受复杂条件的影响，但这样做也会导致相当数量的代码重复。虽然可以肯定地说，在上述情况下，我们的PrimaryButtonStyle和SecondaryButtonStyle之间的复制是如此微不足道，我们可以简单地忽略它，我们也来看看如何在这两种类型之间共享特定的公共构型。</p>
+<p>一种方法是在同一个文件中实现它们，然后扩展它们都符合的样式协议——在本例中是ButtonStyle——使用我们希望在两者之间共享的属性:</p>
+<pre><code class="language-swift">private extension ButtonStyle {
+    var foregroundColor: Color { .white }
+    var padding: CGFloat { 10 }
+    var cornerRadius: CGFloat { 10 }
+    var pressedColorOpacity: Double { 0.5 }
+}
+</code></pre>
+<p>然后，在应用这些共享样式时，我们可以简单地引用上述属性，而不是在每个实现中硬编码这些值</p>
+<pre><code class="language-swift">struct PrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -&gt; some View {
+        configuration.label
+            .foregroundColor(foregroundColor)
+            .font(Font.body.bold())
+            .padding(padding)
+            .padding(.horizontal, 20)
+            .background(Color.blue.opacity(
+                configuration.isPressed ? pressedColorOpacity : 1
+            ))
+            .cornerRadius(cornerRadius)
+    }
+}
+
+struct SecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -&gt; some View {
+        configuration.label
+            .foregroundColor(foregroundColor)
+            .font(Font.caption.bold())
+            .padding(padding)
+            .background(Color.gray.opacity(
+                configuration.isPressed ? pressedColorOpacity : 1
+            ))
+            .cornerRadius(cornerRadius)
+    }
+}
+
+</code></pre>
+<p>当然，还有许多其他方法可以实现上述代码共享——包括直接扩展字体和颜色等类型，或者为这些共享样式实现其他专用类型(例如某种形式的AppTheme结构体)。 或者，如果我们认为在我们的特定项目中这不是一个问题，我们可以选择完全忽略这个代码复制源。</p>
+<h2 id="a-common-pattern-within-swiftui">A common pattern within SwiftUI</h2>
+<p>就像我们现在使用专用样式类型来配置按钮和文本字段一样，我们也可以在许多不同的SwiftUI视图中使用相同的模式——包括切换器、选择器、列表、进度视图、标签等等</p>
+<p>作为最后一个例子，这里是我们如何创建一个自定义的LabelStyle，它可以垂直呈现给定标签的图标和标题，而不是水平呈现(这是默认的):</p>
+<pre><code class="language-swift">struct VerticalLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -&gt; some View {
+        VStack {
+            configuration.icon
+            configuration.title
+        }
+    }
+}
+</code></pre>
+<p>就像我们之前的其他样式一样，我们新的VerticalLabelStyle现在可以一次性应用到一系列的标签上——如果我们不想把它们放在任何特定的布局堆栈中，我们总是可以使用一个组，像这样:</p>
+<pre><code class="language-swift">Group {
+    Label(&quot;Top rated&quot;, systemImage: &quot;star.fill&quot;)
+    Label(&quot;Localized&quot;, systemImage: &quot;globe&quot;)
+    Label(&quot;Encrypted&quot;, systemImage: &quot;checkmark.seal&quot;)
+}
+.labelStyle(VerticalLabelStyle())
+
+</code></pre>
+<p>因此，由于使用共享样式协议的各种实现是swift世界中的常见模式，所以它通常也是封装我们自己的定制样式的一个很好的选择。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>事实上，SwiftUI是围绕着合成的理念设计的，当我们想要如何完成一个给定的任务时，它给了我们几种不同的选择。尤其是在视图样式的情况下,我们可以选择建立一个全新的视图类型为每个组件或样式,我们可以使用修饰符和扩展,或者我们可以使用自定义的实现SwiftUI各种样式的协议,我们可以选择其中最适合的选项在每个给定的情况</p>
+<p><a href="https://www.swiftbysundell.com/articles/encapsulating-swiftui-view-styles/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/jeE3gpji3/" class="tag">
+                    ui development
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/creating-generic-networking-apis-in-swift/">
+                  <h3 class="post-title">
+                    Creating generic networking APIs in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

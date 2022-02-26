@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 11: Composition without Operators | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Outroducing |&gt;
+
+
+
+
+Outroducing &gt;&gt;&gt;
+
+
+
+
+Outroducing &gt;=&gt;
+
+
+
+
+Outroducing &lt;&gt;
+
+..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 11: Composition without Operators</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Outroducing">Outroducing |&gt;</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Outroducing-1">Outroducing &gt;&gt;&gt;</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Outroducing-1">Outroducing &gt;=&gt;</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Outroducing-1">Outroducing &lt;&gt;</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Algebraicproperties">Algebraic properties</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 11: Composition without Operators -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>我们的系列文章毫不掩饰地推广了自定义操作符的使用，但它们在Swift社区中并不常见。操作符的使用甚至可能是本系列中最具争议的方面!  我们在第一集探讨了操作符的“为什么”，我们继续用具体的——甚至是严格的——标准来证明我们引入的操作符，虽然我们可能说服了你，但要说服你的同事又是另一回事了! 您的团队甚至可能采用禁止它的风格指南!</p>
+<p>操作符不应该成为将组合引入代码的瓶颈。在这节课中，我们将探索一些替代方案，它们可能会更温和地向团队介绍自己，甚至可能是让你的同事获得运营商快车头等舱机票的第一步!</p>
+<h2 id="2-a-nameoutroducingaoutroducing">2. <a name='Outroducing'></a>Outroducing |&gt;</h2>
+<p>在我们的第一集中，我们探讨了自由函数，以及当它们嵌套时，它们如何变得更难阅读。</p>
+<pre><code class="language-swift">incr(2) // 3
+square(incr(2)) // 9
+</code></pre>
+<p>我们引入的第一个操作符是|&gt;，这对于使自由函数在调用时更具可读性很重要。 我们通过管道传递一个值，而不是将一个值传递给函数的右边。</p>
+<pre><code class="language-swift">2 |&gt; incr |&gt; square // 9
+</code></pre>
+<p>这是一个简单的示例，但是从左到右(就像方法语法一样)阅读它要比通过括号匹配深入并从内到外遵循逻辑容易得多。</p>
+<p>Swift社区在过去已经为函数式应用采用了各种非操作符解决方案，尽管它可能没有这么明显!甚至还有一个Swift Evolution的宣传!</p>
+<p>它是<strong>with</strong>函数，常用于构型。</p>
+<pre><code class="language-swift">// let label = UILabel()
+// with(label) {
+//   $0.numberOfLines = 0
+//   $0.systemFont(ofSize: 17)
+//   $0.textColor = .red
+// }
+</code></pre>
+<p>但是我们也可以用|&gt;操作符来做这个:</p>
+<pre><code class="language-swift">let label = UILabel()
+label |&gt; {
+  $0.numberOfLines = 0
+  $0.systemFont(ofSize: 17)
+  $0.textColor = .red
+}
+</code></pre>
+<p>换句话说，<strong>with</strong>具有函数应用的完美形状。</p>
+<p>让我们来定义它。</p>
+<pre><code class="language-swift">func with&lt;A, B&gt;(_ a: A, _ f: (A) -&gt; B) -&gt; B {
+  return f(a)
+}
+</code></pre>
+<p>让我们使用它。</p>
+<pre><code class="language-swift">with(2, incr) // 3
+</code></pre>
+<p>这招管用，但我们没法把调用连起来。使用像|&gt;这样的操作符允许我们指定结合性和优先级，以便将调用链接起来。</p>
+<pre><code class="language-swift">with(2, incr, square)
+// error: extra argument in call
+</code></pre>
+<p>目前应用两个函数需要嵌套和两个with。</p>
+<pre><code class="language-swift">with(with(2, incr), square)
+</code></pre>
+<p>现在我们要处理嵌套和圆括号，这是运算符解决的问题。也许解决这个问题的一种方法是，以某种方式组合<strong>incr和square</strong>，这样它们可以只被输入一次。</p>
+<h2 id="3-a-nameoutroducing-1aoutroducing">3. <a name='Outroducing-1'></a>Outroducing &gt;&gt;&gt;</h2>
+<p>好吧，我们可能记得，一系列的|&gt;s可以用复合函数分解!</p>
+<pre><code class="language-swift">2 |&gt; incr |&gt; square // 9
+2 |&gt; incr &gt;&gt;&gt; square // 9
+</code></pre>
+<p>用<strong>with</strong>而不是|&gt;，我们得到这个:</p>
+<pre><code class="language-swift">with(2, incr &gt;&gt;&gt; square) // 9
+</code></pre>
+<p>使用&gt;&gt;&gt;允许我们在通过管道传递值之前将这些函数代入到一起。</p>
+<p>让我们为正向合成定义一个自由函数。 我们称它为<strong>pipe</strong>。我们不要把它与|&gt;的“<strong>pipe-forward</strong>”混淆! 我们在这里依靠的是现有技术，采用了<strong>funtional JavaScript</strong>社区支持的函数名。</p>
+<pre><code class="language-swift">func pipe&lt;A, B, C&gt;(_ f: @escaping (A) -&gt; B, _ g: @escaping (B) -&gt; C) -&gt; (A) -&gt; C {
+  return { g(f($0)) }
+}
+</code></pre>
+<p>现在我们可以组成<strong>incr和square</strong>。</p>
+<pre><code class="language-swift">pipe(incr, square) // (Int) -&gt; Int
+</code></pre>
+<p>这给了我们一个全新的函数，它先增加一个值，再平方一个值。</p>
+<p>我们甚至可以用<strong>with</strong>这个函数。</p>
+<pre><code class="language-swift">with(2, pipe(incr, square)) // 9
+</code></pre>
+<p>就像我们的运算符版本一样。我们用文字交换操作符。我们可以这样读:对于2，通过pipe传入<strong>increment和square</strong>。</p>
+<p>像|&gt;一样，&gt;&gt;&gt;操作符也具有结合性和优先级，允许我们组合更大的管道。</p>
+<pre><code class="language-swift">incr &gt;&gt;&gt; square &gt;&gt;&gt; String.init
+// (Int) -&gt; String
+</code></pre>
+<p>不幸的是，<strong>pipe</strong>有同样的问题。它一次只包含两个函数。</p>
+<pre><code class="language-swift">pipe(incr, square, String.init)
+// error: extra argument in call
+</code></pre>
+<p>这是一个命名函数有而操作符没有的问题。</p>
+<p>不过，我们可以通过函数重载来解决这个问题。让我们重载一个支持三个参数的<strong>pipe</strong>版本。</p>
+<pre><code class="language-swift">func pipe&lt;A, B, C, D&gt;(
+  _ f: @escaping (A) -&gt; B,
+  _ g: @escaping (B) -&gt; C,
+  _ h: @escaping (C) -&gt; D
+  )
+  -&gt; (A) -&gt; D {
+
+    return { h(g(f($0))) }
+}
+</code></pre>
+<p>现在，我们可以使用带有三个参数的<strong>pipe</strong>。</p>
+<pre><code class="language-swift">with(2, pipe(incr, square, String.init)) // &quot;9&quot;
+</code></pre>
+<p>如果我们想要一个由四个函数组成的管道，可以编写另一个重载。编写这些重载可能会感到乏味，但我们只需要编写一次! 我们甚至可以使用源代码生成工具来自动化这个过程。</p>
+<p>在未来，我们甚至可能得到语言支持!  泛型宣言概述了可变型泛型如何允许我们在不需要重载的情况下定义这类函数。</p>
+<pre><code class="language-swift">// func pipe&lt;A...&gt;
+</code></pre>
+<p>我们还看到操作符在多行上工作得很好。</p>
+<pre><code class="language-swift">2
+  |&gt; incr
+  &gt;&gt;&gt; square
+  &gt;&gt;&gt; String.init
+// &quot;9&quot;
+</code></pre>
+<p><strong>with</strong>看起来像什么?</p>
+<pre><code class="language-swift">with(2, pipe(
+  incr,
+  square,
+  String.init
+))
+// &quot;9&quot;
+</code></pre>
+<p>这有点嘈杂，但总体上读起来很好。</p>
+<p>有趣的是，我们之前指出我们是根据“现有技术”来命名&quot; <strong>with &quot;和&quot; pipe</strong> &quot;的。看起来，高度可重用的自由函数也可能需要打勾来证明自己。幸运的是，我们已经证明了这些函数的存在! 我们可以把&quot;它的形状好看吗&quot;换成&quot;它的戒指好看吗&quot;</p>
+<h2 id="4-a-nameoutroducing-1aoutroducing">4. <a name='Outroducing-1'></a>Outroducing &gt;=&gt;</h2>
+<p>在关于副作用的那一集中，我们介绍了“<strong>fish</strong>”操作符&gt;=&gt;，用于将链式函数组合成更复杂的结构。</p>
+<p>例如，我们有一个<strong>computeAndPrint</strong>函数，它将日志附加到元组的返回值。</p>
+<pre><code class="language-swift">func computeAndPrint(_ x: Int) -&gt; (Int, [String]) {
+  let computation = x * x + 1
+  return (computation, [&quot;Computed \(computation)&quot;])
+}
+
+2 |&gt; computeAndPrint
+// (5, [&quot;Computed 5&quot;])
+</code></pre>
+<p>能够控制我们的副作用是很好的，但在这个过程中我们失去了组合。</p>
+<pre><code class="language-swift">2 |&gt; computeAndPrint |&gt; computeAndPrint
+// error: Cannot convert value of type '(Int) -&gt; (Int, [String])' to expected argument type '(_) -&gt; _'
+</code></pre>
+<p>幸运的是，&gt;=&gt;通过知道如何通过累积日志将这些函数拼凑在一起，恢复了组合。</p>
+<pre><code class="language-swift">2 |&gt; computeAndPrint &gt;=&gt; computeAndPrint
+// (26, [&quot;Computed 5&quot;, &quot;Computed 26&quot;])
+</code></pre>
+<p>我们需要一个非操作符的替代品。让我们为这种组合定义一个名为<strong>chain</strong>的函数。</p>
+<pre><code class="language-swift">func chain&lt;A, B, C&gt;(
+  _ f: @escaping (A) -&gt; (B, [String]),
+  _ g: @escaping (B) -&gt; (C, [String])
+  ) -&gt; ((A) -&gt; (C, [String])) {
+
+  return { a in
+    let (b, logs) = f(a)
+    let (c, moreLogs) = g(b)
+    return (c, logs + moreLogs)
+  }
+}
+</code></pre>
+<p>Let’s try it out!</p>
+<pre><code class="language-swift">with(2, chain(computeAndPrint, computeAndPrint))
+</code></pre>
+<p>不过，就像pipe一样，每当我们想要将更多的函数链接在一起时，就必须重载它。如果没有重载，我们必须这样做</p>
+<pre><code class="language-swift">with(2, chain(computeAndPrint, chain(computeAndPrint, computeAndPrint)))
+// (677, [&quot;Computed 5&quot;, &quot;Computed 26&quot;, &quot;Computed 677&quot;])
+</code></pre>
+<p>我们在《副作用》那一集提到的另一件事是&gt;=&gt;和&gt;&gt;&gt;很好地结合在一起。</p>
+<pre><code class="language-swift">2
+  |&gt; computeAndPrint
+  &gt;=&gt; incr
+  &gt;&gt;&gt; computeAndPrint
+  &gt;=&gt; square
+  &gt;&gt;&gt; computeAndPrint
+// (1874162, [&quot;Computed 5&quot;, &quot;Computed 37&quot;, &quot;Computed 1874162&quot;])
+</code></pre>
+<p>这很好，因为我们有了一种非常直观的方式，看到了纯粹而有效的逻辑在哪里。</p>
+<p>命名函数是什么样子的?</p>
+<pre><code class="language-swift">with(
+  2,
+  chain(
+    computeAndPrint,
+    pipe(
+      incr,
+      chain(
+        computeAndPrint,
+        pipe(
+          square,
+          computeAndPrint
+        )
+      )
+    )
+  )
+)
+// (1874162, [&quot;Computed 5&quot;, &quot;Computed 37&quot;, &quot;Computed 1874162&quot;])
+</code></pre>
+<p>操作符消除了这种嵌套的圆括号问题。但是因为<strong>chain</strong>只接受两个函数，我们被迫进行这种构造。</p>
+<p>让我们定义一个接受3个函数的重载<strong>chain</strong>。</p>
+<pre><code class="language-swift">func chain&lt;A, B, C, D&gt;(
+  _ f: @escaping (A) -&gt; (B, [String]),
+  _ g: @escaping (B) -&gt; (C, [String]),
+  _ h: @escaping (C) -&gt; (D, [String])
+  ) -&gt; ((A) -&gt; (D, [String])) {
+
+  return chain(f, chain(g, h))
+}
+</code></pre>
+<p>现在我们可以通过以特定方式分组纯函数和非纯函数来进行重构:</p>
+<pre><code class="language-swift">with(2, chain(
+  computeAndPrint,
+  pipe(incr, computeAndPrint),
+  pipe(square, computeAndPrint)
+))
+</code></pre>
+<p>看起来好多了，但是如果我们想要平放括号的话我们就得继续定义重载。即使括号已经变平了，得到的表达式在视觉上和我们开始时很不一样。这样就很难看出<strong>pipe和chain</strong>之间的代数关系。</p>
+<h2 id="5-a-nameoutroducing-1aoutroducing">5. <a name='Outroducing-1'></a>Outroducing &lt;&gt;</h2>
+<p>在本系列的前面，我们还介绍了一个&lt;&gt;操作符的组合: 单一类型组成。例如，我们在UIKit样式中使用过它。</p>
+<pre><code class="language-swift">func roundedStyle(_ view: UIView) {
+  view.clipsToBounds = true
+  view.layer.cornerRadius = 6
+}
+
+let baseButtonStyle: (UIButton) -&gt; Void = {
+  $0.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+  $0.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+}
+
+let roundButtonStyle =
+  baseButtonStyle
+    &lt;&gt; roundedStyle
+</code></pre>
+<p>与实际情况一样，操作符本身可能会阻止这种强大的组合进入一些代码库。请记住，我们希望对组合进行更多的限制，就像我们对&lt;&gt;所做的那样。让我们为样式集中使用的版本定义一个名为<strong>concat</strong>的函数。</p>
+<pre><code class="language-swift">func concat&lt;A: AnyObject&gt;(
+  _ f: @escaping (A) -&gt; Void,
+  _ g: @escaping (A) -&gt; Void
+  )
+  -&gt; (A) -&gt; Void {
+
+    return { a in
+      f(a)
+      g(a)
+    }
+}
+</code></pre>
+<p>我们将<strong>concat与pipe和chain</strong>从相同的现有技术中提取出来，但我们可以很容易地将其称为<strong>append</strong>。</p>
+<p>Let’s use it.</p>
+<pre><code class="language-swift">let roundButtonStyle = concat(
+  baseButtonStyle,
+  roundedStyle
+)
+// (UIButton) -&gt; Void
+</code></pre>
+<p>它甚至可以很好地处理尾随闭包语法。</p>
+<pre><code class="language-swift">let filledButtonStyle = concat(roundedButtonStyle) {
+  $0.backgroundColor = .black
+  $0.tintColor = .white
+}
+</code></pre>
+<p>有了<strong>concat</strong>，我们甚至可以避免需要<strong>overload</strong>! 类型是相同的，所以我们的签名可以是可变的! 让我们确保传递至少两个函数给<strong>concat</strong>，但允许任意数量的附加函数。</p>
+<pre><code class="language-swift">func concat&lt;A: AnyObject&gt;(
+  _ f1: @escaping (A) -&gt; Void,
+  _ f2: @escaping (A) -&gt; Void,
+  _ fs: ((A) -&gt; Void)...
+  )
+  -&gt; (A) -&gt; Void {
+
+    return { a in
+      f1(a)
+      f2(a)
+      fs.forEach { f in f(a) }
+    }
+}
+</code></pre>
+<p>现在我们有了一个<strong>concat</strong>函数，我们再也不必为额外的输入重载它了! 我们可以将这个函数粘贴到代码库中，并立即访问这种样式化函数组合。</p>
+<p>这打破了尾随闭包，但如果我们能避免大量的重载，这似乎是一个可以接受的折衷选项。</p>
+<pre><code class="language-swift">let filledButtonStyle = concat(roundedButtonStyle, {
+  $0.backgroundColor = .black
+  $0.tintColor = .white
+})
+</code></pre>
+<p>让我们看看如何继续把事情<strong>concat</strong>起来。</p>
+<pre><code class="language-swift">let filledButtonStyle = concat(
+  baseButtonStyle,
+  roundedButtonStyle, {
+    $0.backgroundColor = .black
+    $0.tintColor = .white
+})
+</code></pre>
+<p>很高兴看到<strong>concat</strong>没有任何<strong>pipe和chain</strong>类似的重载问题。</p>
+<h2 id="6-a-namealgebraicpropertiesaalgebraic-properties">6. <a name='Algebraicproperties'></a>Algebraic properties</h2>
+<p>在过去使用中缀运算符时，我们强调的一件事是，它们帮助我们看到可以在实际应用程序中实现的代数关系，比如性能改进。</p>
+<p>让我们看一下数学中常见的运算符性质。</p>
+<pre><code class="language-swift">// a * (b + c) == a*b + a*c
+</code></pre>
+<p>这里我们看到乘法分布在加法上，而运算符是显示这个关系的好方法。</p>
+<p>我们在我们的操作符身上也看到了这一点! 它们让我们能够看到<strong>map</strong>在构造上的分布:</p>
+<pre><code class="language-swift">// map(f &gt;&gt;&gt; g) = map(f) &gt;&gt;&gt; map(g)
+</code></pre>
+<p>在我们关于<strong>setter</strong>的章节中，我们也看到了类似的情况，它们也分布在构图上:</p>
+<pre><code class="language-swift">// first(f &gt;&gt;&gt; g) = first(f) &gt;&gt;&gt; first(g)
+</code></pre>
+<p>We also have the following equation relating pipe forward with forward compose:</p>
+<pre><code class="language-swift">// (a |&gt; f) |&gt; g = a |&gt; (f &gt;&gt;&gt; g)
+</code></pre>
+<p>对于命名函数，这有点困难，但仍然是可能的!例如，关于合成的<strong>map</strong>属性变成:</p>
+<pre><code class="language-swift">// map(pipe(f, g)) = pipe(map(f), map(g))
+</code></pre>
+<p>一句话:“管道的map就是maps的管道!”<strong>first</strong>属性看起来差不多:</p>
+<pre><code class="language-swift">// first(pipe(f, g)) = pipe(first(f), first(g))
+</code></pre>
+<p>函数应用程序属性如下:</p>
+<pre><code class="language-swift">// with(with(a, f), g) = with(a, pipe(f, g))
+</code></pre>
+<p>所以，从本质上讲，我们可以在引入管道的代价下，通过调用将两个函数压平。似乎是合理的!</p>
+<p>结合性呢? 我们看到&gt;&gt;&gt;和&gt;=&gt;都是可结合的因为括号放在哪里无关紧要。</p>
+<pre><code class="language-swift">// (f &gt;&gt;&gt; g) &gt;&gt;&gt; h = f &gt;&gt;&gt; (g &gt;&gt;&gt; h)
+// (f &gt;=&gt; g) &gt;=&gt; h = f &gt;=&gt; (g &gt;=&gt; h)
+</code></pre>
+<p>对于命名函数，如下所示:</p>
+<pre><code class="language-swift">pipe(f, pipe(g, h)) = pipe(pipe(f, g), h)
+chain(f, chain(g, h)) = chain(chain(f, g), h)
+</code></pre>
+<p>所以我们可以看到，在搜索函数和结构之间的代数关系时，运算符有助于消除迷雾，但是一旦你知道了这些关系，就很容易将其转换回命名函数并抽象地操作它们。</p>
+<h2 id="7-a-namewhatsthepointawhats-the-point">7. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>通常，我们会问“这有什么意义?”“因为我们探索一些非常疯狂的东西，引入运算符或一些奇怪的组成，这些看起来可能不实用或不适用，我们想把这些概念建立在实用主义的基础上。</p>
+<p>这一次，我们想反过来问:“这有什么意义?”“给这些漂亮的操作符取人类的名字?”为什么这么做? !</p>
+<p><strong>Composition</strong>!我们系列的大部分内容都深入探索了组合的强大力量。错过它就太可惜了! 通过采用命名函数，我们可以逐渐地将这些概念引入代码库中，否则可能会遗漏这些概念。</p>
+<p>我们仍然喜欢(并且更喜欢)自定义操作符，但如果我们必须在操作符和组合之间做出选择，那就是组合! 我们的大多数运算符都依赖于复合运算，所以如果没有复合运算，我们甚至不会有我们最喜欢的运算符。 不过，我们必须给运算符一些荣誉，因为运算符可以用结合性和优先级来清理圆括号问题，并允许我们每次都避免编写(或生成)一大堆重载。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-10-a-tale-of-two-flat-maps/">
+                  <h3 class="post-title">
+                    PointFree Episode 10: A Tale of Two Flat‑Maps
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

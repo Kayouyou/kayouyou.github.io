@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Architecting-SwiftUI-apps-with-MVC-and-MVVM | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+iOS应用的蓝图
+
+
+1.1. 我们到底为什么需要设计模式?
+1.2. 香草MVC模式和它的iOS进化
+1.3. 关于MVVM的一些话
+
+
+
+
+管理模型类型中的数据和业务逻辑
+
+
+2.1. 展示应用程序的数据
+2.2. 在模型层中实..." />
+    <meta name="keywords" content="mvvm,mvc,architecture,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Architecting-SwiftUI-apps-with-MVC-and-MVVM</h2>
+            <div class="post-date">2021-04-25</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#iOS">iOS应用的蓝图</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#">我们到底为什么需要设计模式?</a></li>
+<li>1.2. <a href="#MVCiOS">香草MVC模式和它的iOS进化</a></li>
+<li>1.3. <a href="#MVVM">关于MVVM的一些话</a></li>
+</ul>
+</li>
+<li>
+<ol start="2">
+<li><a href="#-1">管理模型类型中的数据和业务逻辑</a></li>
+</ol>
+<ul>
+<li>2.1. <a href="#-1">展示应用程序的数据</a></li>
+<li>2.2. <a href="#-1">在模型层中实现域业务逻辑</a></li>
+</ul>
+</li>
+<li>
+<ol start="3">
+<li><a href="#-1">实现应用程序的状态和存储业务逻辑</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#-1">存储数据并保持应用程序的逻辑隔离在控制器内</a></li>
+<li>3.2. <a href="#-1"> 将应用程序的状态与其业务逻辑保持在一起</a></li>
+</ul>
+</li>
+<li>
+<ol start="4">
+<li><a href="#-1">向用户显示信息并通过视图支持交互</a></li>
+</ol>
+<ul>
+<li>4.1. <a href="#-1">将视图代码组织成小型模块化类型</a></li>
+<li>4.2. <a href="#-1">保持视图与应用程序业务逻辑分离</a></li>
+</ul>
+</li>
+<li>
+<ol start="5">
+<li><a href="#-1"> 将整个应用程序放在根层中</a></li>
+</ol>
+<ul>
+<li>5.1. <a href="#modelpresentation">使用架构视图和model presentation 管理应用程序的导航结构</a></li>
+<li>5.2. <a href="#-1">将用户操作映射到应用程序的业务逻辑中</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameiosaios应用的蓝图">1. <a name='iOS'></a>iOS应用的蓝图</h2>
+<h3 id="11-a-namea我们到底为什么需要设计模式">1.1. <a name=''></a>我们到底为什么需要设计模式?</h3>
+<p>在构建iOS应用时，你需要考虑许多任务。<br>
+最常见的，你可以在任何应用中找到的是:</p>
+<ul>
+<li>Representing data - 数据展示</li>
+<li>Building the user interface - 构建用户界面</li>
+<li>Implementing the app's logic - 实现应用程序的逻辑</li>
+<li>Storing data on the disk - 在磁盘上存储数据</li>
+<li>Connecting to the network - 连接网络</li>
+<li>Reading data from the device sensors - 从设备传感器读取数据</li>
+</ul>
+<p>我最喜欢的简单易懂的比喻是盖房子。虽说有许多风格你可以遵循，所有的房子都有相同的结构ture:基础，墙壁，门，窗户，和一个屋顶。不管房子是昨天建的或者两千年前建的都没有关系。它的蓝图是保持一样的，因为这是唯一说得通的。如果你偏离, 你的房子会倒塌的。</p>
+<p>这同样适用于软件开发。你不能以任何你想要的方式组织你的代码。只有一组预先设计好的蓝图才能做到有意义的。</p>
+<p>有些开发者喜欢说你的应用的架构取决于细节。 我不同意。当然，你有一些灵活性，但如果你走得太远，你的房子就会在它的重压下倒塌（好比承重墙承担的重量超过了设计的标准）。</p>
+<p>在软件开发中，这些蓝图称为设计模式。他们的出现是因为开发人员开始使用标准的图表为任何软件工作。他们已经为你做了，所以你不需要经历同样的尝试和错误的过程。</p>
+<p>有许多体系结构设计模式告诉您如何构建构建你的应用，都有不同的且深奥的名字。遵循任何模式 总比没有任何模式好。但是，如果你仔细的看看它们，你会发现它们都有相同的结构，就像房子一样。</p>
+<p>这不是巧合。最流行的设计模式就是MVC。以及一些从MVC衍生出的，包括MVVM, MVA, MVP,设置VIPER。</p>
+<h3 id="12-a-namemvciosa香草mvc模式和它的ios进化">1.2. <a name='MVCiOS'></a>香草MVC模式和它的iOS进化</h3>
+<p>MVC模式将任何应用程序的结构划分为三层， 每一个都有其明确的职责:</p>
+<ul>
+<li>The model layer represents the data of the app and encapsulates<br>
+the domain business logic. -  模型层表示应用程序的数据并进行封装部分业务逻辑。</li>
+<li>The view layer is the user interface of the app. It shows data to<br>
+the user and allows interaction. - 视图层是应用程序的用户界面。它显示数据给用户并允许交互。</li>
+<li>Finally, the controller layer acts as a bridge between the other two<br>
+layers and implements the app’s business logic. - 最后，控制器层作为其他两个层之间的桥梁层和实现应用程序的业务逻辑。</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvztm43rcj31e80s8jzd.jpg" alt="avatar" loading="lazy"></figure>
+<p>为了避免大型复杂的代码，并保持我们的应用程序的良好结构，我们可以这样做 - 添加一个额外的层来承担这些责任。 在UIKit中，那是view controllers的角色。在SwiftUI中，类似的代码角色消失了，所以我们需要一个类似的层。我把它命名为 root layer。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvzutyjttj318p0u012t.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="13-a-namemvvma关于mvvm的一些话">1.3. <a name='MVVM'></a>关于MVVM的一些话</h3>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvzwlegg6j31d40se0z4.jpg" alt="avatar" loading="lazy"></figure>
+<p>在继续如果通过MVC蓝图来构建SiwftUI应用之前，必须就MVVM模式多说几句，并解决一些误解。</p>
+<p>简而言之:MVC和MVVM实际上一直是相同的 设计模式，有一些细微的差别。<em>在SwiftUI中这些已不复存在</em>。</p>
+<p>这就是你需要知道的，所以你可以跳过这一部分。</p>
+<p>很容易看清楚MVVM的view model layer 就是 MVC的 controller layer。 唯一的区别是视图和视图模型层通过绑定器连接声明性数据绑定技术，而不是标准编程在MVC中这样的实践。</p>
+<p>这是，或者更好，唯一的区别。在UIKit中，MVC应用使用视图控制器的生命周期事件，委托和回调确保视图和控制器层之间传输数据。MVVM相反，它依赖于开源的事件驱动的函数响应式编程框架，如RxSwift。</p>
+<p>这种差异在SwiftUI中消失了。传输数据的唯一方式视图层是通过使用带有@Published属性的可观察对象来实现的。SwiftUI视图使用@ObservedObject和@EnvironmentObject属性包装器连接到这些对象。</p>
+<p>这是一个事件驱动的机制。每次发布的属性更新后，用户界面自动刷新，删除了MVC和MVVM模式之间的唯一区别。</p>
+<p>UIKit应用程序是由视图控制器管理的，这是框架中不可避免的一部分。因此，MVVM的支持者们大行横道<br>
+把视图控制器放在地毯下面，把它们放在视图层里假装他们不存在。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvzynti91j318t0u0jzk.jpg" alt="avatar" loading="lazy"></figure>
+<h2 id="2-a-name-1a管理模型类型中的数据和业务逻辑">2. <a name='-1'></a>管理模型类型中的数据和业务逻辑</h2>
+<p>现在我们将通过一个具体的例子来展示如何使用MVC在实际应用中的抽象概念。我们将看到一个简单的银行应用程序，管理多个帐户。 用户将能够在应用程序中创建新帐户并执行 每个账户的交易。</p>
+<p>这是最终的应用程序的样子：</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvs2m34mrj31ca0oidrh.jpg" alt="avatar" loading="lazy"></figure>
+<p>这也将使代码尽可能小，所以我们将能够专注于应用程序的结构，没有额外的干扰。</p>
+<h3 id="21-a-name-1a展示应用程序的数据">2.1. <a name='-1'></a>展示应用程序的数据</h3>
+<p>模型层是我们的应用程序的基础。许多开发者喜欢从应用程序的用户界面开始，这是一个很好的方法。但是我喜欢从模型类型开始。</p>
+<p>模型层独立于应用程序的其他部分，只关注数据，不需要担心存储，网络，或者用户界面。这使得它们易于编写和测试。</p>
+<p>尽管它们很简单，但许多驱动一个结构良好的应用程序的代码都位于模型层。模型层中的bug可以影响应用程序的任何部分或所有部分。另一方面，一个可靠的模型层将帮助您显著减少MVC不同层中的代码。所以正确的模型类型是很重要的。</p>
+<p>我们的应用程序需要处理银行账户和交易，所以我们可以创建几个类型来处理这些。</p>
+<pre><code class="language-swift">struct Transaction {
+    let amount: Int
+    let beneficiary: String
+    let date: Date
+}
+struct Account {
+    let name: String
+    let iban: String
+    let kind: Kind
+    var transactions: [Transaction] 
+}
+extension Account {
+    enum Kind: String, Codable, CaseIterable {
+        case checking
+        case savings
+        case investment
+    } 
+}
+</code></pre>
+<p>应用程序的模型层可以用Swift的值类型更好地体现出来，即结构和枚举。值类型被复制，所以每个代码段可以处理不受影响的局部值一切。访问相同资源的并行代码是任何软件中重要的错误来源。对于值类型，我们保持我们的代码尽可能独立。</p>
+<p>(附注:我使用Int作为Transaction的amount属性类型而不是Float，因为你永远不应该使用浮点数精确的数字，比如金融交易。钱金额通常用分表示，使用整数)。</p>
+<h3 id="22-a-name-1a在模型层中实现域业务逻辑">2.2. <a name='-1'></a>在模型层中实现域业务逻辑</h3>
+<p>开发人员犯的最严重的错误是放置区域业务逻辑在MVC的其他层中。</p>
+<p>域业务逻辑是任何处理我们的应用程序相关域及其规则的逻辑。在我们的案例中，这个领域是银行业。因此,所有处理银行业法律的法典属于该领域逻辑。</p>
+<p>许多开发人员停留在上面的代码上，导致模型层很轻。他们只使用模型类型来表示应用程序中的数据。但是在MVC中，模型层应该承担更多的工作。模型类型也应该:</p>
+<ul>
+<li>encapsulate the domain business logic; - 封装领域业务逻辑;</li>
+<li>transform data from one format to another. - 将数据从一种格式转换为另一种格式。</li>
+</ul>
+<p>在帐户和交易结构中，我们期望银行账户和交易做的更多。例如:</p>
+<ul>
+<li>A customer can only open an account by putting into it a<br>
+€2.000 deposit. - 客户只有在账户里存入现金€2.000 才能开户 。</li>
+<li>The balance of an account needs to match the sum of all its<br>
+transactions. - 一个帐户的余额需要与所有它的交易总和相符。</li>
+<li>Each transaction is final, and it should not be possible to delete<br>
+it from an account. - 每个交易都是最终的，不应该从一个账户被删除。</li>
+</ul>
+<p>由于这些规则属于域业务逻辑，因此它们的代码也应该进入模型层。</p>
+<pre><code class="language-swift">struct Transaction: Identifiable, Codable {
+    let id = UUID()
+    let amount: Int
+    let beneficiary: String
+    let date: Date
+}
+struct Account: Codable, Identifiable {
+    let name: String
+    let iban: String
+    let kind: Kind
+    private(set) var transactions: [Transaction]
+    var id: String { iban }
+    var balance: Int {
+        var balance = 0
+        for transaction in transactions {
+            balance += transaction.amount
+        }
+        return balance
+    }
+    init(name: String, iban: String, kind: Kind) {
+        self.name = name
+        self.kind = kind
+        self.iban = iban
+        transactions = [
+            Transaction(amount: 2000_00, 
+                beneficiary: &quot;Initial Balance&quot;, date: Date())
+        ] 
+    }
+    mutating func add(_ transaction: Transaction) {
+        transactions.append(transaction)
+    } 
+}
+extension Account {
+    enum Kind: String, Codable, CaseIterable {
+        case checking
+        case savings
+        case investment
+    } 
+}
+</code></pre>
+<p>我们的模型类型现在更丰富了，并执行了我列出的所有以上规则。对于初学者，Account结构的初始化器将initial交易设置为€2,000。(我在这里简化。创建的请求账户通常是通过客户所在的银行开立的<br>
+会带来实际的金额)。</p>
+<p>余额是计算出的属性，它将所有交易加在一起的金额。交易属性可以是只读的，仅由Account结构通过其add(_:)方法修改。这可以防止任何外部代码删除现有交易。</p>
+<p>我们的模型类型还处理数据转换。所有类型都采用Identifiable和 Codable协议，该协议允许我们组织、存储和发送数据。如果我们对编码和解码数据有更复杂的规则，这些规则也将限制在Transaction和Account结构中。</p>
+<p><em>通常，所有这些逻辑都结束在控制器中，或者更糟的是，结束在视图中。这是一个错误</em>。它将业务逻辑传播到整个应用程序，通常重复功能，使其难以管理。将其保存在模型类型中使其编写和测试更简单。由于我们的整个应用程序将依赖于此业务逻辑，因此这种方法产生的bug更少。</p>
+<h2 id="3-a-name-1a实现应用程序的状态和存储业务逻辑">3. <a name='-1'></a>实现应用程序的状态和存储业务逻辑</h2>
+<p>向上移动MVC模式，我们遇到的下一层是控制器层。在这里，我们还发现开发人员经常将许多职责放在 SwiftUI视图中。</p>
+<p>模型层包含域业务逻辑，即控制器层包含应用程序的业务逻辑，包括:</p>
+<ul>
+<li>keeping the state for the entire app; - 保持整个应用程序的状态;</li>
+<li>storing data on disk; - 在磁盘上存储数据;</li>
+<li>transmitting data over the network; - 通过网络传送数据;</li>
+<li>dealing with data and events coming from the device sensors (GPS, accelerometer, gyroscope, etc.) - 处理来自设备传感器的数据和事件 (GPS、加速度计、陀螺仪等)</li>
+</ul>
+<h3 id="31-a-name-1a存储数据并保持应用程序的逻辑隔离在控制器内">3.1. <a name='-1'></a>存储数据并保持应用程序的逻辑隔离在控制器内</h3>
+<p>我们将从在磁盘上保存和读取数据开始，这是许多应用程序需要的。为此，我们将使用iOS文件系统，将数据保存在documents目录中。</p>
+<pre><code class="language-swift">class StorageController {
+    private let documentsDirectoryURL = FileManager.default
+    .urls(for: .documentDirectory, in: .userDomainMask) .first!
+    private var accountsFileURL: URL {
+        return documentsDirectoryURL
+            .appendingPathComponent(&quot;Accounts&quot;) .appendingPathExtension(&quot;json&quot;) 
+    }
+    func save(_ accounts: [Account]) {
+        let encoder = JSONEncoder()
+        guard let data = try? encoder.encode(accounts) else { return }
+        try? data.write(to: accountsFileURL) 
+    }
+    
+    func fetchAccounts() -&gt; [Account] {
+        guard let data = try? Data(contentsOf: accountsFileURL) else { return [] }
+        let decoder = JSONDecoder()
+        let accounts = try? decoder.decode([Account].self, from: data)
+        return accounts ?? []
+    } 
+}
+</code></pre>
+<p>首先要注意的是，<em>我们使用的是类而不是结构</em>。控制器需要在整个应用中共享，并提供唯一的接入点，所以它们需要是对象。</p>
+<p>StorageController类的核心功能是 save(_:)和fetchAccounts()方法。前者编码模型类型中的数据并将其存储在文件中。后者读取该文件并对其数据进行解码，以在每次用户访问时恢复模型类型。由于每个账户都包含各自的交易，这足以保存我们所有的数据。</p>
+<p>虽然这个类做的事情不多，但是将其代码从剩余中分离出来是至关重要的。在现实世界的应用程序中，事情很少这么简单。你的应用中的任何代码都可能随着时间的推移而增长，所以从一开始就把责任分开。</p>
+<h3 id="32-a-name-1a-将应用程序的状态与其业务逻辑保持在一起">3.2. <a name='-1'></a> 将应用程序的状态与其业务逻辑保持在一起</h3>
+<p>几乎任何应用程序都需要在某个地方存储其全局状态。</p>
+<p>保存应用程序的状态是另一个需要更多代码的任务，这比乍一看可能需要的更多。许多开发人员只是将表示当前应用状态的数据存储在一个可观察对象中，然后就结束了。</p>
+<pre><code class="language-swift">class StateController: ObservableObject {
+    @Published var accounts: [Account] 
+}
+</code></pre>
+<p>当您看到一个存储了属性但没有代码的类型时，您应该感到怀疑。虽然这种情况有时会发生，但无论如何也不会持续太久。</p>
+<p>回想一下，控制器层必须包含应用程序的业务逻辑， 它定义了:</p>
+<ul>
+<li>how to get an IBAN for new accounts; - 如何为新账户申请IBAN;</li>
+<li>where to place new accounts relatively to existing ones; - 新账户相对于现有账户的放置位置;</li>
+<li>setting the current date for new transactions; - 为新交易设定当前日期;</li>
+<li>when to save and read data. -  何时保存和读取数据。</li>
+</ul>
+<p>记住:如果你不把应用程序的逻辑放在控制器中，它会扩散到你的SwifitUI视图中。那不是合适的地方。这些是全局规则，影响整个应用程序的行为。把这样的代码放在视图中会导致重复，污染视图与他们不应该有的责任。</p>
+<p>首先，我们需要一种为新账户生成IBAN代码的方法。这是银行通常承担的另一项任务。真正的应用程序会从网络中获取它，但为了简单起见，我们将在应用程序中生成IBAN代码。</p>
+<pre><code class="language-swift">extension String {
+    static func generateIban() -&gt; String {
+        func randomString(length: Int, from characters: String) -&gt; String {
+            String((0 ..&lt; length).map { _ in characters.randomElement()! })
+        }
+        let letters = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;
+        let digits = &quot;0123456789&quot;
+        return randomString(length: 2, from: letters)
+            + randomString(length: 2, from: digits)
+            + randomString(length: 4, from: letters)
+            + randomString(length: 12, from: digits)
+    } 
+}
+</code></pre>
+<p>IBAN代码必须遵循精确的算法，但在这里我们不关心，所以我只是生成了一个看起来像IBAN的随机字符串。我将其放入String扩展中，因为这仍然是域业务逻辑的一部分。</p>
+<p>我们现在可以扩展状态控制器来执行我列出的所有以上任务。</p>
+<pre><code class="language-swift">class StateController: ObservableObject {
+    @Published var accounts: [Account]
+    private let storageController = StorageController()
+    init() {
+        self.accounts = storageController.fetchAccounts()
+    }
+    func addAccount(named name: String, withKind kind: Account.Kind) {
+        let account = Account(name: name, iban: String.generateIban(), kind: kind)
+        accounts.append(account)
+        storageController.save(accounts) 
+    }
+    func addTransaction(withAmount amount: Int, beneficiary: String, 
+    to account: Account) {
+        guard let index = accounts.firstIndex(where: { $0.id == account.id }) 
+        else { return }
+        let transaction = Transaction(amount: amount, beneficiary: beneficiary, 
+        date: Date())
+        accounts[index].add(transaction)
+        storageController.save(accounts) 
+    } 
+}
+</code></pre>
+<p>注意我们现在有多少代码。如果不是在这里收集，这段代码会在视图中结束。</p>
+<p>addAccount(named:withKind:)和addTransaction(withAmount:beneficiary:to:)方法接受简单类型的参数，并在内部创建Account和Transaction值。这使得应用程序的业务逻辑对视图是隐藏的，而视图则只管理用户输入。</p>
+<p>这里的另一个重要部分是StateController管理StorageController。这是因为前者保存应用程序的状态，所以它有责任决定何时保存或读取数据。</p>
+<p>为了简单起见，每次数据改变时都会发生这种情况。这适用于少量数据，因为对磁盘的访问可以保持相对较快的速度。在一个数据量更大的应用程序中，可能需要一个更复杂的策略，例如，将磁盘access分派到一个异步后台线程。</p>
+<p>我们正在缓慢但坚定地建造我们的房子，把每一种新类型都盖上 坚实的基础。</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpw0cndl23j31cy0iydl1.jpg" alt="avatar" loading="lazy"></figure>
+<h2 id="4-a-name-1a向用户显示信息并通过视图支持交互">4. <a name='-1'></a>向用户显示信息并通过视图支持交互</h2>
+<p>现在我们将跳过root layer，跳到view layer。原因很简单:root views 是控制器和视图之间的桥梁，所以当另外两个存在时更容易实现它们。</p>
+<p>视图层只有两个职责:</p>
+<ul>
+<li>showing data to the user; - 向用户显示数据;</li>
+<li>allowing user interaction. - 允许用户交互。</li>
+</ul>
+<p>与其他层不同的是，在这里视图中有<em>多少</em>责任并不重要，重要的是有多<em>少</em>责任。这里的错误是在视图中放入了太多代码。</p>
+<p>我们把所有关于应用导航结构和与数据交互的考虑都放到了根层。这大大简化了我们的视图代码。</p>
+<p>让我们再次看看我们想要实现的最终结果:</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvs2m34mrj31ca0oidrh.jpg" alt="avatar" loading="lazy"></figure>
+<p>在继续之前，我们需要为Xcode预览创建一些数据。将这样的数据放在单独的结构中是一个很好的做法，所以我们不需要在每次预览中重新创建它。</p>
+<pre><code class="language-swift">struct TestData {
+    static let account = 
+    Account(name: &quot;Test account&quot;, iban: String.generateIban(), kind: .checking)
+    static let transaction = 
+    Transaction(amount: 123456, beneficiary: &quot;Salary&quot;, date: Date())
+}
+</code></pre>
+<h3 id="41-a-name-1a将视图代码组织成小型模块化类型">4.1. <a name='-1'></a>将视图代码组织成小型模块化类型</h3>
+<p>虽然视图的一般职责很少，但它们的代码往往增长得非常快。构建SwiftUI视图的一个重要部分是保持它们的小型和可重用性。没有什么可以阻止您将整个屏幕的代码放在单个视图中。但这些代码很快就会变得难以管理。</p>
+<p>这适用于任何代码，而不仅仅是SwiftUI。无论编写命令式代码还是声明式代码，扩展函数都很难阅读，而且很容易出错。</p>
+<p>当考虑我们应该如何分割视图代码时，有些情况比其他情况更明显。一般来说，任何重复多次的观点都是很好的候选观点。</p>
+<p>一个简单的例子是在各自屏幕的底部添加帐户和交易的两个按钮。因为唯一的区别是它们的标题，很明显它们的代码应该在一个可重用的单一视图中。</p>
+<pre><code class="language-swift">struct AddButton: View {
+    let title: String
+    let action: () -&gt; Void
+    var body: some View {
+        HStack {
+            Spacer()
+            Button(action: action) {
+                HStack {
+                    Image(systemName: &quot;plus.circle.fill&quot;)
+                    Text(title) 
+                }
+                .font(.headline) 
+            }
+            .padding(.trailing, 20.0) 
+        }
+    }
+}
+
+struct AddButton_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack {
+            Spacer()
+            AddButton(title: &quot;Add item&quot;, action: {})
+        }
+    }
+}
+
+</code></pre>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvxpqj5huj31ds0ioq58.jpg" alt="avatar" loading="lazy"></figure>
+<p>在这里，我们找到了视图最常用的方式，从上到下与它们的子视图通信:存储属性。AddButton结构的title属性有一个简单的String类型，而action property接受一个传递给Button视图的函数。</p>
+<p>表视图的行也是可重用视图的另一个突出例子。我们在Accounts屏幕中发现了一个实例。</p>
+<pre><code class="language-swift">extension AccountsView.Content {
+    struct Row: View {
+        let account: Account
+        var body: some View {
+            VStack(alignment: .leading, spacing: 4.0) {
+                HStack {
+                    Text(account.name) .font(.headline)
+                    Spacer()
+                    Text(account.balance.currencyFormat) .font(.headline) 
+                }
+                Text(&quot;\(account.kind.rawValue.capitalized) account&quot;) 
+                    .font(.subheadline) 
+                    .foregroundColor(.secondary)
+                Text(account.iban.ibanFormat) 
+                    .font(.caption)
+                    .foregroundColor(.secondary) 
+            }.padding(.vertical, 8.0) 
+        } 
+    } 
+}
+</code></pre>
+<p>我喜欢在它们的父视图中使用Swift扩展来命名我的视图，以避免过长的类型名。该视图的全称是AccountsView.Content.Row。但你不必遵循这个惯例。例如，您可以调用该视图AccountRow，并将其放置在Swift扩展之外。</p>
+<p>格式化数据是另一个跨屏幕重复的任务，因此它的代码也应该被隔离。数据转换代码位于模型类型中，但是为用户格式化数据是视图层的一项任务。我们通过在模型类型的Swift扩展中放置格式化代码来解决这个难题。</p>
+<pre><code class="language-swift">extension Int {
+    var currencyFormat: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        return formatter.string(from: NSNumber(value: Float(self) / 100 )) ?? &quot;&quot;
+    } 
+}
+extension Date {
+    var transactionFormat: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: self) 
+    } 
+}
+extension String {
+    var ibanFormat: String {
+        var remaining = Substring(self)
+        var chunks: [Substring] = []
+        while !remaining.isEmpty {
+            chunks.append(remaining.prefix(4))
+            remaining = remaining.dropFirst(4) 
+        }
+        return chunks.joined(separator: &quot; &quot;) 
+    } 
+}
+</code></pre>
+<p>我们也有一个表来显示一个帐户的交易列表， 我们找到了另一个可重用行。</p>
+<pre><code class="language-swift">extension TransactionsView.Content {
+    struct Row: View {
+        let transaction: Transaction
+        var body: some View {
+            VStack(alignment: .leading, spacing: 4.0) {
+                HStack {
+                    Text(transaction.beneficiary) 
+                        .font(.headline)
+                    Spacer()
+                    Text(transaction.amount.currencyFormat) 
+                        .font(.headline) 
+                }
+                Text(transaction.date.transactionFormat) 
+                    .font(.subheadline) 
+                    .foregroundColor(.secondary) 
+            } 
+        } 
+    } 
+}
+</code></pre>
+<p>虽然可重用视图是分离代码最明显的候选者，但它们不是唯一的候选者。通常，单个屏幕具有带有扩展代码的复杂部分。即使您不需要在其他地方重用此类代码，将其放在单独的类型中仍然是好的。</p>
+<p>例如，在New Transaction屏幕中，我们有一个部分用于输入需要几行代码的交易金额。我们也可以从模块的角度分离出来。</p>
+<pre><code class="language-swift">extension NewTransactionView.Content {
+    struct Amount: View {
+        @Binding var amount: String
+        var body: some View {
+            VStack(alignment: .trailing) {
+                Text(&quot;Amount&quot;) 
+                    .font(.callout) 
+                    .foregroundColor(.secondary)
+                TextField(0.currencyFormat, text: $amount) 
+                    .multilineTextAlignment(.trailing) 
+                    .keyboardType(.decimalPad) 
+                    .font(Font.largeTitle.bold())
+            }.padding()
+        } 
+    } 
+}
+</code></pre>
+<h3 id="42-a-name-1a保持视图与应用程序业务逻辑分离">4.2. <a name='-1'></a>保持视图与应用程序业务逻辑分离</h3>
+<p>多亏了我们刚刚创建的模块化视图，我们的应用屏幕代码仍然是有限的和可读的。让我们从一个帐户的交易列表开始。</p>
+<pre><code class="language-swift">extension TransactionsView {
+
+    struct Content: View {
+        let account: Account
+        let newTransaction: () -&gt; Void
+        var body: some View {
+            VStack {
+                List(transactions) { transaction in
+                    Row(transaction: transaction)
+                }
+                AddButton(title: &quot;New Transaction&quot;, action: newTransaction) 
+            }.navigationBarTitle(account.name) 
+        }
+        var transactions: [Transaction] {
+            account.transactions.sorted(by: { $0.date &gt;= $1.date })
+        }   
+    }   
+}
+</code></pre>
+<p>这里需要注意的重要一点是，TransactionsView如何。-内容视图尊重视图层的两个职责，而把其他的留在外面。</p>
+<p>首先，它为整个屏幕布局用户界面，并设置导航栏标题。它还按日期对交易进行排序，以便最近的交易排在最前面。这是属于视图层的用户界面逻辑的一部分。这不会影响StateController中的应用程序的全局状态，它可以按任何有意义的顺序排序和存储transactions。</p>
+<p>最后，Content视图允许用户通过New Transaction按钮进行交互。在这里，我们的观点没有做的事情也很重要。Content结构不能决定当用户点击New Transaction按钮时发生什么。这是应用导航结构的一部分，属于根层。相反，AddButton的操作是由祖先通过Content类型的newTransaction属性提供给视图的。</p>
+<p>同样的情况也发生在我们的应用的所有其他视图中。</p>
+<pre><code class="language-swift">extension NewTransactionView {
+    struct Content: View {
+        @Binding var amount: String
+        @Binding var beneficiary: String
+        let cancel: () -&gt; Void
+        let send: () -&gt; Void
+        var body: some View {
+            List {
+                Amount(amount: $amount)
+                TextField(&quot;Beneficiary name&quot;, text: $beneficiary) 
+            }
+            .navigationBarTitle(&quot;New Transaction&quot;) 
+            .navigationBarItems(leading: cancelButton, trailing: sendButton) 
+        }
+        var cancelButton: some View {
+            Button(action: cancel) {
+                Text(&quot;Cancel&quot;) 
+            } 
+        }
+        var sendButton: some View {
+            Button(action: send) {
+                Text(&quot;Send&quot;) .bold()
+            } 
+        } 
+    } 
+}
+</code></pre>
+<p>再次,NewTransactionView.Content布局整个用户界面，为导航栏提供标题和按钮。但是它没有实现取消或发送事务的逻辑。它只是通过两个@Binding属性将用户输入的数据传递给祖先。cancelButton和createButton的动作再次通过两个存储functions的属性来实现。</p>
+<p>该视图不涉及创建新的交易，也不以任何方式与StateController交互。当用户操作时，它也不会关闭屏幕。</p>
+<p>保持视图代码与控制器层的分离也使创建预览更简单。</p>
+<pre><code class="language-swift">struct NewTransactionView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            NewTransactionView.Content(amount: .constant(&quot;&quot;), beneficiary: .constant(&quot;&quot;), cancel: {}, send: {})
+        } 
+    } 
+}
+</code></pre>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvyoyend7j30pe0xan0n.jpg" alt="avatar" loading="lazy"></figure>
+<p>因为Content视图不与对象交互，所以我们可以在预览中将简单的值作为参数传递。添加一个NavigationView可以使导航栏可见，因此我们可以检查整个屏幕是否如预期的那样。</p>
+<p>创建新帐户的视图以同样的方式工作。</p>
+<pre><code class="language-swift">extension NewAccountView {
+    struct Content: View {
+        @Binding var name: String
+        @Binding var kind: Account.Kind
+        let create: () -&gt; Void
+        let cancel: () -&gt; Void
+        var body: some View {
+            List {
+                TextField(&quot;Account name&quot;, text: $name)
+                Picker(&quot;Kind&quot;, selection: $kind) {
+                    ForEach(Account.Kind.allCases, id: \.self) { kind in
+                        Text(kind.rawValue).tag(kind)
+                    } 
+                }
+                Spacer()
+            }.padding(.top) 
+            .navigationBarTitle(&quot;New Account&quot;)
+            .navigationBarItems(leading: cancelButton, trailing: createButton) 
+        }
+        var cancelButton: some View {
+            Button(action: cancel) {
+                Text(&quot;Cancel&quot;) 
+            } 
+        }
+        var createButton: some View {
+            Button(action: create) {
+                Text(&quot;Create&quot;) .bold()
+            } 
+        } 
+    } 
+}
+struct NewAccountView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            NewAccountView.Content(name: .constant(&quot;&quot;), kind: .constant(.checking),
+            create: {}, cancel: {})
+        } 
+    } 
+}
+</code></pre>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvyvtds18j30kw0uctac.jpg" alt="avatar" loading="lazy"></figure>
+<p>同样，这个视图包含交互式视图，如TextField和Picker 设置导航栏按钮，但不处理任何应用程序的业务逻辑。</p>
+<p>最后，我们有了账户列表。</p>
+<pre><code class="language-swift">extension AccountsView {
+    struct Content: View {
+        @Binding var accounts: [Account]
+        let newAccount: () -&gt; Void
+        var body: some View {
+            VStack {
+                List {
+                    ForEach(accounts) { account in
+                        NavigationLink(destination: 
+                            TransactionsView(account: account)) {
+                                Row(account: account)
+                        } 
+                    }.onMove(perform: move(fromOffsets:toOffset:))
+                }
+                AddButton(title: &quot;New Account&quot;, action: newAccount) 
+            }.navigationBarTitle(&quot;Accounts&quot;) 
+            .navigationBarItems(trailing: EditButton())
+        }
+        func move(fromOffsets source: IndexSet, toOffset destination: Int) {
+            accounts.move(fromOffsets: source, toOffset: destination)
+        } 
+    } 
+}
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            AccountsView.Content(accounts: .constant([TestData.account]),
+                newAccount: {})
+        } 
+    } 
+}
+</code></pre>
+<figure data-type="image" tabindex="11"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvz1plag9j30ku0uggoj.jpg" alt="avatar" loading="lazy"></figure>
+<p>这个视图包含更多的用户界面逻辑，允许用户在屏幕上重新排序帐户。但同样，它不与存储这些帐户的StateController交互。相反，它通过@Binding属性接收帐户数组，用于将数据更改发送到祖先视图。</p>
+<p>如果你想要更复杂的方法，你甚至可以通过一个函数属性让视图接收move(fromffsets:toOffset:)，但这对于我们的应用来说已经足够了。</p>
+<p>这是我们到目前为止所创造的。</p>
+<figure data-type="image" tabindex="12"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvz6dcfwtj31d40u01kx.jpg" alt="avatar" loading="lazy"></figure>
+<p>我们的应用的底层和上层仍然是断开连接的。将它们聚集在一起的是根层，我们将在本指南的下一章，也就是最后一章中讨论它。</p>
+<h2 id="5-a-name-1a-将整个应用程序放在根层中">5. <a name='-1'></a> 将整个应用程序放在根层中</h2>
+<p>我们终于到了MVC模式的最后一层:根层。注意，这个命名是我的，所以您可能不会发现任何其他开发人员使用这个名称来引用它。除非这个想法流行起来。</p>
+<p>这里我们找到了应用程序的所有剩余职责:</p>
+<ul>
+<li>structuring the navigation flow; -  构建导航流程;</li>
+<li>connecting views to controllers; -  将视图连接到控制器;</li>
+<li>interpreting user action. - 解释用户操作。</li>
+</ul>
+<h3 id="51-a-namemodelpresentationa使用架构视图和model-presentation-管理应用程序的导航结构">5.1. <a name='modelpresentation'></a>使用架构视图和model presentation 管理应用程序的导航结构</h3>
+<p>首先，我们需要一个StateController的单一实例，它可以被应用程序中的所有屏幕访问。我们在应用程序的SceneDelegate中创建它，然后将它添加到用户界面的环境中。</p>
+<pre><code class="language-swift">class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+    let stateController = StateController()
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, 
+    options connectionOptions: UIScene.ConnectionOptions) {
+        let contentView = AccountsView()
+            .environmentObject(stateController)
+        if let windowScene = scene as? UIWindowScene {
+            let window = UIWindow(windowScene: windowScene)
+            window.rootViewController = UIHostingController(rootView:contentView)
+            self.window = windows
+            window.makeKeyAndVisible()
+        } 
+    } 
+}
+</code></pre>
+<p>一旦StateController实例在环境中，任何根视图都可以使用@EnvironmentObject属性包装器访问它。让我们从应用程序的第一个屏幕开始。</p>
+<pre><code class="language-swift">struct AccountsView: View {
+    @EnvironmentObject private var stateController: StateController
+    @State private var addingAccount = false
+    var body: some View {
+        NavigationView {
+            Content(accounts: $stateController.accounts, 
+            newAccount: { self.addingAccount = true })
+        }
+        .sheet(isPresented: $addingAccount) {
+            NavigationView {
+                NewAccountView()
+            }.environmentObject(self.stateController) 
+        }
+    }
+}
+</code></pre>
+<p>这是我们的第一个根视图。它的代码完全是结构化的。它将Content视图的accounts属性绑定到StateController的accounts属性。</p>
+<p>它还模式地显示了New Account屏幕，并提供了两个导航视图。第一个允许应用程序的向下一级导航，它会指向所选帐户的交易列表。第二个导航视图只需要在New Account屏幕中显示一个导航栏，即使导航没有继续进行。</p>
+<pre><code class="language-swift">struct TransactionsView: View {
+    let account: Account
+    @EnvironmentObject private var stateController: StateController
+    @State private var addingTransaction: Bool = false
+    var body: some View {
+        Content(account: account, newTransaction: { self.addingTransaction = true })
+            .sheet(isPresented: $addingTransaction) {
+                NavigationView {
+                    NewTransactionView(account: self.account) 
+                    .environmentObject(self.stateController) 
+                } 
+        }
+    } 
+}
+</code></pre>
+<p>TransactionView结构的工作原理相同。它将它的Content视图连接到StateController的共享实例，并管理NewTransactionView的模式表示。</p>
+<h3 id="52-a-name-1a将用户操作映射到应用程序的业务逻辑中">5.2. <a name='-1'></a>将用户操作映射到应用程序的业务逻辑中</h3>
+<p>我们只剩下创建新帐户和交易的视图。</p>
+<pre><code class="language-swift">struct NewAccountView: View {
+    @EnvironmentObject private var stateController: StateController
+    @Environment(\.presentationMode) private var presentationMode
+    @State private var name: String = &quot;&quot;
+    @State private var kind: Account.Kind = .checking
+    var body: some View {
+        Content(name: $name, kind: $kind, create: create, cancel: dismiss) 
+    }
+    func create() {
+        stateController.addAccount(named: name, withKind: kind)
+        dismiss()
+    }
+    func dismiss() {
+        presentationMode.wrappedValue.dismiss()
+    } 
+}
+</code></pre>
+<p>这里我们找到了将用户操作映射到应用程序业务逻辑的第一个例子。NewAccountView结构将从Content视图接收到的数据收集到两个@State属性中。然后，当用户点击Create按钮时，它通过调用StateController的addAccount(named:withKind:)方法创建一个新帐户。</p>
+<p>注意，我们是直接访问StateController，而不是使用绑定将数据传递到视图层次结构中。创建一个新的账户是新帐户屏幕的责任。如果我们将数据向上传递到视图层次结构中，我们将把适用的代码移到AccountView中，这应该与创建帐户没有任何关系。</p>
+<p>最后，我们的NewAccountView还管理导航，当用户创建帐户或取消时dimiss显示屏幕。NewTransactionView中也发生了同样的情况，它还通过StateController向帐户添加新交易，StateController是所有应用程序业务逻辑的最终存储库。</p>
+<pre><code class="language-swift">struct NewTransactionView: View {
+    let account: Account
+    @EnvironmentObject private var stateController: StateController
+    @Environment(\.presentationMode) private var presentationMode
+    @State private var amount: String = &quot;&quot;
+    @State private var beneficiary: String = &quot;&quot;
+    var body: some View {
+        Content(amount: $amount, beneficiary: $beneficiary, cancel: dismiss,
+        send: send)
+    }
+    func send() {
+        let amount = (Int(self.amount) ?? 0) * 100
+        stateController.addTransaction(withAmount: amount, beneficiary: beneficiary, to: account)
+        dismiss()
+    }
+    func dismiss() {
+        presentationMode.wrappedValue.dismiss()
+    } 
+}
+</code></pre>
+<p>我们最终覆盖了整个应用程序。在根层中，我们提供了它的所有导航流，并将所有屏幕连接到中央状态。</p>
+<figure data-type="image" tabindex="13"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gpvzqkx75pj31740u04qp.jpg" alt="avatar" loading="lazy"></figure>
+<p>感谢MVC模式，我们有一个结构良好的下的稳定的应用程序。每一种类型，无论是一个模型类型，一个控制器，或一个视图，都是小的和可管理的，只包含有限的响应功能。</p>
+<p>此外，我们有一个地图，可以让我们快速地找到我们正在寻找的任何特定代码。最后，我们可以添加新的功能和屏幕到我们的应用程序，知道在哪里放置任何新代码，保持项目的管理，随着它的增长。</p>
+<p><a href="https://github.com/matteom/Banking">完整代码</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/30RN4if0u/" class="tag">
+                    mvvm
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/AqpRd4fEA/" class="tag">
+                    mvc
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-deep-summary-of-key-paths/">
+                  <h3 class="post-title">
+                    A deep summary of Key Paths
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

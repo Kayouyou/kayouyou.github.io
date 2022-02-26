@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Published properties in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在过去的几年中，反应式编程在苹果开发者社区中变得越来越流行，在2019年全球开发者大会(WWDC)上引入苹果自己的Combine框架，很可能会在未来几年进一步加速这种流行度的增长。
+Combine的神奇之处在于它不仅仅是另一个响应式编程框架..." />
+    <meta name="keywords" content="rxswift,combine" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Published properties in Swift</h2>
+            <div class="post-date">2020-04-12</div>
+            
+            <div class="post-content" v-pre>
+              <p>在过去的几年中，反应式编程在苹果开发者社区中变得越来越流行，在2019年全球开发者大会(WWDC)上引入苹果自己的Combine框架，很可能会在未来几年进一步加速这种流行度的增长。</p>
+<p>Combine的神奇之处在于它不仅仅是另一个响应式编程框架。虽然它使用的模式和api与其他响应式框架(如RxSwift和ReactiveSwift)非常相似，它还大量使用了一些Swift的新特性(以及一些编译器魔法)，使响应式编程在一些关键方面更加容易实现。 因此，本周，让我们来看看Combine的一个更有趣的方面——published properties——以及如何在不访问Combine本身的情况下采用该模式。</p>
+<h2 id="the-magic-of-observable-objects">The magic of observable objects</h2>
+<p>除了作为一个独立的框架外，Combine还在驱动SwiftUI的声明机制中扮演着非常重要的角色 - 特别是当涉及到系统如何自动重新渲染我们的UI的部分，当它的底层数据改变。</p>
+<p>该系统的一个关键部分是ObservableObject协议，它使我们能够将任何类标记为可观察的。再加上@Published属性包装器，我们就可以轻松地构造类型，在某些属性发生变化时发出信号。</p>
+<p>例如，下面是我们如何使用这两个工具来定义ProfileViewModel，当它的状态被修改时，它会通知观察者:</p>
+<pre><code class="language-swift">class ProfileViewModel: ObservableObject {
+    enum State {
+        case isLoading
+        case failed(Error)
+        case loaded(User)
+    }
+    // Simply marking a property with the @Published property wrapper
+    // is enough to make the system emit observable events whenever
+    // a new value was assigned to it.
+    @Published private(set) var state = State.isLoading
+    ...
+}
+</code></pre>
+<p>以上就是通过组合使一个对象成为可观察对象所需要的所有东西——这是相当了不起的- 编译器会自动合成一个objectWillChange publisher(一个可以观察到的组合对象)，以及将标记为@ published的属性绑定到该publisher所需的所有代码。</p>
+<p>当使用SwiftUI时，我们可以使用另一个属性包装器@ObservedObject来将任何observable对象绑定到我们的UI - 这将使SwiftUI在对象发布属性的每一个变化上更新我们的视图:</p>
+<pre><code class="language-swift">struct ProfileView: View {
+    @ObservedObject var viewModel: ProfileViewModel
+    var body: some View {
+        // Construct our UI based on the current state
+        ...
+    }
+}
+</code></pre>
+<p>然而，由于Combine不仅仅是SwiftUI的一部分，而且是一个完全独立的框架，所以我们也可以在其他上下文中使用它-例如使用UIKit或AppKit来构建UI。</p>
+<p>虽然我们不会在SwiftUI之外免费获得那些漂亮的声明式数据绑定，我们仍然可以通过直接订阅任何可观察对象的objectWillChange的 publisher来使用Combine的强大功能 -然后相应地更新我们的UI，像这样:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let viewModel: ProfileViewModel
+    private var cancellable: AnyCancellable?
+    ...
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        cancellable = viewModel.objectWillChange.sink { [weak self] in
+            self?.render()
+        }
+    }
+    private func render() {
+        switch viewModel.state {
+        case .isLoading:
+            // Show loading spinner
+            ...
+        case .failed(let error):
+            // Show error view
+            ...
+        case .loaded(let user):
+            // Show user's profile
+            ...
+        }
+    }
+}
+</code></pre>
+<p>注意，当我们使用sink启动订阅时，我们需要跟踪Combine返回的可取消对象，因为只要返回的AnyCancellable实例被保留，该订阅将保持有效。</p>
+<p>然而，上面的实现有一个主要问题，也就是说我们的观察会在视图模型更新之前被触发， 假定我们正在订阅它的objectillchange publisher。这意味着我们将总是呈现视图模型的前一个状态，而不是新的状态，这并不好。</p>
+<p>值得庆幸的是，还有一种内置的方法可以让我们观察视图模型，而不需要编写任何自定义的观察代码-这是通过将我们的订阅附加到state属性本身。</p>
+<p>为此，我们将访问@Published属性包装器的投影值(通过在其名称前加上$)，这使我们能够仅针对该属性访问一个Combine publisher。 然后，我们可以像以前一样使用相同的sink API订阅该发布者,-只有这一次，我们的闭包会传入属性的新值，这使我们的渲染代码像我们预期的那样工作:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        cancellable = viewModel.$state.sink { [weak self] state in
+            self?.render(state)
+        }
+    }
+
+    private func render(_ state: ProfileViewModel.State) {
+        ...
+    }
+}
+</code></pre>
+<p>因此，即使在SwiftUI之外，Combine也是一个非常有用的工具 - 因为它使我们能够建立自定义的数据流和绑定，同时还利用ObservableObject和非常轻量级的方式使我们能够使我们的模型(和其他类型)可观测的。</p>
+<h2 id="just-a-backport-away">Just a backport away</h2>
+<p>然而，问题仍然是，(在撰写本文时)Combine只能在苹果各种操作系统的最新主要版本上使用。一方面，这是意料之中的，因为作为操作系统本身的一部分发布的框架总是这样。但另一方面，我们可能要等好几年才能开始采用Combine的各种模式，这有点遗憾。还是我们?</p>
+<p>毕竟，Combine只是Swift代码(至少在表面上是这样)，@ publish使用的属性包装器特性是任何代码都可以使用的标准Swift语言特性-因为我们已经建立了ObservableObject(和它用来自动绑定我们的属性到它的objectWillChange发布者的一点点魔法)，这在SwiftUI的上下文中是非常有用的 - 真的有什么能阻止我们自己重新执行部分系统吗?</p>
+<p>让我们试一试!我们将从一个非常简单的@propertyWrapper实现开始，它将自身投影为projectedValue，并使用MutableReference跟踪观察闭包的列表(稍后我们可以使用引用语义插入和删除观察)，如下所示:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct Published&lt;Value&gt; {
+    var projectedValue: Published { self }
+    var wrappedValue: Value { didSet { valueDidChange() } }
+    
+    private var observations = MutableReference(
+        value: List&lt;(Value) -&gt; Void&gt;()
+    )
+
+    init(wrappedValue: Value) {
+        self.wrappedValue = wrappedValue
+    }
+}
+</code></pre>
+<p>面的List类型借用自“Swift中选择正确的数据结构”，mutablerereference类型借用自“Swift中结合值和引用类型”。</p>
+<p>虽然我们可以使用内置的数据结构(如数组)来存储我们的观察数据，但使用链表可以提供简单的O(1)插入和删除操作(同时保留元素的顺序)，这反过来可以防止我们的新属性包装在处理大量观察时成为瓶颈。</p>
+<p>接下来，让我们实现valueDidChange方法，每当我们的属性包装器的wrappedValue被修改时，它就会被调用——通过简单地遍历所有的观察闭包并使用我们的新值调用它们:s</p>
+<pre><code class="language-swift">private extension Published {
+    func valueDidChange() {
+        for closure in observations.value {
+            closure(wrappedValue)
+        }
+    }
+}
+</code></pre>
+<p>现在，在实现实际的观察代码之前，我们需要决定如何使每个观察无效(以便它们与触发它们的对象一起被释放)。虽然我们在这里可以采用许多不同的方法，但让我们模仿Combine的方法，并使用取消令牌，它会在回收时自动取消它们的观察。</p>
+<p>下面是如何实现这种令牌类型:</p>
+<pre><code class="language-swift">class Cancellable {
+    private var closure: (() -&gt; Void)?
+
+    init(closure: @escaping () -&gt; Void) {
+        self.closure = closure
+    }
+
+    deinit {
+        cancel()
+    }
+
+    func cancel() {
+        closure?()
+        closure = nil
+    }
+}
+</code></pre>
+<p>最后，让我们给出@Published的一个基于闭包的观察API的新实现，它将使用上面的Cancellable类型来在观测被取消时使其失效:</p>
+<pre><code class="language-swift">extension Published {
+    func observe(with closure: @escaping (Value) -&gt; Void) -&gt; Cancellable {
+        // To further mimmic Combine's behaviors, we'll call
+        // each observation closure as soon as it's attached to
+        // our property:
+        closure(wrappedValue)
+
+        let node = observations.value.append(closure)
+
+        return Cancellable { [weak observations] in
+            observations?.value.remove(node)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以回到我们的ProfileViewController，并(经过一些小调整)实现与之前完全相同的响应式UI实现 -只有这一次它完全兼容iOS 12和以下:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let viewModel: ProfileViewModel
+    private var cancellable: Cancellable?
+
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        cancellable = viewModel.$state.observe { [weak self] state in
+            self?.render(state)
+        }
+    }
+
+    private func render(_ state: ProfileViewModel.State) {
+        ...
+    }
+}
+</code></pre>
+<p>现在，我们需要做的就是使ProfileViewModel也向后兼容，这可以简单地通过删除它与observable对象的一致性来实现 (或者至少使用@available属性使其成为有条件的)，其他一切都将继续以完全相同的方式工作。</p>
+<h2 id="remaining-reactive-with-rxswift">Remaining reactive with RxSwift</h2>
+<p>虽然上面的@Published实现可以作为一个很好的起点，如果我们希望以向后兼容的方式采用一些Combine的模式，它并不能真正让我们完全接受响应式编程(除非我们不断地用新的功能扩展它)。另一方面，响应式编程并不是普遍采用的，也许我们当前基于闭包的API已经足够满足我们的需求了。</p>
+<p>但是，让我们还来探索一下新属性包装器的完全响应式版本可能是什么样子的。为此，我们将寻求流行的RxSwift框架的帮助，并使用它的PublishSubject类型来实现我们的观察。我们还将把这个主题(作为一个只读的Observable<Value>)作为我们的属性包装器的projectedValue返回——像这样:</p>
+<pre><code class="language-swift">import RxSwift
+
+@propertyWrapper
+struct Published&lt;Value&gt; {
+    var projectedValue: Observable&lt;Value&gt; { subject }
+    var wrappedValue: Value { didSet { valueDidChange() } }
+
+    private let subject = PublishSubject&lt;Value&gt;()
+
+    init(wrappedValue: Value) {
+        self.wrappedValue = wrappedValue
+    }
+
+    private func valueDidChange() {
+        subject.on(.next(wrappedValue))
+    }
+}
+</code></pre>
+<p>有了上面的实现，我们现在可以使用RxSwift的许多不同的api和响应式操作符来转换和订阅@Published的值，例如:</p>
+<pre><code class="language-swift">import RxSwift
+
+class ProfileViewController: UIViewController {
+    private let viewModel: ProfileViewModel
+    private var disposeBag = DisposeBag()
+    ...
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        viewModel.$state
+            .subscribe(onNext: { [weak self] state in
+                self?.render(state)
+            })
+            .disposed(by: disposeBag)
+    }
+    ...
+}
+</code></pre>
+<p>注意，RxSwift附带了它自己的取消令牌系统，称为“一次性”，这意味着当我们走这条路线时，不再需要我们自己的可取消类型。</p>
+<p>当涉及到我们是应该选择基于闭包的版本还是使用RxSwift时，当然没有正确或错误的选择-两种方法都有自己的权衡。就像所有的技术决策一样，这一切都归结到我们的需求是什么，以及上述两种方法中的任何一种是否会比我们为构建和维护它们所支付的费用给我们带来更多的好处。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然Combine是一个复杂而强大的框架，拥有大量不同的api和功能，对于UI开发来说，@Published属性包装器是其核心方面之一-因为它让我们可以轻松地在模型和UI之间建立响应式数据绑定。</p>
+<p>Combine可能仅限于苹果操作系统的最新版本，但我们仍然可以实现我们自己版本的@Published属性包装器，支持基于闭包的观察、RxSwift等框架或其他东西。最终，即使是苹果自己的框架也会使用你我每天编写的代码来实现 -这只是一个问题，我们是否愿意维护自己的代码，直到我们能够采用第一方的解决方案。</p>
+<p><a href="https://www.swiftbysundell.com/articles/published-properties-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/combining-dynamic-member-lookup-with-key-paths/">
+                  <h3 class="post-title">
+                    Combining dynamic member lookup with key paths
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

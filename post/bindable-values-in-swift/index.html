@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Bindable values in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="毋庸置疑，为大多数平台构建应用程序最具挑战性的方面之一是确保我们呈现给用户的UI始终与我们的底层数据模型及其相关逻辑保持同步。 经常会遇到导致呈现陈旧数据的bug，或者由于UI状态和应用程序其他逻辑之间的冲突而发生错误。
+因此，人们发明了这..." />
+    <meta name="keywords" content="reactive programming,key paths" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Bindable values in Swift</h2>
+            <div class="post-date">2019-03-31</div>
+            
+            <div class="post-content" v-pre>
+              <p>毋庸置疑，为大多数平台构建应用程序最具挑战性的方面之一是确保我们呈现给用户的UI始终与我们的底层数据模型及其相关逻辑保持同步。 经常会遇到导致呈现陈旧数据的bug，或者由于UI状态和应用程序其他逻辑之间的冲突而发生错误。</p>
+<p>因此，人们发明了这么多不同的模式和技术也就不足为奇了，它们都是为了更容易地确保UI在其底层模型发生变化时保持最新——从通知、委托到可观察对象的所有内容。本周，让我们来看看这样一种技术——它涉及到将我们的模型值绑定到UI。</p>
+<h2 id="constant-updates">Constant updates</h2>
+<p>确保UI总是呈现最新可用数据的一种常见方法是，每当UI要在屏幕上呈现(或重新呈现)时，只需重新加载底层模型。例如，如果我们正在为某种形式的社交网络应用程序构建一个配置文件屏幕，我们可能会在ProfileViewController每次调用viewWillAppear时重新加载用户的配置文件:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let userLoader: UserLoader
+    private lazy var nameLabel = UILabel()
+    private lazy var headerView = HeaderView()
+    private lazy var followersLabel = UILabel()
+
+    init(userLoader: UserLoader) {
+        self.userLoader = userLoader
+        super.init(nibName: nil, bundle: nil)
+    }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Here we always reload the logged in user every time
+        // our view controller is about to appear on the screen.
+        userLoader.load { [weak self] user in
+            self?.nameLabel.text = user.name
+            self?.headerView.backgroundColor = user.colors.primary
+            self?.followersLabel.text = String(user.followersCount)
+        }
+    }
+}
+</code></pre>
+<p>上面的方法并没有什么错，但是有一些东西是可以改进的:</p>
+<p>我们总是需要将对各种视图的引用作为属性保存在视图控制器上，因为我们不能赋值UI属性，直到我们加载了视图控制器的模型。</p>
+<p>当使用基于闭包的API访问加载的模型时，我们必须弱引用self(或显式地捕获每个视图)，以避免循环引用。</p>
+<p>每次我们的视图控制器出现在屏幕上时，我们都会重新加载模型，即使距离上次只过了几秒，即使另一个视图控制器同时也重新加载同一个模型——这可能会导致浪费，或者至少是不必要的网络调用。</p>
+<p>解决上面一些问题的一种方法是使用一种不同的抽象来让我们的视图控制器访问它的模型。就像我们在“Swift中处理可变模型”中看到的那样，与其让视图控制器自己加载它的模型，我们可以使用UserHolder之类的东西来传递一个可观察对象包装器来围绕我们的核心用户模型。</p>
+<p>通过这样做，我们可以封装我们的重新加载逻辑，并在一个单独的地方完成所有需要的更新，远离我们的视图控制器——从而得到一个简化的ProfileViewController实现:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let userHolder: UserHolder
+    private lazy var nameLabel = UILabel()
+    private lazy var headerView = HeaderView()
+    private lazy var followersLabel = UILabel()
+
+    init(userHolder: UserHolder) {
+        self.userHolder = userHolder
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Our view controller now only has to define how it'll
+        // *react* to a model change, rather than initiating it.
+        userHolder.addObserver(self) { vc, user in
+            vc.nameLabel.text = user.name
+            vc.headerView.backgroundColor = user.colors.primary
+            vc.followersLabel.text = String(user.followersCount)
+        }
+    }
+}
+</code></pre>
+<p>虽然上面的实现比我们原来的实现做了很好的改进，但让我们看看我们是否可以更进一步——尤其是当涉及到我们向视图控制器公开的API时 - 直接把我们的模型值绑定到UI上。</p>
+<h2 id="from-observable-to-bindable">From observable to bindable</h2>
+<p>而不是要求每个视图控制器观察它的模型，并定义明确的规则，如何处理每个更新， 值绑定背后的思想是以一种声明性更强的方式，通过简单地将每个模型数据片段与UI属性关联起来，使我们能够编写自动更新UI代码。</p>
+<p>为了实现这一点，我们首先要用泛型可绑定类型替换之前的UserHolder类型。这种新类型将允许将任何值绑定到任何UI属性，而不需要为每个模型构建特定的抽象。 让我们从声明Bindable和定义属性开始，以跟踪它所有的观察，并使它能够缓存经过它的最新值，像这样:</p>
+<pre><code class="language-swift">class Bindable&lt;Value&gt; {
+    private var observations = [(Value) -&gt; Bool]()
+    private var lastValue: Value?
+
+    init(_ value: Value? = nil) {
+        lastValue = value
+    }
+}
+</code></pre>
+<p>接下来，让我们启用Bindable被观察，就像它之前的UserHolder一样——但关键的区别是，我们将保持观察方法为私有的:</p>
+<pre><code class="language-swift">private extension Bindable {
+    func addObservation&lt;O: AnyObject&gt;(
+        for object: O,
+        handler: @escaping (O, Value) -&gt; Void
+    ) {
+        // If we already have a value available, we'll give the
+        // handler access to it directly.
+        lastValue.map { handler(object, $0) }
+        // Each observation closure returns a Bool that indicates
+        // whether the observation should still be kept alive,
+        // based on whether the observing object is still retained.
+        observations.append { [weak object] value in
+            guard let object = object else {
+                return false
+            }
+            handler(object, value)
+            return true
+        }
+    }
+}
+</code></pre>
+<p>注意，在这一点上，我们并没有使我们的观察处理代码线程安全——因为它主要用于UI层——但是关于如何做到这一点的技巧，请查看“避免Swift中的竞态条件”。</p>
+<p>最后，我们需要在新模型可用时更新可绑定实例的方法。为此，我们将添加一个update方法来更新可绑定对象的lastValue，并通过filter调用每个观察，以便删除所有已经过时的观察:</p>
+<pre><code class="language-swift">extension Bindable {
+    func update(with value: Value) {
+        lastValue = value
+        observations = observations.filter { $0(value) }
+    }
+}
+</code></pre>
+<p>也许有人会说，使用filter来应用副作用(就像我们上面所做的那样)在理论上是不正确的，至少从严格的函数式编程的角度来看是这样，但在我们的例子中，它确实做到了我们想要的-由于我们不依赖于操作的顺序，使用filter是一个相当好的匹配，并从本质上节省了我们自己编写完全相同的代码。</p>
+<p>有了上面的内容，我们现在可以开始使用新的可绑定类型了。首先，我们要在ProfileViewController中注入一个可绑定的<User>实例，而不是使用视图控制器上的属性来设置每个视图，相反，我们将在viewDidLoad中调用的专用方法中完成它们各自的设置:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let user: Bindable&lt;User&gt;
+
+    init(user: Bindable&lt;User&gt;) {
+        self.user = user
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        addNameLabel()
+        addHeaderView()
+        addFollowersLabel()
+    }
+}
+</code></pre>
+<p>我们的视图控制器已经开始看起来简单多了，现在我们可以自由地按照自己喜欢的方式构造视图设置代码——因为，通过值绑定，我们的UI更新不再需要在相同的方法中定义。</p>
+<h2 id="binding-values">Binding values</h2>
+<p>到目前为止，我们已经定义了实际开始将值绑定到UI所需的所有底层基础设施——但要做到这一点，我们需要调用API。我们之前将addoobserve保持私有的原因是，我们将公开一个基于keypath的API，我们可以使用它直接将每个模型属性与其对应的UI属性关联起来。</p>
+<p>就像我们在“Swift关键路径的力量”中看到的，关键路径可以让我们构建一些非常好的api，让我们动态访问对象的属性， 而不需要使用闭包。让我们先用一个API来扩展Bindable，让我们把一个模型的键路径绑定到一个视图的键路径上:</p>
+<pre><code class="language-swift">extension Bindable {
+    func bind&lt;O: AnyObject, T&gt;(
+        _ sourceKeyPath: KeyPath&lt;Value, T&gt;,
+        to object: O,
+        _ objectKeyPath: ReferenceWritableKeyPath&lt;O, T&gt;
+    ) {
+        addObservation(for: object) { object, observed in
+            let value = observed[keyPath: sourceKeyPath]
+            object[keyPath: objectKeyPath] = value
+        }
+    }
+}
+</code></pre>
+<p>因为我们有时想要将值绑定到一个可选属性(例如UILabel上的文本)，我们还需要一个额外的绑定重载，为T的可选属性接受objectKeyPath:</p>
+<pre><code class="language-swift">extension Bindable {
+    func bind&lt;O: AnyObject, T&gt;(
+        _ sourceKeyPath: KeyPath&lt;Value, T&gt;,
+        to object: O,
+        // This line is the only change compared to the previous
+        // code sample, since the key path we're binding *to*
+        // might contain an optional.
+        _ objectKeyPath: ReferenceWritableKeyPath&lt;O, T?&gt;
+    ) {
+        addObservation(for: object) { object, observed in
+            let value = observed[keyPath: sourceKeyPath]
+            object[keyPath: objectKeyPath] = value
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们就可以开始绑定模型值到UI上了，比如直接把用户名和渲染它的UILabel的text属性关联起来:</p>
+<pre><code class="language-swift">private extension ProfileViewController {
+    func addNameLabel() {
+        let label = UILabel()
+        user.bind(\.name, to: label, \.text)
+        view.addSubview(label)
+    }
+}
+</code></pre>
+<p>很酷!也许更酷的是，因为我们基于键路径的绑定API，我们完全免费地获得了嵌套属性的支持。例如，我们现在可以很容易地绑定嵌套的颜色。我们头部视图的backgroundColor的primary属性:</p>
+<pre><code class="language-swift">private extension ProfileViewController {
+    func addHeaderView() {
+        let header = HeaderView()
+        user.bind(\.colors.primary, to: header, \.backgroundColor)
+        view.addSubview(header)
+    }
+}
+</code></pre>
+<p>以上方法的美妙之处在于，我们将能够得到一个更强有力的保证，即我们的UI将总是渲染我们模型的最新版本，而不需要我们的视图控制器真正做任何额外的工作。通过用关键路径替换闭包，我们不仅实现了更具声明性的API，还消除了在建立模型观察时忘记捕获视图控制器作为弱引用而引入retain cycle的风险。</p>
+<h2 id="transforms">Transforms</h2>
+<p>到目前为止，我们的所有模型属性都与它们的UI对应属性具有相同的类型，但情况并非总是如此。例如，在我们早期的实现中，我们必须将用户的followersCount属性转换为一个字符串，以便能够使用UILabel来渲染它——那么我们如何使用新的值绑定方法来实现同样的事情呢?</p>
+<p>一种方法是引入另一个bind重载，它添加了一个转换形参，包含一个将T值转换为所需结果类型R的函数，然后在我们的观察范围内使用该函数来执行转换，如下所示:</p>
+<pre><code class="language-swift">extension Bindable {
+    func bind&lt;O: AnyObject, T, R&gt;(
+        _ sourceKeyPath: KeyPath&lt;Value, T&gt;,
+        to object: O,
+        _ objectKeyPath: ReferenceWritableKeyPath&lt;O, R?&gt;,
+        transform: @escaping (T) -&gt; R?
+    ) {
+        addObservation(for: object) { object, observed in
+            let value = observed[keyPath: sourceKeyPath]
+            let transformed = transform(value)
+            object[keyPath: objectKeyPath] = transformed
+        }
+    }
+}
+</code></pre>
+<p>使用上面的转换API，我们现在可以通过传递String.init作为转换，轻松地将followersCount属性绑定到UILabel:</p>
+<pre><code class="language-swift">private extension ProfileViewController {
+    func addFollowersLabel() {
+        let label = UILabel()
+        user.bind(\.followersCount, to: label, \.text, transform: String.init)
+        view.addSubview(label)
+    }
+}
+</code></pre>
+<p>另一种方法是引入一个更专门化的bind版本，可以直接在Int和String属性之间进行转换， 或者基于CustomStringConvertible协议(Int和许多其他类型都符合该协议)-但有了上述方法，我们可以灵活地以我们认为合适的方式转换任何价值。</p>
+<h2 id="automatic-updates">Automatic updates</h2>
+<p>虽然我们的新绑定类型使用键路径实现了相当优雅的UI代码，但引入它的主要目的是确保我们的UI在底层模型发生更改时自动保持最新， 因此，我们也来看看另一方面——模型更新实际上是如何被触发的。</p>
+<p>在这里，我们的核心用户模型是由一个模型控制器管理的，每当应用程序处于活动状态时，它就会将模型与我们的服务器同步——然后在其可绑定的<User>上调用update，将任何模型更改传播到整个应用程序的UI；</p>
+<pre><code class="language-swift">class UserModelController {
+    let user: Bindable&lt;User&gt;
+    private let syncService: SyncService&lt;User&gt;
+
+    init(user: User, syncService: SyncService&lt;User&gt;) {
+        self.user = Bindable(user)
+        self.syncService = syncService
+    }
+
+    func applicationDidBecomeActive() {
+        syncService.sync(then: user.update)
+    }
+}
+</code></pre>
+<p>以上内容的真正好处在于，我们的UserModelController可以完全不知道它的用户数据的消费者，反之亦然 - 因为我们的绑定对象充当了双方的抽象层，这既能够提供更高程度的可测试性，也使得整个系统更加解耦。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>过将我们的模型值直接绑定到UI上，我们既可以用更简单的UI配置代码来消除常见的错误(比如在观察闭包中意外地强捕获视图对象)，也可以确保所有的UI值在其底层模型更改时保持最新。通过引入像Bindable这样的抽象，我们还可以更清楚地将UI代码与核心模型逻辑分离开来。</p>
+<p>本文中提出的思想受到了函数式响应式编程的强烈影响，而更完整的FRP实现(如RxSwift)更进一步地采用了价值绑定的思想(例如，通过引入双向绑定，并支持构建可观察到的值流)-如果我们所需要的只是简单的单向绑定，那么像可绑定类型这样的东西就可以完成我们所需要的一切，使用更细的抽象。</p>
+<p><a href="https://www.swiftbysundell.com/articles/bindable-values-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hmS8pdSRE/" class="tag">
+                    reactive programming
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SaaEscPbvk/" class="tag">
+                    key paths
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/different-flavors-of-type-erasure-in-swift/">
+                  <h3 class="post-title">
+                    Different flavors of type erasure in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>How to sync the width or height of two SwiftUI views? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在使用SwiftUI构建视图时，一个非常常见但又难以解决的问题是如何使两个动态视图具有相同的宽度或高度。例如，这里我们正在处理一个有两个按钮的LoginView-一个用于登录，一个触发密码重置-目前实现如下:
+struct LoginVie..." />
+    <meta name="keywords" content="Q&A,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">How to sync the width or height of two SwiftUI views?</h2>
+            <div class="post-date">2021-01-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>在使用SwiftUI构建视图时，一个非常常见但又难以解决的问题是如何使两个动态视图具有相同的宽度或高度。例如，这里我们正在处理一个有两个按钮的LoginView-一个用于登录，一个触发密码重置-目前实现如下:</p>
+<pre><code class="language-swift">struct LoginView: View {
+    ...    
+    var body: some View {
+        VStack {
+            ...
+            Group {
+                Button(&quot;Log in&quot;) {
+                    ...
+                }
+                Button(&quot;I forgot my password&quot;) {
+                    ...
+                }
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(20)
+        }
+    }
+}
+</code></pre>
+<p>如果你使用上面的预览按钮，你可以看到我们的按钮有不同的宽度，这是意料之中的，因为它们显示了两个不同的文本，并不是一样长。但是，如果我们真的想让它们具有相同的宽度(这可能看起来更好)，那该如何实现呢?</p>
+<p>我们将忽略那些涉及硬编码视图宽度的方法(这不适用于大多数现代应用，因为它们需要适应用户可访问性设置和本地化字符串)，或者手动测量每个底层字符串的大小。相反，我们将关注更健壮和更容易维护的解决方案。</p>
+<h2 id="infinite-frames">Infinite frames</h2>
+<p>如果我们可以让我们的按钮伸展以适应它们所显示的容器的宽度，那么一个可能的解决方案是给两个按钮无限的最大宽度。 这可以使用帧修改器，当结合一些额外的水平填充时，可以给我们一个相当不错的结果(至少当我们的登录视图将显示在一个狭窄的容器，如运行在面向肖像的iPhone):</p>
+<pre><code class="language-swift">struct LoginView: View {
+    ...
+    
+    var body: some View {
+        VStack {
+            ...
+            Group {
+                Button(&quot;Log in&quot;) {
+                    ...
+                }
+                Button(&quot;I forgot my password&quot;) {
+                    ...
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(20)
+            .padding(.horizontal)
+        }
+    }
+}
+</code></pre>
+<p>同样，请随意使用上面的预览按钮，看看实现的渲染结果是什么样子的。</p>
+<h2 id="geometryreader">GeometryReader</h2>
+<p>虽然我们总是可以使用其他更静态的maxWidth值，以防止我们的按钮被过度拉伸，但也许我们更愿意根据容器的宽度动态计算该值。要做到这一点，我们可以使用GeometryReader，它让我们访问将在其中呈现按钮的上下文的几何信息。</p>
+<p>然而，在这种情况下使用GeometryReader有一个相当大的缺点，那就是它占用了UI中所有可用的空间，-这意味着我们的登录视图可能会变得比我们预期的更大，我们也需要确保我们的根VStack最终会扩展所有可用的空间，以保持我们想要的布局。</p>
+<pre><code class="language-swift">struct LoginView: View {
+    ...
+
+    var body: some View {
+        GeometryReader { geometry in
+            VStack {
+                ...
+                Group {
+                    Button(&quot;Log in&quot;) {
+                        ...
+                    }
+                    Button(&quot;I forgot my password&quot;) {
+                        ...
+                    }
+                }
+                .frame(maxWidth: geometry.size.width * 0.6)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(20)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+</code></pre>
+<p>上述方法的另一个潜在缺点是，我们必须确保选择一个宽度倍增器，它将适用于所有屏幕和文本大小的组合，这有时是相当棘手的。</p>
+<h2 id="using-a-grid">Using a grid</h2>
+<p>如果我们的应用使用iOS 14或macOS Big Sur作为其最小部署目标，那么另一个宽度同步问题的潜在解决方案将是使用LazyHGrid。非自适应的水平网格会自动同步其单元格的宽度，这让我们可以像这样实现我们想要的按钮布局:</p>
+<pre><code class="language-swift">struct LoginView: View {
+    ...
+
+    var body: some View {
+        VStack {
+            ...
+            LazyHGrid(rows: [buttonRow, buttonRow]) {
+                Group {
+                    Button(&quot;Log in&quot;) {
+                        ...
+                    }
+                    Button(&quot;I forgot my password&quot;) {
+                        ...
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(20)
+            }
+        }
+    }
+
+    private var buttonRow: GridItem {
+        GridItem(.flexible(minimum: 0, maximum: 80))
+    }
+}
+</code></pre>
+<p>然而，请注意，虽然我们的两个按钮的宽度现在是完全动态的(完全同步的)，我们必须硬编码每个网格行的最大高度，因为否则我们的网格将最终占用所有可用的空间(就像一个GeometryReader)。在某些情况下，这可能不是一个问题，但如果我们最终使用上述解决方案，仍然需要注意这一点。</p>
+<h2 id="using-a-preference-key">Using a preference key</h2>
+<p>对于同步两个动态视图的宽度或高度的问题，也许最动态和最健壮的解决方案是使用SwiftUI的preferences system来测量每个按钮的大小，然后将其发送到它们的父视图。为了做到这一点，让我们首先创建一个preferencekey一致性类型，通过选择最大的一个来减少所有传输的按钮宽度值——像这样:</p>
+<pre><code class="language-swift">private extension LoginView {
+    struct ButtonWidthPreferenceKey: PreferenceKey {
+        static let defaultValue: CGFloat = 0
+
+        static func reduce(value: inout CGFloat,
+                           nextValue: () -&gt; CGFloat) {
+            value = max(value, nextValue())
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们就可以在每个按钮的背景中嵌入一个GeometryReader(这使得它假定与按钮本身的大小相同)，然后发送和观察我们的宽度值使用我们新的首选项键。 然后，我们将最大值存储在@ state标记的属性中，当该值被修改时，这将导致我们的视图被更新。这样的实现应该是这样的:</p>
+<pre><code class="language-swift">struct LoginView: View {
+    ...
+    @State private var buttonMaxWidth: CGFloat?
+
+    var body: some View {
+        VStack {
+            ...
+            Group {
+                Button(&quot;Log in&quot;) {
+                    ...
+                }
+                Button(&quot;I forgot my password&quot;) {
+                    ...
+                }
+                }
+                .background(GeometryReader { geometry in
+                    Color.clear.preference(
+                    key: ButtonWidthPreferenceKey.self,
+                    value: geometry.size.width)
+                    })
+                .frame(width: buttonMaxWidth)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(20)
+            }
+            .onPreferenceChange(ButtonWidthPreferenceKey.self) {
+                buttonMaxWidth = $0
+            }
+    }
+}
+</code></pre>
+<p>注意，我们使用了颜色。clear(而不是EmptyView)作为GeometryReader闭包中的返回值。这是因为swift完全忽略了EmptyView实例，这将阻止我们的首选项值在这种情况下被发送。</p>
+<p>虽然上面的解决方案肯定比我们之前探索的更复杂，但它确实给了我们最动态的解决方案(到目前为止)，因为我们不再被迫硬编码我们的布局的任何方面。 相反，我们的按钮将根据它们的标签进行调整，这为我们提供了一个解决方案，适用于各种屏幕大小、语言和可访问性设置。</p>
+<p>要了解更多关于上述技术和许多其他SwiftUI布局工具的知识，请查看我的三部分的SwiftUI布局系统指南。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然SwiftUI的声明式设计有很多优点，但它确实使我们在本文中探索的任务变得非常困难。以上两种解决方案都不是完美的，像这样的事情可能会让我们希望有一个自动布局类的基于约束的布局系统，这将更容易表达两个视图应该在宽度或高度方面同步。</p>
+<p><a href="https://www.swiftbysundell.com/questions/syncing-the-width-or-height-of-two-swiftui-views/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Ei6A0dFu0G/" class="tag">
+                    Q&amp;A
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/accessing-a-swift-property-wrappers-enclosing-instance/">
+                  <h3 class="post-title">
+                    Accessing a Swift property wrapper’s enclosing instance
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Lightweight API design in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift最强大的一个方面就是它在如何设计api时给了我们多大的灵活性。这种灵活性不仅使我们能够定义更容易理解和使用的函数和类型——它还使我们能够创建给人一种非常轻量级的第一印象的api，同时在需要时仍然逐步揭示出更多的功能和复杂性。
+本周..." />
+    <meta name="keywords" content="code structure,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Lightweight API design in Swift</h2>
+            <div class="post-date">2019-11-24</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift最强大的一个方面就是它在如何设计api时给了我们多大的灵活性。这种灵活性不仅使我们能够定义更容易理解和使用的函数和类型——它还使我们能够创建给人一种非常轻量级的第一印象的api，同时在需要时仍然逐步揭示出更多的功能和复杂性。</p>
+<p>本周，让我们来看看一些核心语言特性，这些特性支持创建这些轻量级api，以及我们如何使用它们通过组合的力量使特性或系统变得更强大。</p>
+<h2 id="a-trade-off-between-power-and-ease-of-use">A trade-off between power and ease of use</h2>
+<p>通常，当我们设计各种类型和功能之间的交互方式时，我们必须在功能和易用性之间找到某种形式的平衡。如果把事情做得太简单，它们可能就不够灵活，无法让我们的功能不断发展 - 但另一方面，太多的复杂性往往会导致挫折、误解和最终的bug。</p>
+<p>举个例子，假设我们正在开发一个应用程序，它可以让我们的用户对图像应用各种滤镜——例如，可以编辑他们相机卷或相册中的照片。每个滤镜由一组图像变换组成，并使用ImageFilter结构体定义，如下所示:</p>
+<pre><code class="language-swift">struct ImageFilter {
+    var name: String
+    var icon: Icon
+    var transforms: [ImageTransform]
+}
+</code></pre>
+<p>说到ImageTransform API，它目前被建模为一个协议，然后，实现我们单独的转换操作的各种类型都符合这个规则:</p>
+<pre><code class="language-swift">protocol ImageTransform {
+    func apply(to image: Image) throws -&gt; Image
+}
+
+struct PortraitImageTransform: ImageTransform {
+    var zoomMultiplier: Double
+
+    func apply(to image: Image) throws -&gt; Image {
+        ...
+    }
+}
+
+struct GrayScaleImageTransform: ImageTransform {
+    var brightnessLevel: BrightnessLevel
+
+    func apply(to image: Image) throws -&gt; Image {
+        ...
+    }
+}
+</code></pre>
+<p>上述方法的一个核心优点是，由于每个转换都是作为自己的类型实现的，所以我们可以让每个类型定义自己的属性和参数集-例如，当将图像转换为灰度时，GrayScaleImageTransform如何接受亮度级别。</p>
+<p>然后，我们可以根据自己的需要，将上面的各种滤镜组合在一起，形成每一个滤镜——例如，通过一系列的变换，给图像一个“戏剧性”的外观:</p>
+<pre><code class="language-swift">let dramaticFilter = ImageFilter(
+    name: &quot;Dramatic&quot;,
+    icon: .drama,
+    transforms: [
+        PortraitImageTransform(zoomMultiplier: 2.1),
+        ContrastBoostImageTransform(),
+        GrayScaleImageTransform(brightnessLevel: .dark)
+    ]
+)
+</code></pre>
+<p>到目前为止，一切都很好——但是如果我们仔细看看上面的API，就可以肯定地说，我们选择优化的是强大的功能和灵活性，而不是易用性。由于每个转换都是作为一个单独的类型实现的，所以我们的代码库中包含哪种类型的转换并不是马上就能弄清楚的，因为没有一个地方可以立即发现所有的转换。</p>
+<p>与之相比，如果我们选择使用enum来建模我们的转换——这将为我们提供所有可能选项的非常清晰的概述:</p>
+<pre><code class="language-swift">enum ImageTransform {
+    case portrait(zoomMultiplier: Double)
+    case grayScale(BrightnessLevel)
+    case contrastBoost
+}
+</code></pre>
+<p>使用枚举也会产生非常好的和可读的调用站点——让我们的API感觉更轻量级和易于使用，因为我们可以使用点语法构造任意数量的转换，像这样:</p>
+<pre><code class="language-swift">let dramaticFilter = ImageFilter(
+    name: &quot;Dramatic&quot;,
+    icon: .drama,
+    transforms: [
+        .portrait(zoomMultiplier: 2.1),
+        .contrastBoost,
+        .grayScale(.dark)
+    ]
+)
+</code></pre>
+<p>然而，尽管Swift枚举在许多不同的情况下都是一个很棒的工具，但这并不是其中之一。</p>
+<p>由于每个转换都需要执行截然不同的图像操作，在这种情况下使用enum将迫使我们编写一个庞大的switch语句来处理每个操作 -这很可能会成为一场噩梦。</p>
+<h2 id="light-as-an-enum-capable-as-a-struct">Light as an enum, capable as a struct</h2>
+<p>幸运的是，还有第三种选择——它在某种程度上为我们提供了两全其美的选择。 我们不使用协议或枚举，而是使用struct，它将包含一个闭包，封装给定转换的各种操作:</p>
+<pre><code class="language-swift">struct ImageTransform {
+    let closure: (Image) throws -&gt; Image
+
+    func apply(to image: Image) throws -&gt; Image {
+        try closure(image)
+    }
+}
+</code></pre>
+<p>请注意，现在不再需要apply(to:)方法了，但是我们仍然添加了它，这既是为了向后兼容性，也是为了使调用站点读起来更好一些。</p>
+<p>有了上面的内容，我们现在可以使用静态工厂方法和属性来创建我们的转换——每个转换仍然可以单独定义，并有自己的一组参数:</p>
+<pre><code class="language-swift">extension ImageTransform {
+    static var contrastBoost: Self {
+        ImageTransform { image in
+            ...
+        }
+    }
+
+    static func portrait(withZoomMultipler multiplier: Double) -&gt; Self {
+        ImageTransform { image in
+            ...
+        }
+    }
+
+    static func grayScale(withBrightness brightness: BrightnessLevel) -&gt; Self {
+        ImageTransform { image in
+            ...
+        }
+    }
+}
+</code></pre>
+<p>Self现在可以用作静态工厂方法的返回类型，这是Swift 5.1中引入的一个很小但很重要的改进。</p>
+<p>上述方法的美妙之处在于，我们恢复了定义ImageTransform为协议时的灵活性和功能，同时仍然可以使用与使用枚举时相同的点语法:</p>
+<pre><code class="language-swift">let dramaticFilter = ImageFilter(
+    name: &quot;Dramatic&quot;,
+    icon: .drama,
+    transforms: [
+        .portrait(withZoomMultipler: 2.1),
+        .contrastBoost,
+        .grayScale(withBrightness: .dark)
+    ]
+)
+</code></pre>
+<p>点语法并不绑定到枚举，而是可以与任何类型的静态API一起使用，这一点非常强大 - 甚至让我们进一步封装，通过建模上面的过滤器创建作为一个计算静态属性:</p>
+<pre><code class="language-swift">extension ImageFilter {
+    static var dramatic: Self {
+        ImageFilter(
+            name: &quot;Dramatic&quot;,
+            icon: .drama,
+            transforms: [
+                .portrait(withZoomMultipler: 2.1),
+                .contrastBoost,
+                .grayScale(withBrightness: .dark)
+            ]
+        )
+    }
+}
+</code></pre>
+<p>以上所有的结果是，我们现在可以完成一系列非常复杂的任务——应用图像过滤器和转换——并将它们封装到一个API中，在表面上，看起来像简单地传递一个值给函数一样轻量级:</p>
+<pre><code class="language-swift">let filtered = image.withFilter(.dramatic)
+</code></pre>
+<p>虽然很容易将上述变化视为纯粹添加“语法糖”而忽略，但我们不仅改进了API的读取方式，还改进了其各部分的组成方式。由于所有的转换和过滤器现在都只是值，它们可以以多种方式组合在一起——这不仅使它们更轻量级，而且也更加灵活。</p>
+<h2 id="variadic-parameters-and-further-composition">Variadic parameters and further composition</h2>
+<p>接下来，让我们看看另一个非常有趣的语言特性——可变参数——以及它们可以解锁什么样的API设计选择。</p>
+<p>现在假设我们正在开发一个应用程序，它使用基于形状的绘图来创建部分用户界面，我们使用了类似于上面的struct-based的方法来建模每个形状是如何绘制到DrawingContext中的:</p>
+<pre><code class="language-swift">struct Shape {
+    var drawing: (inout DrawingContext) -&gt; Void
+}
+</code></pre>
+<p>上面我们使用inout关键字使值类型(DrawingContext)能够像传递引用一样传递。更多的关键字，和一般的价值语义，检查“利用价值语义在Swift”</p>
+<p>就像我们之前让ImageTransform的值可以很容易地使用静态工厂方法创建一样，我们现在也可以将每个形状的绘图代码封装在完全独立的方法中——像这样:</p>
+<pre><code class="language-swift">extension Shape {
+    static func square(at point: Point, sideLength: Double) -&gt; Self {
+        Shape { context in
+            let origin = point.movedBy(
+                x: -sideLength / 2,
+                y: -sideLength / 2
+            )
+
+            context.move(to: origin)
+            context.drawLine(to: origin.movedBy(x: sideLength))
+            context.drawLine(to: origin.movedBy(x: sideLength, y: sideLength))
+            context.drawLine(to: origin.movedBy(y: sideLength))
+            context.drawLine(to: origin)
+        }
+    }
+}
+</code></pre>
+<p>因为每个形状都被简单地建模为一个值，绘制它们的数组变得非常容易——我们所要做的就是创建一个DrawingContext实例，然后将它传递到每个形状的闭包中，以建立我们的最终图像:</p>
+<pre><code class="language-swift">func draw(_ shapes: [Shape]) -&gt; Image {
+    var context = DrawingContext()
+    
+    shapes.forEach { shape in
+        context.move(to: .zero)
+        shape.drawing(&amp;context)
+    }
+    
+    return context.makeImage()
+}
+</code></pre>
+<p>调用上述函数看起来也相当优雅，因为我们再次能够使用点语法来大幅减少执行我们的工作所需的语法量:</p>
+<pre><code class="language-swift">let image = draw([
+    .circle(at: point, radius: 10),
+    .square(at: point, sideLength: 5)
+])
+</code></pre>
+<p>但是，让我们看看我们是否可以用可变参数更进一步。虽然这不是Swift独有的特性，但当结合Swift真正灵活的参数命名功能时，使用可变参数可以产生一些非常有趣的结果。</p>
+<p>当一个参数被标记为可变参数时(通过添加…后缀)，我们基本上可以向该参数传递任意数量的值 - 编译器会自动将这些值组织成一个数组，就像这样:</p>
+<pre><code class="language-swift">func draw(_ shapes: Shape...) -&gt; Image {
+    ...
+    // Within our function, 'shapes' is still an array:
+    shapes.forEach { ... }
+}
+</code></pre>
+<p>有了上面的改变，我们现在可以从draw函数的调用中删除所有的数组字面量，改为如下所示:</p>
+<pre><code class="language-swift">let image = draw(.circle(at: point, radius: 10),
+                 .square(at: point, sideLength: 5))
+</code></pre>
+<p>这看起来似乎不是什么大的变化，但特别是当设计更多的底层api用于创建更高级别的值(比如我们的draw函数)时，使用可变参数可以让这些api感觉更轻、更方便。</p>
+<p>然而，使用可变参数的一个缺点是预先计算的值数组不能再作为单个参数传递。值得庆幸的是，在这种情况下，可以很容易地解决这个问题，通过创建一个特殊的group shape(就像draw函数本身一样)来迭代一个潜在形状数组并绘制它们:</p>
+<pre><code class="language-swift">extension Shape {
+    static func group(_ shapes: [Shape]) -&gt; Self {
+        Shape { context in
+            shapes.forEach { shape in
+                context.move(to: .zero)
+                shape.drawing(&amp;context)
+            }
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们可以再一次轻松地将一组预先计算好的形状值传递给我们的draw函数，如下所示:</p>
+<pre><code class="language-swift">let shapes: [Shape] = loadShapes()
+let image = draw(.group(shapes))
+</code></pre>
+<p>但真正酷的是，上面的group API不仅使我们能够构造形状数组——它还使我们能够更容易地将多个形状组合成更高级的组件。 例如，我们可以用一组组成的形状来表达一幅完整的图画(比如一个标志):</p>
+<pre><code class="language-swift">extension Shape {
+    static func logo(withSize size: Size) -&gt; Self {
+        .group([
+            .rectangle(at: size.centerPoint, size: size),
+            .text(&quot;The Drawing Company&quot;, fittingInto: size),
+            ...
+        ])
+    }
+}
+</code></pre>
+<p>由于上面的徽标是一个形状，就像其他任何形状一样，我们可以很容易地通过调用我们的draw方法，使用同样优雅的点语法绘制它:</p>
+<pre><code class="language-swift">let logo = draw(.logo(withSize: size))
+
+</code></pre>
+<p>有趣的是，虽然我们最初的目标可能是让我们的API更轻量级，但在这样做的同时，我们也让它更可组合，更灵活。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>我们在“API设计师的工具箱”中添加的工具越多，我们就越有可能设计出在功能、灵活性和易用性之间取得平衡的API。</p>
+<p>使api尽可能的轻量化可能不是我们的最终目标，但是通过尽可能的精简我们的api，我们也经常发现如何使它们变得更强大-通过使我们创建类型的方式更加灵活，并允许它们被组合。所有这些都可以帮助我们在简单和力量之间达到完美的平衡。</p>
+<p><a href="https://www.swiftbysundell.com/articles/lightweight-api-design-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/defining-custom-patterns-in-swift/">
+                  <h3 class="post-title">
+                    Defining custom patterns in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

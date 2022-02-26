@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Combining dynamic member lookup with key paths | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="首先，Swift的@dynamicMemberLookup属性似乎是一个奇怪的特性，因为它可以用来规避Swift非常强调的类型安全。
+本质上，向类或结构添加该属性使我们能够添加对访问该类型上的任何属性的支持 -不管该属性是否实际存在。 例如..." />
+    <meta name="keywords" content="key paths" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Combining dynamic member lookup with key paths</h2>
+            <div class="post-date">2020-04-10</div>
+            
+            <div class="post-content" v-pre>
+              <p>首先，Swift的@dynamicMemberLookup属性似乎是一个奇怪的特性，因为它可以用来规避Swift非常强调的类型安全。</p>
+<p>本质上，向类或结构添加该属性使我们能够添加对访问该类型上的任何属性的支持 -不管该属性是否实际存在。 例如，这里有一个设置类型，目前实现@dynamicMemberLookup像这样:</p>
+<pre><code class="language-swift">@dynamicMemberLookup
+struct Settings {
+    var colorTheme = ColorTheme.modern
+    var itemPageSize = 25
+    var keepUserLoggedIn = true
+
+    subscript(dynamicMember member: String) -&gt; Any? {
+        switch member {
+        case &quot;colorTheme&quot;:
+            return colorTheme
+        case &quot;itemPageSize&quot;:
+            return itemPageSize
+        case &quot;keepUserLoggedIn&quot;:
+            return keepUserLoggedIn
+        default:
+            return nil
+        }
+    }
+}
+</code></pre>
+<p>由于上述类型支持动态成员查找，我们可以在访问其属性时使用任意名称，并且当没有声明的属性匹配该名称时，编译器不会给出任何警告或错误:</p>
+<pre><code class="language-swift">let settings = Settings()
+let theme = settings.colorTheme
+let somethingUnknown = settings.somePropertyName
+</code></pre>
+<p>同样，这似乎是Swift支持的一个奇怪特性，但在编写Swift和更动态语言(如Ruby、Python或JavaScript)之间的连接代码时，或者在编写其他类型的基于代理的代码时，它是非常有用的。</p>
+<p>然而，还有一种使用@dynamicMemberLookup的方法，即使在完全静态的Swift代码中也非常有用——那就是将它与键路径结合起来。</p>
+<p>作为一个例子，让我们重新访问“Swift中的结合值和引用类型”中的引用类型(它允许将值类型作为引用传递),并添加对动态查找其包装值类型成员之一的支持,但这一次使用的是KeyPath，而不是字符串:</p>
+<pre><code class="language-swift">@dynamicMemberLookup
+class Reference&lt;Value&gt; {
+    private(set) var value: Value
+
+    init(value: Value) {
+        self.value = value
+    }
+
+    subscript&lt;T&gt;(dynamicMember keyPath: KeyPath&lt;Value, T&gt;) -&gt; T {
+        value[keyPath: keyPath]
+    }
+}
+</code></pre>
+<p>现在，这真的很酷，因为上面的操作使我们能够直接访问任何我们的值类型的属性，就像它们是我们引用类型本身的属性一样——像这样:</p>
+<pre><code class="language-swift">let reference = Reference(value: Settings())
+let theme = reference.colorTheme
+</code></pre>
+<p>因为我们使用键路径实现了引用类型的dynamicMember下标，所以在使用它时不能像使用字符串时那样查找任意属性名。</p>
+<p>我们甚至还可以添加一个可变版本，通过创建一个接受WritableKeyPath的下标重载，然后实现它的getter和setter:</p>
+<pre><code class="language-swift">extension Reference {
+    subscript&lt;T&gt;(dynamicMember keyPath: WritableKeyPath&lt;Value, T&gt;) -&gt; T {
+        get { value[keyPath: keyPath] }
+        set { value[keyPath: keyPath] = newValue }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以直接改变任何用我们的引用类型包装的值——就像我们改变引用实例本身一样:</p>
+<pre><code class="language-swift">let reference = Reference(value: Settings())
+reference.theme = .oldSchool
+</code></pre>
+<p>最后，就像我们在原始文章中将所有突变api从Reference提取到一个新的mutablerereference类型一样-让我们在这里也这样做，以便能够限制代码库中可能发生突变的部分:</p>
+<pre><code class="language-swift">@dynamicMemberLookup
+class Reference&lt;Value&gt; {
+    fileprivate(set) var value: Value
+
+    init(value: Value) {
+        self.value = value
+    }
+
+    subscript&lt;T&gt;(dynamicMember keyPath: KeyPath&lt;Value, T&gt;) -&gt; T {
+        value[keyPath: keyPath]
+    }
+}
+
+class MutableReference&lt;Value&gt;: Reference&lt;Value&gt; {
+    subscript&lt;T&gt;(dynamicMember keyPath: WritableKeyPath&lt;Value, T&gt;) -&gt; T {
+        get { value[keyPath: keyPath] }
+        set { value[keyPath: keyPath] = newValue }
+    }
+}
+</code></pre>
+<p>使用上面的方法，我们现在可以轻松地将值类型作为引用传递，并像直接访问包装好的值一样读取和修改其属性——例如:</p>
+<pre><code class="language-swift">class ProfileViewModel {
+    private let user: User
+    private let settings: MutableReference&lt;Settings&gt;
+
+    init(user: User, settings: MutableReference&lt;Settings&gt;) {
+        self.user = user
+        self.settings = settings
+    }
+
+    func makeEmailAddressIcon() -&gt; Icon {
+        // Reading Setting's 'colorTheme' property:
+        var icon = Icon.email
+        icon.useLightVersion = settings.colorTheme.isDark
+        return icon
+    }
+
+    func rememberMeSwitchToggled(to newValue: Bool) {
+        // Mutating Setting's 'keepUserLoggedIn' property:
+        settings.keepUserLoggedIn = newValue
+    }
+}
+</code></pre>
+<p><a href="https://www.swiftbysundell.com/tips/combining-dynamic-member-lookup-with-key-paths/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SaaEscPbvk/" class="tag">
+                    key paths
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-guide-to-the-swiftui-layout-system-part-3/">
+                  <h3 class="post-title">
+                    A guide to the SwiftUI layout system - Part 3
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

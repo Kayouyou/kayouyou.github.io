@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>用Swift代码示例解释 Result Builder | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Result builders in Swift explained with code examples
+
+
+1.1. What are result builders?
+1.2. Creating a custom result..." />
+    <meta name="keywords" content="result builder" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">用Swift代码示例解释 Result Builder</h2>
+            <div class="post-date">2021-05-08</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#ResultbuildersinSwiftexplainedwithcodeexamples">Result builders in Swift explained with code examples</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Whatareresultbuilders">What are result builders?</a></li>
+<li>1.2. <a href="#Creatingacustomresultbuilder">Creating a custom result builder</a></li>
+<li>1.3. <a href="#DefiningtheAutolayoutbuilder">Defining the Autolayout builder</a></li>
+<li>1.4. <a href="#Handlingancollectionofbuildblocks">Handling an collection of build blocks</a></li>
+<li>1.5. <a href="#Handlingunwrappingofoptionals">Handling unwrapping of optionals</a></li>
+<li>1.6. <a href="#Handlingconditionalstatements">Handling conditional statements</a></li>
+<li>1.7. <a href="#Usingresultbuildersasfunctionparameters">Using result builders as function parameters</a></li>
+<li>1.8. <a href="#Howtocomeupwithcustomresultbuilderimplementations">How to come up with custom result builder implementations?</a></li>
+<li>1.9. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameresultbuildersinswiftexplainedwithcodeexamplesaresult-builders-in-swift-explained-with-code-examples">1. <a name='ResultbuildersinSwiftexplainedwithcodeexamples'></a>Result builders in Swift explained with code examples</h2>
+<p>wift中的结果构建器允许你使用一个接一个的“构建块”来构建结果。它们是在Swift 5.4中引入的，在Xcode 12.5和更高版本中也可以使用。它们以前被称为函数构建器，您可能已经在swifttui中构建了一组视图，多次使用过它们。</p>
+<p>我必须承认:首先，我认为这是一个相当高级的特性在Swift中，我永远不会用自己来编写定制的解决方案来配置我的代码。然而，当我尝试并编写了一些在UIKit中构建视图约束的解决方案时，我发现关键是在于理解Result builders的力量。</p>
+<h3 id="11-a-namewhatareresultbuildersawhat-are-result-builders">1.1. <a name='Whatareresultbuilders'></a>What are result builders?</h3>
+<p>结果构建器可以看作是一种嵌入式领域特定语言(DSL)，用于收集组合成最终结果的部件。使用了一个@ViewBuilder声明的一个简单的swifitui视图，底层它是一个结果构建器的实现:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        // This is inside a result builder
+        VStack {
+            Text(&quot;Hello World!&quot;) // VStack and Text are 'build blocks'
+        }
+    }
+}
+</code></pre>
+<p>每个子视图(在本例中是一个包含Text的VStack)将被组合成一个视图。换句话说，视图构建块被构建到一个视图结果中。理解这一点很重要，因为它解释了结果构建器是如何工作的。</p>
+<p>如果我们查看swifttui View协议的声明，我们可以看到body变量是用@ViewBuilder属性定义的:</p>
+<pre><code class="language-swift">@ViewBuilder var body: Self.Body { get }
+</code></pre>
+<p>这正是您可以使用自定义result builder作为函数、变量或下标的属性的方式。</p>
+<h3 id="12-a-namecreatingacustomresultbuilderacreating-a-custom-result-builder">1.2. <a name='Creatingacustomresultbuilder'></a>Creating a custom result builder</h3>
+<p>为了向您解释如何定义自己的自定义result builder，我喜欢跟随我自己使用的一个例子。当在代码中编写自动布局时，我通常会编写以下类型的逻辑:</p>
+<pre><code class="language-swift">var constraints: [NSLayoutConstraint] = [
+    // Single constraint
+    swiftLeeLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+]
+
+// Boolean check
+if alignLogoTop {
+    constraints.append(swiftLeeLogo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor))
+} else {
+    constraints.append(swiftLeeLogo.centerYAnchor.constraint(equalTo: view.centerYAnchor))
+}
+
+// Unwrap an optional
+if let fixedLogoSize = fixedLogoSize {
+    constraints.append(contentsOf: [
+        swiftLeeLogo.widthAnchor.constraint(equalToConstant: fixedLogoSize.width),
+        swiftLeeLogo.heightAnchor.constraint(equalToConstant: fixedLogoSize.height)
+    ])
+}
+
+// Add a collection of constraints
+constraints.append(contentsOf: label.constraintsForAnchoringTo(boundsOf: view)) // Returns an array
+
+// Activate
+NSLayoutConstraint.activate(constraints)
+</code></pre>
+<p>如您所见，我们有相当多的条件约束。这使得在复杂视图中阅读约束变得很困难。</p>
+<p>result builder 是一个很好的解决方案，并允许我们编写上面的示例代码如下:</p>
+<pre><code class="language-swift"> @AutolayoutBuilder var constraints: [NSLayoutConstraint] {
+    swiftLeeLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor) // Single constraint
+    
+    if alignLogoTop {
+        swiftLeeLogo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
+    } else {
+        swiftLeeLogo.centerYAnchor.constraint(equalTo: view.centerYAnchor) // Single constraint
+    }
+    
+    if let fixedLogoSize = fixedLogoSize {
+        swiftLeeLogo.widthAnchor.constraint(equalToConstant: fixedLogoSize.width)
+        swiftLeeLogo.heightAnchor.constraint(equalToConstant: fixedLogoSize.height)
+    }
+    
+    label.constraintsForAnchoringTo(boundsOf: view) // Returns an array
+}
+</code></pre>
+<p>惊人的,对吧?  让我们看看如何构建这个自定义实现。</p>
+<h3 id="13-a-namedefiningtheautolayoutbuilderadefining-the-autolayout-builder">1.3. <a name='DefiningtheAutolayoutbuilder'></a>Defining the Autolayout builder</h3>
+<p>我们首先定义自定义的AutolayoutBuilder结构，并添加@resultBuilder属性来标记是作为一个结果构建器:</p>
+<pre><code class="language-swift">@resultBuilder
+struct AutolayoutBuilder {     
+    // .. Handle different cases, like unwrapping and collections 
+} 
+</code></pre>
+<p>要从所有构建块中构建结果，我们需要为每个情况配置处理程序，比如处理可选和集合。但在此之前，我们先处理单个约束的情况。</p>
+<p>这可以通过以下方法完成:</p>
+<pre><code class="language-swift">@resultBuilder
+struct AutolayoutBuilder {
+    
+    static func buildBlock(_ components: NSLayoutConstraint...) -&gt; [NSLayoutConstraint] {
+        return components
+    } 
+}
+</code></pre>
+<p>该方法接受组件的可变参数，这意味着它可以是一个或多个约束。我们需要返回一个约束集合，这意味着，在本例中，我们可以直接返回输入组件。</p>
+<p>这允许我们定义约束集合如下:</p>
+<pre><code class="language-swift">@AutolayoutBuilder var constraints: [NSLayoutConstraint] {
+    // Single constraint
+    swiftLeeLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+} 
+</code></pre>
+<h3 id="14-a-namehandlingancollectionofbuildblocksahandling-an-collection-of-build-blocks">1.4. <a name='Handlingancollectionofbuildblocks'></a>Handling an collection of build blocks</h3>
+<p>接下来是将构建块集合作为单个元素来处理。在我们的第一个代码示例中，我们使用了一个方便的方法constraintsForAnchoringTo(boundsOf:)，在集合中返回多个约束。如果我们将其与当前实现一起使用，则会发生以下错误:</p>
+<pre><code class="language-swift">@AutolayoutBuilder var constraints: [NSLayoutConstraint] {
+    // Single constraint
+    swiftLeeLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+    label.constraintsForAnchoringTo(boundsOf:view)
+    /// error: Cannot pass array of type ‘[NSLayoutConstraint]’ as variadic arguments of type ‘NSLayoutConstraint’
+} 
+</code></pre>
+<p>Swift中的可变参数不允许我们传入数组，尽管这样做似乎是合乎逻辑的。相反，我们需要定义一个自定义方法来将集合作为组件输入来处理。看看可用的方法，你可能会认为我们需要以下方法:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqaz1lyeqyj313w0lg4bv.jpg" alt="avatar" loading="lazy"></figure>
+<p>不幸的是，正如方法描述所述，这只支持将results合并为单个result的循环。我们不使用迭代器，而是使用一个方便的方法直接返回集合，因此我们需要编写更多的自定义代码。</p>
+<p>我们可以通过定义一个由单个NSLayoutConstraint和一组约束实现的新协议来解决这个问题:</p>
+<pre><code class="language-swift">protocol LayoutGroup {
+    var constraints: [NSLayoutConstraint] { get }
+}
+extension NSLayoutConstraint: LayoutGroup {
+    var constraints: [NSLayoutConstraint] { [self] }
+}
+extension Array: LayoutGroup where Element == NSLayoutConstraint {
+    var constraints: [NSLayoutConstraint] { self }
+} 
+</code></pre>
+<p>该协议允许我们将单个约束和约束集合转换为约束数组。换句话说，我们可以将这两种类型合并到一个公共类型[NSLayoutConstraint]中。</p>
+<p>现在我们可以重写我们的结果生成器实现，并允许它接收我们的LayoutGroup协议:</p>
+<pre><code class="language-swift">@resultBuilder
+struct AutolayoutBuilder {
+    
+    static func buildBlock(_ components: LayoutGroup...) -&gt; [NSLayoutConstraint] {
+        return components.flatMap { $0.constraints }
+    }
+} 
+</code></pre>
+<p>我们使用flatMap映射到一个约束集合。如果你不知道flatMap做了什么，或者为什么我们不使用compactMap，你可以阅读我的文章<a href="https://www.avanderlee.com/swift/compactmap-flatmap-differences-explained/">compactMap vs flatMap: The differences explained</a>。</p>
+<p>最后，我们可以更新我们的实现来使用新的集合构建块处理程序:</p>
+<pre><code class="language-swift">@AutolayoutBuilder var constraints: [NSLayoutConstraint] {
+    // Single constraint
+    swiftLeeLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+    
+    label.constraintsForAnchoringTo(boundsOf: view) // Returns an array
+} 
+</code></pre>
+<h3 id="15-a-namehandlingunwrappingofoptionalsahandling-unwrapping-of-optionals">1.5. <a name='Handlingunwrappingofoptionals'></a>Handling unwrapping of optionals</h3>
+<p>我们需要处理的另一种情况是展开可选内容。这允许我们在存在值时有条件地添加约束。</p>
+<p>为此，我们将buildOptional(..)方法添加到函数构建器中:</p>
+<pre><code class="language-swift">@resultBuilder
+struct AutolayoutBuilder {
+    
+    static func buildBlock(_ components: LayoutGroup...) -&gt; [NSLayoutConstraint] {
+        return components.flatMap { $0.constraints }
+    }
+    
+    static func buildOptional(_ component: [LayoutGroup]?) -&gt; [NSLayoutConstraint] {
+        return component?.flatMap { $0.constraints } ?? []
+    }
+} 
+</code></pre>
+<p>它尝试将结果映射到约束集合中，如果值不存在，则返回一个空集合。</p>
+<p>现在我们可以在构建块定义中打开一个可选的组件:</p>
+<pre><code class="language-swift">@AutolayoutBuilder var constraints: [NSLayoutConstraint] {
+    // Single constraint
+    swiftLeeLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+    
+    label.constraintsForAnchoringTo(boundsOf: view) // Returns an array
+    
+    // Unwrapping an optional
+    if let fixedLogoSize = fixedLogoSize {
+        swiftLeeLogo.widthAnchor.constraint(equalToConstant: fixedLogoSize.width)
+        swiftLeeLogo.heightAnchor.constraint(equalToConstant: fixedLogoSize.height)
+    }
+} 
+</code></pre>
+<h3 id="16-a-namehandlingconditionalstatementsahandling-conditional-statements">1.6. <a name='Handlingconditionalstatements'></a>Handling conditional statements</h3>
+<p>另一种要处理的常见情况是条件语句。基于您想要添加一个或另一个约束的布尔值。这个构建块处理程序基本上可以通过处理条件检查中的第一个或第二个组件来工作:</p>
+<pre><code class="language-swift">@AutolayoutBuilder var constraints: [NSLayoutConstraint] {
+    // Single constraint
+    swiftLeeLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+    
+    label.constraintsForAnchoringTo(boundsOf: view) // Returns an array
+    
+    // Unwrapping an optional
+    if let fixedLogoSize = fixedLogoSize {
+        swiftLeeLogo.widthAnchor.constraint(equalToConstant: fixedLogoSize.width)
+        swiftLeeLogo.heightAnchor.constraint(equalToConstant: fixedLogoSize.height)
+    }
+    
+    // Conditional check
+    if alignLogoTop {
+        // Handle either the first component:
+        swiftLeeLogo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
+    } else {
+        // Or the second component:
+        swiftLeeLogo.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+    }
+} 
+</code></pre>
+<p>这反映了我们需要添加到函数构建器中的构建块处理程序:</p>
+<pre><code class="language-swift"> @resultBuilder
+ struct AutolayoutBuilder {     
+    static func buildBlock(_ components: LayoutGroup...) -&gt; [NSLayoutConstraint] {
+        return components.flatMap { $0.constraints }
+    }
+    
+    static func buildOptional(_ component: [LayoutGroup]?) -&gt; [NSLayoutConstraint] {
+        return component?.flatMap { $0.constraints } ?? []
+    }
+    
+    static func buildEither(first component: [LayoutGroup]) -&gt; [NSLayoutConstraint] {
+        return component.flatMap { $0.constraints }
+    }
+
+    static func buildEither(second component: [LayoutGroup]) -&gt; [NSLayoutConstraint] {
+        return component.flatMap { $0.constraints }
+    }
+}
+</code></pre>
+<p>在两个buildeEither处理程序中，我们都使用了相同的LayoutGroup协议方法来获取约束，并将它们平展返回。</p>
+<p>这是让我们的示例代码工作所需的最后两个构建处理程序，太棒了!</p>
+<p>然而，我们还没有完成。通过在函数内部使用结果构建器，我们可以让这段代码更好一点。</p>
+<h3 id="17-a-nameusingresultbuildersasfunctionparametersausing-result-builders-as-function-parameters">1.7. <a name='Usingresultbuildersasfunctionparameters'></a>Using result builders as function parameters</h3>
+<p>利用结果构建器的一个好方法是将它们定义为函数的参数。这样，我们就可以从自定义的AutolayoutBuilder中获益。</p>
+<p>例如，我们可以在NSLayoutConstraint上做这个扩展，让它更容易激活约束:</p>
+<pre><code class="language-swift">extension NSLayoutConstraint {
+    /// Activate the layouts defined in the result builder parameter `constraints`.
+    static func activate(@AutolayoutBuilder constraints: () -&gt; [NSLayoutConstraint]) {
+        activate(constraints())
+    } 
+</code></pre>
+<p>使用它看起来如下:</p>
+<pre><code class="language-swift">NSLayoutConstraint.activate {
+    // Single constraint
+    swiftLeeLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+    
+    label.constraintsForAnchoringTo(boundsOf: view) // Returns an array
+    
+    // Unwrapping an optional
+    if let fixedLogoSize = fixedLogoSize {
+        swiftLeeLogo.widthAnchor.constraint(equalToConstant: fixedLogoSize.width)
+        swiftLeeLogo.heightAnchor.constraint(equalToConstant: fixedLogoSize.height)
+    }
+    
+    // Conditional check
+    if alignLogoTop {
+        // Handle either the first component:
+        swiftLeeLogo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor)
+    } else {
+        // Or the second component:
+        swiftLeeLogo.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+    }
+} 
+</code></pre>
+<p>现在我们有了这个方法，我们也可以在UIView上创建一个方便的方法来直接添加带有约束的子视图:</p>
+<pre><code class="language-swift"> protocol SubviewContaining { }
+ extension UIView: SubviewContaining { }
+ extension SubviewContaining where Self == UIView {
+     
+    /// Add a child subview and directly activate the given constraints.
+    func addSubview&lt;View: UIView&gt;(_ view: View, @AutolayoutBuilder constraints: (Self, View) -&gt; [NSLayoutConstraint]) {
+        addSubview(view)
+        NSLayoutConstraint.activate(constraints(self, view))
+    }
+} 
+</code></pre>
+<p>我们可以这样使用:</p>
+<pre><code class="language-swift">let containerView = UIView()
+containerView.addSubview(label) { containerView, label in
+    
+    if label.numberOfLines == 1 {
+        // Conditional constraints
+    }
+    
+    // Or just use an array:
+    label.constraintsForAnchoringTo(boundsOf: containerView)
+    
+} 
+</code></pre>
+<p>当我们使用泛型时，我们可以根据UIView的输入类型进行条件检查。在本例中，如果我们的标签只有一行文本，我们可以添加不同的约束。</p>
+<h3 id="18-a-namehowtocomeupwithcustomresultbuilderimplementationsahow-to-come-up-with-custom-result-builder-implementations">1.8. <a name='Howtocomeupwithcustomresultbuilderimplementations'></a>How to come up with custom result builder implementations?</h3>
+<p>我听到你在想: 我怎么知道结果生成器对特定的代码有用?</p>
+<p>当您看到一段由几个条件元素构建并转换为返回类型的单一公共部分的代码时，您可以考虑编写结果构建器。但是，只有当你知道你需要更频繁地写它时才这样做。</p>
+<p>当你在代码中编写自动布局约束时，你在很多地方都在这样做。因此，值得为它编写一个定制的结果构建器。当你将每个约束集合(不管是单一的还是非单一的)视为一个单独的构建块时，约束也会由多个“构建块”构建而成。</p>
+<h3 id="19-a-nameconclusionaconclusion">1.9. <a name='Conclusion'></a>Conclusion</h3>
+<p>结果生成器是Swift 5.4的一个超级强大的补充，它允许我们编写自定义的领域特定语言，这可以真正改善我们编写代码的方式。我希望在阅读了本文之后，您可以更容易地考虑自定义函数构建器，它可以在实施阶段上简化您的代码。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/7XtCFTYLr/" class="tag">
+                    result builder
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-zhong-zen-yang-shi-yong-ke-bian-can-shu/">
+                  <h3 class="post-title">
+                    Swift中怎样使用可变参数？
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

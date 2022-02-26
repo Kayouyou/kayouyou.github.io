@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 77:Effectful State Management: Unidirectional Effects | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Recap
+
+
+
+
+Synchronous effects that produce results
+
+
+
+
+Combining multiple effects that produce resu..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 77:Effectful State Management: Unidirectional Effects</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Recap">Recap</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Synchronouseffectsthatproduceresults">Synchronous effects that produce results</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Combiningmultipleeffectsthatproduceresults">Combining multiple effects that produce results</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Pullinglocaleffectsbackglobally">Pulling local effects back globally</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Workingwithourneweffects">Working with our new effects</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Whatsunidirectionaldataflow">What’s unidirectional data flow?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 77:Effectful State Management: Unidirectional Effects -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>我们已经将第一个<strong>effect</strong>提取到我们的架构中。让我们回顾一下我们刚刚完成了什么。</p>
+<h2 id="2-a-namerecaparecap">2. <a name='Recap'></a>Recap</h2>
+<p>在我们看来，我们有一个副作用，将最喜欢的质数保存到磁盘上，我们知道我们需要一些方法来控制。一方面，它是不可测试的代码，另一方面，我们发现简化视图的一个有用方法是将所有的逻辑移动到我们的<strong>reducer</strong>中，并简单地让视图负责向<strong>store</strong>发送用户操作。</p>
+<p>因此，我们很天真地将副作用代码移动到<strong>reducer</strong>中。这在技术上完成了任务，但却破坏了<strong>reducer</strong>的所有良好的可测试性和可理解性。</p>
+<p>因此，我们回顾了从之前的章节中学到的关于副作用的一些经验教训，特别是我们经常可以通过引入一个新的输出到函数的边界，表示我们想要执行的<strong>effect</strong>，而不实际执行它。</p>
+<p>这导致我们将<strong>reducer</strong>签名更改为一个返回<strong>void-to-void</strong>闭包的函数，该函数可以保存副作用工作，而无需实际执行它，从而将执行工作的责任传递给<strong>store</strong>。</p>
+<p>在修正了一些编译器错误之后，我们终于能够将保存工作封装在一个闭包中，并让<strong>store</strong>库为我们运行它，而不是在reducer中运行它。最重要的是，像这样改变<strong>reducer</strong>签名并没有阻止我们仍然拥有可组合<strong>reducer</strong>和<strong>store</strong>，这是这种类型架构背后的真正力量。</p>
+<p>这是我们在架构中引入<strong>effect</strong>的第一步，这是一个简单的<strong>effect</strong>。我们还有几个步骤要做，因为我们需要建模更复杂的<strong>effect</strong>。 例如，加载最喜欢的质数列表与保存有一点不同。保存主要是一个“射后不理”的操作，我们只运行工作，不需要向<strong>reducer</strong>反馈发生了什么事情。</p>
+<p>然而，加载做了一些工作来从磁盘加载数据，然后我们想要将这些工作反馈给<strong>reducer</strong>。</p>
+<p>所以让我们来看看我们需要如何改变这个影响模型来获得这种能力。</p>
+<h2 id="3-a-namesynchronouseffectsthatproduceresultsasynchronous-effects-that-produce-results">3. <a name='Synchronouseffectsthatproduceresults'></a>Synchronous effects that produce results</h2>
+<p>我们现在想把这个加载的副作用到我们的<strong>reducer</strong>。</p>
+<pre><code class="language-swift">Button(&quot;Load&quot;) {
+  let documentsPath = NSSearchPathForDirectoriesInDomains(
+    .documentDirectory, .userDomainMask, true
+    )[0]
+  let documentsUrl = URL(fileURLWithPath: documentsPath)
+  let favoritePrimesUrl = documentsUrl
+    .appendingPathComponent(&quot;favorite-primes.json&quot;)
+  guard
+    let data = try? Data(contentsOf: favoritePrimesUrl),
+    let favoritePrimes = try? JSONDecoder().decode([Int].self, from: data)
+    else { return }
+  self.store.send(.loadedFavoritePrimes(favoritePrimes))
+}
+</code></pre>
+<p>当点击加载按钮时，我们已经有一个<strong>action</strong>被发送到<strong>store</strong>，但它并不完全正确。视图正在做附带的工作来获取最喜欢的质数数组，然后在操作中将数据发送到<strong>store</strong>。我们想把这个副作用移动到<strong>reducer</strong>上，所以让我们把加载按钮改为发送一个<strong>action</strong>到<strong>store</strong>。</p>
+<pre><code class="language-swift">Button(&quot;Load&quot;) {
+  self.store.send(.loadButtonTapped)
+</code></pre>
+<p>为了让它起作用，我们需要在<strong>action enum</strong>中引入一个新的<strong>action</strong>:</p>
+<pre><code class="language-swift">public enum FavoritePrimesAction {
+  // …
+  case loadButtonTapped
+</code></pre>
+<p>我们需要在<strong>reducer</strong>中处理这种情况:</p>
+<pre><code class="language-swift">case .loadButtonTapped:
+</code></pre>
+<p>但是我们在这里做什么呢?我们想做之前在视图中做的所有工作。</p>
+<pre><code class="language-swift">case .loadButtonTapped:
+  let documentsPath = NSSearchPathForDirectoriesInDomains(
+    .documentDirectory, .userDomainMask, true
+    )[0]
+  let documentsUrl = URL(fileURLWithPath: documentsPath)
+  let favoritePrimesUrl = documentsUrl
+    .appendingPathComponent(&quot;favorite-primes.json&quot;)
+  guard
+    let data = try? Data(contentsOf: favoritePrimesUrl),
+    let favoritePrimes = try? JSONDecoder().decode([Int].self, from: data)
+    else { return }
+  self.store.send(.favoritePrimesLoaded(favoritePrimes))
+</code></pre>
+<p>不过，我们不想直接做这项工作。我们想把它包装成一个<strong>effect closure</strong>，这样<strong>reducer</strong>就不会执行副作用，而由<strong>store</strong>执行。</p>
+<pre><code class="language-swift">case .loadButtonTapped:
+  return {
+    let documentsPath = NSSearchPathForDirectoriesInDomains(
+      .documentDirectory, .userDomainMask, true
+      )[0]
+    let documentsUrl = URL(fileURLWithPath: documentsPath)
+    let favoritePrimesUrl = documentsUrl
+      .appendingPathComponent(&quot;favorite-primes.json&quot;)
+    guard
+      let data = try? Data(contentsOf: favoritePrimesUrl),
+      let favoritePrimes = try? JSONDecoder().decode([Int].self, from: data)
+      else { return }
+    self.store.send(.favoritePrimesLoaded(favoritePrimes))
+  }
+</code></pre>
+<blockquote>
+<p>🛑 Use of unresolved identifier ‘self’</p>
+</blockquote>
+<p>但这也不完全正确。我们想把所有这些工作的结果发送到<strong>store</strong>，但是在<strong>reducer</strong>中，我们没有<strong>self或store</strong>可供我们使用。</p>
+<p>当这个逻辑在视图中时，它运行<strong>effect</strong>，并向<strong>store</strong>发送一个<strong>action</strong>，让它知道应该更改状态。现在，我们已经移动到我们的<strong>reducer</strong>的<strong>effect</strong>，我们需要重新考虑的事情，因为我们需要提供一种方式，采取一个<strong>effect</strong>的结果，并将其直接返回到<strong>reducer</strong>!</p>
+<p>遗憾的是，这意味着我们目前建模<strong>effect</strong>的方式(如()-&gt; Void闭包)并不十分正确。它需要多一点，以便能够使改变<strong>reducer</strong>的未来状态。我们已经有了一个<strong>action</strong>，<strong>favoritePrimesLoaded</strong>，它就是这样做的，所以它听起来不是向Void发射<strong>effect</strong>，而是需要给它们返回一个可以影响状态的<strong>action</strong>的能力。</p>
+<p>这意味着也许我们的<strong>effect</strong>类型应该有以下签名:</p>
+<pre><code class="language-swift">public typealias Effect&lt;Action&gt; = () -&gt; Action
+</code></pre>
+<p>这意味着在Effect闭包中发生的工作可以只对完成完成<strong>effect</strong>所需的最小工作感兴趣，然后通过将其包装在<strong>action</strong>中将工作结果发送回<strong>reducer</strong>。</p>
+<p>但这并不是我们想要的形状，因为并不是所有的<strong>effect</strong>都会产生需要反馈到系统中的数据。 例如，我们现有的<strong>effect</strong>是将最喜欢的质数写入磁盘。也许我们想要的是让<strong>effect</strong>返回一个可选的<strong>action</strong>，这样<strong>fire-and-forget</strong>的<strong>effect</strong>就可以返回nil，这些会被store忽略。</p>
+<pre><code class="language-swift">public typealias Effect&lt;Action&gt; = () -&gt; Action?
+</code></pre>
+<p>我们可以相应地更新我们的<strong>reducer</strong>签名。</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action&gt; = (inout Value, Action) -&gt; Effect
+</code></pre>
+<blockquote>
+<p>🛑 Reference to generic type ‘Effect’ requires arguments in &lt;…&gt;<br>
+通过提供Action泛型。</p>
+</blockquote>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action&gt; = (inout Value, Action) -&gt; Effect&lt;Action&gt;
+</code></pre>
+<p>send函数再次需要更新。</p>
+<pre><code class="language-swift">public func send(_ action: Action) {
+  let effect = self.reducer(&amp;self.value, action)
+  effect()
+</code></pre>
+<blockquote>
+<p>⚠️ Result of call to function returning ‘Action?’ is unused</p>
+</blockquote>
+<p>这是一个很好的警告。现在调用<strong>effect</strong>将返回一个需要处理的值，因此我们应该处理它</p>
+<pre><code class="language-swift">public func send(_ action: Action) {
+  let effect = self.reducer(&amp;self.value, action)
+  let action = effect()
+</code></pre>
+<p>这是一个可选的操作，所以我们可以先尝试打开它。</p>
+<pre><code class="language-swift">public func send(_ action: Action) {
+  let effect = self.reducer(&amp;self.value, action)
+  if let action = effect() {
+
+  }
+</code></pre>
+<p>我们可以将这个<strong>action</strong>反馈回发送。</p>
+<pre><code class="language-swift">public func send(_ action: Action) {
+  let effect = self.reducer(&amp;self.value, action)
+  if let action = effect() {
+    self.send(action)
+  }
+</code></pre>
+<p>这是我们得到的一种反馈循环:当一个<strong>effect</strong>运行时，如果它产生了一个<strong>action</strong>，我们可以直接将它反馈给<strong>store</strong>。</p>
+<p>视图方法还没有编译。无操作闭包现在必须显式返回一个空操作。</p>
+<pre><code class="language-swift">return { nil }
+</code></pre>
+<p>我们的<strong>reducer</strong>合成函数需要更新。第一:<strong>combine</strong>。</p>
+<pre><code class="language-swift">public func combine&lt;Value, Action&gt;(
+  _ reducers: Reducer&lt;Value, Action&gt;...
+) -&gt; Reducer&lt;Value, Action&gt; {
+  return { value, action in
+    let effects = reducers.map { $0(&amp;value, action) }
+    return {
+      for effect in effects {
+        effect()
+      }
+    }
+</code></pre>
+<blockquote>
+<p>⚠️ Result of call to function returning ‘Action?’ is unused</p>
+</blockquote>
+<p>这和之前的警告是一样的，这是一个很好的警告，因为它让我们知道我们没有处理<strong>effect</strong>可能产生的<strong>action</strong>。</p>
+<pre><code class="language-swift">return {
+  for effect in effects {
+    let action = effect()
+  }
+}
+</code></pre>
+<p>让我们记住这里返回的是一个(**)-&gt; Action?**闭包。</p>
+<p>在这个闭包中，我们需要返回一个可选的操作。</p>
+<p>严格来说，我们已经有一个了，所以我们可以马上还回去。</p>
+<pre><code class="language-swift">return { () -&gt; Action? in
+  for effect in effects {
+    let action = effect()
+    return action
+  }
+}
+</code></pre>
+<p>这不是我们想要的，因为这意味着我们将只执行第一个<strong>effect</strong>，并且只有它的可选操作可以反馈到<strong>reducer</strong>。这意味着以后产生的任何其他影响将被忽略。</p>
+<p>相反，我们可以运行每个<strong>effect</strong>并跟踪最终产生的非零操作。</p>
+<pre><code class="language-swift">return { () -&gt; Action? in
+  var finalAction: Action?
+  for effect in effects {
+    let action = effect()
+    if let action = action {
+      finalAction = action
+    }
+  }
+  return finalAction
+}
+</code></pre>
+<p>但这也很奇怪，因为尽管我们运行了所有的<strong>effect</strong>，但我们只提供了一系列<strong>effect</strong>产生的最后一个<strong>action</strong>，这意味着我们可能会错过一些应该反馈给<strong>store</strong>的<strong>action</strong>。</p>
+<h2 id="4-a-namecombiningmultipleeffectsthatproduceresultsacombining-multiple-effects-that-produce-results">4. <a name='Combiningmultipleeffectsthatproduceresults'></a>Combining multiple effects that produce results</h2>
+<p>看来我们的<strong>reducer</strong>函数的形状还是不太对。</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action&gt; = (inout Value, Action) -&gt; Effect&lt;Action&gt;
+</code></pre>
+<p>返回一个动作的单个<strong>effect</strong>不太足够，因为当我们把还原器结合在一起时，我们被迫丢失一些信息。</p>
+<p>相反，如果我们的简化程序可以返回<strong>effect</strong>数组，我们就可以解决这个问题。</p>
+<pre><code class="language-swift">public typealias Reducer&lt;Value, Action&gt; = (inout Value, Action) -&gt; [Effect&lt;Action&gt;]
+</code></pre>
+<p>这破坏了<strong>send</strong>，因为我们现在必须循环每个<strong>effect</strong>并在将其返回到发送方法之前展开它。</p>
+<pre><code class="language-swift">public func send(_ action: Action) {
+  let effects = self.reducer(&amp;self.value, action)
+  effects.forEach { effect in
+    if let action = effect() {
+      self.send(action)
+    }
+  }
+}
+</code></pre>
+<p>在视图方法中，我们现在可以返回一个空数组，而不是nil的无操作闭包。</p>
+<pre><code class="language-swift">return []
+</code></pre>
+<p>现在我们应该能够重新定义<strong>combine</strong>函数了。<strong>effect</strong>现在以数组的形式返回，因此映射到<strong>reducer</strong>上并收集它们的所有<strong>effect</strong>的结果导致了<strong>effect</strong>的嵌套数组。</p>
+<pre><code class="language-swift">public func combine&lt;Value, Action&gt;(
+  _ reducers: Reducer&lt;Value, Action&gt;...
+) -&gt; Reducer&lt;Value, Action&gt; {
+  return { value, action in
+    let effects = reducers.map { $0(&amp;value, action) }
+    ///let effects: [[() -&gt; Action?]]
+</code></pre>
+<p>每当您遇到这种嵌套问题，即映射一个值进一步嵌套它时，我们可以转向<strong>flatMap</strong>! 因此，通过将<strong>map</strong>更新为<strong>flatMap</strong>，我们可以将<strong>reducer</strong>映射到<strong>effect</strong>数组中，然后将它们展开为<strong>effect</strong>浅数组。</p>
+<pre><code class="language-swift">let effects = reducers.flatMap { $0(&amp;value, action) }
+</code></pre>
+<p>这正是我们要返回的。</p>
+<pre><code class="language-swift">return effects
+</code></pre>
+<h2 id="5-a-namepullinglocaleffectsbackgloballyapulling-local-effects-back-globally">5. <a name='Pullinglocaleffectsbackglobally'></a>Pulling local effects back globally</h2>
+<p>What about <strong>pullback</strong>?</p>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction&gt;(
+  _ reducer: @escaping Reducer&lt;LocalValue, LocalAction&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; Reducer&lt;GlobalValue, GlobalAction&gt; {
+  return { globalValue, globalAction in
+    guard let localAction = globalAction[keyPath: action] else { return {} }
+</code></pre>
+<blockquote>
+<p>🛑 Cannot convert return expression of type ‘() -&gt; ()’ to return type ‘[() -&gt; GlobalAction]’</p>
+</blockquote>
+<p>这里我们可以将空闭包替换为空数组。</p>
+<pre><code class="language-swift">guard let localAction = globalAction[keyPath: action] else { return [] }
+</code></pre>
+<p>对于第二个错误，我们必须处理这样一个事实:<strong>effects</strong>现在具有返回操作的能力，在这里我们同时处理局部操作和全局操作。</p>
+<pre><code class="language-swift">let effect = reducer(&amp;globalValue[keyPath: value], localAction)
+return effect
+</code></pre>
+<blockquote>
+<p>🛑 Cannot convert return expression of type ‘[() -&gt; LocalAction]’ to return type ‘[() -&gt; GlobalAction]’</p>
+</blockquote>
+<p>我们可以将<strong>effect</strong>重命名为<strong>localEffects</strong>，因为它现在是一个返回局部操作的局部效果数组。</p>
+<pre><code class="language-swift">let localEffects = reducer(&amp;globalValue[keyPath: value], localAction)
+</code></pre>
+<p>我们需要以某种方式将返回局部操作的局部<strong>effects</strong> 数组转换为返回全局操作的全局<strong>effects</strong> 数组。让我们试试<strong>map</strong>。每次闭包运行时，它都会传递一个局部<strong>effect</strong>。</p>
+<pre><code class="language-swift">localEffects.map { localEffect in
+
+}
+</code></pre>
+<p>我们知道我们需要返回一个全局<strong>effect</strong>，所以我们可以返回一个全新的闭包来描述这个<strong>effect</strong>。</p>
+<pre><code class="language-swift">localEffects.map { localEffect in
+  return { () -&gt; GlobalAction? in
+
+  }
+}
+</code></pre>
+<p>但我们如何产生全球<strong>effect</strong>呢? 我们需要这个闭包返回一个可选的全局操作，最好是从可选的局部操作返回。我们可以通过执行局部<strong>effect</strong>来获得可选的局部动作。</p>
+<pre><code class="language-swift">localEffects.map { localEffect in
+  return { () -&gt; GlobalAction? in
+    let localAction = localEffect()
+
+  }
+}
+</code></pre>
+<p>如果我们不能解包它，我们可以返回一个nil全局操作。</p>
+<pre><code class="language-swift">localEffects.map { localEffect in
+  return { () -&gt; GlobalAction? in
+    guard let localAction = localEffect() else { return nil }
+
+  }
+}
+</code></pre>
+<p>在这个<strong>guard</strong>之后，我们有一个诚实的地方行动，但我们所处的闭包需要一个全局行动。我们怎么做呢?</p>
+<p>幸运的是，我们有一个可写的键路径可以做到这一点!为了获得一个可变的全局操作，我们可以进行复制。</p>
+<pre><code class="language-swift">localEffects.map { localEffect in
+  return { () -&gt; GlobalAction? in
+    guard let localAction = localEffect() else { return nil }
+    var globalAction = globalAction
+
+  }
+}
+</code></pre>
+<p>从这里开始，我们可以使用键路径下标嵌入一个局部操作。</p>
+<pre><code class="language-swift">localEffects.map { localEffect in
+  return { () -&gt; GlobalAction? in
+    guard let localAction = localEffect() else { return nil }
+    var globalAction = globalAction
+    globalAction[keyPath: action] = localAction
+
+  }
+}
+</code></pre>
+<p>最后，我们可以从全局<strong>effect</strong>中返回全局<strong>action</strong>。</p>
+<pre><code class="language-swift">localEffects.map { localEffect in
+  return { () -&gt; GlobalAction? in
+    guard let localAction = localEffect() else { return nil }
+    var globalAction = globalAction
+    globalAction[keyPath: action] = localAction
+    return globalAction
+  }
+}
+</code></pre>
+<p>我们最终可以返回结果。</p>
+<pre><code class="language-swift">return localEffects.map { localEffect in
+</code></pre>
+<p>编译器对<strong>pullback</strong>很满意。让我们花点时间来解释一下发生了什么因为这个函数做了很多事情。</p>
+<p>非常棒的是，我们为<strong>action enum</strong>生成的<strong>enum</strong>属性带有<strong>setter</strong>，这样我们就可以从它们中获得可写键路径，这正是我们实现这个<strong>pullback</strong>所需要的。</p>
+<p><strong>pullback</strong>函数是我们将作用于局部状态和行动的<strong>reducer</strong>转换为作用于全局状态和行动的<strong>reducer</strong>的方法。它通过构建一个全局<strong>reducer</strong>,当全局state和action到来时,它使用关键路径提取局部state和action,本地<strong>reducer</strong>运行它,然后使用关键路径来填补新局部状态回到全局状态。</p>
+<p>除此之外，运行局部<strong>reducer</strong>现在会产生一个局部<strong>effects</strong>数组，即可以将局部操作发送回系统的效果。我们可以通过运行局部<strong>effect</strong>，获取产生的局部<strong>action</strong>，并使用可写键路径将其嵌入到全局<strong>action</strong>中，从而将局部<strong>effect</strong>转换为全局<strong>effect</strong>。将此转换应用于局部<strong>effect</strong>数组中的每个<strong>effect</strong>，就完成了这个函数的实现。</p>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction&gt;(
+  _ reducer: @escaping Reducer&lt;LocalValue, LocalAction&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; Reducer&lt;GlobalValue, GlobalAction&gt; {
+  return { globalValue, globalAction in
+    guard let localAction = globalAction[keyPath: action] else { return [] }
+    let localEffects = reducer(&amp;globalValue[keyPath: value], localAction)
+    return localEffects.map { localEffect in
+      return { () -&gt; GlobalAction? in
+        guard let localAction = localEffect() else { return nil }
+        var globalAction = globalAction
+        globalAction[keyPath: action] = localAction
+        return globalAction
+      }
+    }
+  }
+}
+</code></pre>
+<p><strong>pullback</strong>做了很多，但这都是很自然的机械工作。在实现这个函数的时候，我们没有太多的选择。它基本上总是一个<strong>用关键路径将局部内容转换为全局内容的过程</strong>。</p>
+<p>我们在这个文件中还有一个东西需要更新，那就是<strong>logging</strong>的高阶减速器。</p>
+<pre><code class="language-swift">public func logging&lt;Value, Action&gt;(
+  _ reducer: @escaping Reducer&lt;Value, Action&gt;
+) -&gt; Reducer&lt;Value, Action&gt; {
+  return { value, action in
+    let effect = reducer(&amp;value, action)
+    let newValue = value
+    return {
+</code></pre>
+<blockquote>
+<p>🛑 Cannot convert return expression of type ‘() -&gt; ()’ to return type ‘[() -&gt; Action?]’</p>
+</blockquote>
+<p>我们需要做一些改动。<strong>reducer</strong>现在返回一个<strong>effects</strong>数组。</p>
+<pre><code class="language-swift">return { value, action in
+  let effects = reducer(&amp;value, action)
+</code></pre>
+<p>我们需要在这些<strong>effects</strong>之前加上我们的 <strong>logging effect</strong>。</p>
+<pre><code class="language-swift">public func logging&lt;Value, Action&gt;(
+  _ reducer: @escaping Reducer&lt;Value, Action&gt;
+) -&gt; Reducer&lt;Value, Action&gt; {
+  return { value, action in
+    let effects = reducer(&amp;value, action)
+    let newValue = value
+    return [{
+      print(&quot;Action: \(action)&quot;)
+      print(&quot;Value:&quot;)
+      dump(newValue)
+      print(&quot;---&quot;)
+      return nil
+    }] + effects
+  }
+}
+</code></pre>
+<h2 id="6-a-nameworkingwithourneweffectsaworking-with-our-new-effects">6. <a name='Workingwithourneweffects'></a>Working with our new effects</h2>
+<p>好吧! 可组合架构现在已经完全构建好了，但是最受欢迎的质数模块还没有。</p>
+<p>首先，我们可以更新签名，以在其操作类型上返回一个<strong>effects</strong>泛型数组。</p>
+<pre><code class="language-swift">public func favoritePrimesReducer(
+  state: inout [Int], action: FavoritePrimesAction
+) -&gt; [Effect&lt;FavoritePrimesAction&gt;] {
+</code></pre>
+<p>现在我们有个<strong>effect</strong>需要解决。我们可以将<strong>no-op</strong>闭包更新为<strong>no-op</strong>数组。</p>
+<pre><code class="language-swift">case let .deleteFavoritePrimes(indexSet):
+  for index in indexSet {
+    state.remove(at: index)
+  }
+  return []
+
+case let .loadedFavoritePrimes(favoritePrimes):
+  state = favoritePrimes
+  return []
+</code></pre>
+<p><strong>savebuttontap effect</strong>需要包装在一个数组中，并返回<strong>nil</strong>，以表示它是一个射后不理的操作，不会将任何结果返回给<strong>store</strong>。</p>
+<pre><code class="language-swift">case .saveButtonTapped:
+  let state = state
+  return [{
+    let data = try! JSONEncoder().encode(state)
+    let documentsPath = NSSearchPathForDirectoriesInDomains(
+      .documentDirectory, .userDomainMask, true
+      )[0]
+    let documentsUrl = URL(fileURLWithPath: documentsPath)
+    let favoritePrimesUrl = documentsUrl
+      .appendingPathComponent(&quot;favorite-primes.json&quot;)
+    try! data.write(to: favoritePrimesUrl)
+    return nil
+  }]
+</code></pre>
+<p><strong>loadbuttontap</strong>也是类似的情况。我们可以先把它包装在一个数组中:</p>
+<pre><code class="language-swift">case .loadButtonTapped:
+  return [{
+    let documentsPath = NSSearchPathForDirectoriesInDomains(
+      .documentDirectory, .userDomainMask, true
+      )[0]
+    let documentsUrl = URL(fileURLWithPath: documentsPath)
+    let favoritePrimesUrl = documentsUrl
+      .appendingPathComponent(&quot;favorite-primes.json&quot;)
+    guard
+      let data = try? Data(contentsOf: favoritePrimesUrl),
+      let favoritePrimes = try? JSONDecoder().decode([Int].self, from: data)
+      else { return }
+    self.store.send(.favoritePrimesLoaded(favoritePrimes))
+  }]
+</code></pre>
+<p>以前我们依赖于对<strong>store</strong>的访问，现在我们可以直接从<strong>effect</strong>返回此操作，以便<strong>store</strong>稍后可以对其进行执行。</p>
+<pre><code class="language-swift">return .favoritePrimesLoaded(favoritePrimes)
+</code></pre>
+<p>最后，我们现在需要返回之前纾困的nil。</p>
+<pre><code class="language-swift">else { return nil }
+</code></pre>
+<p>该模块现在处于构建顺序中，所以我们应该能够运行我们的<strong>playground</strong>，在那里一切都像以前一样工作，但现在所有的副作用都由<strong>store</strong>执行，而我们的<strong>reducer</strong>仍然是一个纯粹的函数。</p>
+<p>一个关于移动这个<strong>effect</strong>的工作到<strong>reducer</strong>的缺点是我们的<strong>reducer</strong>已经变得相当大。</p>
+<p>当我们支持更多的<strong>actions</strong>和更多的<strong>effects</strong>时，我们面临着<strong>reducer</strong>变得巨大和难以阅读的风险。<br>
+一个常见的解决方法是把这个<strong>effect</strong>提取出来给小的私人助手函数，这样我们的<strong>reducer</strong>就可以保持漂亮和简洁。例如，我们可以将保存效果提取到一个私有函数中。</p>
+<pre><code class="language-swift">private func saveEffect(favoritePrimes: [Int]) -&gt; Effect&lt;FavoritePrimesAction&gt; {
+  return {
+    let data = try! JSONEncoder().encode(favoritePrimes)
+    let documentsPath = NSSearchPathForDirectoriesInDomains(
+      .documentDirectory, .userDomainMask, true
+      )[0]
+    let documentsUrl = URL(fileURLWithPath: documentsPath)
+    try! data.write(to: documentsUrl.appendingPathComponent(&quot;favorite-primes.json&quot;))
+    return nil
+  }
+}
+</code></pre>
+<p>我们可以从<strong>reducer</strong>中调用它。</p>
+<pre><code class="language-swift">case .saveButtonTapped:
+  let state = state
+  return [saveEffect(favoritePrimes: state)]
+</code></pre>
+<p>我们还可以移除在效果闭包中访问状态所需的<strong>let state = state</strong>。这以前是必需的，因为state是可变的，而且不允许从逃逸闭包访问它。但在我们的<strong>saveEffect</strong>函数中，我们可以显式地表示我们想要一个不可变的整数数组，所以现在我们可以直接将<strong>state</strong>传递给它。</p>
+<pre><code class="language-swift">case .saveButtonTapped:
+  return [saveEffect(favoritePrimes: state)]
+</code></pre>
+<p>负载效应可以类似地提取:</p>
+<pre><code class="language-swift">private let loadEffect: Effect&lt;FavoritePrimesAction&gt; = {
+  let documentsPath = NSSearchPathForDirectoriesInDomains(
+    .documentDirectory, .userDomainMask, true
+    )[0]
+  let documentsUrl = URL(fileURLWithPath: documentsPath)
+  let favoritePrimesUrl = documentsUrl
+    .appendingPathComponent(&quot;favorite-primes.json&quot;)
+  guard
+    let data = try? Data(contentsOf: favoritePrimesUrl),
+    let favoritePrimes = try? JSONDecoder().decode([Int].self, from: data)
+    else { return nil }
+  return .favoritePrimesLoaded(favoritePrimes)
+}
+</code></pre>
+<p>And called out to in the reducer:</p>
+<pre><code class="language-swift">case .loadButtonTapped:
+  return [loadEffect]
+</code></pre>
+<p>通过提取这些<strong>effects</strong>，我们已经使我们的<strong>reducer</strong>更加简洁。将复杂的内联效果重构到提取的帮助程序中总是很容易的。</p>
+<h2 id="7-a-namewhatsunidirectionaldataflowawhats-unidirectional-data-flow">7. <a name='Whatsunidirectionaldataflow'></a>What’s unidirectional data flow?</h2>
+<p>又提取了一个<strong>effect</strong>。让我们再花一点时间来回顾一下我们所取得的成就。</p>
+<p>我们想从我们的视图中提取磁盘<strong>effect</strong>的加载，并以某种方式在<strong>reducer</strong>中建模。我们很快意识到这种<strong>effect</strong>与我们之前处理的<strong>effect</strong>不太一样。保存的效果本质上是“射后不理”，它只是完成了自己的工作，之后不需要通知任何人任何事情。</p>
+<p>然而，加载<strong>effect</strong>需要以某种方式将加载的数据反馈到<strong>reducer</strong>中，以便我们能够作出反应。这导致我们将签名从一个空到空的闭包重构为一个空到可选的动作闭包。这允许<strong>effect</strong>做最少的必要工作来完成工作，然后通过发送另一个动作将结果返回到<strong>reducer</strong>。 然后，<strong>store</strong>成为这些<strong>effects</strong>的解释器，首先运行<strong>reducer</strong>，收集所有想要执行的效果，遍历该错误以执行<strong>effects</strong>，然后将<strong>effects</strong>产生的任何操作发送回<strong>store</strong>。</p>
+<p>这就是人们所说的“单向数据流”。数据只会以一种方式被改变:一个动作进入<strong>reducer</strong>，它允许<strong>reducer</strong>改变状态。如果你想通过一些副作用来改变状态，你别无选择，只能构建一个新的动作，然后反馈给<strong>reducer</strong>，只有这样你才有能力改变。</p>
+<p>这种类型的数据流是非常容易理解的，因为您只有一个地方可以查看状态如何发生突变，但它的代价是需要添加额外的操作，以便将效果<strong>effects</strong>返回到<strong>reducer</strong>中。这就是为什么许多UI框架，包括<strong>SwiftUI</strong>，提供了一些方法来避开严格的单向风格，以便简化使用，就像他们使用双向绑定一样，但这可能以使数据通过UI的方式复杂化为代价。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-76effectful-state-management-synchronous-effects/">
+                  <h3 class="post-title">
+                    PointFree Episode 76:Effectful State Management: Synchronous Effects
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

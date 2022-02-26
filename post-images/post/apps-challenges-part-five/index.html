@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>App&#39;s challenges - Part Five | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+CHALLENGES DUE TO STEPPING UP YOUR GAME
+
+
+1.1. EXPERIMENTATION
+1.2. FEATURE FLAG HELL
+1.3. PERFORMANCE
+1.4. ANALYTIC..." />
+    <meta name="keywords" content="app-challenge-5" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">App&#39;s challenges - Part Five</h2>
+            <div class="post-date">2021-05-05</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.pexels.com/photos/3077882/pexels-photo-3077882.jpeg?auto=compress&amp;cs=tinysrgb&amp;dpr=2&amp;w=500')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#CHALLENGESDUETOSTEPPINGUPYOURGAME">CHALLENGES DUE TO STEPPING UP YOUR GAME</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#EXPERIMENTATION">EXPERIMENTATION</a></li>
+<li>1.2. <a href="#FEATUREFLAGHELL">FEATURE FLAG HELL</a></li>
+<li>1.3. <a href="#PERFORMANCE">PERFORMANCE</a></li>
+<li>1.4. <a href="#ANALYTICSMONITORINGANDALERTING">ANALYTICS, MONITORING AND ALERTING</a></li>
+<li>1.5. <a href="#MOBILEONCALL">MOBILE ONCALL</a></li>
+<li>1.6. <a href="#ADVANCEDCODEQUALITYCHECKS">ADVANCED CODE QUALITY CHECKS</a></li>
+<li>1.7. <a href="#COMPLIANCEPRIVACYANDSECURITY">COMPLIANCE, PRIVACY AND SECURITY</a></li>
+<li>1.8. <a href="#CLIENT-SIDEDATAMIGRATIONS">CLIENT-SIDE DATA MIGRATIONS</a></li>
+<li>1.9. <a href="#FORCEDUPGRADING">FORCED UPGRADING</a></li>
+<li>1.10. <a href="#APPSIZE">APP SIZE</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namechallengesduetosteppingupyourgameachallenges-due-to-stepping-up-your-game">1. <a name='CHALLENGESDUETOSTEPPINGUPYOURGAME'></a>CHALLENGES DUE TO STEPPING UP YOUR GAME</h2>
+<p>当你的目标不只是创造一款足够优秀的手机应用，而是创造一种最佳体验时，你的移动工程方法便会发生改变。这种方法的改变可能是因为你的应用服务于数百万用户，也可能是因为你希望从一开始就将世界一流的手机体验融入应用的DNA中。</p>
+<p>这一部分涵盖了“世界级”应用在早期所解决的问题。我们将讨论非功能方面，如代码质量、遵从性、隐私性、遵从性。我们还会进行试验和功能标记方法，这是创新应用的关键，你需要关注的其他领域，如性能、应用大小或强制升级方法。</p>
+<h3 id="11-a-nameexperimentationaexperimentation">1.1. <a name='EXPERIMENTATION'></a>EXPERIMENTATION</h3>
+<p>任何拥有能够带来合理收益的手机应用的公司都会进行A/B测试，即使是很小的改变。这种方法既可以衡量变化的影响，又可以确保不会出现对客户和收入产生负面影响的重大回归。</p>
+<p>功能标志只是实验系统的第一个必要工具。通过分段和用户桶式控制推出，分析结果，检测和响应回归和实验后分析，构成了一个先进和强大的实验系统。</p>
+<p>当你的规模很小的时候，实验很容易，主要是因为你很少有超过几个实验在进行。与优步规模的应用相比，它可能在任何给定时间运行超过1000个实验，每个实验针对不同的城市和目标群体，有些实验相互影响。</p>
+<p>工具是问题的一部分。有很多相当成熟的实验系统——有些是为本地手机而建的——从头开始。</p>
+<p>内部实验系统在大公司中很常见，原因如下:</p>
+<ul>
+<li>
+<p><strong>新奇系统</strong>。许多系统都是新颖的，随着公司内数据科学和工程的发展而不断发展。市场上通常没有什么比数据科学团队想要的更先进的东西。</p>
+</li>
+<li>
+<p><strong>数据来源</strong>可以来自很多地方，其中一些是内部的。例如，你可以直接将实验与产生的收入联系起来，并将其与治疗组的收入进行比较。</p>
+</li>
+<li>
+<p>以一种有效的方式支持许多团队并不是大多数第三方实验平台所擅长的。</p>
+</li>
+<li>
+<p>数据所有权是明确的:所有实验数据都是内部的。</p>
+</li>
+<li>
+<p>科技公司的核心能力很少被“外包”。到今天为止，基于数据进行快速实验和做出决定的能力已经足够让我们想要将其保留在内部。即使这意味着要花更多的钱，内部解决方案也能让公司在竞争中保持领先地位。</p>
+</li>
+</ul>
+<p>即使公司可以购买另一种解决方案，这也意味着昂贵的迁移，一些内部功能可能工作方式不同，甚至不存在。例如，优步对特定城市和地区有独特的监管要求，这些要求必须被纳入到如何在特定地区推广实验或不推广实验中。这一监管要求针对零工经济和特定城市。市场上的任何实验平台都不太可能知道能够支持该用例的环境。</p>
+<p>选择内部进行实验的公司包括优步、亚马逊、谷歌、Netflix、Twitter、Airbnb、Facebook、Doordash、LinkedIn、Dropbox、Spotify、Adobe、甲骨文、Pinterest、Skyscanner、Prezi等。Skyscanner就是一个例子，在决定将实验转移到公司内部之前，它是从一个供应商开始的——优化。</p>
+<p>从内部解决方案转移到供应商的动机通常是基于成本(当前系统的操作和维护比使用供应商更昂贵)和标准化(拥有一个统一的平台，而不是几个团队构建和维护自定义工具，并在竖井中进行实验)。GoDaddy就是一个例子，他们将实验的一部分转移到供应商解决方案中，以努力实现跨组织的标准化，同时保持特性标志的实现在内部。</p>
+<p>现成的试验和特征标志系统有很多，中小型公司和团队通常会选择其中之一。与选择供应商相比，构建、操作和维护一个内部系统的成本可能更高，功能也更少。</p>
+<p>流行的供应商选择包括Firebase Remote Config, LauchDarkly, Optimizely, Split.io等。在功能标记系统之上，许多公司使用产品分析框架进行更高级的分析，Amplitude是一个经常被引用的框架。</p>
+<p><strong>另一个困难是过程;跟踪实验</strong>，确保它们不互相影响。对于一个小团队来说，这没什么大不了的。但当你有超过12个团队进行实验时，你就会遇到相互影响的实验。</p>
+<p>过程和工具都可以帮助跟踪实验。广播即将进行的实验，数据科学家或产品经理同步，以及一个便于定位和监控活动实验的工具，都可以在这方面有所帮助。但大多数内容都是你需要在公司内部设置的。</p>
+<p>在那些拥有大型应用程序的公司里，对每一个变化都进行试验是一种常见的方法，在这些公司里，如果一个变化出了问题，对业务的影响可能会很糟糕。Uber就是一个很好的例子，它认为每一次移动变化都需要可逆，而且是在功能标志背后。即使是在漏洞修复的情况下，修复也会放在功能标志后面，并作为A/B测试进行推出。我们将监视关键业务指标，如注册完成、旅行率或支付成功率，并跟踪任何回归。应用中的所有变化都需要避免降低关键业务指标。</p>
+<p>这种做法是不是过火了?”对于一个小的应用程序，它将是。然而，在优步，这种方法帮助我们发现了导致人们出行次数减少的问题。即使出行减少1%，每年也会带来数亿美元的损失，所以我们有理由关注这一问题。</p>
+<p>我记得曾发布过一个bug修复程序，用来解决一个问题，即当用户试图给数字钱包充值时，如果超过了允许的上限，比如50美元，就会出现错误。我们做了一个修正，以便当您输入的金额大于这个数字时，文本框会将自己修正为50美元的最大金额。我们测试了修复，然后开始推出。</p>
+<p>在首次推出时，我们发现自动增加的数量出现了显著下降，所以我们决定撤回。结果发现，当人们输入超过50美元的金额时，他们对发生了什么感到困惑，想要加更多的钱，于是放弃了加钱。如果没有进行实验，我们就会错过这样一个事实，即修复实际上导致了倒退。</p>
+<p>谁拥有实验和协调实验的问题，应该在团队层面加以澄清。最常见的设置是让数据科学家或pm进行自己的实验，与工程人员一起确保实验被正确执行。然而，工程师很少拥有控制/处理组的首次推出，或决定如何储存用户。</p>
+<p>进一步阅读实验，其中许多内容不仅适用于手机:</p>
+<ul>
+<li><a href="https://eng.uber.com/experimentation-platform/">Building an intelligent experimentation platform</a>, analyzing <a href="https://eng.uber.com/analyzing-experiment-outcomes/">experiment outcomes</a> and a - [Bring your own metrics platform from Uber</li>
+<li><a href="https://doordash.engineering/2020/09/09/experimentation-analysis-platform-mvp/">Experimentation analysis platform</a> from Doordash</li>
+<li><a href="https://engineering.atspotify.com/2020/10/29/spotifys-new-experimentation-platform-part-1/">Our new experimentation platform</a> from Spotify</li>
+<li><a href="https://engineering.linkedin.com/blog/2020/making-the-linkedin-experimentation-engine-20x-faster">Our experimentation engine</a> from LinkedIn</li>
+<li><a href="https://engineering.zalando.com/posts/2021/01/experimentation-platform-part1.html">Our experimentation platform, part 1</a> from Zalando</li>
+<li><a href="https://medium.com/airbnb-engineering/https-medium-com-jonathan-parks-scaling-erf-23fd17c91166">Scaling our experimentation platform</a> from Airbnb</li>
+<li><a href="https://netflixtechblog.com/its-all-a-bout-testing-the-netflix-experimentation-platform-4e1ca458c15">It’s about A/B testing: our experimentation platform</a> from Netflix</li>
+<li><a href="https://engineering.grab.com/feature-toggles-ab-testing">Scalable feature toggles and A/B testing</a> from Grab</li>
+<li><a href="https://www.intuit.com/blog/technology/engineering/meet-wasabi-an-open-source-ab-testing-platform/">Wasabi: an open source A/B testing platform</a> from Intuit</li>
+<li><a href="https://medium.com/pinterest-engineering/building-pinterests-a-b-testing-platform-ab4934ace9f4">Building our A/B testing platform</a> from Pinterest</li>
+<li><a href="https://blog.twitter.com/engineering/en_us/a/2015/twitter-experimentation-technical-overview.html">Experimentation: technical overview</a> from Twitter</li>
+<li><a href="https://www.farfetchtechblog.com/en/blog/post/ab-testing-mobile-apps-ios/">A/B testing mobile apps on iOS</a> from Farfetch</li>
+<li><a href="https://hbr.org/2020/03/building-a-culture-of-experimentation">Building a Culture of Experimentation</a> from Harvard Business Review</li>
+</ul>
+<h3 id="12-a-namefeatureflaghellafeature-flag-hell">1.2. <a name='FEATUREFLAGHELL'></a>FEATURE FLAG HELL</h3>
+<p>所有使用过功能标志的人都会告诉你他们很棒。我同意使用这些会给你带来多少信心和数据。然而，随着时间的推移，功能标志的缺点也会越来越明显。</p>
+<p>在代码库中使用一个典型的特性标志通常看起来与此类似:</p>
+<pre><code class="language-swift">if (featureFlagActive) {
+  // New functionality
+} else {
+  // Original functionality
+}
+</code></pre>
+<p>添加带有特性标志的新功能有助于以下几点:</p>
+<ul>
+<li>
+<p><strong>A/B测试和实验</strong>。在构建新功能时，团队假定它将比以前做得更好。使用特性标志可以让你对这种方法进行A/B测试，收集数据并确认这种假设。在完成A/B测试后，你将完全推出功能标志。</p>
+</li>
+<li>
+<p><strong>逐步推出</strong>。即使在您测试实验按预期工作之后，您通常也不希望一次性推出更改。对于拥有大量用户的应用来说，逐步推出新功能是很常见的。团队通常会监控指标是否符合预期，并确保与新功能相关的用户问题不会出现意外上升。</p>
+</li>
+<li>
+<p><strong>地区发售</strong>。有些特性只适用于特定区域或特定用户组。特性标志使得这些初次发布很容易管理。</p>
+</li>
+</ul>
+<p>随着应用程序中活动特性标志数量的增加，特性问题变得越来越常见。这通常与开发团队和应用的复杂性并行，不断增加。</p>
+<p>相互依赖的特性标志是一种有趣的边缘情况，在复杂的推出中可能会发生。以在MainFeature中构建SubFeature为例。团队构建SubFeature可能希望处理50%的用户，并相应地推出标志。然而，只有接受了MainFeature服务的用户才能看到SubFeature，如果MainFeature没有推广到100%的用户，那么看到SubFeature的用户将远远少于团队的预期。</p>
+<p>将特性标志依赖性作为推出计划的一部分是大多数团队解决这一问题的方法。虽然这个问题看起来并不复杂，但我观察过开发复杂应用的团队一次又一次地遇到同样的问题。</p>
+<p>随着开发团队的壮大，相互冲突的特性标志成为一个问题。两队;TeamA和TeamB构建各自的功能，在FlagA和FlagB之后。它们都测试了当它们的标志打开时，这个特性是否有效。但是，他们不知道其他团队正在构建他们的功能，所以不会在打开这个标志的情况下进行测试。在推出过程中，当FlagA和FlagB都打开时，应用的一部分就中断了。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq7ln7vl9wj30gh0c1dii.jpg" alt="avatar" loading="lazy"></figure>
+<p>特性标志在代码库中变得陈旧，一段时间后就会成为一个严重的问题。这些陈旧的特征标志要么被处理，要么从未被推出。不管怎样，现在应用中都存在死代码。</p>
+<p>我认为过时的特性标志比死代码更糟糕。在后端或web上的死代码，你可以很快确认代码是死的。如果你不小心删除了活代码并进行了部署，你可以通过重新添加代码并再次进行部署来撤销这个错误。</p>
+<p>在移动领域，删除功能标志背后的非死代码是一个非常现实的危险。因此，移动代码库最终充斥着引用特性标志的if-else表达式。许多表达式会无限期地留在代码库中，影响可读性、可维护性和(在很小的范围内)二进制大小。</p>
+<p>清理标志的最好方法是尽可能地自动化这项工作。在特性标志完全推出之后，创建一个自动的pull请求，删除死的执行路径和标志。这就是优步开发和开源食人鱼工具背后的理念。一旦这个工具就位，我们就开始以更大的信心和更快的速度移除旧的功能标志。</p>
+<p>对像Piranha这样的工具的一个批评是，该工具只有在代码库允许的情况下才好。食人鱼将不能很好地工作在代码库有不一致的编码风格围绕特性标志。当遇到以不同风格编写的代码时，它还可以提出可能导致停机的建议。如果特性标志遵循由linter强制执行的一致编码模式，或者使用共享的、固执的特性标志库，那么引入像Piranha这样的工具会更好地工作。</p>
+<p>是否建立自定义特性标记系统是每个团队需要自己回答的问题。市场上有许多成熟的供应商解决方案能够很好地与iOS和Android整合在一起，并且能够针对功能标记进行细化定位。</p>
+<p>构建自己的特性标记系统是一项巨大的工程，而移动组件只是其中较小的一部分。旗帜铺展系统和设置它来支持实验，是工作的一个更大的部分。在Uber，我们的实验平台内置了自己的系统，并与多个内部解决方案集成。我不会推荐这种方法，除非您有可靠的业务案例，并且您已经确认使用供应商没有意义。</p>
+<p>然而，在供应商特性标志解决方案之上构建一个facade可能是一个聪明的解决方案。这就是JustEat在iOS上使用开源的JustTweak组件所做的。这种外观允许它们切换和回退到各种特性标志提供程序。</p>
+<p>进一步阅读:</p>
+<ul>
+<li><a href="https://eng.uber.com/piranha/">Piranha: an open source tool to automatically delete stale code</a> from Uber</li>
+<li><a href="https://tech.just-eat.com/2019/11/26/a-smart-feature-flagging-system-for-ios/">A smart feature flagging system for iOS</a> from Just Eat</li>
+<li><a href="https://medium.com/vmware-end-user-computing/using-feature-flags-to-enable-nearly-continuous-deployment-for-mobile-apps-b6d0940657ff">Using feature flags for mobile apps</a> from VMWare</li>
+<li><a href="https://www.youtube.com/watch?v=qMCuRh2ZC6Q&amp;feature=emb_logo">Our journey of feature flag development</a> from LINE</li>
+<li><a href="https://proandroiddev.com/remote-feature-flags-do-not-always-come-for-free-a372f1768a70">Remote feature flags don’t always come for free</a> from ProAndroidDev</li>
+</ul>
+<h3 id="13-a-nameperformanceaperformance">1.3. <a name='PERFORMANCE'></a>PERFORMANCE</h3>
+<p>对于小型应用程序来说，移动应用程序的性能是你很少需要担心的问题，随着你的应用程序——以及开发该应用程序的移动团队——的发展，这个问题变得越来越重要。谷歌以糟糕的性能指标惩罚应用，将其排在谷歌Play store排名较低的位置。根据Techbeacon 2015年的一项研究，用户最终会放弃有问题的应用程序。自这项研究以来，人们对“时髦”应用程序的期望可能只会增加。</p>
+<p>大型应用在现实世界中常见的性能瓶颈:</p>
+<ul>
+<li>
+<p>在几个团队添加了“一件小事”后，应用启动时间变得臃肿。这可能是一个网络请求，也可能是阻塞CPU的一个小操作。在优步，移动平台团队拥有应用启动时间。这意味着要调试应用程序为什么花费这么长的时间，并解决问题，例如，通过组合网络请求。该团队还设置了应用启动度量，以检测应用启动时出现的回归，并调查这种情况何时发生。</p>
+</li>
+<li>
+<p><strong>太多的并行网络调用</strong>。多个组件可能同时发出独立的网络请求，从而影响网络性能。随着使用网络的团队数量的增长，一个常见的解决方案是让平台团队拥有网络层。该团队通常开始衡量并行资源的影响，并可能为调用设置一个优先级系统，在那里他们限制并行请求的数量。优化网络在很大程度上取决于应用的功能，以及低延迟网络的重要性。</p>
+</li>
+<li>
+<p><strong>网络性能</strong>，特别是在低带宽或高延迟的情况下。对于那些被数千万或数亿用户使用的应用程序，这些用户中越来越多的人将使用连接较差的应用程序。在某些情况下，可以使用与HTTP/2不同的协议。这是优步提出的方法，使用QUIC，一种UDP协议。你也可以看看其他协议;医疗应用Halodoc使用MQTT作为其网络层。</p>
+</li>
+<li>
+<p><strong>电池消耗率</strong>。在应用上工作的团队越多，就会有更多的空间用于不必要的CPU使用，无论是在运行应用时，还是在后台。早期的Skype应用因电池耗尽而臭名昭著，这一特点导致了更多的用户流失。对CPU性能进行分析，并对最糟糕的情况进行抽样，这些都是减少资源使用的好策略。一个专门的移动平台团队拥有电池消耗，通常比每个团队都去优化他们的组件更有助于实现目标。</p>
+</li>
+<li>
+<p>当UI线程在应用程序中阻塞太久时，**应用程序不响应(ANR)**就会发生。用户注意到应用程序没有响应，就必须终止应用程序，否则在Android上，操作系统会提供终止进程的功能。你既要避免应用进入这种状态，又要在它出现时进行检测和修复。</p>
+</li>
+<li>
+<p><strong>冻结的帧和缓慢的渲染帧</strong>表明应用程序正在变慢，似乎没有响应。慢渲染帧指的是需要700ms才能渲染超过0.1%的帧，而冻结帧指的是需要超过16ms才能渲染50%或更多的帧的UI帧。这些或类似的指标有助于衡量应用对某些用户来说是“非常缓慢”，还是对其他人来说是“不稳定”。</p>
+</li>
+<li>
+<p><strong>动画和UI渲染性能</strong>是另一个明显的问题，特别是在旧设备上的自定义动画和UI元素。跟踪和分析是处理调试问题的常用方法，同时也要注意渲染缓慢或冻结的帧。帮助调试ui的工具包括iOS的Reveal和Android的Layout Inspector。分析的一个问题是，iOS和Android跟踪工具如何增加开销，导致动画和关键转换在这些条件下运行得更慢，并使调查更困难。 优步建立和开源的Nanoscope，以更少的开销跟踪和调试动画问题，以更高的准确性。</p>
+</li>
+</ul>
+<p>在构建大多数应用时，衡量和改善每个屏幕的性能是一种常见的方法。Wayfair对他们的方法进行了总结，并发布了一段前后对比的视频。网页运行缓慢的根本原因往往不是只关注手机，而是手机应用和后端如何协同工作。</p>
+<p>一旦您看到一个可见的性能问题，比如屏幕“慢”，调试性能问题的最简单方法是从移动客户端开始。通过分析或跟踪测量每个函数花费的时间，然后分头处理。查看移动客户机上哪些调用是冗余的，以及需要改进后端端点性能的地方。</p>
+<p>你可以通过在iOS上使用Instruments，在Android studio上使用Android Profiler来<strong>手动分析</strong>你的应用。虽然这是一种很好的开始方式，但不幸的是，手动分析应用程序并不能很好地扩展。你将很难获得“真实数据”，特别是当你的应用在各种设备上拥有大量用户时。在这种情况下，硬件种类和使用模式都是无法通过手动分析模拟的。</p>
+<p>自动分析应用程序在理论上是衡量性能特征和发现性能回归的好方法。不幸的是，性能度量过程的自动化是复杂的。为此，您需要编写和维护大量的自动化UI或端到端测试。一旦您这样做了，您就需要自动化性能分析。仪器自动化是一项具有挑战性的任务;PSPDFkit团队无法找到解决方案。</p>
+<p>即使您能够自动化这些测试的性能分析，您仍然只能得到“真实世界”数据的一小部分。你的结果可能会显示应用在模拟器或测试设备上运行得足够快，但那些使用较旧设备或操作系统版本的用户呢?</p>
+<p>对真实应用性能进行抽样测试是一种更加可靠和可扩展的解决方案，能够保持应用的性能特征。在Uber，我们建立了一个内部解决方案来测量屏幕、网络和应用程序内功能的延迟，并将其报告给后端。我们根据新旧设备划分数据，并提醒代码和功能表现不佳的团队。报告仪表板是这样的:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq7m3tiu4gj30fw0bimzl.jpg" alt="avatar" loading="lazy"></figure>
+<p>做任何类型的抽样，或跟踪，都会对代码的性能产生影响，所以把它发送给大多数产品用户是不明智的。更好的方法是对测试用户进行抽样，并有选择地测量一小部分生产用户样本。</p>
+<p>网络表现是一个很难保持领先的领域。你希望你的应用程序能在糟糕的网络环境下保持良好运行。以下是一些关于如何在更大的团队中保持良好的“社交卫生”的建议:</p>
+<ul>
+<li>
+<p><strong>人为降低网络速度</strong>是我们在优步做的事情。在几个月的时间里，每个周四，测试应用中的网络层将减缓员工试图模拟低带宽条件的流量，并提高对低带宽用例的认识。实验取得了成功，工程师们做出了很多改进，如果没有这一推动，这些改进很可能不会发生。</p>
+</li>
+<li>
+<p><strong>放弃一些网络请求并注入延迟</strong>是Wave团队提高对真实网络场景意识的方式。他们在开发构建中减少了10%的网络请求，并在网络层增加了延迟。这种方法提醒人们尽量减少往返，构建良好的“加载”ui，并使每个突变都是幂等的。</p>
+</li>
+</ul>
+<p>值得测量的性能特征，可以是手动配置文件运行、自动配置文件运行，也可以是实际使用的抽样。</p>
+<ul>
+<li><strong>应用程序启动时间</strong>和跟踪应用程序启动如何变化，随着应用程序的增长。</li>
+<li><strong>加载屏幕的延迟</strong>，确定哪些屏幕是最慢的，以及导致这种延迟的代码。</li>
+<li><strong>网络性能</strong>:测量为客户端发生的延迟和并行请求，以及端点的错误率。</li>
+<li><strong>内存消耗</strong>:通过应用程序使用的内存来衡量，或者简单地通过设备的空闲内存来衡量。</li>
+<li><strong>本地存储大小</strong>(如果应用程序使用本地存储)。例如，当缓存在本地时，以确保缓存驱逐策略正常工作。</li>
+<li>例如，通过测量丢失帧、慢帧或冻结帧的<strong>UI性能</strong>。</li>
+<li><strong>尽可能地自动化度量性能特征</strong>。自动化剖析、真实性能数据抽样或类似于Halodoc所做的非功能指标监控都是很好的方法。</li>
+</ul>
+<p>对于移动设备来说，使用<a href="https://en.wikipedia.org/wiki/Percentile">p95</a>测量点是一个明智的选择，因为这将为您提供大多数人所体验到的数据，不包括最慢的5%，这可能包括使用慢速设备或远低于平均连通性的人。随着你的应用服务于数以亿计的用户，你可能会考虑将其提升到p99，以确保几乎所有使用该应用的人都有良好的体验，即使是在旧设备和连接较差的情况下。</p>
+<hr>
+<p><strong>Performance: APMs vs Automated Testing</strong></p>
+<p>Nanoscope的创始人之一、perf.dev的联合创始人Leland Takamine分享了他对于是监控性能，还是执行自动化测试的看法。</p>
+<p><strong>APM Origins</strong></p>
+<p>应用程序性能监视(APM)是从服务器端开发借用的概念。其理念是:监控生产中的最终用户指标，并在用户体验到任何性能下降时发出警报。整个行业都是围绕这一后端开发战略而建立起来的(Datadog, New Relic, Dynatrace)，所以移动公司采用类似策略也就不足为奇了。Crashlytics是最早的Android apm之一，成立于2011年。</p>
+<p>今天，市场上的APM解决方案已经饱和，这些解决方案旨在使移动生产监控更容易、更智能。但移动公司开始意识到，生产监控在移动设备上的用处远不如在后端。</p>
+<p><strong>Why APMs Do Not Cut It on Mobile</strong></p>
+<p>当您的后端APM在生产中发现问题时，您可以简单地回滚最新的部署。这个问题在几分钟内就解决了。在移动平台上，没有这样的回滚机制。在您的下一个发布版本之前，您的用户会被任何生产问题所困扰，通常需要至少两周的时间才能推出。更糟糕的是，您可能根本无法根据生产数据找出问题的根源。与此同时，你也会因为糟糕的体验而失去用户。</p>
+<p>这种长时间的反馈循环使得生产监控——一种对后台开发很有效的反应式策略——在移动平台上变得不那么有效。</p>
+<p><strong>Automated Performance Testing</strong></p>
+<p>那么解决方案是什么呢?主动而不是被动。领先的移动公司现在正在寻找自动化测试解决方案，以便在发布给用户之前发现CI中的性能问题。功能测试的普遍存在似乎是显而易见的，但性能基准测试是另一回事。在许多代码更改过程中，降级会缓慢发生，性能基准测试中的噪声可能会掩盖CI中的任何小倒退。这正是公司在构建内部性能测试解决方案时所面临的挑战。</p>
+<p>传统的CI基础设施和设备场不能提供必要的一致性水平，这就是为什么移动团队转向专门提供一致性性能测试基础设施的第三方。Perf.dev在这一领域处于领先地位，对于任何希望主动解决和避免移动性能问题的公司来说，这都是一个明智的选择。要了解更多信息，请访问perf.dev或hello@perf.dev。</p>
+<p><strong>You Should Be Doing Both</strong></p>
+<p>尽管APMs不是缓解性能问题的理想方法，但它们对于保持终端用户应用程序的性能是有用的。你总是想知道你在现实世界中的表现。但是请记住，要避免依赖apm来捕捉特定的性能问题，因为—您将无法足够快速地作出反应。为了提高和维护优秀的移动性能，自动化性能测试和调试工具是您最好的朋友。</p>
+<hr>
+<p>性能监测工具:</p>
+<ul>
+<li><a href="https://eng.uber.com/nanoscope/">Nanoscope</a>: an extremely accurate method tracing tool for Android, from Uber. Tool overview.</li>
+<li><a href="https://github.com/facebookincubator/profilo">Profilo</a>: understand Android app performance in the wild, from Facebook. Tool overview.</li>
+<li><a href="https://firebase.google.com/docs/perf-mon">Firebase performance</a>: remotely monitor Android and iOS apps.</li>
+<li><a href="https://perf.dev/?utm_source=ebook&amp;utm_medium=cpc&amp;utm_campaign=mobileatscale-ebook">perf.dev</a>: application performance testing from the creators of Nanoscope.</li>
+</ul>
+<p>进一步阅读的资源:</p>
+<ul>
+<li>
+<p><a href="https://developer.android.com/topic/performance/vitals/launch-time">App startup time guide</a> from Google</p>
+</li>
+<li>
+<p><a href="https://engineering.linkedin.com/blog/2019/building-a-blazingly-fast-android-app-part-1">Building a blazingly fast Android app</a> from LinkedIn</p>
+</li>
+<li>
+<p><a href="https://blogs.halodoc.io/android-nf-monitor/">Monitoring non-functional metrics</a> from Halodoc</p>
+</li>
+<li>
+<p><a href="https://engineering.grab.com/journey-to-a-faster-everyday-super-app">Journey to a faster everyday super app</a> from Grab</p>
+</li>
+<li>
+<p><a href="https://eng.uber.com/employing-quic-protocol/">Employing QUIC protocol to optimize App Performance</a> from Uber</p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=ucK4FL0KKB4">Optimizing the Netflix Android application</a> from Netflix</p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=e-KrIR-3IYo">Building smooth Android animations and smooth iOS animations</a> from Netflix</p>
+</li>
+<li>
+<p><a href="https://engineering.fb.com/2018/10/19/android/mobilelab/">MobileLab: preventing mobile performance regressions</a> from Facebook</p>
+</li>
+<li>
+<p><a href="https://medium.com/@SkyscannerEng/3-techniques-we-used-to-improve-skyscanner-for-ios-performance-65325c96491d">Improving our iOS app performance</a> from Skyscanner</p>
+</li>
+<li>
+<p><a href="https://medium.com/mercari-engineering/one-approach-to-monitoring-ios-application-performance-dca73d02b2e8">Our approach to monitoring iOS application performance</a> from Mercari engineering</p>
+</li>
+</ul>
+<h3 id="14-a-nameanalyticsmonitoringandalertingaanalytics-monitoring-and-alerting">1.4. <a name='ANALYTICSMONITORINGANDALERTING'></a>ANALYTICS, MONITORING AND ALERTING</h3>
+<p>监控和警告出现问题是后端和网络团队的常见做法。5xx响应的峰值，或异常的增加，通常会引起警报，通知团队，工程师减轻根本原因。</p>
+<p>对于手机应用，崩溃报告也是类似的方法。应用崩溃是最明显和最具影响的问题。移动团队通常已经建立了崩溃报告和警报解决方案，或者使用Bugsnag等供应商，或者构建自己的工具。</p>
+<p><strong>然而，根据我的经验，业务监控和业务事件警报通常是应用开发生命周期中一个遥远的第二想法</strong>。监控手机应用程序可以而且应该深入运行，而不仅仅是监控崩溃。成熟的团队会检测出关键流程中的回归，得到警报，并开始调查可能的根本原因。</p>
+<p><strong>Mobile Analytics</strong></p>
+<p>监控商业事件的第一步是决定我们想要测量什么。什么流程和参数对于特定的手机功能至关重要? 记录和分析数据的分析工具可以让你选择供应商解决方案，也可以选择内部解决方案。</p>
+<ul>
+<li>
+<p>附带Firebase Analytics SDK的谷歌<strong>Analytics</strong>是一个很受欢迎的入门方式:它是免费的，对大多数团队来说都是一个很好的开始。</p>
+</li>
+<li>
+<p><strong>其他供应商的产品</strong>，如Amplitude、Flurry、Mixpanel、Fullstory、Appsee等，都提供了各种各样的功能。在这一组中，Amplitude脱颖而出，成为市场上最先进的产品分析套件之一。</p>
+</li>
+<li>
+<p><strong>内部分析</strong>是拥有可用资源的大型组织所从事的工作。成本是最大的缺点，而定制、构建供应商不提供的特性、与内部数据源和数据所有权集成是公司有时采用这种方法的原因。在优步，由于数据的规模，我们使用了内部分析，我们能够使用这样的内部工具。</p>
+</li>
+</ul>
+<p><strong>iOS和Android活动和流程的不同</strong>是任何分析方法的主要痛点。理想情况下，你想要在iOS和Android上可视化流程。然而，在实践中，这通常意味着在两个平台上手动“匹配”事件需要大量工作，特别是在iOS和Android团队都处于孤岛状态时。 认真对待分析的团队通常会在计划阶段考虑事件，与其他平台协调，与产品和数据科学合作，以确保发布足够的数据进行有效跟踪。</p>
+<p><strong>Business Events Monitoring</strong></p>
+<p>获取原始的移动分析，如屏幕显示或用户操作，是监控旅程的第一步。映射业务真正关心的事件是下一个目标。</p>
+<p><strong>首先，你需要定义应用程序中的关键业务事件和路径</strong>。在优步，我们与产品经理和数据科学家一起做这件事。例如，在付款方面，我们提出了以下关键业务事件:</p>
+<ul>
+<li>一个新用户在注册时添加了他们的第一个支付工具</li>
+<li>现有用户添加了新的支付工具</li>
+<li>用户更新他们的支付</li>
+<li>用户可以在应用程序内为钱包充值</li>
+<li>用户删除支付方式</li>
+<li>试图使用支付方法时发生错误</li>
+</ul>
+<p><strong>下一步是实现对业务事件的跨平台监控</strong>。在优步，这意味着创建实时图表，绘制所有这些商业事件，跨平台。我们必须为iOS和Android事件分别映射各自的流，因为这两个代码库是分开的，然后确保分析更新不会破坏映射。</p>
+<p>能够深入挖掘区域或子功能是大型应用的典型需求。在优步，我们需要将监控范围缩小到城市级别，因为我们经常会从单个城市或国家开始进行试验。</p>
+<p><strong>参数错误，但公司中没有人会在数月或数年的时间里注意到这是一个比大多数团队或公司意识到的更普遍的问题</strong>。Pinterest手机工程经理Ryan Cooke在2018年旧金山Droidcon大会上的演讲《When Metrics Lie》中解释道:“错误地衡量iOS、Android和移动网络的日活跃用户就是一个很好的例子。</p>
+<p>我发现有些公司高估了原生网页，低估了原生手机留存率或用户活跃度。这些公司错误地将数百万美元的营销预算分配给了一个渠道，而实际上，这个渠道的表现并没有数据显示的那么好。这总是归结到一个问题上，即iOS, Android和移动网页上的分析执行方式略有不同。</p>
+<p>认证指标是Pinterest多年来一直在做的一个过程，并取得了成功。经过认证的度量标准需要一个明确的产品规格说明(spec)，以确保一致性的实现。产品规范意味着一致的定义，考虑的边界案例，并帮助理解涉众的需求。Pinterest团队发现不一致的实现弊大于利，于是引入了这个认证流程。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq7n16uplwj30g909kdih.jpg" alt="avatar" loading="lazy"></figure>
+<p>在认证指标之上的数据验证是Pinterest最大的成功之处。他们用三个步骤:</p>
+<ol>
+<li>
+<p><strong>异常检测</strong>，比如每周看到异常时发出警报。这种方法是最容易实现的，它会捕捉到一些回归。</p>
+</li>
+<li>
+<p><strong>深入研究数据</strong>，并将其与其他数据点进行比较。例如，当比较活跃用户和正在浏览内容的用户时。如果显示某些用户的内容，但不认为是活跃用户，则有一个问题需要确定。正是这种方法发现了大部分问题。</p>
+</li>
+<li>
+<p>使用自动化UI测试<strong>验证正确记录的指标</strong>，以确认服务器接收到的日志，按照预期工作。编写和维护这些测试是昂贵的。然而，如果没有这些，就没有可靠地检测度量回归的方法。Pinterest发现这些测试能够在投入生产前抓住大部分参数问题。</p>
+</li>
+</ol>
+<p>除了最初的执行，你还需要正确地监控指标的运行。度量标准出错的常见方式之一是在对以前正确的实现进行了更改之后，而没有监控来检测这种退化。</p>
+<p><strong>Mobile Alerting</strong></p>
+<p>如何检测与手机应用程序相关的商业活动中是否有可疑变化? 要做到这一点，你需要设置自动警报。</p>
+<p>如果手机业务活动中出现可疑情况，应该呼叫手机工程师吗?”每个团队都必须想出自己的答案。没有注意到关键业务指标下降的影响是什么?</p>
+<p>实时移动警报并非行业标准。在一项有168人参与的非代表性推特调查中，四分之一的移动工程师表示他们已经设置了实时移动警报。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq7n54d75uj30fq0b8tad.jpg" alt="avatar" loading="lazy"></figure>
+<p><strong>崩溃报告警报</strong>是最常见的警报类型。一些供应商解决方案使得配置崩溃峰值来触发PagerDuty或其他集成变得很容易。例如，Bugsnag提供了可配置的崩溃警报与他们的警报和工作流引擎。</p>
+<p>崩溃警报的内部实现通常是为了支持在发布版和beta版本中捕捉回归。但要注意的是，分组崩溃和检测模式(例如，只发生在某些设备上的崩溃)比许多人预期的更具有挑战性。</p>
+<p>当您有足够好的业务事件监控时，您可以将运行状况指标的推出警报设置到位。然后您可以监控关键业务指标的任何回归。在优步，我们不能降低的指标与出行的人有关。在每个构建阶段，我们都会监控、可视化并提醒相关事件的回归，并在区域层面进行监控。</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq7na9zatsj30bt0b4dj3.jpg" alt="avatar" loading="lazy"></figure>
+<p>对业务事件变化发出警报是很少有移动团队做的事情，即使是在构建大型和广泛使用的应用程序时。这样做的团队往往建立在警报工具之上，而这些工具并非针对手机。例如，优步向内部的异常检测服务发送移动事件，当该服务确定有奇怪的事情发生时，就会收到警报。Twitch团队在他们的Kinesis事件流上使用Cloudwatch异常检测移动事件。</p>
+<p>如果你开始对这些事件发出警报，那么手机商务活动的噪音将是你面临的最大问题。应用程序的使用是有周期的，而这些周期在不同的地区是不同的。现实世界中的事件可能会导致移动应用程序使用量的激增或下降，从而触发异常检测。在优步(Uber)，在早期，音乐会和当地促销活动导致应用程序使用率异常飙升后，移动团队会定期收到呼叫，直到我们放松了这些警告的门槛，故意让它们不那么敏感。</p>
+<p>如果你想要在手机平台上实现这一功能，那么针对多个应用功能的区域预警将成为一个更具挑战性的问题。在Uber，我们支持近60个国家的10多种支付方式，如果任何支付方式在任何国家出现异常，我们都希望得到通知。我们之所以需要这种粒度是因为我们花了好几个月的时间才发现PayPal在日本行不通。</p>
+<p>对于这种类型的警告，你几乎肯定需要建立内部解决方案。在Uber，我们在设置预警时面临的第一个挑战是数据基数，即我们需要存储和预警的数据的多个维度。一旦我们设法存储和分析数据，稀疏的数据集就成了问题;在一些国家，某些付款方式很少被使用。我们花了几个月的时间去调整我们的警报。然而，一旦我们这样做了，我们发现区域支付提供商中断的速度一样快，有时甚至比支付提供商本身还快。</p>
+<p>延伸阅读:</p>
+<ul>
+<li><a href="https://amplitude.com/mobile-analytics">Mobile analytics guide</a> from Amplitude</li>
+<li><a href="https://eng.uber.com/m3/">M3: an open source, large-scale metrics platform for Prometheus</a> from Uber</li>
+<li><a href="https://eng.uber.com/anomaly-detection/">Real-time anomaly detection</a> from Uber</li>
+<li><a href="https://youtu.be/QWvz2ZeFu-M?t=140">When Metrics Lie</a> from Pinterest engineering manager Ryan Cooke</li>
+<li><a href="https://engineering.linkedin.com/blog/2020/monitoring-business-performance-data-with-thirdeye-smart-alerts">Monitoring business performance data with ThirdEye smart alerts</a> from LinkedIn</li>
+<li><a href="https://blog.amplitude.com/10-steps-behavioral-analytics">Getting started with behavioural analytics</a> from Amplitude</li>
+<li><a href="https://blogs.halodoc.io/android-nf-monitor/">Non-functional metrics monitoring in Android</a> from Halodoc</li>
+<li><a href="https://medium.com/tokopedia-engineering/providing-accurate-analytics-data-from-tokopedia-ios-app-501d35ca8227">Providing accurate iOS analytics data</a> from Tokopedia engineering</li>
+<li><a href="https://www.infoq.com/news/2020/10/Data-Driven-Decisions/">Driving data-driven decisions</a> from Spotify</li>
+<li><a href="https://medium.com/@amplitudeHQ/how-the-fastest-growing-game-in-the-app-store-retains-its-users-e458366ac555">How the fastest growing game in the App Store retains its users</a> from QuizUp</li>
+</ul>
+<h3 id="15-a-namemobileoncallamobile-oncall">1.5. <a name='MOBILEONCALL'></a>MOBILE ONCALL</h3>
+<p>手机待命轮换将成为一个敏感话题，一旦你有了手机警报，即使这些警报只是为了报告崩溃。当警报触发时，它需要呼叫知道如何减轻这种中断的人。最明显的选择便是拥有所有必要背景的移动工程师。</p>
+<p>如果你有一个足够大的移动团队，那么只提供手机服务可能不是问题。在优步，在支付团队中，我们遵循了这种模式好几年。主要和次要的待命人员总是iOS和Android的工程师，或者熟悉这两种代码库的工程师。</p>
+<p>尽管如此，保持(非常)小型的随叫随到的移动轮岗是许多团队最终的做法。这是因为除了一些崩溃报告外，手机随时待命几乎总是安静的。所以即使旋转很小，在旋转上也不应该意味着很大的压力。不过，我总是对任何少于5名工程师的随叫随到的轮换保持警惕。如果有东西爆炸了，但值班人员不在怎么办?</p>
+<p>随叫随到的轮换只是处理故障的第一步。还需要有一个明确的事故反应程序，随叫随到的工程师需要接受相关培训，这样他们在接到呼叫时就知道该怎么做。</p>
+<p>一个常见的事故响应始于随叫随到的工程师评估问题的严重性和受影响的客户数量。接下来，他们决定是否需要将事件升级。如果是这样，他们可能会让其他人参与进来，并决定由谁来领导应对。对于更大的事件，他们可能需要分头处理谁领导与他人的电话会议，谁处理与涉众的沟通，以及谁在调查问题的某些部分。在一个随叫随到的团队中建立良好的事件响应能力需要时间和练习。如果你想增加响应时间，最小化缓解时间和对客户的影响，这是你需要进行的投资。</p>
+<p>该组织需要从事件中吸取教训，以确保应用程序不会因为同一个根本原因而两次崩溃。事后分析是学习这些知识的关键。</p>
+<p>事后分析是捕获事件细节的工具，例如它的上下文、时间线、业务影响、根本原因和纠正措施。事后分析应该包括改进系统和流程的后续行动，这样就可以防止类似的中断，或者至少在下次更快地检测和缓解中断。阅读其他团队的事后分析是在整个公司中分享经验教训的好方法。</p>
+<p>如果你的产品团队没有足够多的移动工程师来保证只提供移动电话服务，那么将后端和移动电话服务合并起来将具有吸引力。然而，您可能会发现后端工程师可能对这个想法并不感兴趣，移动工程师甚至更不感兴趣的原因吗?当警报来临时，他们都不知道该怎么办。</p>
+<p>一个好的随叫随到是工程师们不需要考虑太多当警报来临时该怎么做。应该有很少的、简单的步骤可以采取，理想情况下，这些步骤是待命运行手册的一部分。</p>
+<p>你待命时是否有大多数警报的运行记录本? 它们是否足够简单? 如果答案是肯定的，恭喜你!您已经准备好合并移动和后端随叫随到。人们随叫随到的频率将降低，随着时间的推移，移动和后端工程师将更好地理解产品。</p>
+<p>如果你没有足够的运行手册，或者它们不够好;为什么不呢?没有好的运行手册意味着团队更多地依赖经验丰富的工程师来帮助随时待命，他们被认为是“在他们的头脑中”。新员工需要更长的时间才能随叫随到。同样重要的是，移动工程师不能随时待命接收后端警报，反之亦然。那么它是什么呢?保持一个有压力的随叫随到，雇佣更多的人，或保持运行手册的秩序?</p>
+<p>作为进一步的阅读，我建议阅读谷歌网站<a href="https://sre.google/workbook/on-call/">可靠性工作手册中的待命章节</a>。</p>
+<h3 id="16-a-nameadvancedcodequalitychecksaadvanced-code-quality-checks">1.6. <a name='ADVANCEDCODEQUALITYCHECKS'></a>ADVANCED CODE QUALITY CHECKS</h3>
+<p>检测代码问题之间的反馈周期越短，工程师和团队的效率就越高。虽然在代码评审时获得对代码的反馈很好，但在提交代码进行代码评审之前获得即时反馈不是更好吗?</p>
+<p>富有成效的团队在早期就将先进的代码检查基础设施放在适当的位置，准确地帮助快速反馈容易发现的代码质量问题。检测和静态分析是两种最常见的方法，经常一起使用。</p>
+<p><strong>代码格式化</strong>是代码质量检查最常见的用例之一。代码格式化程序将在创建pull请求之前运行，确保所有用于审查的代码都遵循团队一致同意并在格式化程序中定义的样式指南。流行的代码格式包括<a href="https://github.com/nicklockwood/SwiftFormat">SwiftFormat</a>或<a href="https://github.com/google/google-java-format">Google-java-format</a>。</p>
+<hr>
+<p><strong>SonarSource</strong>静态分析工具支持Swift、Objective-C、Kotlin和Java以及其他几种语言。与GitHub、GitLab、Azure DevOps和Bitbucket的紧密集成意味着无论你把代码放在哪里，都可以轻松地在你的团队工作流程中采用。</p>
+<p>被超过200,000个工程团队使用-从今天开始分析你的代码质量和代码安全:</p>
+<ul>
+<li>
+<p>SonarQube是内置的代码质量和代码安全工具。<a href="https://www.sonarqube.org/downloads/?utm_source=ebook&amp;utm_medium=paid&amp;utm_campaign=mobileapps&amp;utm_term=sq">在SonarQube.org上免费开始</a>。</p>
+</li>
+<li>
+<p>SonarCloud是基于云的代码质量和安全工具。<a href="https://www.sonarsource.com/?utm_source=ebook&amp;utm_medium=paid&amp;utm_campaign=mobileapps&amp;utm_term=ss">在SonarCloud.io上免费开始吧</a>。</p>
+</li>
+</ul>
+<hr>
+<p>lint是静态分析的特例;扫描代码以寻找潜在的错误，而不仅仅是代码格式化。这可以是简单的检查确保缩进是正确的，通过强制命名模式，一直到更高级的规则，如按字母顺序声明变量。常用的毛毡工具包括:</p>
+<ul>
+<li>
+<p>iOS: the <a href="https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/debugging_with_xcode/chapters/static_analyzer.html">Clang analyzer</a> — shipping with Xcode — and <a href="https://github.com/realm/SwiftLint">SwiftLint</a>.</p>
+</li>
+<li>
+<p>Android: the <a href="https://developer.android.com/studio/write/lint">lint tool</a> — shipping with Android Studio — and <a href="https://github.com/pinterest/ktlint">ktlint</a> for Kotlin.</p>
+</li>
+</ul>
+<p>随着团队的成长，开始在代码库中执行更复杂的规则是有意义的。这些规则可以强制团队范围内的编码模式，比如限制强制值，或者强制架构“规则”，比如不允许视图直接调用Interactors。</p>
+<p>在Uber，我们看到了将架构定义添加为“可强制执行的”规则的巨大价值。为此，该团队构建并开放了NEAL (Not Exactly A Linter)，用于更高级的模式检测，适用于iOS和Android。</p>
+<p><strong>Lint fatigue</strong> 是一个开始出现在大型项目，或有许多棉绒规则的项目中的问题。当错误或警告堆积如山时，工程师们往往开始忽视它们。一个很好的例子是，当不清楚如何迁移到API的新实现时，忽略弃用警告。</p>
+<p>一种常见的处理lint疲劳的方法是让lint错误破坏构建，让他们别无选择，只能修复它们。这有点烦人，但很有效。另一种方法是构建自动修复检测错误的工具。这是<a href="https://instagram-engineering.com/static-analysis-at-scale-an-instagram-story-8f498ab71a0c#8e79">Instagram采用的方法</a>;他们使用自动化重构来教育工程师如何编写最佳实践代码。</p>
+<p><strong>静态分析</strong>是对代码进行自动检查，寻找潜在问题和错误的更通用的短语。移动静态分析工具通常有助于检测比简单的lint规则所能捕获的更复杂的用例。</p>
+<p>大多数静态分析工具都是为一种语言编写的——Swift、Kotlin、Objective C或Java——并检测常见的编程问题，如未使用的变量、空捕获块、可能的空值等。在上面列出的测试工具之上，你可以考虑的静态分析工具是:</p>
+<ul>
+<li>
+<p>Swift, Kotlin, Objective-C and Java: <a href="https://www.sonarqube.org/downloads/?utm_source=ebook&amp;utm_medium=paid&amp;utm_campaign=mobileapps&amp;utm_term=sq">SonarQube</a> and SonarCloud (advanced static analysis), <a href="https://github.com/uber/neal/">NEAL</a>, <a href="https://fbinfer.com">Infer</a> (Java, Objective-C)</p>
+</li>
+<li>
+<p>Swift: <a href="https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/debugging_with_xcode/chapters/static_analyzer.html">Clang analyzer</a> (ships with Xcode), <a href="https://github.com/realm/SwiftLint">SwiftLint</a>, <a href="https://github.com/rockbruno/SwiftInfo">SwiftInfo</a>, <a href="https://github.com/sleekbyte/tailor">Tailor</a>, <a href="https://github.com/nicklockwood/SwiftFormat">SwiftFormat</a></p>
+</li>
+<li>
+<p>Kotlin: <a href="https://github.com/pinterest/ktlint">ktlint</a> (a “no-decision” linter), detekt (code smells and complexity reports)</p>
+</li>
+<li>
+<p>Objective-C: <a href="https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/debugging_with_xcode/chapters/static_analyzer.html">Clang analyzer</a>(ships with Xcode), <a href="https://oclint.org">OCLint</a></p>
+</li>
+<li>
+<p>Java: lint (ships with Android Studio), NullAway (annotation-based null-checks), FlowDroid (data flow analysis), CogniCrypt (secure cryptography integration checks) PMD (Programming Mistake Detector), Checkstyle</p>
+</li>
+<li>
+<p>See also this repository of static analysis tools per language</p>
+</li>
+</ul>
+<p>使用linting和静态分析工具的好处是获得更快的反馈，代码评审人员不需要检查常见的代码问题。代码质量通常随工具执行规则而保持较高。当使用高级工具时，静态分析可以通过提前检测边缘情况，从而导致更稳定和安全的应用程序。增加稳定性的一个很好的例子是使用工具来防止由于null对象而导致的运行时崩溃，并通过编译时分析代码来做到这一点。</p>
+<p>这些工具的缺点是集成它们需要时间和它们带来的额外维护。您需要决定使用哪个工具，并将它们添加到构建设置中，包括本地构建和CI/CD设置。一旦就位，你可能需要更新规则，并不时更新工具版本以支持你可能需要的新功能。</p>
+<p>您选择的工具越复杂，这种维护可能会增加越多。在优步，我们建立了广泛的检测和静态分析检查。结果让我觉得付出额外的努力是值得的。然而，我会犹豫是否要构建我们所做的定制工具类型，相反，我会使用一个足够好的工具来完成我们的工作，这可以用很少的努力来建立。</p>
+<p>代码覆盖率——检查代码的哪些部分是通过单元测试或其他自动化测试测试的——是另一个帮助提高质量的工具。对于iOS, Xcode有内置的代码覆盖率报告。对于Android, Jacoco是Java和Kotlin常用的覆盖率报告工具。一些供应商还提供了代码覆盖解决方案。通过将代码覆盖与您的开发工作流和CI设置集成，您可以:</p>
+<ul>
+<li>可视化每个变更的覆盖范围。这可以使工程师和代码审查人员很容易地验证是否测试了新的业务逻辑。</li>
+<li>如果团队已经同意这样的方法，帮助实施最小代码覆盖策略。</li>
+<li>显示代码覆盖率随时间的变化趋势。代码覆盖率的变化是否与应用程序的中断或其他问题有关?你将有数据来回答这个问题。</li>
+<li>识别那些未被覆盖的领域，以及添加测试可以帮助提高正确性、可维护性的地方，并给在这些领域中进行更改的工程师更多的信心。</li>
+</ul>
+<p>进一步阅读:</p>
+<ul>
+<li><a href="https://medium.com/m/global-identity?redirectUrl=https%3A%2F%2Finstagram-engineering.com%2Fstatic-analysis-at-scale-an-instagram-story-8f498ab71a0c">Static analysis at scale</a> from Instagram</li>
+<li><a href="https://medium.com/pinterest-engineering/pinterest-ktlint-35391a1a162f">Kotlin linting with ktlint</a> from Pinterest</li>
+<li><a href="https://medium.com/pinterest-engineering/ios-linting-at-pinterest-3108d8764390">iOS linting tooling</a> from Pinterest</li>
+<li>iOS: <a href="https://blogs.halodoc.io/continuous-code-inspection-ios/">Continuous code inspection with SwiftLint</a> &amp; <a href="https://medium.com/flawless-app-stories/swiftlint-in-use-279f44b3182e">SwiftLint in Use</a></li>
+<li>Android: <a href="https://infinum.com/the-capsized-eight/what-is-android-lint-and-how-helps-write-maintainable-code">Android lint overview</a> &amp; <a href="https://proandroiddev.com/android-lint-framework-an-introduction-36139deedf8b">Android lint framework - an introduction</a></li>
+</ul>
+<h3 id="17-a-namecomplianceprivacyandsecurityacompliance-privacy-and-security">1.7. <a name='COMPLIANCEPRIVACYANDSECURITY'></a>COMPLIANCE, PRIVACY AND SECURITY</h3>
+<p>你的应用和开发过程很可能需要遵循一定的遵从性和隐私准则。每个应用的合规要求都是独一无二的。在本章中，我们将讨论常见的合规要求。</p>
+<p>大多数大型移动工程团队都与合规团队合作，以确定他们需要遵守哪些法规、流程和指导方针。一些公司有内部合规、隐私和安全团队，而另一些公司则雇佣外部顾问。违反法规的代价是高昂的，无论是在声誉上还是在经济上，你都希望确保公司认真对待这一领域。</p>
+<p><strong>除了那些应该访问这些详细信息的人之外，任何人都不能访问个人身份信息</strong>。没有移动工程师、客户支持人员或在公司工作的人应该能够访问这些信息。</p>
+<p>GDPR (General Data Protection Regulation, General Data Protection Regulation)是欧盟进一步扩大PII范围的重要法规。只有出于合法目的，才能存储和处理PII数据。</p>
+<p>特定行业的合规准则可能适用于特定行业的应用。一份不详尽的清单包括:</p>
+<ul>
+<li>PCI DSS (Payment Card Industry Data Security Standard) compliance when handling credit card information.</li>
+<li>HIPAA (Health Insurance Portability and Accountability Act) and / or ISO/IEC 27001 when working with healthcare-related data information.</li>
+<li>FERPA (Family Educational Rights and Privacy Act) for working with student or educational information in the US.</li>
+<li>FCRA (Fair Credit Reporting Act) for apps related to consumer reporting agencies such as credit companies, medical information companies or tenant screening.</li>
+<li>Section 508 compliance test when working with US federal agencies, ensuring people with disabilities can access their electronic information technology (EIT).</li>
+<li>European Accessibility Act guidelines for when developing for a government within the EU.</li>
+<li>Individual country privacy laws that might apply to your app.</li>
+</ul>
+<p>对于移动工程来说，有几个领域将影响几乎所有的组织，除了那些在欧盟没有用户的组织。</p>
+<p>记录手机上的数据并将其发送到后端，这是你应该仔细考虑的领域:</p>
+<ul>
+<li>Logging PII data without end-to-end encryption in place might invite data breaches.</li>
+<li>Aim to not log PII data, or instead anonymize this information in the logs, turning it into non-PII data.</li>
+<li>Put guidance in place for what, when, and how to log, including a section on PII data.</li>
+<li>Audit logs to ensure they are compliant with regulations you need to adhere to.</li>
+<li>Bug report screenshots should not contain PII data. You might need to do additional steps to ensure this is the case, and information such as credit card numbers and other PII information does not circulate in ticketing systems, or at customer support agents.</li>
+<li>Review what data is being logged and how on a regular basis to ensure there is no PII information being stored in a non-secure way.</li>
+</ul>
+<p>审核应用程序的各个部分，以符合GDPR和PII的要求。</p>
+<ul>
+<li>Third-party SDKs. These SDKs may often not be GDPR-compliant by their default configuration. You might need to work with their vendors and in some cases, stop using some of them in order to stay compliant.</li>
+<li>Mobile app workflows might need to be updated to ensure the app stays compliant with GDPR. This can include additional steps to ask for permission for activities, and could mean adding additional information screens.</li>
+<li>Mobile network traffic is worth monitoring with tools like mitmproxy, Charles, or similar others, to see what data the app is sending through the network. You might discover PII data being sent from your code or SDK code that you need to resolve.</li>
+</ul>
+<p>培训一些工程师，让他们了解隐私法对编码和操作的影响，可能是一项明智的投资。通过这种方式，你可以将一些知识带进公司内部，而不是依赖于外部顾问。如果您的组织足够大，有足够的内部专家，您可能仍然需要考虑提名遵从性/隐私/安全的拥护者，以更好地扩展这方面的知识。我们在优步就是这么做的，这有助于在开发过程的早期发现潜在问题。</p>
+<p>有一个兼容的开发过程和数据存储设置超出了本书的范围。为了确保你的开发过程，以及你的应用程序和存储数据是兼容的，你需要依靠安全、法律和合规专家。</p>
+<p>为了了解这一过程需要付出多少努力，在Uber，我们花了几个月的时间绘制流程，做出流程和工具的更改，然后在GDPR发布前进行审核。我们必须做的工作和我们所做的改变的规模，使这个项目成为公司更大的事业之一。</p>
+<p>越早进行彻底的隐私和合规审查越好。一旦你有了正确的流程，保持合规就会少得多。</p>
+<p>安全移动发展是一个不断演变的话题。尽管原生的iOS和Android移动应用需要担心的安全挑战更少，但找出潜在的漏洞并对工程师进行安全移动应用开发培训是一个好主意。</p>
+<p>在CI/CD级别上运行安全检查意味着您可以扫描代码以获得硬编码的凭据或危险函数的使用。你可以使用像SonarCloud这样的工具去实现这种方法。Skyscanner采用了类似的方法，在SonarQube上构建了Sonar Secrets插件，以及他们的Whispers静态代码分析工具。还有其他供应商解决方案可以帮助进行安全性或渗透测试。</p>
+<p>在优步，我们有一个单独的移动安全培训课程，包括OWASP移动安全风险和MASVS(移动应用安全验证标准)。</p>
+<p>关于合规和私隐的进一步阅读:</p>
+<ul>
+<li><a href="https://www.enisa.europa.eu/publications/privacy-and-data-protection-in-mobile-applications">Privacy and data protection in mobile applications</a> from the EU cybersecurity agency</li>
+<li><a href="https://iapp.org/resources/article/privacy-design-guidelines-for-mobile-application-development/">Privacy design guidelines for mobile application development</a> from IAPP</li>
+<li><a href="https://www.infoq.com/articles/gdpr-for-software-devs/">What should software engineers know about GDPR</a> from InfoQ</li>
+<li><a href="https://techbeacon.com/security/15-steps-developing-gdpr-compliant-apps">15 steps to developing GDPR-compliant apps</a> from TechBeacon</li>
+<li><a href="https://www.dhs.gov/publication/dhs-section-508-compliance-test-processes">DHS Section 508 Compliance Test</a> from US Homeland Security</li>
+</ul>
+<p>For security:</p>
+<ul>
+<li><a href="https://github.com/OWASP/owasp-masvs">Mobile Application Security Verification Standard</a> from OWASP</li>
+<li><a href="https://medium.com/@SkyscannerEng/whispers-advanced-secrets-detection-15dd64a9dfb7">Whispers: advanced secrets detection</a> from Skyscanner</li>
+<li><a href="https://github.com/Skyscanner/sonar-secrets">Sonar Secrets: secrets detection on top of SonarQube</a> from Skyscanner</li>
+<li><a href="https://blogs.halodoc.io/ios-mobsf/">Driving Secure Software Development Lifecycle by adopting Mobile Security Analysis</a> from Halodoc</li>
+<li><a href="https://quickbirdstudios.com/blog/mobile-app-security-best-practices-android-ios/">iOS and Android mobile app security best practices</a> from Quickbird Studios</li>
+<li><a href="https://quickbirdstudios.com/blog/mobile-app-security-best-practices-android-ios/">OWASP Mobile Top 10 security risks</a> from OWASP</li>
+<li><a href="https://android-developers.googleblog.com/2020/06/11-weeks-of-android-privacy-and-security.html">Android privacy and security</a> from Google</li>
+</ul>
+<h3 id="18-a-nameclient-sidedatamigrationsaclient-side-data-migrations">1.8. <a name='CLIENT-SIDEDATAMIGRATIONS'></a>CLIENT-SIDE DATA MIGRATIONS</h3>
+<p>对于本地存储数据的移动应用程序，应用程序中的数据模式变化带来了一系列新的迁移挑战。</p>
+<p>这是后台工程师和处理数据库的重客户工程师都非常熟悉的领域。与此同时，这种问题空间在网页应用中很少存在，因为网页应用在浏览器中存储的离线数据很少甚至没有，它们通常也不支持离线场景。</p>
+<p>需要将设备上的数据从一种格式迁移到另一种格式的迁移是困难的。数据模式变化越大，这样的迁移需要付出的努力就越大。编写迁移函数是这个挑战中较小的一部分。其他挑战包括:</p>
+<ul>
+<li>
+<p>使用真实的生产数据测试迁移，这些数据理想地代表了所谓的高级用户，他们在设备上拥有一些最复杂的数据存储类型。</p>
+</li>
+<li>
+<p>测试从各种旧版本到新版本的升级。你不能假设人们会从上一个版本更新应用程序。假设这不是第一次这样的数据迁移，您可能需要支持一小部分用户，这些用户甚至只落后于一次这样的迁移。</p>
+</li>
+<li>
+<p>在客户端记录/发出数据迁移的详细信息，因为后端日志对于设备上的数据迁移可能用处不大。</p>
+</li>
+<li>
+<p>为数据迁移可能失败的客户提供支持，并为这些用户提供备份计划，以防出现主要功能倒退。</p>
+</li>
+</ul>
+<p>模式迁移的一个主要挑战是，如果新版本的应用程序有一个破坏新模式的bug，该怎么办?”应用程序的用户可能会陷入无效状态，在这种情况下，他们必须恢复的唯一选择是擦除应用程序，并从一个干净的状态开始，因为客户端没有回滚选项。</p>
+<p>仔细考虑在数据模式改变的情况下，是否可以将后端作为事实的来源。除了必须构建一个容易出错、难以调试、难以支持的设备上模式迁移之外，您是否可以构建对从后端重新下载数据的支持——或者让这成为将来的一个选项?</p>
+<h3 id="19-a-nameforcedupgradingaforced-upgrading">1.9. <a name='FORCEDUPGRADING'></a>FORCED UPGRADING</h3>
+<p>在2015年，很少有应用强制升级机制。到2021年，大多数成熟应用都将采取这一措施，因为它们意识到有必要迫使老版本的应用退出。</p>
+<p>实施强制升级的原因有很多:</p>
+<ul>
+<li>
+<p><strong>退出后端API版本</strong>。如果不进行强制升级，后端api就不能退役。</p>
+</li>
+<li>
+<p><strong>测试的成本</strong>。旧的应用版本仍然需要进行测试，特别是针对后端更改。</p>
+</li>
+<li>
+<p><strong>客户支持成本</strong>。应用程序的版本越多，客户支持就越复杂——也越昂贵。即使在修复了一个已知的bug后，用户仍然可以联系客户支持，报告同样的问题，因为他们使用的是旧版本</p>
+</li>
+<li>
+<p><strong>向后兼容性的代价</strong>。后端“团队将不得不更加小心，最终，更缓慢地移动，以确保向后兼容旧的应用程序版本。</p>
+</li>
+<li>
+<p><strong>需要修复的严重bug</strong>。可能存在需要立即修复和立即推出修复的bug。如果没有强制升级解决方案，确保所有客户都得到修复是不可能的。</p>
+</li>
+<li>
+<p><strong>漏洞</strong>。旧版本的应用程序可能存在安全或其他业务漏洞。如果没有办法强制用户停止使用这些版本，则无法修补该漏洞。</p>
+</li>
+</ul>
+<p>强制升级实现的示例包括:</p>
+<ul>
+<li>
+<p>Snapchat、Facebook Messenger和Whatsapp都有一个滚动窗口，以防止用户使用一个落后太多的版本。</p>
+</li>
+<li>
+<p>游戏经常使用这种策略。当新升级推出时，玩家通常不能在没有升级的情况下继续游戏。</p>
+</li>
+<li>
+<p>银行应用程序通常实现这种方法。Monzo既支持强制升级，也支持推荐升级。</p>
+</li>
+<li>
+<p>Just Eat(英国的外卖服务)既支持跳过升级，也支持强制升级。他们的目标是按需或滚动窗口。可以“远程”配置滚动窗口。自2013年以来，该公司一直在强制升级。</p>
+</li>
+<li>
+<p>ITV Hub(英国最受欢迎的应用之一)既有“软”终止开关(要求用户更新)，也有“硬”终止开关(要求用户必须更新)。killswitch可根据操作系统版本、应用程序版本、手机制造商等目标机制推出</p>
+</li>
+<li>
+<p>Skyscanner(航空旅行)使用滚动窗口升级方法。</p>
+</li>
+<li>
+<p>Tresorit(加密在线存储)从该应用首次公开发布开始就进行了强制升级。在密码学中，能够切换到更强的算法，并在宽限期后不允许弱回退是至关重要的。</p>
+</li>
+<li>
+<p>Halodoc(医疗保健)实现了灵活和即时的应用程序更新。</p>
+</li>
+</ul>
+<p>可以肯定地说，所有成熟的手机应用都有一些强制升级的概念，其中许多应用从一开始就有这个概念。</p>
+<p>强制升级的问题是，您需要比计划使用它的时间更早地构建它。如果没有强制升级消息机制，你不可能安全地退出应用版本。</p>
+<p>这张图显示了首次应用开发者所面临的问题:</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq7p27u1isj30fm0g1771.jpg" alt="avatar" loading="lazy"></figure>
+<p>一旦强制升级解决方案到位，您确实需要在生产中测试它，以确保它工作。有些公司会犯这样的错误:建立强制升级支持，但随后几年都不使用它。当到了强制升级的时候，他们对升级是否会起作用几乎没有信心。</p>
+<p>在Android平台上，谷歌从Android 5.0开始提供应用内更新，并提供易于使用的API。然而，对于老版本的Android或iOS，你目前只能依靠自己的解决方案。</p>
+<p>在强制升级时，如何支持旧机型是你遇到的痛点。虽然许多企业可以决定不支持旧手机，但情况并不总是如此。比如货运应用《Convoy》，有些运营商的手机上使用JS Core的新应用版本甚至无法运行。</p>
+<p>关于如何支持这些旧模型的决定需要基于您的业务用例来决定。为了留住这些用户，一些应用会多年来一直支持旧版本。其他应用在计算了一小部分用户的商业价值后，会划定界限，然后向这些用户传达停止对某些操作系统版本的支持。</p>
+<p>强制升级不只是一种工具，而是一种策略。当您构建工具时，请确保与业务人员(产品经理和业务涉众)合作，将强制升级策略落实到位。如果你拥有关于何时以及如何强制升级的边界情况，那么这个过程将从一个挑战变成一种常规练习。</p>
+<h3 id="110-a-nameappsizeaapp-size">1.10. <a name='APPSIZE'></a>APP SIZE</h3>
+<p>应用大小有多重要?应用程序越大，用户下载它的可能性就越小，当手机存储空间被填满时，他们就越有可能删除它。</p>
+<p>二进制大小很重要，因为它会影响下载。二进制文件的大小越小，用户下载应用程序的可能性就越大。2017年，谷歌在一篇文章中报道了一些有趣的发现:</p>
+<ul>
+<li>APK大小每增加6 MB，安装转换率就会下降1%。</li>
+<li>10MB大小的APK的下载完成率比100MB大小的APK高30%。</li>
+<li>70%的新兴市场用户在下载应用前会考虑应用的大小。</li>
+</ul>
+<p>iOS系统还没有类似的全面报告，但应用的大小和安装率确实存在一定的相关性。例如，Segment团队发现，2016年，当将应用的大小从3MB扩大到150MB时，应用安装量下降了66%。</p>
+<p>对于Android来说，保持二进制文件越小越重要。有些设备的存储空间很小，在某些市场，人们会根据应用所占空间来决定是否下载应用。</p>
+<p>缩小Android应用规模最直接的方法之一是将它们打包成应用包。该选项自2018年底开始使用。谷歌表示，与通用APK包装相比，应用的平均尺寸减少了35%。</p>
+<p>对于iOS来说，最重要的尺寸限制是200MB的无线下载限制。比这更大的应用只能通过wifi连接下载或更新。在Uber，我们在一个发布周期中人为地增加了应用的规模，以衡量超过ota限制的影响。Uber发现安装量大幅下降，这可能会对业务产生重大影响。前优步工程经理Chris Brauchli在文章中深入探讨了优步应用程序的二元规模困境。</p>
+<p>在新兴市场，优步(Uber)、Facebook和谷歌等公司对Android采取的策略是创建一个独立的、规模非常小的“精简”应用程序。在优步，研究表明，在一些市场中，潜在客户并不会下载相对较大的应用程序。这导致了创建和发布优步Lite:一个更有限的优步应用程序，但它的占地面积为5MB，优化了低带宽使用。Facebook Lite和谷歌Go也是基于类似目标而开发的应用。</p>
+<p>为了将应用保持在5MB以下并减少数据使用，该团队进行了几项优化:</p>
+<ul>
+<li>
+<p>地图默认关闭，以减少数据使用。</p>
+</li>
+<li>
+<p>删除那些增加了过大开销的框架。例如，Uber Lite就不使用肋骨。</p>
+</li>
+<li>
+<p>使用矢量图像格式代替png格式的资源。</p>
+</li>
+<li>
+<p>服务器驱动的客户机，后端在其中完成大部分编排工作，以减少网络有效负载。</p>
+</li>
+<li>
+<p>通过保持请求和响应的大小小于1 MTU(最大传输单元)来使用单个TCP连接。</p>
+</li>
+</ul>
+<p>需要注意的是，应用大小和带宽使用的减少往往伴随着权衡。在Uber Lite的案例中，这些权衡是:</p>
+<ul>
+<li>
+<p>更多的工程努力来维护一个小版本的应用程序。必须建立一个新的团队来构建和维护这个应用程序。</p>
+</li>
+<li>
+<p>后端团队投入更多精力来支持低带宽用例。网络调用必须进行优化，以适应1个MTU以下，一些流需要重新考虑</p>
+</li>
+<li>
+<p>减少客户的功能，这可能导致更低的转化率或更少的每客户收入。</p>
+</li>
+</ul>
+<p>对于成长中的组织来说，应用程序二进制大小的所有权往往是最难解决的问题。在多个团队共同开发应用的情况下，每个人都倾向于专注于构建自己的功能。一旦有了移动平台团队，这个团队通常会负责监控应用的规模，并以合理的方式减少规模。</p>
+<p>静态资产渗入到二进制文件中是许多团队参与的大型应用程序的一个反复出现的问题。你会惊讶于有多少应用嵌入了一个6MB的原始JPEG文件，这是为A/B实验而添加的，然后工程师在实验后忘记删除它。监控应用大小可以帮助你抓住这些疏忽。应用大小监控可以防止这些不必要的资产进入产品，浪费大量设备的空间。</p>
+<p>如果您的公司不关注二进制大小，那么可能是时候改变这种方法了。即使不明显，大型应用也会对安装和使用参数产生影响。这取决于你是否能够发现这种影响有多大，以及你想要花多少时间和精力去优化应用的规模。</p>
+<p>安装规模也很重要，但很少有团队关注这一点。虽然一个应用程序可能有一个足够小的二进制大小，这个大小可以通过缓存图像、文件和其他数据开始增加。如果应用发展得太大，用户可能会卸载并流失。</p>
+<p>谷歌Play支持开发者通过谷歌Play控制台查看安装大小，你应该定期监控这些数据。苹果不支持这样做，这意味着对于iOS，你只能手动检查如何以及何时缓存，并在本地测试应用的大小变化。</p>
+<p>延伸阅读:</p>
+<ul>
+<li><a href="https://developer.apple.com/documentation/xcode/reducing-your-app-s-size">Reduce your app size on iOS by app thinning</a> from Apple</li>
+<li><a href="https://developer.android.com/studio/build/shrink-code">Shrink, obfuscate and optimize your Android app</a> from Google</li>
+<li><a href="https://medium.com/googleplaydev/what-a-new-publishing-format-means-for-the-future-of-android-2e34981793a">The Android app bundle is a better way to package your app</a> from Google</li>
+<li><a href="https://medium.com/nerd-for-tech/binary-size-woes-acb5d96f058a">Binary size woes</a> from Uber</li>
+<li><a href="https://eng.uber.com/engineering-uber-lite/">Engineering an Uber app under 5 Megabytes</a> from Uber</li>
+<li><a href="https://www.farfetchtechblog.com/en/blog/post/app-size-matters-ii/">App size matters</a> from Farfetch</li>
+<li><a href="https://segment.com/blog/mobile-app-size-effect-on-downloads/">Effect of mobile app size on Downloads</a> from Twilio Segment</li>
+<li><a href="https://medium.com/googleplaydev/shrinking-apks-growing-installs-5d3fcba23ce2">How your APK size impacts install conversion rates from</a> Google</li>
+<li><a href="https://engineering.fb.com/2020/03/02/data-infrastructure/messenger/">Reducing the Messenger iOS codebase from 1.7M to 360K lines of code</a> from Facebook</li>
+<li><a href="https://www.theguardian.com/info/2019/dec/18/shrinking-the-download-size-of-the-guardians-live-app-on-android">Shrinking our Android app size by 30%</a> from The Guardian</li>
+<li><a href="https://medium.com/pregbuddy-engineering/how-we-reduced-our-android-app-size-by-65-54b17ae9a3c6">Reducing Android app size by 65%</a> from PregBuddy</li>
+<li><a href="https://medium.com/@ankur.s20/implementing-app-thinning-in-your-project-step-by-step-tutorial-ios-app-b3cfd139896d">App thinning, Bitcode, Slicing</a>: an iOS tutorial</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ik3N-Na4W/" class="tag">
+                    app-challenge-5
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/apps-challenges-part-four/">
+                  <h3 class="post-title">
+                    App&#39;s challenges - Part Four
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

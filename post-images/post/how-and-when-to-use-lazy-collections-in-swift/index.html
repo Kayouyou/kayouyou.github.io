@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>How and when to use Lazy Collections in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+How and when to use Lazy Collections in Swift
+
+
+1.1. What is a lazy collection?
+1.2. Handling output values on the g..." />
+    <meta name="keywords" content="lazy,collections" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">How and when to use Lazy Collections in Swift</h2>
+            <div class="post-date">2021-05-08</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#HowandwhentouseLazyCollectionsinSwift">How and when to use Lazy Collections in Swift</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Whatisalazycollection">What is a lazy collection?</a></li>
+<li>1.2. <a href="#Handlingoutputvaluesonthego">Handling output values on the go</a></li>
+<li>1.3. <a href="#Useopt-inoveropt-out">Use opt-in over opt-out</a>
+<ul>
+<li>1.3.1. <a href="#Dontoveroptimize">Don’t over optimize</a></li>
+<li>1.3.2. <a href="#LazyCollectionsdontcache">Lazy Collections don’t cache</a></li>
+<li>1.3.3. <a href="#Takethedelayintoaccount">Take the delay into account</a></li>
+</ul>
+</li>
+<li>1.4. <a href="#ConsiderusingstandardSwiftAPIsoverlazyarrays">Consider using standard Swift APIs over lazy arrays</a></li>
+<li>1.5. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namehowandwhentouselazycollectionsinswiftahow-and-when-to-use-lazy-collections-in-swift">1. <a name='HowandwhentouseLazyCollectionsinSwift'></a>How and when to use Lazy Collections in Swift</h2>
+<p>惰性集合类似于常规集合，<strong>但改变了map、filter和reduce等修饰符的处理方式</strong>。根据我的经验，他们没有得到足够的关注，因为他们可以在某些情况下得到更好的表现。</p>
+<p>您可能对惰性变量更为熟悉，但您以前在序列上使用过惰性属性吗?我将向您解释什么是惰性集合以及什么时候应该使用它们。</p>
+<h3 id="11-a-namewhatisalazycollectionawhat-is-a-lazy-collection">1.1. <a name='Whatisalazycollection'></a>What is a lazy collection?</h3>
+<p>延迟收集将计算推迟到实际需要时。这在许多不同的情况下都是有益的，如果最终没有请求元素，就可以防止做不必要的工作。</p>
+<p>下面的示例显示了一组数字，其中偶数是翻倍的。如果不使用lazy关键字，所有项都将在创建时直接处理:</p>
+<pre><code class="language-swift"> var numbers: [Int] = [1, 2, 3, 6, 9]
+ let modifiedNumbers = numbers
+     .filter { number in
+         print(&quot;Even number filter&quot;)
+         return number % 2 == 0
+     }.map { number -&gt; Int in
+         print(&quot;Doubling the number&quot;)
+         return number * 2
+     }
+ print(modifiedNumbers)
+ /*
+  Even number filter
+  Even number filter
+  Even number filter
+  Even number filter
+  Even number filter
+  Doubling the number
+  Doubling the number
+  [4, 12]
+  */
+</code></pre>
+<p>正如您所看到的，两个偶数的翻倍发生在所有5个数字被过滤之后。</p>
+<p>如果我们添加lazy关键字使数组计算修饰符为lazy，结果将会不同:</p>
+<pre><code class="language-swift">let modifiedLazyNumbers = numbers.lazy
+     .filter { number in
+         print(&quot;Lazy Even number filter&quot;)
+         return number % 2 == 0
+     }.map { number -&gt; Int in
+         print(&quot;Lazy Doubling the number&quot;)
+         return number * 2
+     }
+ print(modifiedLazyNumbers)
+ // Prints:
+ // LazyMapSequence&gt;, Int&gt;(_base: Swift.LazyFilterSequence&gt;(_base: [1, 2, 3, 6, 9], _predicate: (Function)), _transform: (Function))
+</code></pre>
+<p>事实上，修饰符根本没有被调用!这是因为我们还没有要这些号码。像filter和map这样的修改器只会在请求元素时执行:</p>
+<pre><code class="language-swift"> print(modifiedLazyNumbers.first!)
+ /*
+  Prints:
+  Lazy Even number filter
+  Lazy Even number filter
+  Lazy Doubling the number
+  4
+  */
+</code></pre>
+<p>你可以想象，如果只从一个大的收藏中使用一些物品，这可以为你节省大量的工作。</p>
+<h3 id="12-a-namehandlingoutputvaluesonthegoahandling-output-values-on-the-go">1.2. <a name='Handlingoutputvaluesonthego'></a>Handling output values on the go</h3>
+<p>惰性集合的另一个好处是可以随时处理输出值。例如，假设有一个头像图像获取器，您希望使用它来获取以字母A开头的用户名的头像。</p>
+<p>如果没有lazy，它将执行如下:</p>
+<pre><code class="language-swift">let usernames = [&quot;Antoine&quot;, &quot;Maaike&quot;, &quot;Jaap&quot;, &quot;Amber&quot;, &quot;Lady&quot;, &quot;Angie&quot;]
+usernames
+    .filter { username in
+        print(&quot;filtered name&quot;)
+        return username.lowercased().first == &quot;a&quot;
+    }.forEach { username in
+        print(&quot;Fetch avatar for (username)&quot;)
+    }
+ /*
+  Prints:
+  filtered name
+  filtered name
+  filtered name
+  filtered name
+  filtered name
+  filtered name
+  Fetch avatar for Antoine
+  Fetch avatar for Amber
+  Fetch avatar for Angie
+  */
+</code></pre>
+<p>首先过滤所有名字，然后获取所有以A开头的名字的化身。</p>
+<p>虽然这样做是可行的，但是我们只能在整个集合被过滤之后才开始获取。如果我们必须遍历一个大的名称集合，这可能是一个缺点。</p>
+<p>相反，如果我们在这个场景中使用惰性集合，我们将能够开始获取角色:</p>
+<pre><code class="language-swift"> let usernames = [&quot;Antoine&quot;, &quot;Maaike&quot;, &quot;Jaap&quot;, &quot;Amber&quot;, &quot;Lady&quot;, &quot;Angie&quot;]
+ usernames.lazy
+     .filter { username in
+         print(&quot;filtered name&quot;)
+         return username.lowercased().first == &quot;a&quot;
+     }.forEach { username in
+         print(&quot;Fetch avatar for (username)&quot;)
+     }
+ /*
+  Prints:
+  filtered name
+  Fetch avatar for Antoine
+  filtered name
+  filtered name
+  filtered name
+  Fetch avatar for Amber
+  filtered name
+  filtered name
+  Fetch avatar for Angie
+  */
+</code></pre>
+<p>理解惰性数组和常规数组之间的区别很重要。一旦知道了什么时候执行修饰符，您就可以决定惰性集合对您的特定情况是否有意义。</p>
+<h3 id="13-a-nameuseopt-inoveropt-outause-opt-in-over-opt-out">1.3. <a name='Useopt-inoveropt-out'></a>Use opt-in over opt-out</h3>
+<p>现在您已经看到了惰性集合可以提高性能，您可能会想:“我将在任何地方都使用惰性集合!”但是，理解使用惰性数组的含义是很重要的。</p>
+<h4 id="131-a-namedontoveroptimizeadont-over-optimize">1.3.1. <a name='Dontoveroptimize'></a>Don’t over optimize</h4>
+<p>当使用lazy时，只有5个道具的集合不会给你带来很多性能上的胜利。这是一个因人而异的决定，它还取决于您的修改器所做的工作量。在大多数情况下，只有当您只打算使用大型集合中的少数项时，lazy才有用。</p>
+<p>最重要的是，要知道惰性数组不会被缓存。</p>
+<h4 id="132-a-namelazycollectionsdontcachealazy-collections-dont-cache">1.3.2. <a name='LazyCollectionsdontcache'></a>Lazy Collections don’t cache</h4>
+<p>惰性集合延迟执行修饰符，直到它们被请求。这也意味着结果值不会存储在输出数组中。事实上，所有的修饰符都会在每个条目请求上再次执行:</p>
+<pre><code class="language-swift"> let modifiedLazyNumbers = numbers.lazy
+     .filter { number in
+         print(&quot;Lazy Even number filter&quot;)
+         return number % 2 == 0
+     }.map { number -&gt; Int in
+         print(&quot;Lazy Doubling the number&quot;)
+         return number * 2
+     }
+ print(modifiedLazyNumbers.first!)
+ print(modifiedLazyNumbers.first!)
+ /*
+  Prints:
+  Lazy Even number filter
+  Lazy Even number filter
+  Lazy Doubling the number
+  4
+  Lazy Even number filter
+  Lazy Even number filter
+  Lazy Doubling the number
+  4
+  */
+</code></pre>
+<p>而非惰性集合的相同场景只会计算一次输出值:</p>
+<pre><code class="language-swift">let modifiedNumbers = numbers
+     .filter { number in
+         print(&quot;Lazy Even number filter&quot;)
+         return number % 2 == 0
+     }.map { number -&gt; Int in
+         print(&quot;Lazy Doubling the number&quot;)
+         return number * 2
+     }
+ print(modifiedNumbers.first!)
+ print(modifiedNumbers.first!)
+ /*
+  Prints:
+  Lazy Even number filter
+  Lazy Even number filter
+  Lazy Even number filter
+  Lazy Even number filter
+  Lazy Even number filter
+  Lazy Doubling the number
+  Lazy Doubling the number
+  4
+  4
+  */
+</code></pre>
+<h4 id="133-a-nametakethedelayintoaccountatake-the-delay-into-account">1.3.3. <a name='Takethedelayintoaccount'></a>Take the delay into account</h4>
+<p>惰性集合只在请求时执行它的修饰符。如果其中一个修饰符执行的任务可能需要花费时间，您可能希望远离使用lazy。</p>
+<p>换句话说，提前计算输出值并在实际需要时准备好它们可能是有益的。例如，您不希望在用户滚动时执行繁重的操作。</p>
+<h3 id="14-a-nameconsiderusingstandardswiftapisoverlazyarraysaconsider-using-standard-swift-apis-over-lazy-arrays">1.4. <a name='ConsiderusingstandardSwiftAPIsoverlazyarrays'></a>Consider using standard Swift APIs over lazy arrays</h3>
+<p>这本身就是一个主题，也是重新考虑使用惰性集合的另一个原因。Swift为我们提供了一整套优化的API来处理集合，这可能是一个更好的解决方案。</p>
+<p>例如，你可能会认为在这个场景中使用lazy是一个明智的决定，因为它可以防止我们在只使用第一个元素之前过滤所有的数字:</p>
+<pre><code class="language-swift">let collectionOfNumbers = (1…1000000)
+let lazyFirst = collectionOfNumbers.lazy
+    .filter {
+        print(&quot;filter&quot;)
+        return $0 % 2 == 0
+    }.first
+print(lazyFirst) // Prints: 2
+</code></pre>
+<p>然而，在本例中，我们受益于使用first(where:)。这是一个标准的Swift API，它允许我们从所有的底层(未来)优化中受益:</p>
+<pre><code class="language-swift">let firstWhere = collectionOfNumbers.first(where: { $0 % 2 == 0 })
+print(firstWhere) // Prints: 2
+</code></pre>
+<h3 id="15-a-nameconclusionaconclusion">1.5. <a name='Conclusion'></a>Conclusion</h3>
+<p>惰性集合是Swift的一个强大元素，可以为特定情况带来更好的性能。了解它的含义以决定惰性数组是否适合您的场景是非常重要的。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/oPTtYjUS7/" class="tag">
+                    lazy
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/J3hVc8gY-/" class="tag">
+                    collections
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/how-to-use-the-rethrows-keyword-in-swift/">
+                  <h3 class="post-title">
+                    How to use the rethrows keyword in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

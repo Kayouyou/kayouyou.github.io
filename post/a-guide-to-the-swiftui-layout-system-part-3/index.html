@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A guide to the SwiftUI layout system - Part 3 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="一开始，SwiftUI的布局系统看起来有点不灵活，因为它的默认概念和api套件没有给我们很多像素级的控制，而是着重于利用一组强大的平台定义的默认值 — 这反过来使系统能够代表我们做出许多常见的布局决策。
+然而，一旦我们看到表面之下，有大量不..." />
+    <meta name="keywords" content="layout,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A guide to the SwiftUI layout system - Part 3</h2>
+            <div class="post-date">2020-04-05</div>
+            
+            <div class="post-content" v-pre>
+              <p>一开始，SwiftUI的布局系统看起来有点不灵活，因为它的默认概念和api套件没有给我们很多像素级的控制，而是着重于利用一组强大的平台定义的默认值 — 这反过来使系统能够代表我们做出许多常见的布局决策。</p>
+<p>然而，一旦我们看到表面之下，有大量不同的定制选项和覆盖，我们可以应用来调整SwiftUI布局系统和它的默认行为集。 因此，在本系列文章的第三部分，也是最后一部分，让我们探索一些定制选项，以及它们如何让我们在定义SwiftUI布局时解决常见的冲突和消除歧义来源。</p>
+<h2 id="encountering-conflicts">Encountering conflicts</h2>
+<p>从第二部分结束的地方开始——在向事件视图添加了页眉和页脚之后，现在让我们向它添加一些实际的内容。 就像前面一样，我们将在本文中坚持使用占位符内容，以便能够完全专注于探索SwiftUI布局系统本身。</p>
+<p>让我们从创建一个新的视图开始，它将让我们渲染一个使用圆角矩形形状的图像占位符，它与文本一起放置在ZStack中:</p>
+<pre><code class="language-swift">struct ImagePlaceholder: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10).stroke()
+            Text(&quot;Image placeholder&quot;)
+        }
+    }
+}
+</code></pre>
+<p>接下来，让我们添加一个以上ImagePlaceholder的实例，以及一个描述文本到我们的主ContentView中,它现在将包含我们将作为事件屏幕的一部分显示的最终视图集:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            ImagePlaceholder()
+            Text(&quot;This is a description&quot;)
+            Spacer()
+            EventInfoList()
+        }.padding()
+    }
+}
+</code></pre>
+<p>上面的代码(你可以预览一下使用预览按钮的效果)向我们展示了SwiftUI各种形状的一个非常有趣的方面——就像间隔器一样，它们总是尽可能多地占据空间。因此，鉴于我们的描述文本目前非常短，我们的图像占位符最终会拉伸自己，占据屏幕的相当大一部分。</p>
+<p>现在，让我们来看看如果我们把描述变得更长会发生什么——例如重复我们使用了50多次的同一段文字，像这样:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            ImagePlaceholder()
+            Text(makeDescription())
+            Spacer()
+            EventInfoList()
+        }.padding()
+    }
+}
+
+private extension ContentView {
+    func makeDescription() -&gt; String {
+        String(repeating: &quot;This is a description &quot;, count: 50)
+    }
+}
+</code></pre>
+<p>这就是事情开始变得有趣的地方。SwiftUI布局系统不仅会截断现在更长的文本，还会截断屏幕底部尾随的EventInfoBadge文本 — 同时仍然给了ImagePlaceholder很大一部分可用空间(具有讽刺意味的是，这个视图在这种情况下可以说是调整的最适合的大小)。</p>
+<p>这是怎么回事?这一切都归结于SwiftUI的基本布局规则(我们在第一部分中讨论过)是如何工作的 — 每个视图负责决定它自己的大小，只有在那之后，每个父视图才决定如何在自己的框架内定位和适合它的子视图。</p>
+<p>结果，因为我们的ImagePlaceholder和描述文本现在都在请求比VStack同时容纳的帧要大得多的帧 — 布局系统被迫妥协，首先压缩每个视图尽可能多(这是导致我们的EventInfoBadge被截断的原因)，然后将可用空间平均分配给它的子视图。</p>
+<p>得庆幸的是，SwiftUI提供了大量的工具，我们可以使用它们来解决上述的布局冲突——而不需要自己手动绘制每个视图，也不需要转义到UIKit或AppKit中。</p>
+<h2 id="layout-priorities">Layout priorities</h2>
+<p>让我们先来看看布局优先级，通过它，我们可以告诉SwiftUI布局系统，就其优先级大小而言，哪些视图最重要(或最不重要)。每个视图开始时的布局优先级为0，然后可以通过应用layoutPriority()修饰符来减少或增加布局优先级。下面是我们如何给我们的描述更高的优先级:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            ImagePlaceholder()
+            Text(makeDescription()).layoutPriority(1)
+            Spacer()
+            EventInfoList()
+        }.padding()
+    }
+}
+</code></pre>
+<p>注意，没有必要极端地使用999或.infinity之类的布局优先级值——任何大于0的值都将对我们的布局产生影响。</p>
+<p>上面的调整绝对使我们的视图看起来更好(再次，你可以使用预览按钮来看看它现在是什么样子)-我们的描述现在得到了更大的可用空间的一部分。 然而，我们尾随的EventInfoBadge仍然是被压缩的，我们的图像占位符现在有一个小得多的高度。</p>
+<p>修复EventInfoBadge问题的一种方法是执行与上面相反的操作，降低图像占位符的布局优先级，而不是增加描述的布局优先级——像这样:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            ImagePlaceholder().layoutPriority(-1)
+            Text(makeDescription())
+            Spacer()
+            EventInfoList()
+        }.padding()
+    }
+}
+</code></pre>
+<p>这又一次更好了，但是我们的图像占位符仍然被缩小到它绝对最小的高度(等于它的文本的行高)，这看起来不太好。为了解决这个问题，让我们也使用.frame()修饰符为占位符指定一个最小高度:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            ImagePlaceholder()
+                .layoutPriority(-1)
+                .frame(minHeight: 100)
+            Text(makeDescription())
+            Spacer()
+            EventInfoList()
+        }.padding()
+    }
+}
+</code></pre>
+<p>我们的图像占位符现在看起来很好，我们的描述文本也是如此——但是，我们的EventInfoBadge文本再次被截断。为了解决最后的问题，让我们提高EventInfoList的布局优先级，告诉布局系统将其高度优先于其他所有事项:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            ImagePlaceholder()
+                .layoutPriority(-1)
+                .frame(minHeight: 100)
+            Text(makeDescription())
+            Spacer()
+            EventInfoList().layoutPriority(1)
+        }.padding()
+    }
+}
+</code></pre>
+<p>SwiftUI的布局优先级系统是一个简单而强大的工具，它可以让我们明确指定视图的布局顺序 — 这可以帮助我们解决冲突，我们的视图如何调整大小，以适应可用的空间。</p>
+<h2 id="fixed-dimensions">Fixed dimensions</h2>
+<p>然而，布局优先级的一个问题是，应用它们有时会感觉像在玩“打地鼠”游戏。在我们应用的每一个调整和修正中，都会出现一个新的问题。我们已经看到，当我们必须同时提高和降低布局优先级来应对各种问题时，这种情况就开始发生了。</p>
+<p>因此，虽然调整视图的布局优先级是应用一次性修复的好方法，但谢天谢地，它不是唯一一个让我们调整SwiftUI布局行为的工具。另一个工具是fixedSize()修饰符，它(就像它的名字所暗示的那样)使我们能够固定视图的大小在它喜欢的宽度或高度(或两者都)。</p>
+<p>使用这个修饰符，我们可以达到与前面例子完全相同的结果，只是这次不需要引入额外的布局优先级(图像占位符除外)-通过给我们的EventInfoList一个固定的垂直大小，防止它被压缩:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            ImagePlaceholder()
+                .layoutPriority(-1)
+                .frame(minHeight: 100)
+            Text(makeDescription())
+            Spacer()
+            EventInfoList().fixedSize(horizontal: false, vertical: true)
+        }.padding()
+    }
+}
+</code></pre>
+<p>为了进一步说明fixedSize()修饰符是如何工作的，让我们看看如果我们也给EventInfoList一个固定的水平大小会发生什么:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            ImagePlaceholder()
+                .layoutPriority(-1)
+                .frame(minHeight: 100)
+            Text(makeDescription())
+            Spacer()
+            EventInfoList().fixedSize(horizontal: true, vertical: true)
+        }.padding()
+    }
+}
+</code></pre>
+<p>正如上面例子的预览显示的那样，修正信息列表的宽度会导致整个ContentView被拉伸到屏幕的边界之外，这在一开始可能看起来很奇怪。</p>
+<p>这样做的原因是，因为我们现在阻止布局系统调整EventInfoList的宽度，我们的根VStack将被迫拉伸自己以占用同样的宽度(因为堆栈总是调整自己的大小以适应它里面的所有子堆栈) — 这反过来给了我们其余的子视图更多的水平空间，即使这个空间部分是超出边界的。</p>
+<h2 id="custom-alignment-guides">Custom alignment guides</h2>
+<p>最后，让我们看看如何使用自定义对齐指南，以及它们如何成为使用其他形式对齐工具的最佳选择 — 比如填充和偏移量。 为此，我们将回到第一部分的验证徽章，作为一个快速提醒，我们最终使用ZStack和.offset()修饰符实现了一个视图扩展:</p>
+<pre><code class="language-swift">extension View {
+    func addVerifiedBadge(_ isVerified: Bool) -&gt; some View {
+        ZStack(alignment: .topTrailing) {
+            self
+
+            if isVerified {
+                Image(systemName: &quot;checkmark.circle.fill&quot;)
+                    .offset(x: 3, y: -3)
+            }
+        }
+    }
+}
+</code></pre>
+<p>虽然上面的代码确实可以工作，但它确实对我们最终要显示的徽章的大小做出了某些假设， 因为我们的偏移量目前硬编码为3x3个点，不管系统将图像渲染的实际大小。</p>
+<p>为了解决这个问题，让我们用两个自定义对齐指南来替换。offset()修饰符。通过对视图应用. alignmentguide()修饰符，我们可以使用自定义的计算闭包，在使用给定的水平或垂直对齐时调整视图的位置。</p>
+<p>因为我们的ZStack目前使用。toptrailing对齐，让我们使用这组对齐来调整我们的徽章的位置，通过根据这两个参考线放置它的中心-像这样:</p>
+<pre><code class="language-swift">extension View {
+    func addVerifiedBadge(_ isVerified: Bool) -&gt; some View {
+        ZStack(alignment: .topTrailing) {
+            self
+
+            if isVerified {
+                Image(systemName: &quot;checkmark.circle.fill&quot;)
+                    .alignmentGuide(HorizontalAlignment.trailing) {
+                        $0[HorizontalAlignment.center]
+                    }
+                    .alignmentGuide(VerticalAlignment.top) {
+                        $0[VerticalAlignment.center]
+                    }
+            }
+        }
+    }
+}
+</code></pre>
+<p>上面的结果看起来很好，但是不如我们的视图在使用硬编码的指标集时看起来好。 本质上，我们想稍微偏移一下我们的徽章图像，让它更贴近它的宿主视图。</p>
+<p>为了不涉及任何固定偏移值，让我们使用徽章图像的宽度和高度的百分比来执行对齐，而不是使用它的中心。这很容易做到，因为被传递到每个自定义对齐指南闭包中的ViewDimensions上下文也包含了被对齐视图的宽度和高度:</p>
+<pre><code class="language-swift">extension View {
+    func addVerifiedBadge(_ isVerified: Bool) -&gt; some View {
+        ZStack(alignment: .topTrailing) {
+            self
+
+            if isVerified {
+                Image(systemName: &quot;checkmark.circle.fill&quot;)
+                    .alignmentGuide(HorizontalAlignment.trailing) {
+                        $0.width * 0.8
+                    }
+                    .alignmentGuide(VerticalAlignment.top) {
+                        // Here we first align our view's bottom edge
+                        // according to its host view's top edge,
+                        // and we then subtract 80% of its height.
+                        $0[.bottom] - $0.height * 0.8
+                    }
+            }
+        }
+    }
+}
+</code></pre>
+<p>这种方法和我们之前基于偏移量的方法之间的一个小区别是，当计算它的宿主视图的整体框架时，徽章现在将被包括在内，这在这种情况下没有太大的区别，并且可以通过给徽章一个负布局优先级来避免。</p>
+<p>虽然自定义对齐指南非常强大，但它们在语法方面相当“繁重”， 所以，与其让上面的修饰符保持内联，不如让我们将它们移动到一个新的视图扩展，它可以应用到任何我们想要对齐为一个徽章的视图:</p>
+<pre><code class="language-swift">extension View {
+    func alignAsBadge(withRatio ratio: CGFloat = 0.8,
+                      alignment: Alignment = .topTrailing) -&gt; some View {
+        alignmentGuide(alignment.horizontal) {
+            $0.width * ratio
+        }
+        .alignmentGuide(alignment.vertical) {
+            $0[.bottom] - $0.height * ratio
+        }
+    }
+}
+</code></pre>
+<p>有了上述扩展，我们现在可以极大地简化验证徽章的实现，而不是像这样:</p>
+<pre><code class="language-swift">extension View {
+    func addVerifiedBadge(_ isVerified: Bool) -&gt; some View {
+        ZStack(alignment: .topTrailing) {
+            self
+
+            if isVerified {
+                Image(systemName: &quot;checkmark.circle.fill&quot;)
+                    .alignAsBadge()
+            }
+        }
+    }
+}
+</code></pre>
+<p>因此，.alignmentGuide()修饰符使我们能够覆盖和调整视图如何被给定的水平或垂直对齐。这在构建完全定制的布局或调整单个视图的位置时是非常有用的。还有一个API可以让我们定义完全定制的对齐(通过实现AlignmentID)，我们可以在以后的文章中详细讨论这个问题。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>SwiftUI布局系统的三部分指南已经到此结束。我希望您能喜欢它，并且它给您提供了关于SwiftUI布局系统如何工作的新见解，以及用于定制其行为的各种api和工具。</p>
+<p>虽然我的目标是让这个指南尽可能的完整，但是SwiftUI布局系统还有很多不同的方面没有涵盖——所以我相信我们很快就会再次讨论这个话题。</p>
+<p>但现在，让我们再次回顾一下本系列的第三部分(也是最后一部分)所涵盖的内容:</p>
+<p>整布局优先级是一种很好的方式，可以根据每个视图的首选大小来调整优先级。<br>
+将固定的帧大小应用到视图可以防止它被水平或垂直(或两者)调整大小。<br>
+自定义对齐向导让我们在使用给定对齐方式时调整视图的位置，这在我们想要定位一个视图与另一个视图的关系时非常有用。</p>
+<p><a href="https://www.swiftbysundell.com/articles/swiftui-layout-system-guide-part-3/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ql06Ez80-/" class="tag">
+                    layout
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/protocols/">
+                  <h3 class="post-title">
+                    Protocols
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Composing types in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="组合是一种非常有用的技术，它可以让我们以一种更加解耦的方式在多个类型之间共享代码。它经常被认为是子类化的替代方案，使用“组合优于继承”这样的短语——这是一种从多个独立部分组合功能的想法，而不是依赖于继承树。
+虽然子类化/继承也非常有用(我们..." />
+    <meta name="keywords" content="code structure,composition" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Composing types in Swift</h2>
+            <div class="post-date">2018-01-28</div>
+            
+            <div class="post-content" v-pre>
+              <p>组合是一种非常有用的技术，它可以让我们以一种更加解耦的方式在多个类型之间共享代码。它经常被认为是子类化的替代方案，使用“组合优于继承”这样的短语——这是一种从多个独立部分组合功能的想法，而不是依赖于继承树。</p>
+<p>虽然子类化/继承也非常有用(我们都依赖的苹果框架，严重依赖这种模式)，在许多情况下，使用组合可以让您编写更简单、结构更健壮的代码。</p>
+<p>本周，让我们来看看一些这样的情况，以及如何在Swift中使用复合结构、类和枚举。</p>
+<h2 id="struct-composition">Struct composition</h2>
+<p>假设我们正在编写一个社交网络应用程序，它有一个用户模型和一个朋友模型。用户模型用于我们app中的各种用户，朋友模型包含与用户模型相同的数据，同时也添加了一些新信息，比如两位用户在什么时候成为了朋友。</p>
+<p>当决定如何建立这些模型时，最初的想法(特别是如果你来自传统上依赖于继承的语言，like Objective-C），可能是让User的一个子类成为Friend，只需要添加额外的数据，就像这样:</p>
+<pre><code class="language-swift">class User {
+    var name: String
+    var age: Int
+}
+
+class Friend: User {
+    var friendshipDate: Date
+}
+</code></pre>
+<p>虽然上述方法有效，但也有一些缺点。三个特别的:</p>
+<p>为了使用继承，我们被迫使用类——它们是引用类型。 对于模型，这意味着我们可以很容易地不经意地引入共享的可变状态。如果我们的代码库的一部分改变了模型，它将自动反映到各处，如果这些改变没有被正确地观察和处理，就会导致错误。</p>
+<p>因为朋友也是用户，所以可以将朋友传递给接受用户实例的函数。这似乎是无害的，但它增加了代码被“错误地”使用的风险， 例如，如果一个Friend实例被传递给saveDataForCurrentUser这样的函数。</p>
+<p>对于一个朋友，我们实际上不希望用户属性是可变的(更改朋友的名字😅相当困难)， 但是由于我们依赖于继承，我们也继承了所有属性的可变性。</p>
+<p>让我们用合成代替吧! 让我们制作User和Friend结构(这让我们可以利用Swift内置的可变特性)，而不是让Friend直接扩展User，让我们将一个用户实例与新的特定于好友的数据组合在一起，形成一个好友类型，如下所示:</p>
+<pre><code class="language-swift">struct User {
+    var name: String
+    var age: Int
+}
+
+struct Friend {
+    let user: User
+    var friendshipDate: Date
+}
+</code></pre>
+<p>请注意上面好友的user属性是一个let，这意味着它不能被改变，即使一个独立的user实例可以。Pretty neat! 👍</p>
+<h2 id="class-composition">Class composition</h2>
+<p>这是否意味着我们应该创建所有类型结构体?我绝对不这么认为。类是超级强大的，有时您希望您的类型具有引用语义而不是值语义。但是，即使我们选择使用类，在许多情况下，我们仍然可以使用组合作为继承的替代。</p>
+<p>让我们构建一个UI，它将显示前面示例中的一些朋友模型的列表。我们将创建一个视图控制器——我们叫它FriendListViewController——它有一个UITableView来显示我们的好友。</p>
+<p>实现基于表视图的视图控制器的一种非常常见的方法是让视图控制器本身成为它的表视图的数据源(甚至是UITableViewController默认的):</p>
+<pre><code class="language-swift">extension FriendListViewController: UITableViewDataSource {
+   func tableView(_ tableView: UITableView, 
+                  numberOfRowsInSection section: Int) -&gt; Int {
+        return friends.count
+    }
+
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+        ...
+    }
+}
+</code></pre>
+<p>我并不是说做上面的事情是不好的，你永远不应该这样做，但是如果我们想让这个功能更加解耦和可重用，那就让我们使用复合吧。</p>
+<p>我们首先创建一个专用的数据源对象，它符合UITableViewDataSource，我们可以简单地分配我们的朋友列表，它会给表格视图提供它需要的信息:</p>
+<pre><code class="language-swift">class FriendListTableViewDataSource: NSObject, UITableViewDataSource {
+    var friends = [Friend]()
+
+    func tableView(_ tableView: UITableView,
+                   numberOfRowsInSection section: Int) -&gt; Int {
+        return friends.count
+    }
+
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+        ...
+    }
+}
+</code></pre>
+<p>然后，在我们的视图控制器中，我们保留一个对它的引用，并把它用作表视图的数据源:</p>
+<pre><code class="language-swift">class FriendListViewController: UITableViewController {
+    private let dataSource = FriendListTableViewDataSource()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tableView.dataSource = dataSource
+    }
+
+    func render(_ friends: [Friend]) {
+        dataSource.friends = friends
+        tableView.reloadData()
+    }
+}
+</code></pre>
+<p>这种方法的美妙之处在于，当我们想要在应用程序的其他地方显示朋友列表时(例如在“找朋友”UI中)，它变得非常容易重用这个功能。一般来说，将东西移出视图控制器是避免“海量视图控制器”综合症的好方法，就像我们将数据源设置为一个单独的、可组合的类型一样，我们也可以为其他功能(数据和图像加载、缓存等)做同样的事情。</p>
+<p>另一种使用复合视图控制器的方法是使用子视图控制器。查看“在Swift中使用子视图控制器作为插件”来了解更多。</p>
+<h2 id="enum-composition">Enum composition</h2>
+<p>最后，让我们看看组合枚举如何提供更细粒度的设置，从而减少代码重复。假设我们正在构建一个操作类型，它允许我们在后台线程上执行一些繁重的工作。为了能够在操作的状态改变时做出反应，我们创建了一个状态枚举，它包含了操作加载、失败或完成的情况:</p>
+<pre><code class="language-swift">class Operation {
+    var state = State.loading
+}
+
+extension Operation {
+    enum State {
+        case loading
+        case failed(Error)
+        case finished
+    }
+}
+</code></pre>
+<p>上面的操作可能看起来非常直观——但现在让我们看看如何使用这些操作之一来处理视图控制器中的图像数组:</p>
+<pre><code class="language-swift">class ImageProcessingViewController: UIViewController {
+    func processImages(_ images: [UIImage]) {
+        // Create an operation that processes all images in
+        // the background, and either throws or succeeds.
+        let operation = Operation {
+            let processor = ImageProcessor()
+            try images.forEach(processor.process)
+        }
+        // We pass a closure as a state handler, and for each
+        // state we update the UI accordingly.
+        operation.startWithStateHandler { [weak self] state in
+            switch state {
+            case .loading:
+                self?.showActivityIndicatorIfNeeded()
+            case .failed(let error):
+                self?.cleanupCache()
+                self?.removeActivityIndicator()
+                self?.showErrorView(for: error)
+            case .finished:
+                self?.cleanupCache()
+                self?.removeActivityIndicator()
+                self?.showFinishedView()
+            }
+        }
+    }
+}
+</code></pre>
+<p>乍一看，上面的代码似乎没有什么问题，但如果仔细看看我们如何处理失败和完成的情况，我们可以看到这里有一些代码重复。</p>
+<p>代码重复并不总是不好的，但是当涉及到处理像这样不同的状态时，尽可能少地重复代码通常是一个好主意。否则，我们将不得不编写更多的测试，并做更多的手工QA来测试所有可能的代码路径——而且有了更多的重复，当我们改变东西时，bug更容易从裂缝中溜走。</p>
+<p>这是另一种合成非常方便的情况。它不是只有一个enum，让我们创建两个——一个保存状态，另一个表示结果，如下所示:</p>
+<pre><code class="language-swift">extension Operation {
+    enum State {
+        case loading
+        case finished(Outcome)
+    }
+
+    enum Outcome {
+        case failed(Error)
+        case succeeded
+    }
+}
+</code></pre>
+<p>完成了上述更改之后，让我们更新我们的调用站点，以利用这些组合枚举:</p>
+<pre><code class="language-swift">operation.startWithStateHandler { [weak self] state in
+    switch state {
+    case .loading:
+        self?.showActivityIndicatorIfNeeded()
+    case .finished(let outcome):
+        // All common actions for both the success &amp; failure
+        // outcome can now be moved into a single place.
+        self?.cleanupCache()
+        self?.removeActivityIndicator()
+
+        switch outcome {
+        case .failed(let error):
+            self?.showErrorView(for: error)
+        case .succeeded:
+            self?.showFinishedView()
+        }
+    }
+}
+</code></pre>
+<p>如您所见，我们已经摆脱了所有的代码重复，事情看起来更加清晰了👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>组合是一个很好的工具，它可以产生更简单、更集中的类型，更容易维护、重用和测试。虽然它不能完全替代子类化或直接将代码内联到使用它的类型中， 在建立各种类型之间的关系时，最好记住这一技巧。</p>
+<p>当然，除了这篇文章，还有很多其他的方法可以快速地使用构图，特别地，我将在即将发布的后组合函数和协议中介绍两种情况。</p>
+<p><a href="https://www.swiftbysundell.com/articles/composing-types-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VT6NEUoHdJ/" class="tag">
+                    composition
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/transforming-collections-in-swift/">
+                  <h3 class="post-title">
+                    Transforming collections in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

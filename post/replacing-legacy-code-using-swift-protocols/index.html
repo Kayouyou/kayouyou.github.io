@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Replacing legacy code using Swift protocols | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="维护任何应用程序、框架或系统的一个重要部分是处理遗留代码。不管一个系统的架构有多好，遗留的东西总是会随着时间的推移而被构建——可能是因为底层SDK的变化，可能是因为扩展的特性集，也可能只是因为团队中没有人真正知道某个特定部分是如何工作的。
+..." />
+    <meta name="keywords" content="maintenance,protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Replacing legacy code using Swift protocols</h2>
+            <div class="post-date">2017-08-20</div>
+            
+            <div class="post-content" v-pre>
+              <p>维护任何应用程序、框架或系统的一个重要部分是处理遗留代码。不管一个系统的架构有多好，遗留的东西总是会随着时间的推移而被构建——可能是因为底层SDK的变化，可能是因为扩展的特性集，也可能只是因为团队中没有人真正知道某个特定部分是如何工作的。</p>
+<p>我强烈支持在持续的基础上处理遗留代码，而不是等待系统自身变得如此纠缠，以至于必须完全重写。虽然完全重写听起来很诱人(经典的“我们从头开始重写了它”)，但根据我的经验，这样做很少值得。 通常的结果是，现有的bug和问题被替换成新的bug和问题😅。</p>
+<p>与从头重写一个巨大的系统所带来的所有压力、风险和痛苦相比，让我们来看一看我在处理遗留代码时经常使用的一种技术<br>
+-- 这使您可以逐个类替换有问题的系统类，而不必一次完成所有操作。</p>
+<h2 id="1-pick-your-target">1. Pick your target</h2>
+<p>我们要做的第一件事是选择应用程序中需要重构的部分。它可能是一个经常导致问题和bug的子系统，使实现新功能变得比实际需要更困难，或者是团队中大多数人都害怕触及的东西，因为它太复杂了。</p>
+<p>假设我们的应用程序中有一个这样的子系统用于持久化模型。 它由ModelStorage类组成，该类又具有许多不同的依赖项和类型，用于序列化、缓存和文件系统访问等事情。</p>
+<p>不是选择整个系统作为我们的目标，而是从重写ModelStorage本身开始，我们将尝试识别一个单独的类，我们可以单独替换它(也就是说，它自己没有很多依赖项)。举个例子，假设我们选择了一个数据库类，ModelStorage使用它来与我们选择的数据库对话。</p>
+<h2 id="2-identify-the-api">2. Identify the API</h2>
+<p>我们的目标类在底层是如何工作的并不是非常重要。更重要的是，通过查看它的面向公众的API来定义它应该做什么。然后，我们将列出所有未标记为private或filprivate的方法和属性。 对于我们的数据库类，我们提取出了以下内容:</p>
+<pre><code class="language-swift">func saveObject&lt;O: Saveable&gt;(_ object: O, forKey key: String) throws
+func loadObject&lt;O: Saveable&gt;(forKey key: String) -&gt; O?
+</code></pre>
+<h2 id="3-extract-into-a-protocol">3. Extract into a protocol</h2>
+<p>接下来，我们将获取目标类的API，并将其提取到协议中。 这将使我们以后能够拥有同一个API的多个实现，这反过来又使我们能够迭代地用一个新类替换目标类。</p>
+<pre><code class="language-swift">protocol Database: class {
+    func saveObject&lt;O: Saveable&gt;(_ object: O, forKey key: String) throws
+    func loadObject&lt;O: Saveable&gt;(forKey key: String) -&gt; O?
+}
+</code></pre>
+<p>以上两点需要注意;首先，我们将类约束添加到协议。 这使我们能够继续做一些事情，比如保持对类型的弱引用，并使用其他仅限类的特性，如基于身份的特性。</p>
+<p>其次，我们用与目标类完全相同的名称来命名协议。 这一开始会导致一些编译器错误，但之后会使替换过程变得简单得多——特别是当我们的目标类在应用程序的许多不同部分中使用时。</p>
+<h2 id="4-rename-the-target">4. Rename the target</h2>
+<p>是时候消除那些编译器错误了。首先，让我们重命名目标类，并明确地将其标记为legacy。我通常的做法是在类名前面加上“Legacy”——这样我们的数据库类就会变成LegacyDatabase。</p>
+<p>执行该重命名并构建项目后，仍然会有一些编译器错误留下。因为Database现在是一个协议，它不能被实例化，所以你会得到这样的错误:</p>
+<p>要解决这个问题，在整个项目中执行“查找和替换”操作，用LegacyDatabase(。您的项目现在应该像正常的一样重新构建</p>
+<h2 id="5-add-a-new-class">5. Add a new class</h2>
+<p>既然我们已经有了定义目标类的预期API的协议，并且我们已经将遗留实现移动到遗留类中——我们可以开始替换它了。为此，我们将创建一个名为NewDatabase的新类，它将遵循数据库协议:</p>
+<pre><code class="language-swift">class NewDatabase: Database {
+    func saveObject&lt;O: Saveable&gt;(_ object: O, forKey key: String) throws {
+        // Leave empty for now
+    }
+
+    func loadObject&lt;O: Saveable&gt;(forKey key: String) -&gt; O? {
+        // Leave empty for now
+        return nil
+    }
+}
+</code></pre>
+<h2 id="6-write-migration-tests">6. Write migration tests</h2>
+<p>在我们开始用闪亮的新代码实现替换类之前，让我们后退一步，设置一个测试用例，以帮助我们确保从遗留类迁移到新类的过程顺利进行。</p>
+<p>所有重构的一个大风险是，你最终会错过API应该如何工作的一些细节，导致bug和回归。虽然测试不能消除所有这些风险，但设置针对我们的遗留和新实现运行的测试肯定会使流程更加健壮。</p>
+<p>让我们首先创建一个测试用例——DatabaseMigrationTests——它有一个在LegacyDatabase和NewDatabase上执行给定测试的方法:</p>
+<pre><code class="language-swift">class DatabaseMigrationTests: XCTestCase {
+    func performTest(using closure: (Database) throws -&gt; Void) rethrows {
+        try closure(LegacyDatabase())
+        try closure(NewDatabase())
+    }
+}
+</code></pre>
+<p>然后，让我们写一个测试来验证我们的API是否能像预期的那样工作，不管使用的是哪种实现:</p>
+<pre><code class="language-swift">func testSavingAndLoadingObject() throws {
+    try performTest { database in
+        let object = User(id: 123, name: &quot;John&quot;)
+        try database.saveObject(object, forKey: &quot;key&quot;)
+
+        let loadedObject: User? = database.loadObject(forKey: &quot;key&quot;)
+        XCTAssertEqual(object, loadedObject)
+    }
+}
+</code></pre>
+<p>由于我们还没有实现NewDatabase，上述测试将暂时失败。因此，下一步是通过以与旧实现兼容的方式编写新实现来通过测试</p>
+<h2 id="7-write-the-new-implementation">7. Write the new implementation</h2>
+<p>由于NewDatabase是一个全新的实现，同时仍然可以在我们的整个应用程序中使用——就像我们的上一个一样——我们可以自由地以任何我们想要的方式编写它。 我们可以使用依赖注入等技术，甚至可以在内部开始使用一些新的框架。</p>
+<p>作为一个例子，让我们用一个使用存储在文件系统中的JSON序列化对象的实现来填充NewDatabase:</p>
+<pre><code class="language-swift">import Files
+import Unbox
+import Wrap
+
+class NewDatabase: Database {
+    private let folder: Folder
+
+    init(folder: Folder) {
+        self.folder = folder
+    }
+
+    func saveObject&lt;O: Saveable&gt;(_ object: O, forKey key: String) throws {
+        let json = try wrap(object) as Data
+        let fileName = O.fileName(forKey: key)
+        try folder.createFile(named: fileName, contents: json)
+    }
+
+    func loadObject&lt;O: Saveable&gt;(forKey key: String) -&gt; O? {
+        let fileName = O.fileName(forKey: key)
+        let json = try? folder.file(named: fileName).read()
+        return json.flatMap { try? unbox(data: $0) }
+    }
+}
+</code></pre>
+<h2 id="8-replace-the-legacy-implementation">8. Replace the legacy implementation</h2>
+<p>现在我们有了一个新的实现，我们运行我们的迁移测试，以确保它的工作方式与遗留的相同。一旦所有测试通过，我们现在可以用NewDatabase替换LegacyDatabase。</p>
+<p>我们将在整个项目中进行查找和替换，替换所有出现的LegacyDatabase(使用NewDatabase) 我们还必须在所有地方传递folder:参数。完成后，我们运行应用的所有测试，进行手动QA(例如，将这个版本交付给我们的测试者)，以确保所有内容都运行良好。</p>
+<h2 id="9-remove-the-protocol">9. Remove the protocol</h2>
+<p>一旦我们确信我们的新实现与旧实现工作得一样好，我们就可以安全地将NewDatabase作为唯一的实现。为此，我们将NewDatabase重命名为Database，并删除名为Database的协议。我们必须进行最后一次查找和替换，用简单的Database(替换所有出现的NewDatabase(，现在我们的项目中应该不再有任何对NewDatabase的引用。</p>
+<h2 id="10-finish-up">10. Finish up</h2>
+<p>我们几乎完成了!剩下的就是完成了，要么删除我们的迁移测试，要么将它们重构为适合我们新实现的单元测试(这取决于我们最初的数据库类是否有单元测试)。</p>
+<p>如果你想保留它们，最简单的方法是将测试用例重命名为DatabaseTests，并在performTest中调用一次闭包，如下所示:</p>
+<pre><code class="language-swift">class DatabaseTests: XCTestCase {
+    func performTest(using closure: (Database) throws -&gt; Void) rethrows {
+        try closure(Database(folder: .temporary))
+    }
+}
+</code></pre>
+<p>这样，您就不必重写或更改任何实际的测试方法👌。</p>
+<p>最后，我们可以从我们的项目中删除LegacyDatabase -我们已经成功地用一个闪亮的新类替换了一个遗留类- 所有这些对我们的应用的影响和风险都是最小的🎉。 现在，我们可以继续使用这种技术来逐个类地替换ModelStorage系统的其他部分。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>尽管这种技术很难成为重构和替换遗留代码的银弹，但我认为这样做(或类似的方式)确实有助于降低此类工作通常涉及的风险。</p>
+<p>在开始重构一个大系统之前，确实需要更多的预先计划，但我仍然认为像这样迭代地进行重构是值得的，而不是一次重写所有东西。</p>
+<p><a href="https://www.swiftbysundell.com/articles/replacing-legacy-code-using-swift-protocols/">原文地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5VmnTv3Lu/" class="tag">
+                    maintenance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/building-a-declarative-animation-framework-in-swift part-2/">
+                  <h3 class="post-title">
+                    Building a declarative animation framework in Swift - Part 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

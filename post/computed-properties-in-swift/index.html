@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Computed properties in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift之所以成为如此强大和通用的语言，一个主要原因是，当我们选择使用什么语言特性来解决一个给定的问题时，我们通常有多种选择。 然而，这种多功能性也可能成为困惑和争论的来源，特别是当我们正在考虑的功能的关键用例之间没有明确的分界线时。
+本..." />
+    <meta name="keywords" content="properties,api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Computed properties in Swift</h2>
+            <div class="post-date">2019-08-11</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift之所以成为如此强大和通用的语言，一个主要原因是，当我们选择使用什么语言特性来解决一个给定的问题时，我们通常有多种选择。 然而，这种多功能性也可能成为困惑和争论的来源，特别是当我们正在考虑的功能的关键用例之间没有明确的分界线时。</p>
+<p>本周，让我们来看看其中一个这样的语言特性——计算属性——以及它们如何让我们构建真正优雅方便的api，如何在部署它们时避免意外隐藏性能问题，以及在计算属性和方法之间选择一些不同的策略。</p>
+<h2 id="properties-are-for-data">Properties are for data</h2>
+<p>一个属性是计算还是存储，理想情况下应该只是一个实现细节——特别是因为没有办法仅仅通过查看使用它的代码来确切地告诉一个属性是如何存储的。 因此，就像存储属性如何组成类型所存储的数据一样，计算属性可以被视为在需要时计算类型数据的一种方式。</p>
+<p>假设我们正在开发一个收听播客的应用程序，一个给定的播客片段的状态(它是否已经被下载、收听等)是使用一个状态枚举来建模的，看起来像这样:</p>
+<pre><code class="language-swift">extension Episode {
+    enum State {
+        case awaitingDownload
+        case downloaded
+        case listening(progress: Double)
+        case finished
+    }
+}
+</code></pre>
+<p>然后，我们为情节模型提供一个存储状态属性，我们可以使用该属性根据给定的情节状态做出决策 - 例如，能够向用户显示某一集是否已经下载。然而，由于这个特定的用例在我们的代码库中很常见，我们不希望在许多不同的地方手动打开state，所以我们也给了Episode一个computedisdownloads属性，我们可以在任何需要的地方重用它:</p>
+<pre><code class="language-swift">extension Episode {
+    var isDownloaded: Bool {
+        switch state {
+        case .awaitingDownload:
+            return false
+        case .downloaded, .listening, .finished:
+            return true
+        }
+    }
+}
+</code></pre>
+<p>上面的实现可以说是计算属性的一个很好的用例 -它消除了样板，增加了便利性，并且它的行为完全像一个只读存储的属性-这一切都是为了让我们访问模型数据的特定部分。</p>
+<h2 id="accidental-bottlenecks">Accidental bottlenecks</h2>
+<p>现在让我们来看看问题的另一面——如果我们不小心，计算属性虽然非常方便，但有时会导致意外的性能瓶颈。 继续上面的播客应用程序的例子，假设我们通过Library 这个struct来为用户的播客订阅库建模，它也包含了像上次服务器同步发生的时间这样的元数据:</p>
+<pre><code class="language-swift">struct Library {
+    var lastSyncDate: Date
+    var downloadNewEpisodes: Bool
+    var podcasts: [Podcast]
+}
+</code></pre>
+<p>虽然上面的播客模型数组是我们渲染应用程序中大多数视图所需的全部，我们确实有几个地方希望以平面列表的形式显示用户的所有播客。 就像我们之前如何使用isdownloads属性扩展Episode一样，最初的想法可能是在这里做同样的事情 - 添加一个计算的allEpisodes属性，从用户的库中的每个播客中收集所有的集-像这样:</p>
+<pre><code class="language-swift">extension Library {
+    var allEpisodes: [Episode] {
+        return podcasts.flatMap { $0.episodes }
+    }
+}
+</code></pre>
+<p>上面的API可能看起来非常漂亮和简单——但它有一个很大的缺陷——它的时间复杂度是线性的(或O(n))，因为为了计算allEpisodes属性，我们需要一次遍历所有播客。 乍一看，这似乎没什么大不了的，但在这种情况下，可能会成为真正的问题，当我们每次在UITableView中退出一个单元格时访问上述属性时:</p>
+<pre><code class="language-swift">class AllEpisodesViewController: UITableViewController {
+    ...
+
+    override func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -&gt; UITableViewCell {
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: reuseIdentifier,
+            for: indexPath
+        )
+
+        // Here we're accessing allEpisodes just as if it was a
+        // stored property, and there's no way of telling that this
+        // will actually cause an O(n) evaluation under the hood:
+        let episode = library.allEpisodes[indexPath.row]
+        cell.textLabel?.text = episode.title
+        cell.detailTextLabel?.text = episode.duration
+
+        return cell
+    }
+}
+</code></pre>
+<p>由于表格视图单元格可以以非常快的速度离开队列——当用户滚动时——上面的代码几乎肯定迟早会成为性能瓶颈， 因为我们当前的allEpisodes实现在每次访问播客时都将遍历所有播客。不是很好。</p>
+<p>而从每个播客中收集所有的集天生将是一个O(n)操作与我们当前的模型结构，我们可以通过我们的API改进我们显示复杂性的方式。与其让allEpisodes仅仅作为另一个属性出现，不如让它成为一个方法。这样，它将看起来更像一个正在执行的动作(它确实是)，而不仅仅是一个快速访问数据块的方法:</p>
+<pre><code class="language-swift">extension Library {
+    func allEpisodes() -&gt; [Episode] {
+        return podcasts.flatMap { $0.episodes }
+    }
+}
+</code></pre>
+<p>如果我们也更新我们的AllEpisodesViewController来接受一个集数组作为它的初始化器的一部分，而不是直接访问我们的库模型，然后我们得到了下面的调用站点——它看起来比我们之前的实现更清晰:</p>
+<pre><code class="language-swift">let vc = AllEpisodesViewController(episodes: library.allEpisodes())
+</code></pre>
+<p>在我们的视图控制器中，我们仍然可以像以前一样继续访问我们所有的集——只是现在数组只构造一次，而不是每次一个单元格被离开队列，这是一个巨大的胜利。</p>
+<h2 id="conveniently-lazy">Conveniently lazy</h2>
+<p>将任何无法在常量时间内执行的计算属性转换为方法通常会提高api的整体清晰度 -因为我们现在强烈地暗示访问它们会有某种形式的成本。但是在这样做的过程中，我们也失去了一些使用属性给我们带来的“优雅”。</p>
+<p>然而，在许多这样的情况下，实际上有一种方法可以同时实现清晰、优雅和性能。为了能够持续使用属性，而不必预先完成所有处理工作——通过使用延迟求值</p>
+<p>就像我们在“Swift序列:懒惰的艺术”和“Swift中的字符串解析”中看到的，延迟一个序列的迭代，直到它真正需要的时候，可以给我们的性能带来实质性的提升 -让我们来看看我们如何使用这个技术来把allEpisodes变成一个属性。</p>
+<p>首先，我们将用两种新类型扩展库模型——一种用于集序列，另一种用于迭代该序列中的元素:</p>
+<pre><code class="language-swift">extension Library {
+    struct AllEpisodesSequence {
+        fileprivate let library: Library
+    }
+
+    struct AllEpisodesIterator {
+        private let library: Library
+        private var podcastIndex = 0
+        private var episodeIndex = 0
+
+        fileprivate init(library: Library) {
+            self.library = library
+        }
+    }
+}
+</code></pre>
+<p>将AllEpisodesSequence转换为一级类Swift序列，我们所要做的就是通过实现makeIterator工厂方法使其符合序列:</p>
+<pre><code class="language-swift">extension Library.AllEpisodesSequence: Sequence {
+    func makeIterator() -&gt; Library.AllEpisodesIterator {
+        return Library.AllEpisodesIterator(library: library)
+    }
+}
+</code></pre>
+<p>接下来，让我们使迭代器符合所需的迭代器协议，并实现实际的迭代代码。我们会在一个播客中阅读每一集，当没有更多的集被找到时，我们会转到下一个播客，直到所有的集都被返回，就像这样:</p>
+<pre><code class="language-swift">extension Library.AllEpisodesIterator: IteratorProtocol {
+    mutating func next() -&gt; Episode? {
+        guard podcastIndex &lt; library.podcasts.count else {
+            return nil
+        }
+
+        let podcast = library.podcasts[podcastIndex]
+
+        guard episodeIndex &lt; podcast.episodes.count else {
+            episodeIndex = 0
+            podcastIndex += 1
+            return next()
+        }
+
+        let episode = podcast.episodes[episodeIndex]
+        episodeIndex += 1
+        return episode
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以自由地将allEpisodes转换回计算属性 -因为它不再需要任何预先计算，只需要在常量时间内返回一个新的AllEpisodesSequence实例:</p>
+<pre><code class="language-swift">extension Library {
+    var allEpisodes: AllEpisodesSequence {
+        return AllEpisodesSequence(library: self)
+    }
+}
+</code></pre>
+<p>虽然上面的方法比我们以前的方法需要更多的代码，但是它有一些关键的好处。首先，现在完全不可能简单地下标到allEpisodes返回的序列中，因为序列并不意味着随机访问任何底层元素:</p>
+<pre><code class="language-swift">// Compiler error: Library.AllEpisodesSequence has no subscripts
+let episode = library.allEpisodes[indexPath.row]
+</code></pre>
+<p>乍一看，这似乎不是什么好处，但它可以防止我们意外地导致之前遇到的那种性能瓶颈-通过强制我们复制我们的allEpisodes序列到一个数组中，我们将能够获得随机访问其中的剧集:</p>
+<pre><code class="language-swift">let episodes = Array(library.allEpisodes)
+let vc = AllEpisodesViewController(episodes: episodes)
+</code></pre>
+<p>当我们每次想要阅读单个章节时，没有什么能够阻止我们执行上述数组转换 ，这将是一个更有意为之的选择，而不是我们偶然地下标到一个数组，看起来像是存储的，而不是计算的。</p>
+<p>另一个好处是，我们不再需要从每个播客中收集所有的片段， 如果我们要找的是一个很小的子集。例如，如果我们只想向用户展示他们即将到来的下一集——我们现在可以简单地这样做:</p>
+<pre><code class="language-swift">let nextEpisode = library.allEpisodes.first
+</code></pre>
+<p>使用惰性求值的好处在于，即使allEpisodes返回一个序列，上面的操作也具有恒定的时间复杂性——正如您在访问任何其他序列时所期望的那样。很好了!</p>
+<h2 id="its-all-about-the-semantics">It’s all about the semantics</h2>
+<p>现在，我们能够将甚至复杂的操作转换为计算属性，而不需要任何预先计算，最大的问题是——无参数方法的剩余用例是什么?</p>
+<p>答案在很大程度上取决于我们希望给定API具有什么样的语义。属性在很大程度上意味着以某种形式访问一个值或对象的当前状态——而不需要改变它。因此，任何修改状态的东西，例如通过返回一个新值，最有可能用一个方法来更好地表示，比如这个，它更新了我们之前的一个模型的状态:</p>
+<pre><code class="language-swift">extension Episode {
+    func finished() -&gt; Episode {
+        var episode = self
+        episode.state = .finished
+        return episode
+    }
+}
+</code></pre>
+<p>将上面的API与使用属性的API进行比较，很明显，方法为这种情况提供了正确的语义:</p>
+<pre><code class="language-swift">// Looks like we're performing an action to finish the episode:
+let finishedEpisode = episode.finished()
+// Looks like we're accessing some form of &quot;finished&quot; data:
+let finishedEpisode = episode.finished
+</code></pre>
+<p>同样的逻辑也可以应用于静态api，但我们可能会选择某些例外，特别是当我们正在优化api以使用点语法调用时。关于设计这样的静态api的一些例子，请参见“Swift中的静态工厂方法”和“Swift中的基于规则的逻辑”。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>计算属性非常有用——它可以让我们设计更简单、更轻量级的api。然而，重要的是要确保这种简单性不仅被理解，而且还反映在底层实现中。 否则，我们可能会隐藏性能瓶颈，在这些情况下，通常最好选择一种方法，或者在适当的情况下部署延迟计算。</p>
+<p><a href="https://www.swiftbysundell.com/articles/computed-properties-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/2-HyEvrbK/" class="tag">
+                    properties
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/phantom-types-in-swift/">
+                  <h3 class="post-title">
+                    Phantom types in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

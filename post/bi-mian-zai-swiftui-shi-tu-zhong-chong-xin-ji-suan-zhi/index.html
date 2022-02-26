@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>避免在SwiftUI视图中重新计算值 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+避免在SwiftUI视图中重新计算值
+
+
+1.1. Recomputed properties
+1.2. Going back to the source
+1.3. Initialization logic
+1.4. Dedicat..." />
+    <meta name="keywords" content="performance,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">避免在SwiftUI视图中重新计算值</h2>
+            <div class="post-date">2021-05-21</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#SwiftUI">避免在SwiftUI视图中重新计算值</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Recomputedproperties">Recomputed properties</a></li>
+<li>1.2. <a href="#Goingbacktothesource">Going back to the source</a></li>
+<li>1.3. <a href="#Initializationlogic">Initialization logic</a></li>
+<li>1.4. <a href="#Dedicatedmodellogic">Dedicated model logic</a></li>
+<li>1.5. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameswiftuia避免在swiftui视图中重新计算值">1. <a name='SwiftUI'></a>避免在SwiftUI视图中重新计算值</h2>
+<p>通常，使用计算属性是建模我们想在需要时按需创建的特定于视图的数据的一种好方法——特别是在SwiftUI视图中，因为每个这样的视图都已经使用计算属性(body)来实现其实际UI。</p>
+<p>例如，这里我们使用两个计算属性来确定UserSessionView应该基于应用的当前LoginState呈现什么标题和按钮文本:</p>
+<pre><code class="language-swift">struct UserSessionView: View {
+    var buttonAction: () -&gt; Void
+    @Environment(\.loginState) private var state
+
+    var body: some View {
+        VStack {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.white)
+            Button(buttonText, action: buttonAction)
+                .padding()
+                .background(Color.white)
+                .cornerRadius(10)
+        }
+        .padding()
+        .background(Color.blue)
+        .cornerRadius(15)
+    }
+
+    private var title: String {
+        switch state {
+        case .loggedIn(let user):
+            return &quot;Welcome back, \(user.name)!&quot;
+        case .loggedOut:
+            return &quot;Not logged in&quot;
+        }
+    }
+
+    private var buttonText: String {
+        switch state {
+        case .loggedIn:
+            return &quot;Log out&quot;
+        case .loggedOut:
+            return &quot;Log in&quot;
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>要了解上面使用的Environment属性包装器的更多信息，请查看我的SwiftUI状态管理系统指南。</p>
+</blockquote>
+<p>实现SwiftUI视图,使用多个计算属性,往往是一个很好的方法,因为它可以让我们保持我们的身体实现尽可能的简单,因为它给了我们清晰的了解我们如何计算给定的视图将显示不同的内容。</p>
+<h3 id="11-a-namerecomputedpropertiesarecomputed-properties">1.1. <a name='Recomputedproperties'></a>Recomputed properties</h3>
+<p>但是，我们也必须记住，计算属性只是——计算——没有缓存形式或其他类型的内存存储涉及，这意味着每个这样的值将总是在每次被访问时重新计算。</p>
+<p>这在我们的第一个例子中不是问题，因为我们的每个属性都可以用常数(或O(1))的时间复杂度快速计算出来。然而，现在让我们看另一个例子，它在性能特征方面是完全不同的，因为我们现在是通过对集合排序来计算属性:</p>
+<pre><code class="language-swift">struct RemindersList: View {
+    var items: [Reminder.ID: Reminder]
+
+    var body: some View {
+        List(sortedItems) { reminder in
+            ...
+        }
+    }
+
+    private var sortedItems: [Reminder] {
+        items.values.sorted(by: {
+            $0.dueDate &lt; $1.dueDate
+        })
+    }
+}
+</code></pre>
+<p>一方面，如果传递的items字典最终包含大量的项，那么上述实现可能会有很大的问题，因为每次我们访问sortedItems属性时，该集合都会被重新排序。 但另一方面，它是一个只能从视图body内部访问的私有属性，因为视图没有任何可变状态，我们的属性不太可能经常被访问。</p>
+<p>然而，如果我们要在视图中添加任何类型的本地状态，这种情况可能很快就会改变——例如，允许用户使用内联TextField添加一个新的提醒:</p>
+<pre><code class="language-swift">struct RemindersList: View {
+    var items: [Reminder.ID: Reminder]
+    var newItemHandler: (Reminder) -&gt; Void
+
+    @State private var newItemName = &quot;&quot;
+
+    var body: some View {
+        VStack {
+            List(sortedItems) { reminder in
+                ...
+            }
+            HStack {
+                TextField(&quot;Add a new reminder&quot;, text: $newItemName)
+                Button(&quot;Add&quot;) {
+                    newItemHandler(Reminder(name: newItemName))
+                }
+                .disabled(newItemName.isEmpty)
+            }
+            .padding()
+        }
+    }
+
+    private var sortedItems: [Reminder] {
+        items.values.sorted(by: {
+            $0.dueDate &lt; $1.dueDate
+        })
+    }
+}
+</code></pre>
+<p>现在，每当用户在文本字段中输入一个新字符时，sortedItems属性将被调用，items字典将被重新排序。虽然最初这可能不会导致任何明显的性能下降，但这是一种非常低效的实现，而且很可能在某些方面导致问题，特别是对于有大量提醒的用户。</p>
+<p>重要的是要记住,尽管SwiftUI并使用基于类型dif算法来确定潜在的观点重新划分为每个状态的变化,并以确保我们的UI仍是高性能,这不是魔术——如果我们编写的代码非常低效,没有什么SwiftUI能做。</p>
+<h3 id="12-a-namegoingbacktothesourceagoing-back-to-the-source">1.2. <a name='Goingbacktothesource'></a>Going back to the source</h3>
+<p>那么我们如何解决这个问题呢?一种方法是回到项目数据的根源，并对其进行更新，以便在最前面执行必要的排序。 这样做有两个主要的好处——一，它允许我们执行一次操作，而不是在每次视图更新期间，二，它将本质上是模型级操作的内容移动到实际的模型层。大赢!如果我们使用Combine通过某种形式的模型控制器来加载我们的项目，就会看到这样的效果:</p>
+<pre><code class="language-swift">func loadItems() -&gt; AnyPublisher&lt;[Item], Error&gt; {
+    controller
+        .loadReminders()
+        .map { items in
+            items.values.sorted(by: {
+                $0.dueDate &lt; $1.dueDate
+            })
+        }
+        ...
+        .eraseToAnyPublisher()
+}
+</code></pre>
+<p>有了上面的改变，我们现在可以简单地让我们的RemindersList视图接受一个预先排序的提醒数组，我们可以按原样渲染:</p>
+<pre><code class="language-swift">struct RemindersList: View {
+    var items: [Reminder]
+    ...
+
+    var body: some View {
+        VStack {
+            List(items) { reminder in
+                ...
+            }
+            ...
+        }
+    }
+}
+</code></pre>
+<p>然而，尽管上述方法在许多情况下肯定更可取，但我们将核心模型集合建模为字典而不是使用数组可能有很好的理由，更改它可能不那么简单，甚至根本不可行。所以，让我们也探讨一些其他的选择。</p>
+<h3 id="13-a-nameinitializationlogicainitialization-logic">1.3. <a name='Initializationlogic'></a>Initialization logic</h3>
+<p>我们可以在视图级本身解决问题的一种方法是仍然让我们的RemindersList视图接受一个字典，就像以前一样，但是在视图的初始化器中执行排序，而不是使用一个计算属性-例如:</p>
+<pre><code class="language-swift">struct RemindersList: View {
+    var items: [Reminder]
+    var newItemHandler: (Reminder) -&gt; Void
+
+    init(items: [Reminder.ID: Reminder],
+     newItemHandler: @escaping (Reminder) -&gt; Void) {
+        self.items = items.values.sorted(by: {
+            $0.dueDate &lt; $1.dueDate
+        })
+        self.newItemHandler = newItemHandler
+    }
+
+    @State private var newItemName = &quot;&quot;
+
+    ...
+}
+</code></pre>
+<p>有了上面的改变，我们现在只对每个RemindersList实例排序一次我们的集合，而不是在每次击键之后，而不需要改变我们的视图创建的方式或我们的应用程序的数据管理方式。 因此，虽然我的一般建议是让初始化器专注于简单的设置工作，而不是执行数据突变，但在这种情况下，这是我们可能愿意做出的一种权衡。</p>
+<p>不过，值得记住的是，如果RemindersList视图的父视图进行了更新(或者更具体地说，如果父视图的body属性被重新求值)，那么很可能会创建视图的一个新实例，这意味着我们将再次执行item排序操作。</p>
+<p>基本上，在SwiftUI视图中编写代码时，几乎不可能完全控制代码何时以及如何执行。毕竟，像SwiftUI这样的声明式UI框架设计的一个核心部分是，该框架负责为我们编排所有的UI更新。</p>
+<p>因此，如果我们想改善对实际模型逻辑生命周期的控制，那么更好的方法可能是将该逻辑从视图实现中移出，放到我们完全控制的对象中。</p>
+<h3 id="14-a-namededicatedmodellogicadedicated-model-logic">1.4. <a name='Dedicatedmodellogic'></a>Dedicated model logic</h3>
+<p>一种方法是使用视图模型之类的东西来封装与处理项目数组相关的逻辑。如果我们把那个视图模型变成一个ObservableObject，那么我们就可以很容易地观察它，并在SwiftUI视图中连接到它:</p>
+<pre><code class="language-swift">class RemindersListViewModel: ObservableObject {
+    @Published private(set) var items: [Reminder]
+
+    init(items: [Reminder.ID: Reminder]) {
+        self.items = items.values.sorted(by: {
+            $0.dueDate &lt; $1.dueDate
+        })
+    }
+
+    func addItem(named name: String) {
+        ...
+    }
+}
+</code></pre>
+<p>有了上面的功能，我们现在可以大大简化我们的视图，我们也可以自由选择我们想要管理上面的RemindersListViewModel的方式，而不必考虑视图更新和其他SwiftUI实现细节:</p>
+<pre><code class="language-swift">struct RemindersList: View {
+    @ObservedObject var viewModel: RemindersListViewModel
+    @State private var newItemName = &quot;&quot;
+
+    var body: some View {
+        VStack {
+            List(viewModel.items) { reminder in
+                ...
+            }
+            HStack {
+                TextField(&quot;Add a new reminder&quot;, text: $newItemName)
+                Button(&quot;Add&quot;) {
+                    viewModel.addItem(named: newItemName)
+                }
+                .disabled(newItemName.isEmpty)
+            }
+            .padding()
+        }
+    }
+}
+</code></pre>
+<p>非常好!当然，这并不意味着我们应用程序中的每个视图现在都需要一个视图模型。在这个特殊的情况下，视图模型被证明是我们问题的一个很好的解决方案，因为它使我们能够将与视图相关的模型逻辑从视图层次结构本身中移出(这也极大地提高了代码的可测试性)。</p>
+<h3 id="15-a-nameconclusionaconclusion">1.5. <a name='Conclusion'></a>Conclusion</h3>
+<p>次更新SwiftUI视图时重新计算一些与视图相关的值通常不是问题。毕竟，这是每个视图的body属性的工作方式，只要这些计算能够快速发生(理想情况下，具有恒定的时间复杂度)，那么我们就不太可能遇到任何类型的主要性能问题。</p>
+<p>然而，情况并非总是如此，有时我们可能需要特别小心在视图中使用模型数据的方式，特别是当这样做涉及到任何可能会降低整体UI性能的繁重操作时。</p>
+<p><a href="https://www.swiftbysundell.com/articles/avoiding-swiftui-value-recomputation/#dedicated-model-logic">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/I0LcoAOtHu/" class="tag">
+                    performance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/chapter-3-subjects/">
+                  <h3 class="post-title">
+                    Chapter 3: Subjects
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

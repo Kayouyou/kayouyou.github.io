@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Handling non-optional optionals in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="可选功能可以说是Swift最重要的功能之一，也是它区别于Objective-C等语言的关键。通过被迫处理可能为空的情况，我们倾向于编写更可预测、更不容易出错的代码。
+然而，有时可选变量可能会让您陷入困境，作为程序员，您知道(或者至少是假定)..." />
+    <meta name="keywords" content="optionals,state management,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Handling non-optional optionals in Swift</h2>
+            <div class="post-date">2017-04-07</div>
+            
+            <div class="post-content" v-pre>
+              <p>可选功能可以说是Swift最重要的功能之一，也是它区别于Objective-C等语言的关键。通过被迫处理可能为空的情况，我们倾向于编写更可预测、更不容易出错的代码。</p>
+<p>然而，有时可选变量可能会让您陷入困境，作为程序员，您知道(或者至少是假定)某个变量在使用时总是非nil，即使它是可选类型。就像在视图控制器中处理视图一样:</p>
+<pre><code class="language-swift">class TableViewController: UIViewController {
+    var tableView: UITableView?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tableView = UITableView(frame: view.bounds)
+        view.addSubview(tableView!)
+    }
+
+    func viewModelDidUpdate(_ viewModel: ViewModel) {
+        tableView?.reloadData()
+    }
+}
+</code></pre>
+<p>这就是Swift程序员几乎不同意制表符和空格的地方。有人说:</p>
+<p>因为它是可选的，你应该总是正确地打开它，使用if let或guard let。</p>
+<p>而另一些人则会朝着完全不同的方向说:</p>
+<p>&quot;因为你知道变量不会是nil，强制打开它(使用!)。崩溃总比以一种未知的状态结束要好。”</p>
+<p>基本上，我们在这里讨论的是，是否要进行防御性编程。我们是试图从一个未定义的状态中恢复过来，还是简单地放弃并崩溃?</p>
+<p>如果我必须给这个问题一个二选一的答案，我肯定会选择后者。未定义的状态会导致很难追踪bug，可能会导致不必要的代码执行，而使用防御性编程只会导致难以推理的代码。</p>
+<p>但是，我宁愿不给出一个二元的答案，而是研究一些我们可以用更微妙的方式来解决这个问题的技术。就让我们一探究竟吧!</p>
+<h2 id="is-it-really-optional">Is it really optional?</h2>
+<p>变量和属性是可选的，但实际上是程序逻辑所需要的，它们实际上是架构缺陷的症状。如果某些东西是需要的，那么如果没有它，你就会处于一个未定义的状态——它不应该是可选的。</p>
+<p>虽然在某些情况下(如与某些系统api交互时)，可选选项是很难避免的——但我们可以使用一些技术在许多情况下消除可选选项。</p>
+<h2 id="being-lazy-is-better-than-being-non-optionally-optional">Being lazy is better than being non-optionally optional</h2>
+<p>避免那些值需要在父对象创建后创建的可选属性(例如视图控制器中的视图-应该在loadView()或viewDidLoad()中创建)的一种方法是通过使用惰性属性。lazy属性可以是非可选的，但仍然不需要在其父的初始化式中创建。它将在第一次访问时被创建。</p>
+<p>让我们更新之前的TableViewController，为它的tableView使用一个惰性属性:</p>
+<pre><code class="language-swift">class TableViewController: UIViewController {
+    lazy var tableView = UITableView()
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tableView.frame = view.bounds
+        view.addSubview(tableView)
+    }
+    func viewModelDidUpdate(_ viewModel: ViewModel) {
+        tableView.reloadData()
+    }
+}
+</code></pre>
+<p>没有可选选项，没有未定义的状态!🎉</p>
+<h2 id="proper-dependency-management-is-better-than-non-optional-optionals">Proper dependency management is better than non-optional optionals</h2>
+<p>可选项的另一个常见用途是打破循环依赖关系。有时你会遇到这样的情况:A依赖于B，但B也依赖于A。</p>
+<pre><code class="language-swift">class UserManager {
+    private weak var commentManager: CommentManager?
+
+    func userDidPostComment(_ comment: Comment) {
+        user.totalNumberOfComments += 1
+    }
+
+    func logOutCurrentUser() {
+        user.logOut()
+        commentManager?.clearCache()
+    }
+}
+
+class CommentManager {
+    private weak var userManager: UserManager?
+
+    func composer(_ composer: CommentComposer
+                  didPostComment comment: Comment) {
+        userManager?.userDidPostComment(comment)
+        handle(comment)
+    }
+
+    func clearCache() {
+        cache.clear()
+    }
+}
+</code></pre>
+<p>正如我们在上面看到的，我们在UserManager和CommentManager之间有一个循环依赖关系，其中它们都不假定对对方拥有所有权，但它们仍然在其逻辑的一部分上依赖对方。 那只是等待发生的bug !😅</p>
+<p>为了解决上述问题，我们将让CommentComposer扮演一个中间人的角色，并承担通知UserManager和CommentManager评论已经被做出的责任:</p>
+<pre><code class="language-swift">class CommentComposer {
+    private let commentManager: CommentManager
+    private let userManager: UserManager
+    private lazy var textView = UITextView()
+
+    init(commentManager: CommentManager,
+         userManager: UserManager) {
+        self.commentManager = commentManager
+        self.userManager = userManager
+    }
+
+    func postComment() {
+        let comment = Comment(text: textView.text)
+        commentManager.handle(comment)
+        userManager.userDidPostComment(comment)
+    }
+}
+</code></pre>
+<p>这样，UserManager就可以拥有一个对CommentManager的强引用，而不需要任何保留(或依赖)周期:</p>
+<pre><code class="language-swift">class UserManager {
+    private let commentManager: CommentManager
+
+    init(commentManager: CommentManager) {
+        self.commentManager = commentManager
+    }
+
+    func userDidPostComment(_ comment: Comment) {
+        user.totalNumberOfComments += 1
+    }
+}
+</code></pre>
+<p>我们再次删除了所有可选的代码，并拥有了可预测的代码!🎉</p>
+<h2 id="crashing-gracefully">Crashing gracefully</h2>
+<p>上面我们看到了几个例子，在这些例子中，我们可以调整代码，通过删除可选选项来消除不确定性。然而，有时这是不可能的。 假设你正在加载一个包含应用配置的本地JSON文件。<br>
+这本质上是一个可能失败的操作，因此我们需要添加一些错误处理。</p>
+<p>如果配置加载失败，继续执行程序将使应用程序处于未定义状态，因此在这种情况下，最好崩溃。这样我们就会得到一个崩溃报告，希望我们的测试和QA过程能够在它到达我们的用户之前发现这个问题。</p>
+<p>那么，我们怎么崩溃呢?最简单的解决方案就是使用!操作符，强制展开可选对象，如果它包含nil会导致崩溃:</p>
+<pre><code class="language-swift">let configuration = loadConfiguration()!
+</code></pre>
+<p>虽然这种方法很简单，但它有一个很大的缺点。如果这段代码开始崩溃，我们得到的错误信息是:</p>
+<pre><code class="language-swift">fatal error: unexpectedly found nil while unwrapping an Optional value
+</code></pre>
+<p>错误消息没有告诉我们错误发生的原因和位置，也没有告诉我们如何修复它。 相反，让我们使用guard语句，并结合preconditionFailure()函数，以自定义消息退出。</p>
+<pre><code class="language-swift">guard let configuration = loadConfiguration() else {
+    preconditionFailure(&quot;Configuration couldn't be loaded. &quot; +
+                        &quot;Verify that Config.JSON is valid.&quot;)
+}
+</code></pre>
+<p>使用上面的崩溃时，我们会得到一个更有用的错误信息:</p>
+<pre><code class="language-swift">fatal error: Configuration couldn’t be loaded. Verify that Config.JSON is valid.: file /Users/John/AmazingApp/Sources/AppDelegate.swift, line 17
+
+</code></pre>
+<p>我们现在有了一个明确的行动，我们可以采取解决问题，我们确切地知道它发生在我们的代码库的什么地方!🚀</p>
+<h2 id="introducing-require">Introducing Require</h2>
+<p>执行上面的guard-let-preconditionFailure可能有点乏味，而且它确实使代码更难遵循。我们真的不想在代码中给这样的特殊情况留出太多空间——我们想专注于我们的逻辑。</p>
+<p>My solution to that is Require.它在Optional上添加了一个简单的require()方法，该方法执行上述操作，但使调用站点更加整洁。当使用Require时,上面的配置加载代码是这样的</p>
+<pre><code class="language-swift">let configuration = loadConfiguration().require(hint: &quot;Verify that Config.JSON is valid&quot;)
+</code></pre>
+<p>如果失败，它将给我们以下错误信息:</p>
+<pre><code class="language-swift">fatal error: Required value was nil. Debugging hint: Verify that Config.JSON is valid: file /Users/John/AmazingApp/Sources/AppDelegate.swift, line 17
+</code></pre>
+<p>Require的另一个优点是它还会抛出一个NSException以及调用preconditionFailure，这将使崩溃报告工具(如Crashlytics)能够获取崩溃的所有元数据。</p>
+<h2 id="summary">Summary</h2>
+<p>总结一下，以下是我在Swift中处理非可选选项的建议:</p>
+<p><em>Being lazy is better than being non-optionally optional<br>
+Proper dependency management is better than non-optional optionals<br>
+Crash gracefully when you need to use non-optional optionals</em></p>
+<p><a href="https://www.swiftbysundell.com/articles/handling-non-optional-optionals-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l0njz2RSr/" class="tag">
+                    optionals
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EWN51MbzW/" class="tag">
+                    state management
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/improving-swift-compile-times/">
+                  <h3 class="post-title">
+                    Improving Swift compile times
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

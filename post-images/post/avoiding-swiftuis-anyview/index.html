@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Avoiding SwiftUI’s AnyView | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="SwiftUI附带了一个名为AnyView的特殊视图，它可以用作类型擦除包装器，允许从一个函数或计算属性返回多个视图类型，或者让我们引用视图时不必知道其底层类型。
+然而，尽管在某些情况下我们可能需要使用AnyView，但通常最好尽可能避免使..." />
+    <meta name="keywords" content="code structure,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Avoiding SwiftUI’s AnyView</h2>
+            <div class="post-date">2021-01-12</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>SwiftUI附带了一个名为AnyView的特殊视图，它可以用作类型擦除包装器，允许从一个函数或计算属性返回多个视图类型，或者让我们引用视图时不必知道其底层类型。</p>
+<p>然而，尽管在某些情况下我们可能需要使用AnyView，但通常最好尽可能避免使用它。 这是因为SwiftUI使用一种基于类型的算法来决定何时应该在屏幕上重绘给定的视图， 因为从类型系统的角度来看，两个任意视图包装的视图看起来总是完全相同的 (即使它们的底层包装类型不同)，执行这种类型擦除会显著降低SwiftUI有效更新视图的能力。</p>
+<p>因此，在本文中，让我们看看两种核心技术，它们可以帮助我们避免AnyView，同时仍然能够以非常动态的方式处理多个视图类型。</p>
+<h2 id="handling-multiple-return-types">Handling multiple return types</h2>
+<p>当使用SwiftUI构建视图时，我们经常使用some View 不透明返回类型，以避免显式定义实际返回的确切类型。这是特别有用的，因为(几乎)每次我们应用一个修饰符到一个给定的视图，或者改变容器的内容，我们实际上是在改变我们会返回的视图类型。</p>
+<p>但是，只有当给定函数或计算属性中的所有代码分支返回完全相同的类型时，编译器才能推断出底层的返回类型。所以像下面这样的东西不会编译，因为textView属性中的if和else分支返回不同类型的视图:</p>
+<pre><code class="language-swift">struct FolderInfoView: View {
+    @Binding var folder: Folder
+    var isEditable: Bool
+    var body: some View {
+        HStack {
+            Image(systemName: &quot;folder&quot;)
+            textView
+        }
+    }
+    private var textView: some View {
+        // Error: Function declares an opaque return type, but
+        // the return statements in its body do not have matching
+        // underlying types.
+        if isEditable {
+            return TextField(&quot;Name&quot;, text: $folder.name)
+        } else {
+            return Text(folder.name)
+        }
+    }
+}
+</code></pre>
+<p>最初，为了给所有代码分支提供相同的返回类型，上面的情况似乎是必须使用AnyView的情况之一。有趣的是，如果我们把上面的条件表达式内联放在我们的body属性中，编译错误就会消失:</p>
+<pre><code class="language-swift">struct FolderInfoView: View {
+    @Binding var folder: Folder
+    var isEditable: Bool
+
+    var body: some View {
+        HStack {
+            Image(systemName: &quot;folder&quot;)
+
+            if isEditable {
+                TextField(&quot;Name&quot;, text: $folder.name)
+            } else {
+                Text(folder.name)
+            }
+        }
+    }
+}
+</code></pre>
+<p>这是因为SwiftUI使用一个函数/结果生成器来将定义在给定范围内的所有视图(比如上面的HStack)组合成一个单一的返回类型，好消息是，我们也可以在自己的属性和函数中使用相同的构建器类型。</p>
+<p>就像我们在“为函数添加SwiftUI的ViewBuilder属性”中看到的，要使用同样强大的视图构建功能，我们需要做的就是使用@ViewBuilder属性 -这反过来让我们可以在同一个作用域中表达多种类型的视图，像这样:</p>
+<pre><code class="language-swift">struct FolderInfoView: View {
+    @Binding var folder: Folder
+    var isEditable: Bool
+
+    var body: some View {
+        HStack {
+            Image(systemName: &quot;folder&quot;)
+            textView
+        }
+    }
+    @ViewBuilder
+    private var textView: some View {
+        if isEditable {
+            TextField(&quot;Name&quot;, text: $folder.name)
+        } else {
+            Text(folder.name)
+        }
+    }
+}
+</code></pre>
+<p>请注意，我们不再在新的textView属性实现中使用任何return语句，因为现在每个表达式都将由SwiftUI的ViewBuilder解析，而不是单独返回。</p>
+<p>AnyView可以避免的第一种方式是使用ViewBuilder属性当我们想要一个给定的属性或函数能够返回多个视图类型时。</p>
+<h2 id="generic-view-properties">Generic view properties</h2>
+<p>AnyView经常使用的另一种常见情况是我们想要将给定视图存储在属性中而不需要知道它的确切类型。例如，假设我们正在处理下面的ItemRow，它目前使用了AnyView，使我们能够注入任何我们想要显示在尾部边缘的accessoryView:</p>
+<pre><code class="language-swift">struct ItemRow: View {
+    var title: String
+    var description: String
+    var accessoryView: AnyView
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(title).bold()
+                Text(description)
+            }
+            Spacer()
+            accessoryView
+        }
+    }
+}
+</code></pre>
+<p>因为我们不能为存储的属性使用some View不透明的返回类型(毕竟它们不会返回任何东西)，由于我们不再使用ViewBuilder来处理预定义数量的视图，如果我们想在这种情况下删除AnyView的使用，我们将不得不探索另一种策略。</p>
+<p>就像我们之前在使用ViewBuilder时从SwiftUI本身获得的灵感一样，让我们在这里做同样的事情。SwiftUI解决任何视图注入问题的方法是让宿主视图在它所包含的视图类型之上泛型化。 例如，内置的HStack容器被定义为一个具有Content类型的泛型，这反过来又需要符合视图协议:</p>
+<pre><code class="language-swift">struct HStack&lt;Content&gt;: View where Content: View {
+    ...
+}
+</code></pre>
+<p>使用相同类型的泛型类型约束，我们可以使ItemRow采用完全相同的模式-这会让我们直接将任何符合视图的类型注入到我们的accessoryView中:</p>
+<pre><code class="language-swift">struct ItemRow&lt;Accessory: View&gt;: View {
+    var title: String
+    var description: String
+    var accessoryView: Accessory
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(title).bold()
+                Text(description)
+            }
+            Spacer()
+            accessoryView
+        }
+    }
+}
+</code></pre>
+<p>上面的操作不仅使我们在视图更新时获得更好的性能(因为所有涉及到的类型现在都定义良好，对类型系统来说是透明的)， 它也使我们的调用站点更简单，因为每个accessoryView不再需要手工包装在AnyView中:</p>
+<pre><code class="language-swift">// Before:
+ItemRow(
+    title: title,
+    description: description,
+    accessoryView: AnyView(Image(
+        systemName: &quot;checkmark.circle&quot;
+    ))
+)
+
+// After:
+ItemRow(
+    title: title,
+    description: description,
+    accessoryView: Image(
+        systemName: &quot;checkmark.circle&quot;
+    )
+)
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然SwiftUI让UI开发的很多方面变得更简单，但不可否认的是，它是一个非常复杂的框架，大量使用了Swift最强大的一些特性。因此，虽然使用它开始构建视图可能很容易，但我们经常不得不使用相当先进的技术(如泛型编程)，以便充分利用SwiftUI所提供的功能。</p>
+<p>当然，仅仅因为尽可能避免AnyView可能是一个好主意，并不意味着它永远不应该被使用。是SwiftUI公共API的一部分，上面的两种技术并不能在任何情况下都有效-但是当他们这样做的时候，他们通常会产生更加优雅和高效的代码。</p>
+<p><a href="https://www.swiftbysundell.com/articles/avoiding-anyview-in-swiftui/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-lifecycle-and-semantics-of-a-swiftui-view/">
+                  <h3 class="post-title">
+                    The lifecycle and semantics of a SwiftUI view
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

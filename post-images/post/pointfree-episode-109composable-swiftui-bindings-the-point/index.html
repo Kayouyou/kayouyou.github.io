@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 109:Composable SwiftUI Bindings: The Point | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Adding an inventory list feature
+
+
+
+
+Adding an inventory duplication feature
+
+
+
+
+What's the point?
+
+
+
+
+
+
+1. Adding a..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 109:Composable SwiftUI Bindings: The Point</h2>
+            <div class="post-date">2022-01-10</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Addinganinventorylistfeature">Adding an inventory list feature</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Addinganinventoryduplicationfeature">Adding an inventory duplication feature</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Whatsthepoint">What's the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 109:Composable SwiftUI Bindings: The Point -->
+<h2 id="1-a-nameaddinganinventorylistfeatureaadding-an-inventory-list-feature">1. <a name='Addinganinventorylistfeature'></a>Adding an inventory list feature</h2>
+<p>但让我们进一步推动这些工具。让我们在应用程序中添加一个新屏幕，显示库存列表以及允许用户添加新库存的新流程。这听起来很简单，但我们将再次看到，这样做会对我们良好建模的领域造成严重破坏。</p>
+<p>让我们首先创建一个视图模型，为清单列表提供动力。在最基本的情况下，它需要跟踪当前显示的一系列库存：</p>
+<pre><code class="language-swift">class InventoryViewModel: ObservableObject {
+  @Published var inventory: [Item]
+
+  init(
+    inventory: [Item] = []
+  ) {
+    self.inventory = inventory
+  }
+}
+</code></pre>
+<p>然后我们需要一个新的视图，可以显示这个清单的列表。创建此视图非常简单，因此我们不打算显示所有步骤，而只是粘贴到工作中：</p>
+<pre><code class="language-swift">struct InventoryView: View {
+  @ObservedObject var viewModel: InventoryViewModel
+
+  var body: some View {
+    NavigationView {
+      List {
+        ForEach(self.viewModel.inventory, id: \.self)) { item in
+          HStack {
+            VStack(alignment: .leading) {
+              Text(item.name)
+
+              if item.status.isInStock {
+                Text(&quot;In stock: \(item.status.quantity)&quot;)
+              } else {
+                Text(&quot;Out of stock&quot; + (item.status.isOnBackOrder ? &quot;: on back order&quot; : &quot;&quot;))
+              }
+            }
+
+            Spacer()
+
+            item.color.map { color in
+              Rectangle()
+                .frame(width: 30, height: 30)
+                .foregroundColor(color.toSwiftUIColor)
+                .border(Color.black, width: 1)
+            }
+          }
+          .buttonStyle(PlainButtonStyle())
+          .foregroundColor(item.status.isInStock ? nil : Color.gray)
+        }
+      }
+      .navigationBarTitle(&quot;Inventory&quot;)
+    }
+  }
+}
+</code></pre>
+<p>这是显示每个库存项目列表的基础，每行显示一些额外的元数据，如其颜色，以及是否有库存。</p>
+<p>我们还可以在所有状态组合中获得一系列库存的SwiftUI预览：</p>
+<pre><code class="language-swift">struct InventoryView_Previews: PreviewProvider {
+  static var previews: some View {
+    InventoryView(
+      viewModel: InventoryViewModel(
+        inventory: [
+          Item(name: &quot;Keyboard&quot;, color: .blue, status: .inStock(quantity: 100)),
+          Item(name: &quot;Charger&quot;, color: .yellow, status: .inStock(quantity: 20)),
+          Item(name: &quot;Phone&quot;, color: .green, status: .outOfStock(isOnBackOrder: true)),
+          Item(name: &quot;Headphones&quot;, color: .green, status: .outOfStock(isOnBackOrder: false)),
+        ]
+      )
+    )
+  }
+}
+</code></pre>
+<p>所有这些代码都是简单的，不是很有趣的代码。有趣的是，当我们尝试引入一个新的功能，让我们添加新的库存。这之所以有趣是因为实现这个特性并不像一开始看起来那么简单。</p>
+<p>首先，我们添加一个新的尾部导航按钮，用于添加新的库存项目：</p>
+<pre><code class="language-swift">.navigationBarItems(trailing: Button(&quot;Add&quot;) { })
+</code></pre>
+<p>点击此按钮时，我们可能只想将其转发给视图模型上的方法，以便视图模型可以运行其逻辑：</p>
+<pre><code class="language-swift">func addButtonTapped() {
+}
+...
+.navigationBarItems(trailing: Button(&quot;Add&quot;) { self.viewModel.addButtonTapped() })
+</code></pre>
+<p>所以问题是：视图模型应该做什么来表示我们想要添加一个新的库存项目？</p>
+<p>好的，我们想展示我们以前在模式中开发的<strong>ItemView</strong>，这样您就可以输入新库存的详细信息，然后保存新项目或取消放弃。记住，为了构造**ItemView，**我们必须使用诚实项的诚实绑定来初始化它。为了显示模式，我们可以使用以下两种API之一：</p>
+<pre><code class="language-swift">.sheet(item: &lt;#T##Binding&lt;Identifiable?&gt;#&gt;, content: &lt;#T##(Identifiable) -&gt; View#&gt;)
+.sheet(isPresented: &lt;#T##Binding&lt;Bool&gt;#&gt;, content: &lt;#T##() -&gt; View#&gt;)
+</code></pre>
+<p>第一个API接受一个可选的绑定，这样当绑定的值变为非nil时，它将触发内容闭包，并将一个诚实的值传递给它，并且从该闭包返回的任何视图都将以一个模态显示。然后，一旦绑定变为nil，它将触发对模态的撤销。</p>
+<p>第二个API与之类似，只是它使用一个简单的布尔绑定来确定是否显示了模态，并且因为绑定不包含任何感兴趣的数据，所以它的内容闭包不会传递任何数据，它只需要从无到有地返回一个视图。</p>
+<p>这两个API都很方便，可以很容易地开始使用modals，但是它们缺少一个非常重要的功能。如果我们希望将绑定传递给模态视图，以便用户在模态中执行的任何操作都可以反映在父视图的状态中，该怎么办？</p>
+<p>要了解为什么这是我们想要的，以及为什么这些API不足以做到这一点，让我们尝试在模态中显示<strong>ItemView</strong>。我们需要在视图模型中引入一些新的状态来控制是否显示模态。我们可以通过保留表示要添加的库存项目草稿的可选项目值来实现这一点：</p>
+<pre><code class="language-swift">@Published var draft: Item?
+</code></pre>
+<p>我们甚至可以填写我们创建的<strong>addButtonTapped</strong>存根，因为我们希望它将<strong>draft</strong>设置为非nil值，这将触发显示模态：</p>
+<pre><code class="language-swift">func addButtonTapped() {
+  self.draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+}
+</code></pre>
+<p>要使此状态驱动模态，我们可以使用具有可选属性绑定的sheet 修饰符：</p>
+<pre><code class="language-swift">.sheet(item: self.$viewModel.draft) { draft in
+
+}
+</code></pre>
+<p><strong>Item</strong>必须是可识别的，才能在此API中工作。</p>
+<pre><code class="language-swift">struct Item: Hashable, Identifiable {
+  let id = UUID()
+  ...
+}
+</code></pre>
+<p>在<strong>sheet</strong>内，我们收到了一份草稿，但它属于Item类型。也就是说，它实际上是一个项目，而不是一个项目的绑定。这现在不是非常有用，因为我们的ItemView需要绑定：</p>
+<pre><code class="language-swift">ItemView(item: &lt;#T##Binding&lt;Item&gt;#&gt;)
+</code></pre>
+<p>那么我们如何获得一个项目的绑定呢？好的，我们已经准备好了帮助程序来实现这一点，所以我们可以使用“<strong>unwrap</strong>”来执行转换：</p>
+<pre><code class="language-swift">.sheet(item: self.$viewModel.draft) { draft in
+  self.$viewModel.draft.unwrap().map { item in
+    ItemView(item: item)
+  }
+}
+</code></pre>
+<p>虽然现在我们甚至没有使用提供给闭包的草稿，所以我们可以忽略它：</p>
+<pre><code class="language-swift">.sheet(item: self.$viewModel.draft) { _ in
+</code></pre>
+<p>如果我们现在运行预览，当我们点击“添加”按钮时，我们会看到模态显示，但是我们没有任何保存项目的方法。</p>
+<p>我们可以通过链接到我们为模型构建的ItemView来添加按钮：</p>
+<pre><code class="language-swift">.sheet(item: self.$viewModel.draft) { draft in
+  self.$viewModel.draft.unwrap().map { item in
+    NavigationView {
+      ItemView(item: item)
+        .navigationBarItems(
+          leading: Button(&quot;Cancel&quot;) {  },
+          trailing: Button(&quot;Save&quot;) {  }
+        )
+    }
+  }
+}
+</code></pre>
+<p>现在，当我们运行预览时，我们看到模式出现了“取消”和“保存”按钮，但点击它们没有任何作用。这是因为我们需要在视图模型中创建新方法来实现该逻辑，然后从这些闭包中调用这些端点：</p>
+<pre><code class="language-swift">func cancelButtonTapped() {
+  self.draft = nil
+}
+...
+func saveButtonTapped() {
+  if let item = self.draft {
+    self.inventory.append(item)
+  }
+  self.draft = nil
+}
+...
+ItemView(item: item)
+  .navigationBarItems(
+    leading: Button(&quot;Cancel&quot;) { self.viewModel.cancelButtonTapped() },
+    trailing: Button(&quot;Save&quot;) { self.viewModel.saveButtonTapped() }
+  )
+</code></pre>
+<p>现在，当我们运行预览时，我们看到点击“保存”将向我们的库存添加一个新项目，点击“取消”将在不改变状态的情况下取消模式。值得注意的是，取消执行对模态的程序化撤销。仅仅是我们的<strong>draft</strong>状态为零的行为就导致SwiftUI忽略了模态，这真的很酷。</p>
+<p>虽然这很好，但我认为我们可以做得更好一点。奇怪的是我们需要忽略内容闭包的论点，奇怪的是我们必须转换<strong>self.$viewModel.draft</strong> 绑定两次，一次显示<strong>sheet</strong>，然后再次<strong>unwrap</strong>绑定。</p>
+<p>如果我们可以编写一个<strong>sheet helper</strong>方法，允许我们在绑定值变为非nil时同时显示该<strong>sheet</strong>，并将绑定转换为诚实值，该怎么办。</p>
+<pre><code class="language-swift">.sheet(unwrap: self.$viewModel.draft) { item in
+  NavigationView {
+    ItemView(
+      item: item,
+      onCancel: { self.viewModel.cancelButtonTapped() },
+      onSave: { self.viewModel.saveButtonTapped() }
+    )
+  }
+}
+</code></pre>
+<p>这看起来好多了。它已经移除了**_ in and unwrap().map** 噪波，这更符合我们希望在此视图中表示的内容。我们希望安全地展开绑定，显示工作表，并将该绑定交给模态视图，这样它就可以安全地对它所持有的数据进行更改，而所有这些变化都会反映在父视图中。</p>
+<p>但这还没有编译，因为我们还没有真正实现这个方法，所以让我们这样做吧。它可以通过向视图协议添加一个新方法来完成，该方法接受可选值的绑定，以及将诚实值的绑定转换为视图的内容闭包：</p>
+<pre><code class="language-swift">extension View {
+  func sheet&lt;Content&gt;(
+    unwrap item: Binding&lt;Item?&gt;,
+    @ViewBuilder content: @escaping (Binding&lt;Item&gt;) -&gt; Content
+  ) -&gt; some View where Content: View {
+
+  }
+}
+</code></pre>
+<p>为了实现这个方法，我们可以简单地做我们以前做的事情，也就是使用标准.sheet修饰符：</p>
+<p>从技术上讲，这是可以构建的，但概括来说，我们不应该在这里使用我们的项目类型，而是应该使用任何通用的、可识别的项目：</p>
+<pre><code class="language-swift">extension View {
+  func sheet&lt;Item, Content&gt;(
+    unwrap item: Binding&lt;Item?&gt;,
+    @ViewBuilder content: @escaping (Binding&lt;Item&gt;) -&gt; Content
+  ) -&gt; some View where Item: Identifiable, Content: View {
+    self.sheet(item: item) { _ in
+      item.unwrap().map(content)
+    }
+  }
+}
+</code></pre>
+<p>现在，该应用程序仍然可以编译，并且它的工作方式与以前完全相同。</p>
+<hr>
+<h2 id="2-a-nameaddinganinventoryduplicationfeatureaadding-an-inventory-duplication-feature">2. <a name='Addinganinventoryduplicationfeature'></a>Adding an inventory duplication feature</h2>
+<p>但让我们再提高一个档次！让我们进一步添加轻松复制任何现有库存项目的功能。为此，我们将向列表中的项目行添加一个按钮：</p>
+<pre><code class="language-swift">Button(action: {  }) {
+  Image(systemName: &quot;doc.on.doc.fill&quot;)
+}
+.padding(.leading)
+</code></pre>
+<p>点击此按钮将调用视图模型中的端点：</p>
+<pre><code class="language-swift">Button(action: { self.viewModel.duplicate(item: item) }) {
+</code></pre>
+<p>视图模型方法将简单地启动一个新的草稿，它是我们点击的项目的副本：</p>
+<pre><code class="language-swift">func duplicate(item: Item) {
+  self.draft = item
+}
+</code></pre>
+<p>这看起来很简单，但有点不正确。从技术上讲，此草稿将与传入的项目具有相同的id，并且在我们的库存中有多个具有相同id的项目将对我们不利。要修复此问题，我们可以从头开始构建一个项目：</p>
+<pre><code class="language-swift">func duplicate(item: Item) {
+  self.draft = Item(name: item.name, color: item.color, status: item.status)
+}
+</code></pre>
+<p>我们还可以在项上的复制方法中移动此逻辑：</p>
+<pre><code class="language-swift">//item.duplicate()
+</code></pre>
+<p>但我们现在会保持简单。</p>
+<p>但是，有了一个很小的改变，我们的新功能已经开始工作了。如果我们点击任何一行上的图标，我们将看到一个模态ItemView，它已经预先填充了原始项目中的所有内容。如果我们点击“保存”，我们会在我们的库存中得到一个新行，如果我们点击“取消”，所有的东西都会被丢弃。</p>
+<p>因此，我们认为我们能够利用我们在这一系列事件早期建立的所有机制，比如展开方法和案例路径下标，这是非常酷的。所有这一切都是可能的，这要归功于我们坚定不移的决心，确保枚举不会被遗留在结构体的尘埃中。SwiftUI为构建视图提供了强大的工具，这些视图脱离了由结构体建模的状态，但遗憾的是，它将枚举排除在外，即使它们对于正确的域建模至关重要。</p>
+<hr>
+<h2 id="3-a-namewhatsthepointawhats-the-point">3. <a name='Whatsthepoint'></a>What's the point?</h2>
+<p>所以，虽然这一切都很酷，但现在是结束这一系列剧集的时候了，就像我们结束每一系列剧集一样：通过问“这有什么意义？”这是我们向所有人证明我们所做的是合法有用的机会，而不仅仅是一些在日常代码中实际上并不有用的高谈阔论的探索。</p>
+<p>在这种情况下，这绝对值得一问，因为这似乎是一个疏忽，苹果会为我们提供适当建模域类型的工具，但它不会提供工具，然后将这些类型与SwiftUI视图一起使用。那么，苹果建议我们如何解决这些问题呢？</p>
+<p>不幸的是，苹果公司的代码样本中并没有多少涉及到这些复杂的现实问题。他们往往更关心基本的导航和交互。然而，我们确实发现2019年的SwiftUI教程解决了类似的问题。</p>
+<p>它来自一个名为“使用UI控件”的会话，它涉及到一个屏幕建模的概念，这个屏幕可以进入“编辑模式”，在这个模式下，您可以对屏幕上的数据进行更改，然后保存或放弃这些更改。他们甚至使用“草稿”的术语来表示编辑时屏幕的临时状态，因此他们实际上是在遭受我们刚才描述的基本相同的问题。</p>
+<p>然而，它们的解决方式却截然不同。与其使用表示是否编辑草稿的可选值，不如使用@State值对某些本地可丢弃状态进行建模。让我们试着用当前的应用程序重新创建这种风格，看看它与我们现在拥有的相比如何。</p>
+<p>这个想法的关键是不要在视图模型中建模临时的、可丢弃的状态，而是使用@state属性包装器，它需要立即初始化：</p>
+<pre><code class="language-swift">struct InventoryView: View {
+  @State var draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+  @ObservedObject var viewModel: InventoryViewModel
+
+  ...
+}
+</code></pre>
+<p>由于我们不再使用可选值来表示草案，我们还必须引入一些附加状态来跟踪我们是否处于添加新项目的模式：</p>
+<pre><code class="language-swift">struct InventoryView: View {
+  @State var draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+  @State var isAdding = false
+  @ObservedObject var viewModel: InventoryViewModel
+
+  ...
+}
+</code></pre>
+<p>然后，我们可以根据该布尔值驱动sheet的显示：</p>
+<pre><code class="language-swift">.sheet(isPresented: self.$isAdding) {
+  NavigationView {
+    ItemView(item: self.$draft)
+      .navigationBarItems(
+        leading: Button(&quot;Cancel&quot;) {  },
+        trailing: Button(&quot;Save&quot;) {  }
+      )
+  }
+}
+</code></pre>
+<p>我们想在某个时候对这些动作闭包做些什么，但在做之前，让我们先做一些其他的事情。</p>
+<p>为了使模态显示出来，我们必须以某种方式变异isAdding。以前，我们在视图模型中执行该逻辑，但是我们不能再这样做了，因为isAdding字段仅在视图中可用。因此，我们需要点击“添加”按钮的动作闭包，以便我们可以执行以下操作：</p>
+<pre><code class="language-swift">.navigationBarItems(
+  trailing: Button(&quot;Add&quot;) {
+    self.isAdding = true
+//    self.viewModel.addButtonTapped()
+  }
+)
+</code></pre>
+<p>我们要确保对“复制”按钮执行相同的操作，除了我们还必须记住对草稿进行变异以表示要复制的项：</p>
+<pre><code class="language-swift">Button(
+  action: {
+//    self.viewModel.duplicate(item: item)
+    self.isAdding = true
+    self.draft = Item(name: item.name, color: item.color, status: item.status)
+  }
+) {
+  Image(systemName: &quot;doc.on.doc.fill&quot;)
+}
+.padding([.leading])
+</code></pre>
+<p>现在我们可以在创建ItemView时填充onCancel和onSave闭包。不同之处在于，我们需要在视图模型上使用一种新方法来保存要保存的项。这是因为我们无法访问视图模型中的项，它只是视图的本地项。</p>
+<pre><code class="language-swift">func saveButtonTapped(item: Item) {
+  self.inventory.append(item)
+}
+...
+.sheet(isPresented: self.$isAdding) {
+  NavigationView {
+    ItemView(item: self.$draft)
+      .navigationBarItems(
+        leading: Button(&quot;Cancel&quot;) {
+          self.isAdding = false
+        },
+        trailing: Button(&quot;Save&quot;) {
+          self.isAdding = false
+          self.viewModel.saveButtonTapped(item: self.draft)
+        }
+      )
+  }
+}
+``
+现在，当我们运行预览时，我们看到它似乎起了作用。
+
+嗯，似乎是的。有一些微妙的错误。如果我们添加一个项目，然后尝试添加另一个项目，我们将看到，当最初出现模态时，它仍然保存来自上一次显示模态的数据。这是因为我们不会在保存草稿后清除它，所以让我们这样做：
+
+```swift
+.sheet(isPresented: self.$isAdding) {
+  NavigationView {
+    ItemView(item: self.$draft)
+      .navigationBarItems(
+        leading: Button(&quot;Cancel&quot;) { self.isAdding = false },
+        trailing: Button(&quot;Save&quot;) {
+          self.isAdding = false
+          self.viewModel.saveButtonTapped(item: self.draft)
+          self.draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+        }
+      )
+    )
+  }
+}
+</code></pre>
+<p>但这还不是全部，如果我们调出项目模态，进行一些更改，然后取消，我们将看到当我们调回模态时，它仍然拥有所有数据。因此，我们还需要确保在取消时清除项目：因此，我们还需要确保在取消时清除项目：</p>
+<pre><code class="language-swift">.sheet(isPresented: self.$isAdding) {
+  NavigationView {
+    ItemView(item: self.$draft)
+      .navigationBarItems(
+        leading: Button(&quot;Cancel&quot;) {
+          self.isAdding = false
+          self.draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+        },
+        trailing: Button(&quot;Save&quot;) {
+          self.isAdding = false
+          self.viewModel.saveButtonTapped(item: self.item)
+          self.draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+        }
+      )
+    )
+  }
+}
+</code></pre>
+<p>不过，我们引入了一个微妙的小故障。当我们点击“取消”时，当模态解除时，我们可以看到状态表单在解除时重置。</p>
+<p>但这仍然不太正确，因为我们也可以通过向下滑动来消除模态，在这种情况下，我们不会清除数据。要看到这一点，让我们点击一个项目的复制图标，然后滑动模态，然后点击“添加”，我们将看到模态错误地预填充了不应该存在的数据。</p>
+<p>为了清除该状态我们需要进一步倾听模态的onDisappear，以便我们可以清除更多状态：</p>
+<pre><code class="language-swift">.onDisappear {
+  self.draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+}
+</code></pre>
+<p>我们需要清理视图中多个位置的状态，这有点令人沮丧。在使用绑定转换时，我们没有任何这些问题，因为我们的模型和表示始终100%同步。该工作表仅在值为非零时显示，当值变为零时，该工作表将被取消。不可能意外地用旧的、过时的数据显示工作表，因为我们需要构造一个值，甚至在第一时间显示工作表！</p>
+<p>目前解决所有这些问题的一个可能的方法是在点击“添加”按钮时立即清除草稿：</p>
+<pre><code class="language-swift">.navigationBarItems(
+  trailing: Button(&quot;Add&quot;) {
+    self.isAdding = true
+    self.draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+  }
+)
+</code></pre>
+<p>但即使这样也不太好，因为即使在保存或取消草稿后，我们仍会在视图中保留数据，即使不再使用它。我们甚至可能无意中引用该数据来执行某些逻辑，而不知道模态当前甚至没有显示。然而，当我们的状态是可选的时，我们总是有一个单一的、精确的方法来知道模态是否显示，而不需要检查两个不同的值，首先是布尔值，然后是实际数据。</p>
+<p>我们再次看到的是，我们反对对这个特性的领域进行适当的建模，因此，我们不得不进行一系列的清理和解决方法，以使事情正常工作。我们选择如何实现此视图的全部原因都是因为我们的域没有正确建模。我们有一个非可选的草稿值，因此必须始终保持有效的项值，即使新的项视图甚至没有显示。</p>
+<p>早在我们的编程语言中对代数数据类型有了正确的表示之前，人们会使用所谓的“哨兵”值来区分特殊值和其他值。例如，在搜索数组中元素的索引时，API可能会决定返回-1以表示“未找到”索引。如果您没有对可选数据类型的适当支持，您可能需要执行类似的操作，对于这些可选数据类型，您可以返回nil来表示找不到索引。</p>
+<p>因此，我想我们也可以编造一个“无效”项目：</p>
+<pre><code class="language-swift">extension Item {
+  static let invalid = Item(name: &quot;Invalid&quot;, color: nil, status: .inStock(quantity: -1))
+}
+</code></pre>
+<p>然后将其用作我们草稿的默认值：</p>
+<pre><code class="language-swift">@State var draft = Item.invalid
+</code></pre>
+<p>现在，我想我们可以通过某种方式区分当前正在编辑的有效草稿和已经作废的草稿。但是编译器并没有做任何事情来帮助我们跟踪这些状态，而是让我们记住，值之间存在这种区别，并始终保持其不变量，特别是确保在isAdding切换为false时使草稿无效。</p>
+<p>我们不可能确定我们得到了100%的正确答案，我们只能寄希望于此。六个月后，这个特性可能会变得更加复杂，或者我们可能会忘记我们如何对这个领域建模的所有复杂性，很容易把它搞砸。或者更可能的是，我们的一位同事可能不知道这是如何设计的，因为编译器没有对它们进行检查，他们可能会引入一个微妙的错误，打破我们想要保留的不变量。</p>
+<p>因此，我们看到的是，苹果建议的对这个问题进行建模的官方方式有其缺点，并导致我们遇到了许多我们在这一系列事件开始时看到的问题，当时我们没有使用正确的工具进行域建模。我们真正想做的是，在草稿中使用一个可选项，同时表示我们可能处于草稿模式，并且我们有一个正在操作的草稿项。但是，如果我们这样做，所有用于派生绑定的工具都会崩溃。</p>
+<p>然而，另一方面，我们为本期节目开发的新工具允许我们自由使用枚举进行领域建模，同时仍然允许我们以合理的方式构建视图。事实上，拥有这些工具只会使重构我们的领域变得更加强大，并改进我们的应用程序变得更加容易。</p>
+<hr>
+<h2 id="domain-modeling-adding-vs-duplicating">Domain modeling: adding vs. duplicating</h2>
+<p>让我们对应用程序做最后一个更改，以正确区分添加新项和复制现有项的情况。现在，我们的草稿作为一个简单的可选项保存，用于确定草稿视图是否处于活动状态：</p>
+<pre><code class="language-swift">@Published var draft: Item?
+</code></pre>
+<p>让我们将其扩展到适当的枚举，以便区分添加新项和复制现有项的情况：</p>
+<pre><code class="language-swift">//@Published var draft: Item?
+@Published var draft: Draft?
+...
+enum Draft: Identifiable {
+  case adding(Item)
+  case duplicating(Item)
+
+  var id: UUID {
+    switch self {
+    case let .adding(item): return item.id
+    case let .duplicating(item): return item.id
+    }
+  }
+}
+</code></pre>
+<p>这打破了一些东西。首先，在视图模型中，我们需要更新一些逻辑端点以使用此枚举，而不是可选的：</p>
+<pre><code class="language-swift">func addButtonTapped() {
+//  self.draft = Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1))
+  self.draft = .adding(Item(name: &quot;&quot;, color: nil, status: .inStock(quantity: 1)))
+}
+...
+func saveButtonTapped() {
+  switch self.draft {
+  case let .some(.duplicating(item)),
+       let .some(.adding(item)):
+    self.inventory.append(item)
+
+  case .none:
+    break
+  }
+  self.draft = nil
+}
+...
+func duplicate(item: Item) {
+//  self.draft = Item(name: item.name, color: item.color, status: item.status)
+  self.draft = .duplicating(Item(name: item.name, color: item.color, status: item.status))
+}
+</code></pre>
+<p>然后在视图中，我们可以回到由视图模型而不是本地@State驱动的旧代码，并使用我们的.**sheet(unwrap:)**帮助程序展开此可选草稿以获得真实草稿的绑定：</p>
+<pre><code class="language-swift">.sheet(unwrap: self.$viewModel.draft) { draft in
+
+}
+</code></pre>
+<p>然后，在此结束语中，我们可以使用新的案例路径订阅工具来匹配两个草稿案例中的一个，这使我们有机会添加一点额外的定制，例如更改每个视图的导航标题：</p>
+<pre><code class="language-swift">.sheet(unwrap: self.$viewModel.draft) { draft in
+  draft[/Draft.adding].map { item in
+    NavigationView {
+      ItemView(item: item)
+        .navigationBarItems(
+          leading: Button(&quot;Cancel&quot;) { self.viewModel.cancelButtonTapped() },
+          trailing: Button(&quot;Save&quot;) { self.viewModel.saveButtonTapped() }
+        )
+        .navigationBarTitle(&quot;Add new item&quot;)
+    }
+  }
+  draft[/Draft.duplicating].map { item in
+    NavigationView {
+      ItemView(item: item)
+        .navigationBarItems(
+          leading: Button(&quot;Cancel&quot;) { self.viewModel.cancelButtonTapped() },
+          trailing: Button(&quot;Save&quot;) { self.viewModel.saveButtonTapped() }
+        )
+        .navigationBarTitle(&quot;Duplicate item&quot;)
+    }
+  }
+}
+</code></pre>
+<p>通过我们的预览运行，我们可以看到每个导航标题反映了每个案例，其他一切都是一样的。</p>
+<p>看到所有这些复合运算符是如何协同工作的，真是太酷了。我们可以先使用.**sheet(unwrap:)**操作符安全地打开可选的绑定，然后进一步链接到它，以便我们可以深入到草稿的每个案例中。</p>
+<p>这就是这一系列剧集的重点。我们不能简单地依赖于苹果给我们的任何工具，我们必须感到有能力创建我们知道有用的工具，并用它运行。特别是，我们知道枚举是一种强大的域建模方法，因为它允许我们对无效状态进行切分，直到只剩下有意义的值为止。但是，如果我们在SwiftUI中使用枚举，我们会立即遇到路障，因此我们转向case路径来解锁。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-107composable-swiftui-bindings-the-problem/">
+                  <h3 class="post-title">
+                    PointFree Episode 107:Composable SwiftUI Bindings: The Problem
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

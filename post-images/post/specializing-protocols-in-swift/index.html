@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Specializing protocols in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="协议仍然是Swift不可或缺的一部分——无论是从语言本身的设计方式，还是从标准库的结构方式来看。因此，Swift的每一个版本都增加了与协议相关的新特性，使它们更加灵活和强大，这并不奇怪。
+特别是当在应用程序或系统中设计抽象时，协议提供了一种..." />
+    <meta name="keywords" content="generics,protocols,composition" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Specializing protocols in Swift</h2>
+            <div class="post-date">2018-10-21</div>
+            
+            <div class="post-content" v-pre>
+              <p>协议仍然是Swift不可或缺的一部分——无论是从语言本身的设计方式，还是从标准库的结构方式来看。因此，Swift的每一个版本都增加了与协议相关的新特性，使它们更加灵活和强大，这并不奇怪。</p>
+<p>特别是当在应用程序或系统中设计抽象时，协议提供了一种方法来清晰地区分不同类型，并设置更多定义良好的api——这通常使从测试到重构的一切都变得更简单。</p>
+<p>本周，让我们看看如何使用协议来创建多个抽象级别，并尝试一些不同的技术，这些技术让我们从一个更通用的协议开始，然后我们越来越专门化它，使它变得越来越特定于每个用例。</p>
+<h2 id="inheritance">Inheritance</h2>
+<p>就像类一样，一个协议可以继承另一个协议的要求——这使得形成层次结构成为可能，而且(不像类)协议可以从多个父协议继承额外的灵活性。 当一个协议在使用时经常需要来自父协议的属性或方法时，这特别有用。</p>
+<p>标准库中的一个例子是Hashable，它继承自Equatable。这很有意义，因为当使用哈希值时——例如将一个值插入到一个集合中时——每次成功的哈希值检查之后都要进行相等性检查。</p>
+<p>让我们看一个例子，看看这种模式在什么时候也可以在我们自己的代码中发挥作用。假设我们正在构建一个支持多种用户类型的应用程序——登录用户、还没有创建账户的匿名用户和管理员。 为了能够为每种类型的用户提供独立的实现，但仍然在它们之间共享代码，我们创建了一个用户协议，定义了每种用户类型的基本需求——像这样:</p>
+<pre><code class="language-swift">protocol User {
+    var id: UUID { get }
+    var name: String { get }
+}
+</code></pre>
+<p>因为我们的每一种用户类型都已经有了上述两个属性，我们可以很容易地使用一系列空扩展来使它们符合我们的用户协议:</p>
+<pre><code class="language-swift">extension AnonymousUser: User {}
+extension Member: User {}
+extension Admin: User {}
+</code></pre>
+<p>做上面的工作已经非常有用了，因为我们现在可以定义接受任何用户的函数，而不需要知道关于现有不同类型用户的任何具体信息。然而，使用协议继承，我们可以更进一步，为特定的特性创建协议的专用版本。</p>
+<p>以身份验证为例——成员和管理员都经过身份验证，所以能够在他们之间共享处理身份验证的代码就非常好了——而不需要我们的匿名用户类型对此有任何了解。</p>
+<p>为此，让我们创建另一个协议——AuthenticatedUser，它继承自我们的标准用户协议，然后添加与身份验证相关的新属性——例如accessToken。然后，我们将使成员和管理员符合它，像这样:</p>
+<pre><code class="language-swift">protocol AuthenticatedUser: User {
+    var accessToken: AccessToken { get }
+}
+
+extension Member: AuthenticatedUser {}
+extension Admin: AuthenticatedUser {}
+</code></pre>
+<p>现在，我们可以在需要登录用户的情况下使用新的AuthenticatedUser协议，例如，当需要认证的后端端点创建加载数据的请求时:</p>
+<pre><code class="language-swift">class DataLoader {
+    func load(from endpoint: ProtectedEndpoint,
+              onBehalfOf user: AuthenticatedUser,
+              then: @escaping (Result&lt;Data&gt;) -&gt; Void) {
+        // Since 'AuthenticatedUser' inherits from 'User', we
+        // get full access to all properties from both protocols.
+        let request = makeRequest(for: endpoint,
+            userID: user.id,
+            accessToken: user.accessToken)
+
+        ...
+    }
+}
+</code></pre>
+<p>通过继承，建立越来越专门化的较小协议的层次结构，也是避免类型强制转换和非可选可选的好方法 -  因为我们只需要将更具体的属性和方法添加到实际支持它们的类型中。 不再有空的方法实现或属性将始终保持空值，只是为了符合协议</p>
+<h2 id="specialization">Specialization</h2>
+<p>接下来，让我们看看如何在继承使用关联类型的协议时进一步专门化子协议。假设我们正在为一个应用程序构建一个组件驱动的UI系统，其中一个组件可以通过不同的方式实现。 例如使用一个UIView，一个UIViewController或者一个CALayer。为了实现这种程度的灵活性，我们将从一个称为组件的非常通用的协议开始，它使每个组件能够决定它可以添加到哪种容器中</p>
+<pre><code class="language-swift">protocol Component {
+    associatedtype Container
+    func add(to container: Container)
+}
+</code></pre>
+<p>我们的大多数组件可能都是使用视图实现的——因此，为了方便起见，我们将为此创建一个专门的组件版本。就像之前的用户协议一样，我们将从Component继承新的ViewComponent协议，但是我们需要它的容器类型是某种UIView<br>
+这可以使用一个通用约束，使用where子句，像这样:</p>
+<pre><code class="language-swift">protocol ViewComponent: Component where Container: UIView {
+    associatedtype View: UIView
+    var view: View { get }
+}
+</code></pre>
+<p>另一种替代方法是在每次处理基于uiview的组件时都使用where子句，但是为它设置一个专门的协议可以帮助我们删除许多样板文件，使事情更精简。</p>
+<p>现在，我们有了一个编译时保证，所有符合viewcomponent的组件都有一个视图，而且它们的容器类型也是一个视图，我们可以使用协议扩展来添加一些基本协议要求的默认实现——像这样:</p>
+<pre><code class="language-swift">extension ViewComponent {
+    func add(to container: Container) {
+        container.addSubview(view)
+    }
+}
+</code></pre>
+<p>这是Swift类型系统变得多么强大的又一个例子，它让我们既能实现高度的灵活性，又能减少样板——使用通用约束和协议扩展之类的东西。</p>
+<h2 id="composition">Composition</h2>
+<p>最后，让我们看看如何通过组合专门化协议。 假设我们有一个用于实现各种异步操作的操作协议。因为我们对所有的操作都使用一个单一的协议，它目前需要我们为每个操作实现相当多的不同方法:</p>
+<pre><code class="language-swift">protocol Operation {
+    associatedtype Input
+    associatedtype Output
+
+    func prepare()
+    func cancel()
+    func perform(with input: Input,
+                 then handler: @escaping (Output) -&gt; Void)
+}
+</code></pre>
+<p>像我们上面所做的那样设置更大的协议并不是真的错误，但是如果我们有某些不能被取消的操作或者不需要任何特定的准备(因为我们仍然需要实现那些协议方法)，就会导致一些冗余的实现。</p>
+<p>我们可以用合成来解决这个问题。让我们再一次从标准库中获取一些灵感——这一次是通过查看可编码类型，它实际上只是一个类型别名，它组成了两个协议——可解码和可编码:</p>
+<pre><code class="language-swift">typealias Codable = Decodable &amp; Encodable
+</code></pre>
+<p>上述方法的美妙之处在于，类型可以自由地只遵循可解码或可编码的，而且我们可以编写只处理解码或编码的函数，同时仍然可以使用单一类型同时引用这两种类型。<br>
+使用同样的技术，我们可以将之前的操作协议分解为三个单独的协议，每个协议专门用于一个任务:</p>
+<pre><code class="language-swift">protocol Preparable {
+    func prepare()
+}
+
+protocol Cancellable {
+    func cancel()
+}
+
+protocol Performable {
+    associatedtype Input
+    associatedtype Output
+
+    func perform(with input: Input,
+                 then handler: @escaping (Output) -&gt; Void)
+}
+</code></pre>
+<p>然后，就像标准库定义coable一样，我们可以添加一个typealias来把这三个单独的协议组合回一个操作类型中——就像我们之前看到的那个更大的协议一样:</p>
+<pre><code class="language-swift">typealias Operation = Preparable &amp; Cancellable &amp; Performable
+</code></pre>
+<p>上述方法的好处是，我们现在可以根据每种类型的功能选择性地遵循操作协议的不同方面。</p>
+<p>我们还能够在不同的环境中重用我们的小协议——例如，Cancellable现在可以被各种可取消类型使用 - 不仅是operations，它让我们可以编写更多的泛型代码，就像这个序列扩展，它让我们可以使用单个调用轻松取消任何可取消类型的序列序列:</p>
+<pre><code class="language-swift">extension Sequence where Element == Cancellable {
+    func cancelAll() {
+        forEach { $0.cancel() }
+    }
+}
+</code></pre>
+<p>很酷!👍使用像这样较小的构建块样式的协议的另一个好处是，为测试创建模拟变得容易得多，因为我们将能够只模拟我们所测试的API实际使用的方法和属性。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>随着协议变得越来越强大，使用它们的方式也越来越多。就像标准库大量使用协议来重用不同类型之间的算法和其他代码一样，我们也可以使用专门的协议来建立多个抽象层——每个抽象层都专门解决一组特定的问题。</p>
+<p>然而，就像设计任何类型的抽象一样，不要过快地得出协议是正确选择的结论也很重要。尽管Swift经常被称为“面向协议的语言”，但协议有时会增加比需要更多的开销和复杂性。有时候，仅仅使用具体的类型就足够了，而且可能是一个更好的起点——因为以后通常可以用协议对类型进行改造。</p>
+<p><a href="https://www.swiftbysundell.com/articles/specializing-protocols-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VT6NEUoHdJ/" class="tag">
+                    composition
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/building-dsls-in-swift/">
+                  <h3 class="post-title">
+                    Building DSLs in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>iOS黑魔法：Method Swizzling | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Method Swizzling 概述
+
++load vs +initialize
+dispatch_once
+Selectors, Methods, &amp; Implementations
+调用 _cmd
+思考
+
+
+Method ..." />
+    <meta name="keywords" content="method swizzling,oc,runtime" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">iOS黑魔法：Method Swizzling</h2>
+            <div class="post-date">2021-05-27</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#method-swizzling-%E6%A6%82%E8%BF%B0">Method Swizzling 概述</a>
+<ul>
+<li><a href="#load-vs-initialize">+load vs +initialize</a></li>
+<li><a href="#dispatch_once">dispatch_once</a></li>
+<li><a href="#selectors-methods--implementations">Selectors, Methods, &amp; Implementations</a></li>
+<li><a href="#%E8%B0%83%E7%94%A8-_cmd">调用 _cmd</a></li>
+<li><a href="#%E6%80%9D%E8%80%83">思考</a></li>
+</ul>
+</li>
+<li><a href="#method-swizzling-%E8%BF%9B%E9%98%B6">Method Swizzling 进阶</a>
+<ul>
+<li><a href="#method-swizzling-%E6%98%AF%E4%BB%80%E4%B9%88">method-swizzling 是什么？</a>
+<ul>
+<li><a href="#%E6%96%B9%E6%B3%95%E4%BA%A4%E6%8D%A2%E5%8E%9F%E7%90%86">方法交换原理</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9D%91%E7%82%B91method-swizzling%E4%BD%BF%E7%94%A8%E8%BF%87%E7%A8%8B%E4%B8%AD%E7%9A%84%E4%B8%80%E6%AC%A1%E6%80%A7%E9%97%AE%E9%A2%98">坑点1：method-swizzling使用过程中的一次性问题</a></li>
+<li><a href="#%E5%9D%91%E7%82%B92%E5%AD%90%E7%B1%BB%E6%B2%A1%E6%9C%89%E5%AE%9E%E7%8E%B0%E7%88%B6%E7%B1%BB%E5%AE%9E%E7%8E%B0%E4%BA%86">坑点2：子类没有实现，父类实现了</a></li>
+<li><a href="#%E5%9D%91%E7%82%B93%E5%AD%90%E7%B1%BB%E6%B2%A1%E6%9C%89%E5%AE%9E%E7%8E%B0%E7%88%B6%E7%B1%BB%E4%B9%9F%E6%B2%A1%E6%9C%89%E5%AE%9E%E7%8E%B0%E4%B8%8B%E9%9D%A2%E7%9A%84%E8%B0%83%E7%94%A8%E6%9C%89%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98">坑点3：子类没有实现，父类也没有实现，下面的调用有什么问题？</a></li>
+</ul>
+</li>
+<li><a href="#%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90">相关资源</a></li>
+</ul>
+<!-- /TOC -->
+<h2 id="method-swizzling-概述">Method Swizzling 概述</h2>
+<blockquote>
+<p>如果轻轻一按就能摧毁整个世界的话<br>
+你会怎么做<br>
+如果所有人都变贫穷能让你变得富有的话<br>
+你会怎么做？<br>
+如果你能不用工作，只需要监视别人工作的话<br>
+你会怎么做？<br>
+如果你不予回报就能拥有所有的爱<br>
+你会怎么做？<br>
+在这样的权利下我们迷失了自己并对自己的行为全然不知<br>
+这时你会怎么做？</p>
+</blockquote>
+<p>我们将会继续深入讨论 Objective-C 的运行时中最具争议的黑魔法：method swizzling。</p>
+<p>Method swizzling 用于改变一个已经存在的 selector 的实现。这项技术使得在运行时通过改变 selector 在类的消息分发列表中的映射从而改变方法的调用成为可能。例如：我们想要在一款 iOS app 中追踪每一个视图控制器被用户呈现了几次： 这可以通过在每个视图控制器的 viewDidAppear: 方法中添加追踪代码来实现，但这样会大量重复的样板代码。继承是另一种可行的方式，但是这要求所有被继承的视图控制器如 UIViewController, UITableViewController, UINavigationController 都在 viewDidAppear：实现追踪代码，这同样会造成很多重复代码。 幸运的是，这里有另外一种可行的方式：从 category 实现 method swizzling 。下面是实现方式：</p>
+<pre><code class="language-swift">#import &lt;objc/runtime.h&gt;
+
+@implementation UIViewController (Tracking)
+
++ (void)load {
+    static dispatch_once_t onceToken;
+    dispatch_once(&amp;onceToken, ^{
+        Class class = [self class];
+
+        SEL originalSelector = @selector(viewWillAppear:);
+        SEL swizzledSelector = @selector(xxx_viewWillAppear:);
+
+        Method originalMethod = class_getInstanceMethod(class, originalSelector);
+        Method swizzledMethod = class_getInstanceMethod(class, swizzledSelector);
+
+        // When swizzling a class method, use the following:
+        // Class class = object_getClass((id)self);
+        // ...
+        // Method originalMethod = class_getClassMethod(class, originalSelector);
+        // Method swizzledMethod = class_getClassMethod(class, swizzledSelector);
+
+        BOOL didAddMethod =
+            class_addMethod(class,
+                originalSelector,
+                method_getImplementation(swizzledMethod),
+                method_getTypeEncoding(swizzledMethod));
+
+        if (didAddMethod) {
+            class_replaceMethod(class,
+                swizzledSelector,
+                method_getImplementation(originalMethod),
+                method_getTypeEncoding(originalMethod));
+        } else {
+            method_exchangeImplementations(originalMethod, swizzledMethod);
+        }
+    });
+}
+
+#pragma mark - Method Swizzling
+
+- (void)xxx_viewWillAppear:(BOOL)animated {
+    [self xxx_viewWillAppear:animated];
+    NSLog(@&quot;viewWillAppear: %@&quot;, self);
+}
+
+@end
+</code></pre>
+<blockquote>
+<p>计算机科学里，交换指针指向用来交换基于名字或者位置的指针引用。如果你对 Objective-C 这方面的特性不是很了解的话，这是很值得推荐使用的一个特性，因为 method swizzling 可以通过交换 selector 来改变函数指针的引用。</p>
+</blockquote>
+<p>现在，UIViewController 或其子类的实例对象在调用 viewWillAppear: 的时候会有 log 的输出。</p>
+<p>在视图控制器的生命周期，响应事件，绘制视图或者 Foundation 框架的网络栈等方法中插入代码都是 method swizzling 能够为开发带来很好作用的例子。有很多的场景选择method swizzling 会是很合适的解决方式，这显然也会让 Objective-C 开发者的技术变得越来越成熟。</p>
+<p>到此我们已经知道为什么，应该在哪些地方使用 method swizzling，下面介绍如何使用 method swizzling：</p>
+<h3 id="load-vs-initialize">+load vs +initialize</h3>
+<p>swizzling 应该只在 +load 中完成。 在 Objective-C 的运行时中，每个类有两个方法都会自动调用。+load 是在一个类被初始装载时调用，+initialize 是在应用第一次调用该类的类方法或实例方法前调用的。两个方法都是可选的，并且只有在方法被实现的情况下才会被调用。</p>
+<h3 id="dispatch_once">dispatch_once</h3>
+<p>swizzling 应该只在 dispatch_once 中完成。</p>
+<p>由于 swizzling 改变了全局的状态，所以我们需要确保每个预防措施在运行时都是可用的。原子操作就是这样一个用于确保代码只会被执行一次的预防措施，就算是在不同的线程中也能确保代码只执行一次。Grand Central Dispatch 的 dispatch_once 满足了所需要的需求，并且应该被当做使用 swizzling 的初始化单例方法的标准。</p>
+<h3 id="selectors-methods-implementations">Selectors, Methods, &amp; Implementations</h3>
+<p>在 Objective-C 的运行时中，selectors, methods, implementations 指代了不同概念，然而我们通常会说在消息发送过程中，这三个概念是可以相互转换的。 下面是苹果 Objective-C Runtime Reference中的描述：</p>
+<blockquote>
+<ol>
+<li>Selector（typedef struct objc_selector *SEL）:在运行时 Selectors 用来代表一个方法的名字。Selector 是一个在运行时被注册（或映射）的C类型字符串。Selector由编译器产生并且在当类被加载进内存时由运行时自动进行名字和实现的映射。</li>
+<li>Method（typedef struct objc_method *Method）:方法是一个不透明的用来代表一个方法的定义的类型。</li>
+<li>Implementation（typedef id (*IMP)(id, SEL,...)）:这个数据类型指向一个方法的实现的最开始的地方。该方法为当前CPU架构使用标准的C方法调用来实现。该方法的第一个参数指向调用方法的自身（即内存中类的实例对象，若是调用类方法，该指针则是指向元类对象 metaclass ）。第二个参数是这个方法的名字 selector，该方法的真正参数紧随其后。</li>
+</ol>
+</blockquote>
+<p>理解 selector, method, implementation 这三个概念之间关系的最好方式是：<strong>在运行时，类（Class）维护了一个消息分发列表来解决消息的正确发送。每一个消息列表的入口是一个方法（Method），这个方法映射了一对键值对，其中键指是这个方法的名字 selector（SEL），值是指向这个方法实现的函数指针 implementation（IMP）。</strong> <em>Method swizzling 修改了类的消息分发列表使得已经存在的 selector 映射了另一个实现 implementation，同时重命名了原生方法的实现为一个新的 selector</em>。</p>
+<h3 id="调用-_cmd">调用 _cmd</h3>
+<p>下面代码在正常情况下会出现循环：</p>
+<pre><code class="language-swift">- (void)xxx_viewWillAppear:(BOOL)animated {
+    [self xxx_viewWillAppear:animated];
+    NSLog(@&quot;viewWillAppear: %@&quot;, NSStringFromClass([self class]));
+}
+</code></pre>
+<p>然而在交换了方法实现后就不会出现循环了。好的程序员应该对这里出现的方法的递归调用有所警觉，这里我们应该理清在 method swizzling 后方法的实现究竟变成了什么。在交换了方法的实现后，xxx_viewWillAppear:方法的实现已经被替换为了 UIViewController -viewWillAppear：的原生实现，所以这里并不是在递归调用。由于 xxx_viewWillAppear: 这个方法的实现已经被替换为了 viewWillAppear: 的实现，所以，<strong>当我们在这个方法中再调用 viewWillAppear: 时便会造成递归循环。</strong></p>
+<p><strong>简洁解释：</strong><br>
+通过调用相同的方法来实现对原始代码的调用，这看起来像是递归调用。这是因为方法与原始实现进行了交换。在运行时，调用override_drawRect:的方法实际上是原始的!</p>
+<blockquote>
+<p>记住给需要转换的所有方法加个前缀以区别原生方法。</p>
+</blockquote>
+<h3 id="思考">思考</h3>
+<p>很多人认为交换方法实现会带来无法预料的结果。然而采取了以下预防措施后, method swizzling 会变得很可靠：</p>
+<ul>
+<li>
+<p><strong>在交换方法实现后记得要调用原生方法的实现（除非你非常确定可以不用调用原生方法的实现）：APIs</strong>提供了输入输出的规则，而在输入输出中间的方法实现就是一个看不见的黑盒。交换了方法实现并且一些回调方法不会调用原生方法的实现这可能会造成底层实现的崩溃。</p>
+</li>
+<li>
+<p><strong>避免冲突：为分类的方法加前缀</strong>，一定要确保调用了原生方法的所有地方不会因为你交换了方法的实现而出现意想不到的结果。</p>
+</li>
+<li>
+<p><strong>理解实现原理</strong>：只是简单的拷贝粘贴交换方法实现的代码而不去理解实现原理不仅会让 App 很脆弱，并且浪费了学习 Objective-C 运行时的机会。阅读 Objective-C Runtime Reference 并且浏览 &lt;obje/runtime.h&gt; 能够让你更好理解实现原理。</p>
+</li>
+<li>
+<p>**持续的预防：**不管你对你理解 swlzzling 框架，UIKit 或者其他内嵌框架有多自信，一定要记住所有东西在下一个发行版本都可能变得不再好使。做好准备，在使用这个黑魔法中走得更远，不要让程序反而出现不可思议的行为。</p>
+</li>
+</ul>
+<h2 id="method-swizzling-进阶">Method Swizzling 进阶</h2>
+<h3 id="method-swizzling-是什么">method-swizzling 是什么？</h3>
+<ul>
+<li>
+<p>method-swizzling的含义是<strong>方法交换</strong>，其主要作用是在运行时将一个方法的实现替换成另一个方法的实现，这就是我们常说的iOS黑魔法，</p>
+</li>
+<li>
+<p>在OC中就是利用method-swizzling实现AOP，其中AOP(Aspect Oriented Programming，面向切面编程)是一种编程的思想，区别于OOP（面向对象编程）</p>
+<ul>
+<li>OOP和AOP都是一种编程的思想</li>
+<li>OOP编程思想更加倾向于对业务模块的封装，划分出更加清晰的逻辑单元；</li>
+<li>而AOP是面向切面进行提取封装，提取各个模块中的公共部分，提高模块的复用率，降低业务之间的耦合性。</li>
+</ul>
+</li>
+<li>
+<p>每个类都维护着一个方法列表，即methodList，methodList中有不同的方法即Method，每个方法中包含了方法的sel和IMP，方法交换就是将sel和imp原本的对应断开，并将sel和新的IMP生成对应关系</p>
+</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqxwdboc8rj30hs0br752.jpg" alt="avatar" loading="lazy"></figure>
+<h4 id="方法交换原理">方法交换原理</h4>
+<p>method-swizzling涉及的相关API</p>
+<ul>
+<li>
+<p>通过sel获取方法Method</p>
+<ul>
+<li>
+<p>class_getInstanceMethod：获取实例方法</p>
+</li>
+<li>
+<p>class_getClassMethod：获取类方法</p>
+</li>
+</ul>
+</li>
+<li>
+<p>method_getImplementation：获取一个方法的实现</p>
+</li>
+<li>
+<p>method_setImplementation：设置一个方法的实现</p>
+</li>
+<li>
+<p>method_getTypeEncoding：获取方法实现的编码类型</p>
+</li>
+<li>
+<p>class_addMethod：添加方法实现</p>
+</li>
+<li>
+<p>class_replaceMethod：用一个方法的实现，替换另一个方法的实现，即aIMP 指向 bIMP，但是bIMP不一定指向aIMP</p>
+</li>
+<li>
+<p>method_exchangeImplementations：交换两个方法的实现，即 aIMP -&gt; bIMP, bIMP -&gt; aIMP</p>
+</li>
+</ul>
+<h3 id="坑点1method-swizzling使用过程中的一次性问题">坑点1：method-swizzling使用过程中的一次性问题</h3>
+<p>所谓的一次性就是：mehod-swizzling写在load方法中，而load方法会主动调用多次，这样会导致方法的重复交换，使方法sel的指向又恢复成原来的imp的问题</p>
+<p><strong>解决方案</strong></p>
+<p>可以通过单例设计原则，使方法交换只执行一次，在OC中可以通过dispatch_once实现单例</p>
+<pre><code class="language-objc">+ (void)load{
+    static dispatch_once_t onceToken;
+    dispatch_once(&amp;onceToken, ^{
+        [LGRuntimeTool lg_bestMethodSwizzlingWithClass:self oriSEL:@selector(helloword) swizzledSEL:@selector(lg_studentInstanceMethod)];
+    });
+}
+</code></pre>
+<h3 id="坑点2子类没有实现父类实现了">坑点2：子类没有实现，父类实现了</h3>
+<p>在下面这段代码中，Person中实现了personInstanceMethod，而Student继承自Person，没有实现personInstanceMethod，运行下面这段代码会出现什么问题？</p>
+<pre><code class="language-objc">#import &quot;Person.h&quot;
+@implementation Person
+- (void)personInstanceMethod{
+    NSLog(@&quot;person对象方法:%s&quot;,__func__);
+}
+@end
+
+#import &quot;Person.h&quot;
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface Student : Person
+- (void)helloword;
++ (void)sayHello;
+@end
+
+NS_ASSUME_NONNULL_END
+
+#import &quot;Student.h&quot;
+
+@implementation Student
+
+@end
+
+- (void)viewDidLoad {
+  [super viewDidLoad];
+  
+  // 黑魔法坑点二: 子类没有实现 - 父类实现
+  Person *p = [[Person alloc] init];
+  [p personInstanceMethod];
+  
+  Student *s = [[Student alloc] init];
+  [s personInstanceMethod];
+
+}
+
+@implementation Student (YY)
+
++ (void)load{
+    static dispatch_once_t onceToken;
+    dispatch_once(&amp;onceToken, ^{
+        [RunTimeTool lg_methodSwizzlingWithClass:self oriSEL:@selector(personInstanceMethod) swizzledSEL:@selector(lg_studentInstanceMethod)];
+    });
+}
+
+// personInstanceMethod 我需要父类的这个方法的一些东西
+// 给你加一个personInstanceMethod 方法
+// imp
+
+- (void)lg_studentInstanceMethod{
+    ////是否会产生递归？--不会产生递归，原因是lg_studentInstanceMethod 会走 oriIMP，即personInstanceMethod的实现中去
+    [self lg_studentInstanceMethod];
+    NSLog(@&quot;LGStudent分类添加的lg对象方法:%s&quot;,__func__);
+}
+
+@implementation RunTimeTool
++ (void)lg_methodSwizzlingWithClass:(Class)cls oriSEL:(SEL)oriSEL swizzledSEL:(SEL)swizzledSEL{
+    
+    if (!cls) NSLog(@&quot;传入的交换类不能为空&quot;);
+
+    Method oriMethod = class_getInstanceMethod(cls, oriSEL);
+    Method swiMethod = class_getInstanceMethod(cls, swizzledSEL);
+    method_exchangeImplementations(oriMethod, swiMethod);
+}
+@end
+</code></pre>
+<p>通过实际代码的调试，发现会在p调用personInstanceMethod方法时崩溃，下面来进行详细说明</p>
+<pre><code class="language-objc">libc++abi.dylib: terminating with uncaught exception of type NSException
+*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '-[Person lg_studentInstanceMethod]: unrecognized selector sent to instance 0x600003898200'
+terminating with uncaught exception of type NSException
+CoreSimulator 732.18.6 - Device: iPhone 12 Pro (A8896E1C-1A84-4AFB-ABD2-F442069B4336) - Runtime: iOS 14.4 (18D46) - DeviceType: iPhone 12 Pro
+(lldb)
+</code></pre>
+<p><strong>崩溃日志分析</strong></p>
+<ul>
+<li>
+<p>[s personInstanceMethod];中不报错是因为 student中的imp交换成了lg_studentInstanceMethod，而Student中有这个方法（在分类中），所以不会报错</p>
+</li>
+<li>
+<p>崩溃的点在于[p personInstanceMethod];，其本质原因：Student的分类中进行了方法交换，将person中imp 交换成了 Student中的lg_studentInstanceMethod，然后需要去 Person中的找lg_studentInstanceMethod，但是Person中没有lg_studentInstanceMethod方法，即相关的imp找不到，所以就崩溃了</p>
+</li>
+</ul>
+<p><strong>解决：避免imp找不到</strong></p>
+<p>通过class_addMethod尝试添加你要交换的方法</p>
+<ul>
+<li>如果添加成功，即类中没有这个方法，则通过class_replaceMethod进行替换，其内部会调用class_addMethod进行添加</li>
+<li>如果添加不成功，即类中有这个方法，则通过method_exchangeImplementations进行交换</li>
+</ul>
+<pre><code class="language-swift">+ (void)lg_methodSwizzlingWithClass:(Class)cls oriSEL:(SEL)oriSEL swizzledSEL:(SEL)swizzledSEL{
+    
+  if (!cls) NSLog(@&quot;传入的交换类不能为空&quot;);
+      
+    1. Method oriMethod = class_getInstanceMethod(cls, oriSEL);
+    2. Method swiMethod = class_getInstanceMethod(cls, swizzledSEL);
+     
+      // 一般交换方法: 交换自己有的方法 -- 走下面 因为自己有意味添加方法失败
+      // 交换自己没有实现的方法:
+      //   首先第一步:会先尝试给自己添加要交换的方法 :personInstanceMethod (SEL) -&gt; swiMethod(IMP)
+      //   然后再将父类的IMP给swizzle  personInstanceMethod(imp) -&gt; swizzledSEL
+
+     3. BOOL success = class_addMethod(cls, oriSEL, method_getImplementation(swiMethod), method_getTypeEncoding(oriMethod));
+
+      if (success) {// 自己没有 - 交换 - 没有父类进行处理 (重写一个)
+         4. class_replaceMethod(cls, swizzledSEL, method_getImplementation(oriMethod), method_getTypeEncoding(oriMethod));
+      }else{ // 自己有
+         5. method_exchangeImplementations(oriMethod, swiMethod);
+      }
+}
+</code></pre>
+<p><em><strong>代码步骤分析</strong></em></p>
+<ul>
+<li>
+<p>1 &amp; 2获取method结构体，class_getInstanceMethod获取的method可能是在本身的class中获取，或者是在superclass中获取</p>
+</li>
+<li>
+<p>3 首先查找oriMehod是否可以在本类中查找到，如果查到不到，则在本类中添加一个method，而且method的实现方法是 swiMethod的实现方法</p>
+</li>
+<li>
+<p>4 如果添加方法成功，首先说明了本类中没有oriMethod，我们在第一步中获取的oriMethod 是在父类中的，所以我们自己在本类中创建了一个new oriMethod， 现在new oriMethod 与第一步获取的oriMethod 没有任何的关系。那么现在 new oriMethod的IMP是swizzle IMP,那么我现在调用class_replaceMethod可以把可能从父类中拿到的oriMethod中的实现方法赋值给swiMethod，这样就完成了方法替换</p>
+</li>
+<li>
+<p>5 如果方法添加没有成功，说明本类中含有这个method,我们直接调用method_exchangeImplementations进行方法IMP替换</p>
+</li>
+</ul>
+<p>下面是class_replaceMethod、class_addMethod和method_exchangeImplementations的源码实现</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqxwdvd6q0j30hs0j5tan.jpg" alt="avatar" loading="lazy"></figure>
+<p>其中class_replaceMethod和class_addMethod中都调用了addMethod方法，区别在于bool值的判断，下面是addMethod的源码实现</p>
+<pre><code class="language-swift">static IMP 
+addMethod(Class cls, SEL name, IMP imp, const char *types, bool replace)
+{
+    IMP result = nil;
+    // 加锁
+    runtimeLock.assertWriting();
+    // 一些断言函数，第一个是保证types必须有值，第二个保证cls是已经实现的状态
+    assert(types);
+    assert(cls-&gt;isRealized());
+
+    method_t *m;
+    // getMethodNoSuper_nolock 这个方法非常的关键，他的含义是只在本类中查找是否含有方法，而不再父类中查找。
+    if ((m = getMethodNoSuper_nolock(cls, name))) {
+        // 可以从本类中查找方法
+        if (!replace) {
+            // replace 我们在class_addMethod方法中传递的是NO，所以我们这个方法会走这一步，或者其他。如果我们查找的方法结构体中函数指针是有值，那么返回YES，但是class_addMethod会对result取反，所以我们知道如果我们将要添加的method，在cls中存在，并且已经有了函数指针那么我们添加方法失败。
+            result = m-&gt;imp;
+        } else {
+            //  repalce 我们在class_replaceMethod中传递的是YES,class_replaceMethod可能会走这一步。
+            result = _method_setImplementation(cls, m, imp);
+        }
+    } else {
+        // 没有在本类中查找到对应的方法,则我们在class中添加method，而method的结构体系：class-&gt;method_array_t(methods)-&gt;method_list_t-&gt;method
+        // method 的体系会在后面讲解
+        method_list_t *newlist;
+        newlist = (method_list_t *)calloc(sizeof(*newlist), 1);
+        newlist-&gt;entsizeAndFlags = 
+            (uint32_t)sizeof(method_t) | fixed_up_method_list;
+        newlist-&gt;count = 1;
+        newlist-&gt;first.name = name;
+        newlist-&gt;first.types = strdupIfMutable(types);
+        newlist-&gt;first.imp = imp;
+
+        prepareMethodLists(cls, &amp;newlist, 1, NO, NO);
+        cls-&gt;data()-&gt;methods.attachLists(&amp;newlist, 1);
+        flushCaches(cls);
+        // 返回result是NO，那么class_addMethod取反，那么返回YES
+        result = nil;
+    }
+
+    return result;
+}
+</code></pre>
+<h3 id="坑点3子类没有实现父类也没有实现下面的调用有什么问题">坑点3：子类没有实现，父类也没有实现，下面的调用有什么问题？</h3>
+<p>在调用personInstanceMethod方法时，父类Person中只有声明，没有实现，子类Student中既没有声明，也没有实现</p>
+<pre><code class="language-objc">/*********Person类*********
+@interface Person : NSObject
+- (void)personInstanceMethod;
+@end
+
+@implementation Person
+@end
+
+//*********Student类*********
+@interface Student : Person
+- (void)helloword;
++ (void)sayHello;
+@end
+
+@implementation Student
+@end
+
+//*********调用*********
+- (void)viewDidLoad {
+    [super viewDidLoad];
+
+    //子类没有实现 - 父类实现
+    Student *s = [[Student alloc] init];
+    [s personInstanceMethod];
+    
+    Person *p = [[Person alloc] init];
+    [p personInstanceMethod];
+}
+</code></pre>
+<p>经过调试，发现运行代码会崩溃，报错结果如下所示</p>
+<pre><code class="language-objc">libc++abi.dylib: terminating with uncaught exception of type NSException
+*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '-[Person personInstanceMethod]: unrecognized selector sent to instance 0x600003e581c0'
+terminating with uncaught exception of type NSException
+CoreSimulator 732.18.6 - Device: iPhone 12 Pro (A8896E1C-1A84-4AFB-ABD2-F442069B4336) - Runtime: iOS 14.4 (18D46) - DeviceType: iPhone 12 Pro
+</code></pre>
+<p><strong>崩溃分析</strong></p>
+<p>原因是 栈溢出，递归死循环了，那么为什么会发生递归呢？----主要是因为 personInstanceMethod没有实现，然后在方法交换时，始终都找不到oriMethod，然后交换了寂寞，即交换失败，当我们调用personInstanceMethod（oriMethod）时，也就是oriMethod会进入YY中lg_studentInstanceMethod方法，然后这个方法中又调用了lg_studentInstanceMethod，此时的lg_studentInstanceMethod并没有指向oriMethod ，然后导致了自己调自己，即递归死循环</p>
+<p><strong>解决:避免imp找不到</strong></p>
+<p>如果oriMethod为空，为了避免方法交换没有意义，而被废弃，需要做一些事情<br>
+通过class_addMethod给oriSEL添加swiMethod方法</p>
+<p>通过method_setImplementation将swiMethod的IMP指向不做任何事的空实现</p>
+<pre><code class="language-objc">+ (void)lg_bestMethodSwizzlingWithClass:(Class)cls oriSEL:(SEL)oriSEL swizzledSEL:(SEL)swizzledSEL{
+    
+    if (!cls) NSLog(@&quot;传入的交换类不能为空&quot;);
+    
+    Method oriMethod = class_getInstanceMethod(cls, oriSEL);
+    Method swiMethod = class_getInstanceMethod(cls, swizzledSEL);
+    
+    if (!oriMethod) {
+        // 在oriMethod为nil时，替换后将swizzledSEL复制一个不做任何事的空实现,代码如下:
+        class_addMethod(cls, oriSEL, method_getImplementation(swiMethod), method_getTypeEncoding(swiMethod));
+        method_setImplementation(swiMethod, imp_implementationWithBlock(^(id self, SEL _cmd){ }));
+    }
+    
+    // 一般交换方法: 交换自己有的方法 -- 走下面 因为自己有意味添加方法失败
+    // 交换自己没有实现的方法:
+    //   首先第一步:会先尝试给自己添加要交换的方法 :personInstanceMethod (SEL) -&gt; swiMethod(IMP)
+    //   然后再将父类的IMP给swizzle  personInstanceMethod(imp) -&gt; swizzledSEL
+    //oriSEL:personInstanceMethod
+
+    BOOL didAddMethod = class_addMethod(cls, oriSEL, method_getImplementation(swiMethod), method_getTypeEncoding(swiMethod));
+    if (didAddMethod) {
+        class_replaceMethod(cls, swizzledSEL, method_getImplementation(oriMethod), method_getTypeEncoding(oriMethod));
+    }else{
+        method_exchangeImplementations(oriMethod, swiMethod);
+    }
+}
+</code></pre>
+<h2 id="相关资源">相关资源</h2>
+<p><a href="https://nshipster.cn/method-swizzling/">MethodSwizzling</a><br>
+<a href="https://mp.weixin.qq.com/s/3Hbc8ixQmpg2T0LiFmCV4Q">iOS-底层原理 21：Method-Swizzling 方法交换</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hR9JIjWsI/" class="tag">
+                    method swizzling
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/mmLl2iDCvR/" class="tag">
+                    oc
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ut6Bpr8oGY/" class="tag">
+                    runtime
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/associated-objects/">
+                  <h3 class="post-title">
+                    Associated Objects
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

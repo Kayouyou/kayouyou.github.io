@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Unwrap or throw: Exploring solutions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Unwrap or throw: Exploring solutions in Swift
+
+Unwrap or throw without fancy extensions
+Exploring solutions for throwi..." />
+    <meta name="keywords" content="throw,unwrap" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Unwrap or throw: Exploring solutions in Swift</h2>
+            <div class="post-date">2021-08-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#unwrap-or-throw-exploring-solutions-in-swift">Unwrap or throw: Exploring solutions in Swift</a>
+<ul>
+<li><a href="#unwrap-or-throw-without-fancy-extensions">Unwrap or throw without fancy extensions</a></li>
+<li><a href="#exploring-solutions-for-throwing-an-error-on-nil">Exploring solutions for throwing an error on nil</a>
+<ul>
+<li><a href="#using-a-closure">Using a closure</a></li>
+<li><a href="#using-a-method-to-throw-an-error">Using a method to throw an error</a></li>
+<li><a href="#using-a-custom-nil-coalescing-operator">Using a custom nil coalescing operator</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="unwrap-or-throw-exploring-solutions-in-swift">Unwrap or throw: Exploring solutions in Swift</h1>
+<p>Unwrap或throw 面对这样一种场景:如果一个可选的返回一个空值，我们希望抛出一个错误。像<strong>if let</strong>或<strong>guard</strong>语句这样的技术可以很容易地做到这一点，但通常会返回一些样板代码。</p>
+<p>在这种情况下，我总是希望找到一个我没有意识到的解决方案。</p>
+<h2 id="unwrap-or-throw-without-fancy-extensions">Unwrap or throw without fancy extensions</h2>
+<p>在深入研究寻找<strong>nil</strong>值后抛出错误的奇特解决方案之前，最好先了解如何编写这样的代码解决方案。</p>
+<p>假设有一个结构为<strong>Uploader</strong>（<strong>JSON Web</strong>令牌(JWT)作为其输入）定义上传输入。JWT可以包含几个声明，我们需要对这些声明进行解码，以找到我们的上传输入值。当一个值不存在时，我们希望抛出一个详细的错误。代码如下所示:</p>
+<pre><code class="language-swift">struct UploadInput {
+    
+    enum UploadInputError: Error {
+        case invalidJWT
+        case missingIdentifier
+        case missingUploadURL
+    }
+    
+    let uploadIdentifier: String
+    let uploadURL: URL
+    
+    init(token: JWT) throws {
+        guard let decodedToken = JWTDecode.decode(jwt: token) else {
+            throw UploadInputError.invalidJWT
+        }
+        guard let uploadIdentifier = decodedToken.claim(name: &quot;upload.id&quot;).string else {
+            throw UploadInputError.missingIdentifier
+        }
+        guard let uploadURL = decodedToken.claim(name: &quot;upload.url&quot;).url else {
+            throw UploadInputError.missingUploadURL
+        }
+        self.uploadIdentifier = uploadIdentifier
+        self.uploadURL = uploadURL
+    }
+}
+</code></pre>
+<p>上面示例代码的初始化式是易读和易理解的。然而，如果我们添加更多带有详细错误的拆封，我们可能会很容易地得到一个大的初始化式，从而降低了可读性。</p>
+<p>通过直接将未包装的值赋给实例属性，或者立即抛出一个错误，来改进上述代码示例将非常好。让我们探索如何通过实现unwrap或throw的解决方案来解决这个问题。</p>
+<h2 id="exploring-solutions-for-throwing-an-error-on-nil">Exploring solutions for throwing an error on nil</h2>
+<p>Swift使我们能够编写多个解决方案来展开包装，或者在发现空值时抛出错误。 如前所述，下面的代码示例受到了这个<a href="https://forums.swift.org/t/throw-on-nil/39970/10">Swift论坛帖子</a>的启发，如果您想进一步探讨这个主题，这个帖子可能是一个鼓舞人心的地方。</p>
+<p>在下面的代码解决方案中，我们将放大上述代码示例的初始化式，并展示使用给定优化的最终结果。</p>
+<h3 id="using-a-closure">Using a closure</h3>
+<p>第一个解决方案已经展示了我们如何在初始化式中最小化代码，通过编写一个更聪明的解决方案，避免在发现nil值时抛出错误:</p>
+<pre><code class="language-swift">init(token: JWT) throws {
+    let decodedToken = try JWTDecode.decode(jwt: token) ?? { throw UploadInputError.invalidJWT }()
+    uploadIdentifier = try decodedToken.claim(name: &quot;upload.id&quot;).string ?? { throw UploadInputError.missingIdentifier }()
+    uploadURL = try decodedToken.claim(name: &quot;upload.url&quot;).url ?? { throw UploadInputError.missingUploadURL }()
+}
+</code></pre>
+<p>然而，在这里使用闭包并不能提高可读性。</p>
+<h3 id="using-a-method-to-throw-an-error">Using a method to throw an error</h3>
+<p>通过编写泛型方法，我们可以替换上面的闭包，使它更具可读性:</p>
+<pre><code class="language-swift">func throwError&lt;T&gt;(_ error: Error) throws -&gt; T {
+    throw error
+}
+
+init(token: JWT) throws {
+    let decodedToken = try JWTDecode.decode(jwt: token) ?? throwError(UploadInputError.invalidJWT)
+    uploadIdentifier = try decodedToken.claim(name: &quot;upload.id&quot;).string ?? throwError(UploadInputError.missingIdentifier)
+    uploadURL = try decodedToken.claim(name: &quot;upload.url&quot;).url ?? throwError(UploadInputError.missingUploadURL)
+}
+</code></pre>
+<p>这个代码示例比闭包示例提高了可读性，并且可以很好地替代我们的初始化式。然而，在我寻找最佳解决方案的过程中，我希望找到一个<a href="https://www.avanderlee.com/swift/custom-operators-swift/">自定义操作符</a>来展开或抛出。最初被拒绝的提议包括这样一个操作符，所以让我们看看今天是否可以复制这个操作符。</p>
+<h3 id="using-a-custom-nil-coalescing-operator">Using a custom nil coalescing operator</h3>
+<p>并不是所有人都喜欢在Swift中使用自定义操作符。它们可以紧凑和方便，但在新代码库中很难找到。在这种情况下，你是否喜欢操作员取决于你自己。与你分享我的观点:我喜欢使用它们!然而，在我们的项目中实现这一点之前，我也必须与我的同事达成一致。</p>
+<p>让我们深入代码示例，并探讨自定义操作符如何改进初始化式来展开或抛出。首先，我们必须定义自定义的nil合并操作符:</p>
+<pre><code class="language-swift">infix operator ?!: NilCoalescingPrecedence
+
+/// Throws the right hand side error if the left hand side optional is `nil`.
+func ?!&lt;T&gt;(value: T?, error: @autoclosure () -&gt; Error) throws -&gt; T {
+    guard let value = value else {
+        throw error()
+    }
+    return value
+}
+</code></pre>
+<p>该操作符方法使用了与泛型相结合的自动闭包。在初始化式中使用它会得到目前为止最小的结果:</p>
+<pre><code class="language-swift">init(operator token: JWT) throws {
+    let decodedToken = try JWTDecode.decode(jwt: token) ?! UploadInputError.invalidJWT
+    uploadIdentifier = try decodedToken.claim(name: &quot;upload.id&quot;).string ?! UploadInputError.missingIdentifier
+    uploadURL = try decodedToken.claim(name: &quot;upload.url&quot;).url ?! UploadInputError.missingUploadURL
+}
+</code></pre>
+<p>就我个人而言，我最喜欢这个解决方案。学习新的?!操作符也有坏处，但在我看来，结果是最紧凑但可读的代码。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在Swift中探索代码解决方案很有趣，也会让你成为一名更好的工程师。您将发现其他人编写的解决方案，这些解决方案将激励您改进代码。即使您最终没有使用任何其他已找到的解决方案，您仍然了解了许多关于在Swift中可用的<strong>unwrapping或throw</strong>代码解决方案。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/cNImSh5pU/" class="tag">
+                    throw
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/BKnwBJP-aE/" class="tag">
+                    unwrap
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/defining-dynamic-colors-in-swift/">
+                  <h3 class="post-title">
+                    Defining dynamic colors in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

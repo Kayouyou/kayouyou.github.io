@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 09: Algebraic Data Types: Exponents | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+A correction
+
+
+
+
+Exponents
+
+
+
+
+Functions
+
+
+
+
+Property #1
+
+
+
+
+Property #2
+
+
+
+
+Property #3
+
+
+
+
+The al..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 09: Algebraic Data Types: Exponents</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Acorrection">A correction</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Exponents">Exponents</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Functions">Functions</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Property1">Property #1</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Property2">Property #2</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Property3">Property #3</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#Thealgebraofin-out">The algebra of in-out</a></li>
+</ol>
+</li>
+<li>
+<ol start="9">
+<li><a href="#Thealgebraofthrows">The algebra of throws</a></li>
+</ol>
+</li>
+<li>
+<ol start="10">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 09: Algebraic Data Types: Exponents -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>在上一集关于代数数据类型的内容中，我们开始了解在Swift类型系统中看到代数结构意味着什么。我们看到结构体对应于结构体内部类型的一种乘法。然后我们看到，枚举对应于内部所有类型的总和。最后，我们使用这种直觉来计算如何正确地建模一个数据类型，以便不可能的状态是不可表示的，并由编译器强制执行。</p>
+<p>在这节课中，我们将学习下一项代数运算它不只是简单的和和乘积:取幂（exponentiation）。我们会看到它帮助我们建立关于<strong>arrow</strong>函数相对于其他结构是如何作用的直觉，甚至让我们理解是什么让函数变得更复杂。</p>
+<h2 id="2-a-nameacorrectionaa-correction">2. <a name='Acorrection'></a>A correction</h2>
+<p>在我们讨论这个之前，我们要纠正一下上一集关于代数数据类型的内容。在本集的最后，我们展示了<strong>URLSession</strong>的回调函数的数据类型扩展为:</p>
+<pre><code class="language-swift">// (Data + 1) * (URLResponse + 1) * (Error + 1)
+//   = Data * URLResponse * Error
+//   + Data * URLResponse
+//   + URLResponse * Error
+//   + Data * Error
+//   + Data
+//   + URLResponse
+//   + Error
+//   + 1
+</code></pre>
+<p>我们将其重构为更简单的形式。</p>
+<pre><code class="language-swift">// URLResponse * Data + Error
+</code></pre>
+<p>我们确定<strong>URLResponse和Data或Error</strong>是唯一有效的可能性，其他任何事情都不应该发生。原因是有两种情况:您从服务器获得响应，在这种情况下您将获得一些<strong>Data</strong>，或者由于请求无法发送而无法获得响应，在这种情况下您将获得一个<strong>Error</strong>值。</p>
+<p>然而，我们的一位查看者Ole Begemann指出，如果连接在接收到头信息后终止，比如在一个很长的下载请求中，那么就有可能既得到响应又得不到数据。 我们查阅了苹果公司的文档，找到了这一段:</p>
+<blockquote>
+<p>If the request completes successfully, the data parameter of the completion handler block contains the resource data, and the error parameter is nil. If the request fails, the data parameter is nil and the error parameter contains information about the failure. If a response from the server is received, regardless of whether the request completes successfully or fails, the response parameter contains that information.</p>
+</blockquote>
+<blockquote>
+<p>如果请求成功完成，则完成处理程序块的数据参数包含资源数据，并且错误参数为nil。 如果请求失败，data参数为nil, error参数包含关于失败的信息。如果收到来自服务器的响应，无论请求是成功完成还是失败，响应参数都包含该信息。</p>
+</blockquote>
+<p>通过解构这个逻辑，似乎有可能不管返回的数据和错误是什么，响应都是非零的，但我们至少可以看出<strong>data和error</strong>是相互排斥的。 所以我们想要的上面表达式的两个和是:</p>
+<pre><code class="language-swift">// (URLResponse + 1) * (Data + Error)
+//   = URLResponse * Data
+//     + URLResponse * Error
+//     + Data
+//     + Error
+</code></pre>
+<p>所以我们至少把原来的8个减少到了4个，尽管Data的情况有点麻烦。真的有可能在没有URLResponse的情况下交付数据吗?也许我们只想拥有:</p>
+<pre><code class="language-swift">// URLResponse * Data
+//   + URLResponse * Error
+//   + Error
+</code></pre>
+<p>这似乎是合理的，但文档中并没有说我们可以做出这样的假设。 为了安全起见，我们只用第一个吧。</p>
+<p>在类型中，我们看到的是这样的:</p>
+<pre><code class="language-swift">// (URLResponse?, Result&lt;Data, Error&gt;)
+</code></pre>
+<p>如果我们想详尽地处理每一种情况，它是这样的:</p>
+<pre><code class="language-swift">// switch (response, result) {
+// case let (.some(response), .success(data)):
+// case let (.some(response), .failed(error)):
+// case let (.none, .success(data)):
+// case let (.none, .failed(error)):
+// }
+</code></pre>
+<p>从这个修正中得到的最大收获重申了这样一个事实:<strong>dataTask</strong>的API是复杂的，需要仔细阅读文档来理解哪些值是可能的，即使这样，我们似乎也没有完整的故事。如果我们采用适当的数据类型来建模有效状态，从而使无效状态不可表示，我们甚至不需要文档。有趣的是，我们可以用代数作为一种高级语言来讨论这个问题，并更深入地探究它的复杂性。</p>
+<p>好了，说到这里，回到我们的常规节目……</p>
+<h2 id="3-a-nameexponentsaexponents">3. <a name='Exponents'></a>Exponents</h2>
+<p>代数中有一种运算叫做取幂。它可以被看作是一个高阶乘法，因为它可以让我们简洁地表示非常大的乘积。</p>
+<p>举个例子，你想让2和自身相乘100次。我们可以用指数来表示。</p>
+<pre><code class="language-swift">// 2^100
+</code></pre>
+<p>我们可以把它看作这个已经缩写过的乘法的缩写</p>
+<pre><code class="language-swift">// 2*2*2*...*2
+</code></pre>
+<p>我们有一个<strong>pow</strong>函数来尝试这个。</p>
+<pre><code class="language-swift">pow(2, 100)
+// 1267650600228229401496703205376
+</code></pre>
+<p><strong>2</strong>是底数，<strong>100</strong>是指数。</p>
+<h2 id="4-a-namefunctionsafunctions">4. <a name='Functions'></a>Functions</h2>
+<p>我们知道在类型系统中乘法是怎样的，那么求幂是怎样的呢?  什么样的结构可以让我们使用类型来进行一种“更高阶”的结构。</p>
+<p>让我们考虑一个简单而具体的情况。给定这三种情况的枚举:</p>
+<pre><code class="language-swift">enum Three { case one, two, three }
+</code></pre>
+<p>布尔的3次方意味着什么?</p>
+<pre><code class="language-swift">// Bool^Three
+</code></pre>
+<p>我们如何理解这一点呢? 我们可以把<strong>Three</strong>展开成1的和</p>
+<pre><code class="language-swift">// Bool^(1 + 1 + 1)
+</code></pre>
+<p>利用指数的性质，我们可以进一步拆分它:</p>
+<pre><code class="language-swift">// Bool^1 * Bool^1 * Bool^1
+</code></pre>
+<p>这个乘法有3项，每一项都可以被看作是由<strong>Three</strong>中的值标记的。 因此，从中选择一个值相当于为Three中的每个值赋Bool值。这正是函数所做的!</p>
+<pre><code class="language-swift">// (Three) -&gt; Bool
+</code></pre>
+<p>这就是我们如何定义类型的求幂，它只是函数! 我们可以用下面的符号来表示等价性。</p>
+<pre><code class="language-swift">A^B = (B) -&gt; A
+</code></pre>
+<p>函数表示法有点翻转:底数是函数的输出，而指数是输入。我们很快就会讲到。</p>
+<p>我们甚至可以列出(Three) -&gt; Bool的所有可能实现，但它有点麻烦:</p>
+<pre><code class="language-swift">func f1(_ x: Three) -&gt; Bool {
+  switch x {
+  case .one:   return true
+  case .two:   return true
+  case .three: return true
+  }
+}
+func f2(_ x: Three) -&gt; Bool {
+  switch x {
+  case .one:   return false
+  case .two:   return true
+  case .three: return true
+  }
+}
+func f3(_ x: Three) -&gt; Bool {
+  switch x {
+  case .one:   return true
+  case .two:   return false
+  case .three: return true
+  }
+}
+func f4(_ x: Three) -&gt; Bool {
+  switch x {
+  case .one:   return true
+  case .two:   return true
+  case .three: return false
+  }
+}
+func f5(_ x: Three) -&gt; Bool {
+  switch x {
+  case .one:   return false
+  case .two:   return false
+  case .three: return true
+  }
+}
+func f6(_ x: Three) -&gt; Bool {
+  switch x {
+  case .one:   return false
+  case .two:   return true
+  case .three: return false
+  }
+}
+func f7(_ x: Three) -&gt; Bool {
+  switch x {
+  case .one:   return true
+  case .two:   return false
+  case .three: return false
+  }
+}
+func f8(_ x: Three) -&gt; Bool {
+  switch x {
+  case .one:   return false
+  case .two:   return false
+  case .three: return false
+  }
+}
+</code></pre>
+<p>这很多代码! 不过，当我们输入我们的数字时，结果是:</p>
+<pre><code class="language-swift">// 2^3 = 8
+pow(2, 3) // 8
+</code></pre>
+<p>值得一提的是，这种对应仅在讨论纯的、无副作用的函数时才有意义。这些是我们实际计算的函数。有副作用的不能算，因为有无穷多的副作用!</p>
+<pre><code class="language-swift">func foo1(_ x: Three) -&gt; Bool {
+  print(&quot;hello&quot;)
+  return true
+}
+func foo2(_ x: Three) -&gt; Bool {
+  print(&quot;world&quot;)
+  return false
+}
+func foo3(_ x: Three) -&gt; Bool {
+  URLSession.shared.dataTask(with: URL(string: &quot;https://www.pointfree.co&quot;)!).resume()
+  return true
+}
+</code></pre>
+<p>有了这个专用符号的好处是我们现在可以探索指数的性质看看它们是如何转化为函数的。</p>
+<h2 id="5-a-nameproperty1aproperty-1">5. <a name='Property1'></a>Property #1</h2>
+<p>例如，如果一个指数的底数也是一个指数，我们可以将两个指数相乘:</p>
+<pre><code class="language-swift">// (a^b)^c = a^(b * c)
+</code></pre>
+<p>Let’s test this out.</p>
+<pre><code class="language-swift">let a = 2
+let b = 3
+let c = 4
+
+pow(pow(a, b), c) == pow(a, b * c) // true
+</code></pre>
+<p>如果我们坚持用乘法符号，这就很难理解了。</p>
+<p>我们把它转换成函数箭头。我们可以先把^换成一个向后的函数箭头。</p>
+<pre><code class="language-swift">// (a^b)^c = a^(b * c)
+// (a &lt;- b) &lt;- c = a &lt;- b * c
+</code></pre>
+<p>Then we can flip the arrow.</p>
+<pre><code class="language-swift">// c -&gt; (b -&gt; a) = (b * c) -&gt; a
+</code></pre>
+<p>最后，在Swift类型系统中:</p>
+<pre><code class="language-swift">// (C) -&gt; (B) -&gt; A = (B, C) -&gt; A
+</code></pre>
+<p>这就是说，如果你有一个返回函数的函数，它就像一个有两个参数的函数:它们是等价的。这正是<strong>curry</strong>的作用!它连接了两个参数函数的世界和返回函数的世界。</p>
+<p>我们之前定义了<strong>curry</strong>。</p>
+<pre><code class="language-swift">func curry&lt;A, B, C&gt;(_ f: @escaping (A, B) -&gt; C) -&gt; (A) -&gt; (B) -&gt; C {
+  return { a in { b in f(a, b) } }
+}
+</code></pre>
+<p>我们应该能得出一个反方向的函数。我们叫它<strong>uncurry</strong>吧。</p>
+<pre><code class="language-swift">func uncurry&lt;A, B, C&gt;(_ f: @escaping (A) -&gt; (B) -&gt; C) -&gt; (A, B) -&gt; C {
+  return { a, b in f(a)(b) }
+}
+</code></pre>
+<p>这些函数彼此是相反的，并建立了两种函数类型的等价性，这意味着它们相互还原! 例如:</p>
+<pre><code class="language-swift">String.init(data:encoding:)
+// (Data, String.Encoding) -&gt; String?
+curry(String.init(data:encoding:))
+// (Data) -&gt; (String.Encoding) -&gt; String?
+uncurry(curry(String.init(data:encoding:)))
+// (Data, String.Encoding) -&gt; String?
+</code></pre>
+<p>Amazing！高兴看到类型的代数决定了为什么函数curry是一件事，这不是我们发明的东西，因为我们觉得它很酷。</p>
+<h2 id="6-a-nameproperty2aproperty-2">6. <a name='Property2'></a>Property #2</h2>
+<p>另一个性质是任何数的一次方都不变:</p>
+<pre><code class="language-swift">// a^1 = a
+pow(a, 1) == a // true
+pow(b, 1) == b // true
+pow(c, 1) == c // true
+</code></pre>
+<p>它的类型是什么样的?让我们一步一步地转换函数。</p>
+<pre><code class="language-swift">// a^1 = a
+// a &lt;- 1 = a
+// 1 -&gt; a = a
+</code></pre>
+<pre><code class="language-swift">// (Void) -&gt; A = A
+</code></pre>
+<p>我们甚至可以定义这两种类型之间的显式等价。首先，一个函数从(Void) -&gt; A到A。</p>
+<pre><code class="language-swift">func to&lt;A&gt;(_ f: (Void) -&gt; A) -&gt; A {
+  return f(())
+}
+</code></pre>
+<p>我们在使用Void作为参数时得到了一点警告，但让我们以代数的名义坚持下去。</p>
+<p>现在让我们定义一个反方向的函数</p>
+<pre><code class="language-swift">func from&lt;A&gt;(_ a: A) -&gt; (Void) -&gt; A {
+  return { _ in a }
+}
+</code></pre>
+<p>这是我们的老朋友<strong>zurry</strong>，和一个新朋友<strong>unzurry</strong> !因为Void等价于()，所以我们可以回到那个定义。</p>
+<pre><code class="language-swift">func zurry&lt;A&gt;(_ f: () -&gt; A) -&gt; A {
+  return f()
+}
+
+func unzurry&lt;A&gt;(_ a: A) -&gt; () -&gt; A {
+  return { a }
+}
+</code></pre>
+<p>很有趣的是，我们在之前需要增强函数组合的时候偶然发现了指数的一个基本性质。</p>
+<h2 id="7-a-nameproperty3aproperty-3">7. <a name='Property3'></a>Property #3</h2>
+<p>我们来看看指数的另一个性质。任何数的0次方都是1</p>
+<pre><code class="language-swift">// a^0 = 1
+pow(a, 0) == 1 // true
+pow(b, 0) == 1 // true
+pow(c, 0) == 1 // true
+</code></pre>
+<p>奇怪的是，当底数为0时，这也成立:</p>
+<pre><code class="language-swift">pow(0, 0) == 1 // true
+</code></pre>
+<p>这应该让人想起这样一个事实:空结构体包含一个值或空整数数组的乘积为1。</p>
+<p>它的类型是什么?</p>
+<pre><code class="language-swift">// a^0 = 1
+// a &lt;- 0 = 1
+// 0 -&gt; a = 1
+
+// (Never) -&gt; A = Void
+</code></pre>
+<p>非常奇怪! 这就是说，尽管Never是无人居住的，即不包含任何值，从Never到任何其他类型的函数类型是居住的，只有一个函数!</p>
+<p>这怎么可能呢?为了证明这些类型的等价性，我们需要从各个方向构造函数。首先，从(Never) -&gt;A 到 Void。</p>
+<pre><code class="language-swift">func to&lt;A&gt;(_ f: (Never) -&gt; A) -&gt; Void {
+  return ()
+}
+</code></pre>
+<p>第一个很简单。我们甚至不需要知道<strong>f</strong>的任何信息。 我们唯一能做的就是返回Void中的值，这很简单。</p>
+<p>另一个则很奇怪。</p>
+<pre><code class="language-swift">func from&lt;A&gt;(_ x: Void) -&gt; (Never) -&gt; A {
+  // ???
+}
+</code></pre>
+<p>我们如何定义这个函数体? 让我们采取一些步骤，看看会发生什么。</p>
+<p>好吧，我们知道我们需要返回一个函数(Never) -&gt; A，所以让我们从它的存根开始:</p>
+<pre><code class="language-swift">func from&lt;A&gt;(_ x: Void) -&gt; (Never) -&gt; A {
+  return { never in
+    // ???
+  }
+}
+</code></pre>
+<p>现在我们有了这个<strong>never</strong>值。我们知道它永远不会被居住，所以这个函数永远不会被运行，但这并不意味着我们不能定义函数与<strong>Never</strong>中的值一起工作，即使这些值不存在! 但是我们如何定义这个函数呢?</p>
+<p>记住<strong>Never</strong>是一个enum。 它没有case，但它仍然是enum!  我们通常用枚举做什么? 我们把它们换过来!让我们切换到<strong>never</strong>，看看接下来会发生什么。</p>
+<pre><code class="language-swift">func from&lt;A&gt;(_ x: Void) -&gt; (Never) -&gt; A {
+  return { never in
+    switch never {
+
+    }
+  }
+}
+</code></pre>
+<p>到底能编译吗? 这就是这个函数的实现吗?</p>
+<p>回想一下，当涉及到函数的枚举和返回路径的解构时，Swift有特殊的知识。</p>
+<p>例如，考虑下面这个函数:</p>
+<pre><code class="language-swift">func isInt(_ x: Either&lt;Int, String&gt;) -&gt; Bool {
+  switch x {
+  case .left:  return true
+  case .right: return false
+  }
+  // No return needed here
+}
+</code></pre>
+<p>在switch之外不需要return，因为Swift知道你处理了所有的cases。 这就是switch never所发生的事情。Swift知道所有的cases都是你处理的，只是碰巧没有cases!</p>
+<p>有些语言甚至给这个函数起了个名字! 他们称之为<strong>absurd</strong>。</p>
+<pre><code class="language-swift">func absurd&lt;A&gt;(_ never: Never) -&gt; A {
+  switch never {}
+}
+</code></pre>
+<p>荒谬!我们怎样才能利用这个函数呢?</p>
+<p><strong>Result</strong>类型有一个通用操作，接受两个函数作为输入。一个从<strong>Value</strong>参数到A，另一个从<strong>Error</strong>参数到A。 它允许我们将两种类型的Result“折叠（fold）”成单一类型A。让我们定义它。</p>
+<pre><code class="language-swift">extension Result {
+  func fold&lt;A&gt;(ifSuccess: (Value) -&gt; A, ifFailure: (Error) -&gt; A) -&gt; A {
+    switch self {
+    case let .success(value):
+      return ifSuccess(value)
+    case let .failure(error):
+      return ifFailure(error)
+    }
+  }
+}
+</code></pre>
+<p>我们如何使用这个函数? 假设我们有一个结果，其中包含一个整数值，或者一个字符串作为错误消息。</p>
+<pre><code class="language-swift">let result: Result&lt;Int, String&gt; = .success(2)
+</code></pre>
+<p>例如，如果我们想将结果折叠成字符串显示给用户，该怎么办?</p>
+<pre><code class="language-swift">result.fold(
+  ifSuccess: { _ in &quot;Ok&quot; },
+  ifFailure: { _ in &quot;Something went wrong&quot; }
+)
+// &quot;Ok&quot;
+</code></pre>
+<p><strong>Result</strong>类型的一个优点是，我们可以将<strong>Never</strong>插入到错误类型参数中，从而得到一个不会失败的结果的概念。</p>
+<pre><code class="language-swift">let infallibleResult: Result&lt;Int, Never&gt; = .success(2)
+</code></pre>
+<p>当我们尝试折叠这个值时，我们甚至会在自动完成中看到一个熟悉的函数!</p>
+<pre><code class="language-swift">infallibleResult.fold(
+  ifSuccess: &lt;# (Int) -&gt; A #&gt;,
+  ifFailure: &lt;# (Never) -&gt; A #&gt;
+)
+</code></pre>
+<p>如果成功了，我们可以再次返回一个成功的信息，如果失败了，我们唯一可以在这里插入的东西是荒谬的!</p>
+<pre><code class="language-swift">infallibleResult.fold(
+  ifSuccess: { _ in &quot;Ok&quot; },
+  ifFailure: absurd
+)
+</code></pre>
+<p>现在我们有了一个小助手函数，我们可以用它来插入这些情况，它甚至有一个有趣的小语法向我们尖叫:这个代码路径是荒谬的!</p>
+<p>对此有一个警告。它只能在Xcode 9.3和Swift 4.1中编译。在此之前，这个函数会使编译器崩溃，但在某种程度上它被修复了。</p>
+<h2 id="8-a-namethealgebraofin-outathe-algebra-of-in-out">8. <a name='Thealgebraofin-out'></a>The algebra of in-out</h2>
+<p>我们甚至可以为修饰函数的特定于swift的注释提供代数解释。</p>
+<p>我们已经在关于副作用的那一集中看到过，其中我们展示了(A) -&gt; A形式的函数等价于(inout A) -&gt; Void。</p>
+<pre><code class="language-swift">// (A) -&gt; A = (inout A) -&gt; Void
+</code></pre>
+<p>我们甚至定义了这些函数。</p>
+<pre><code class="language-swift">func to&lt;A&gt;(
+  _ f: @escaping (A) -&gt; A
+  ) -&gt; ((inout A) -&gt; Void) {
+
+  return { a in
+    a = f(a)
+  }
+}
+
+func from&lt;A&gt;(
+  _ f: @escaping (inout A) -&gt; Void
+  ) -&gt; ((A) -&gt; A) {
+
+  return { a in
+    var copy = a
+    f(&amp;copy)
+    return copy
+  }
+}
+</code></pre>
+<p>认识到这一点可以让我们在两个世界之间移动:一个是函数有<strong>inout</strong>参数，另一个是函数箭头的左右两边都有类型。</p>
+<p>例如，我们可以使用这个函数:</p>
+<pre><code class="language-swift">// (A, B) -&gt; A
+</code></pre>
+<p>And refactor it to:</p>
+<pre><code class="language-swift">// (inout A, B) -&gt; Void
+</code></pre>
+<p>这是一个非常好的构建直觉，因为它允许我们使用Swift的可变系统进行性能优化。</p>
+<p>我们可以用这个函数来实现另一个方向:</p>
+<pre><code class="language-swift">// (A, inout B) -&gt; C
+</code></pre>
+<p>通过将其转化为:</p>
+<pre><code class="language-swift">(A, B) -&gt; (C, B)
+</code></pre>
+<p>这是一个非常高级的转换，它会影响我们日常代码的性能。我们可以用代数来消除复杂性，这很好。</p>
+<h2 id="9-a-namethealgebraofthrowsathe-algebra-of-throws">9. <a name='Thealgebraofthrows'></a>The algebra of throws</h2>
+<p>另一个Swift注释是<strong>throws</strong>，它将函数标记为根本不能返回值，而是“发出(emitting)”一个必须显式捕获的错误。</p>
+<p>例如，Data有一个可抛出的初始化式:</p>
+<pre><code class="language-swift">Data.init(from:)
+// (Decoder) throws -&gt; Data
+</code></pre>
+<p>这样的函数相当于增加返回类型以适应以下情况:</p>
+<pre><code class="language-swift">// (A) throws -&gt; B = (A) -&gt; Result&lt;B, Error&gt;
+</code></pre>
+<p>让我们定义一个函数来说明这种等价性。</p>
+<pre><code class="language-swift">func to&lt;A, B&gt;(_ f: @escaping (A) throws -&gt; B) -&gt; (A) -&gt; Result&lt;B, Error&gt; {
+  return { a in
+    do {
+      return .success(try f(a))
+    } catch {
+      return .failure(error)
+    }
+  }
+}
+</code></pre>
+<p>What about the inverse?</p>
+<pre><code class="language-swift">func from&lt;A, B&gt;(_ f: @escaping (A) -&gt; Result&lt;B, Error&gt;) -&gt; (A) throws -&gt; B {
+  return { a in
+    switch f(a) {
+    case let .failure(error):
+      throw error
+    case let .right(b):
+      return b
+    }
+  }
+}
+</code></pre>
+<p>抽象地看到to和from的等价性很好，但更棒的是我们最终得到了具有名称和用途的函数，比如<strong>curry和zurry</strong>! 让我们将这些函数命名为<strong>unthrow和' throw '</strong>。</p>
+<pre><code class="language-swift">func unthrow&lt;A, B&gt;(_ f: @escaping (A) throws -&gt; B) -&gt; (A) -&gt; Result&lt;B, Error&gt; {
+  return { a in
+    do {
+      return .success(try f(a))
+    } catch {
+      return .failure(error)
+    }
+  }
+}
+
+func throwing&lt;A, B&gt;(_ f: @escaping (A) -&gt; Result&lt;B, Error&gt;) -&gt; (A) throws -&gt; B {
+  return { a in
+    switch f(a) {
+    case let .failure(error):
+      throw error
+    case let .right(b):
+      return b
+    }
+  }
+}
+</code></pre>
+<p>现在我们可以使用一个抛出函数，比如<strong>Data</strong>初始化器，并在这两个世界之间自由转换:</p>
+<pre><code class="language-swift">Data.init(from:)
+// (Decoder) throws -&gt; Data
+unthrow(Data.init(from:))
+// (Decoder) -&gt; Either&lt;Error, Data&gt;
+throwing(unthrow(Data.init(from:)))
+// (Decoder) throws -&gt; Data
+</code></pre>
+<h2 id="10-a-namewhatsthepointawhats-the-point">10. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>我们已经用代数的方法解释了函数，就是取幂。但这让我们定义了那个奇怪的函数，从Never到A，这看起来仍然很荒谬，然后它让我们想到了inout和代数抛出，但有什么意义呢? 这对我们的日常代码有什么帮助呢?</p>
+<p>是的，确实如此! 我们之前已经看到，从代数的角度理解类型可以让我们消除域中继承的复杂性，只关注类型是如何构造的。它在结构体和枚举方面给了我们很大的帮助，现在我们要用函数来完成它。</p>
+<p>例如，这是指数的另一个性质:</p>
+<pre><code class="language-swift">// a^(b+c) = a^b * a^c
+pow(a, b + c) == pow(a, b) * pow(a, c)
+</code></pre>
+<p>换句话说，取某数的和次方就是幂的乘积。也就是说，指数分布在加法上，但代价是把+换成*。</p>
+<p>在类型的世界中，这相当于两种类型的函数之间的等价。让我们将这些属性转换为函数签名。</p>
+<pre><code class="language-swift">// a^(b + c) == a^b * a^c
+// a &lt;- (b + c) == (a &lt;- b) * (a &lt;- c)
+// (b + c) -&gt; a == (b -&gt; a) * (c -&gt; a)
+
+// (Either&lt;B, C&gt;) -&gt; A == ((B) -&gt; A, (C) -&gt; A)
+</code></pre>
+<p>这里列出了等价函数。我们没有把bodies作为练习。</p>
+<pre><code class="language-swift">func to&lt;A, B, C&gt;(_ f: @escaping (Either&lt;B, C&gt;) -&gt; A) -&gt; ((B) -&gt; A, (C) -&gt; A) {
+  fatalError(&quot;exercise for the viewer&quot;)
+}
+
+func from&lt;A, B, C&gt;(_ f: ((B) -&gt; A, (C) -&gt; A)) -&gt; (Either&lt;B, C&gt;) -&gt; A {
+  fatalError(&quot;exercise for the viewer&quot;)
+}
+</code></pre>
+<p>这告诉我们一个带<strong>Either</strong>的函数实际上是两个伪装的函数:一个作用于左边的值，一个作用于右边的值。这意味着通过添加枚举情况来增加函数的输入并不会增加太多的复杂性，因为我们最终可以将其分解成更小的单元。实际上，编译器会强制执行这一点，但是添加case意味着函数内部的切换将会中断，而安抚编译器的唯一方法就是处理这些新的case。</p>
+<p>指数还有一个相似的性质</p>
+<pre><code class="language-swift">// (a * b)^c = a^c * b^c
+pow(a * b, c) == pow(a, c) * pow(b, c)
+</code></pre>
+<p>也就是说，乘积的某次方等于各幂的乘积。</p>
+<p>在类型世界中，这对应于:</p>
+<pre><code class="language-swift">// (a * b)^c = a^c * b^c
+// (a * b) &lt;- c = (a &lt;- c) * (b &lt;- c)
+// c -&gt; (a * b) = (c -&gt; a) * (c -&gt; b)
+
+// (C) -&gt; (A, B) = ((C) -&gt; A, (C) -&gt; B)
+</code></pre>
+<p>这些函数是等价的，这意味着我们应该能够定义函数来证明它。</p>
+<pre><code class="language-swift">func to&lt;A, B, C&gt;(_ f: @escaping (C) -&gt; (A, B)) -&gt; ((C) -&gt; A, (C) -&gt; B) {
+  fatalError(&quot;exercise for the viewer&quot;)
+}
+
+func from&lt;A, B, C&gt;(_ f: ((C) -&gt; A, (C) -&gt; B)) -&gt; (C) -&gt; (A, B) {
+  fatalError(&quot;exercise for the viewer&quot;)
+}
+</code></pre>
+<p>这告诉我们，一个函数到一对或元组与一对函数映射到pair或元组的每一边是相同的。这意味着通过添加额外的字段来增加函数的返回类型也不会真正增加函数的复杂性，因为您可以再次将其分解为更小的可理解的单元。实际上，编译器会强制执行这一点，因为为了构造返回的值，必须考虑这些额外的字段!</p>
+<p>也许更有趣的是，指数的某些“非属性”也可能具有启发性。例如，当人们第一次学习指数及其性质时，他们有时会错误地相信:</p>
+<pre><code class="language-swift">// a^(b * c) = a^b * a^c
+pow(a, b * c) == pow(a, b) * pow(a, c) // false
+</code></pre>
+<p>这在代数上不成立，因此在类型上也不成立!这些类型会这样说:</p>
+<pre><code class="language-swift">// a^(b * c) != a^b * a^c
+// a &lt;- (b * c) != (a &lt;- b) * (a &lt;- c)
+// (b * c) -&gt; a != (b -&gt; a) * (c -&gt; a)
+
+// (B, C) -&gt; A != ((B) -&gt; A, (C) -&gt; A)
+</code></pre>
+<p>因此，一个pair函数无论如何都不会进一步简化。这意味着通过添加字段来增加函数的输入确实会导致更复杂的函数，因为有更多的数据需要处理,但没有什么是强迫你去做任何事情,也没有自然的方法把它雕刻成小块。</p>
+<p>另一个<strong>non-property</strong> ，乍一看似乎合理，但实际上是错误的:</p>
+<pre><code class="language-swift">// (a + b)^c != a^c + b^c
+pow(a + b, c) != pow(a, c) + pow(b, c)
+</code></pre>
+<p>这意味着以下类型也不相同:</p>
+<pre><code class="language-swift">// (a + b)^c != a^c + b^c
+// (a + b) &lt;- c != (a &lt;- c) + (b &lt;- c)
+// c -&gt; (a + b) != (c -&gt; a) + (c -&gt; b)
+
+// (C) -&gt; Either&lt;A, B&gt; != Either&lt;(C) -&gt; A, (C) -&gt; B&gt;
+</code></pre>
+<p>所以一个函数变成either不会进一步化简。这意味着通过添加情况来增加函数的输出将导致一个更复杂的函数，因为有更多的情况需要考虑，但没有什么能迫使你考虑这些情况，也没有自然的方法将其分解成更小的单元。</p>
+<p>特别是，这说明了为什么返回Result类型或throws的函数自然比其他函数更复杂，特别的是因为它们的形式是(A) -&gt;Result&lt;B, E&gt;，从代数上来说就是(B + E)^A，不再化简了。这是强大的!</p>
+<p>这里我们看到，不仅指数的<strong>properties</strong>对我们有帮助，指数的<strong>non-properties</strong>也对我们有帮助! 如果我们不知道代数和那些<strong>properties</strong>，我们怎么知道去检查这些<strong>non-properties</strong>! 通过考虑代数，迫使我们从一个很高的层次来考虑函数，这样我们就可以通过查看它们的类型来了解它们的复杂性</p>
+<p>接下来还有更多的代数! 我们将在以后的章节中探索泛型类型和递归数据类型的代数。请继续关注!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-08-getters-and-key-paths/">
+                  <h3 class="post-title">
+                    PointFree Episode 08: Getters and Key Paths
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>How Swift 5.3 enhances SwiftUI’s DSL | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="当SwiftUI在2019年全球开发者大会上首次亮相时，它通过大量使用泛型、基于闭包的api以及全新的特性(如属性包装器和函数构建器)，无疑将Swift和Xcode的许多方面都推向了极限。
+因此，对于即将发布的新版本Swift 5.3的关注..." />
+    <meta name="keywords" content="what's new,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">How Swift 5.3 enhances SwiftUI’s DSL</h2>
+            <div class="post-date">2020-09-13</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>当SwiftUI在2019年全球开发者大会上首次亮相时，它通过大量使用泛型、基于闭包的api以及全新的特性(如属性包装器和函数构建器)，无疑将Swift和Xcode的许多方面都推向了极限。</p>
+<p>因此，对于即将发布的新版本Swift 5.3的关注也就不足为奇了，它将继续扩展Swift用于构建Swift风格的领域特定语言(或dsl)的方式，抚平许多开发者在使用Swift 5.2及更早版本的Swift时遇到的一些“粗糙边缘”。</p>
+<p>本周，让我们来看看其中的一些改进，以及它们是如何共同提高使用SwiftUI构建视图的整体体验的。</p>
+<h2 id="implicit-self-capturing">Implicit self capturing</h2>
+<p>从一开始，Swift就要求我们在访问逃逸闭包内的实例方法或属性时显式地指定self，这在某种程度上作为一个“选择”，让闭包捕获封装的对象或值。如果这样做在某些情况下可能会导致循环引用。</p>
+<p>然而，由于使用值类型时循环引用的风险通常可以忽略，Swift 5.3中总是必须指定self的要求有所放松——通过允许编译器隐式捕获struct实例，SwiftUI视图和修饰符几乎都是专门用struct实现的。</p>
+<p>举个例子，假设我们已经使用Swift 5.2构建了下面的FavoriteButton，它要求我们在它的按钮的action闭包中引用它的isOn属性时使用self:</p>
+<pre><code class="language-swift">struct FavoriteButton: View {
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Button(action: {
+            self.isOn.toggle()
+        }, label: {
+            Image(systemName: &quot;heart&quot; + (isOn ? &quot;.fill&quot; : &quot;&quot;))
+        })
+    }
+}
+</code></pre>
+<p>然而，当升级到Swift 5.3时，这个引用的self现在可以完全删除了——这给了我们一个稍微简单的实现:</p>
+<pre><code class="language-swift">struct FavoriteButton: View {
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Button(action: {
+            isOn.toggle()
+        }, label: {
+            Image(systemName: &quot;heart&quot; + (isOn ? &quot;.fill&quot; : &quot;&quot;))
+        })
+    }
+}
+</code></pre>
+<p>虽然上面的这些可能只是一个非常小的改变，但它确实让SwiftUI的DSL感觉更轻一些，更容易使用。</p>
+<p>另外，作为一个副作用，因为现在只有在真正重要的情况下才需要显式地指定self(比如处理捕获的引用类型),这应该会让我们的代码库的那些部分更加“突出”一些,这反过来又可以更容易地发现此类代码中潜在的循环引用的相关问题。</p>
+<h2 id="view-building-body-properties">View building body properties</h2>
+<p>通常在构建ui时，根据给定应用程序或功能当前的状态，使用单独的视图实现是非常常见的。</p>
+<p>例如，假设我们正在构建一个应用程序，该应用程序使用AppState对象来跟踪其整体状态，其中包括一些属性，如用户是否已经通过了应用程序的onboarding流。然后我们在应用的根视图中检查这个状态，以确定我们应该显示HomeView还是OnboardingView -像这样:</p>
+<pre><code class="language-swift">struct RootView: View {
+    @ObservedObject var state: AppState
+    
+    var body: some View {
+        if state.isOnboardingCompleted {
+            return AnyView(HomeView(state: state))
+        } else {
+            return AnyView(OnboardingView(
+                isCompleted: $state.isOnboardingCompleted
+            ))
+        }
+    }
+}
+</code></pre>
+<p>注意我们是如何使用SwiftUI的AnyView类型在上面的两个视图实例上执行类型擦除的——这是为了给body属性一个统一的返回类型。然而，像这样使用AnyView不仅会给我们的代码增加大量的“混乱”，它还会降低Swift基于类型的差分算法的效率，因为视图体中包含的所有类型信息都将被完全擦除了。</p>
+<p>值得庆幸的是，有一种更好的方法来实现上述条件——即使是在使用Swift 5.2或更早版本的情况下， 也就是手动添加@ViewBuilder属性到视图的body属性，让我们可以在属性的实现中直接充分利用SwiftUI的基于函数构建器的DSL</p>
+<pre><code class="language-swift">struct RootView: View {
+    @ObservedObject var state: AppState
+    
+    @ViewBuilder var body: some View {
+        if state.isOnboardingCompleted {
+            HomeView(state: state)
+        } else {
+            OnboardingView(isCompleted: $state.isOnboardingCompleted)
+        }
+    }
+}
+</code></pre>
+<p>Swift 5.3的新特性是，所有视图现在都自动获得了上述功能，因为视图现在直接从视图协议本身的声明中继承了@ViewBuilder属性，这意味着我们可以继续使用上面的方法，而不必添加任何额外的属性到我们的视图主体:</p>
+<pre><code class="language-swift">struct RootView: View {
+    @ObservedObject var state: AppState
+    
+    var body: some View {
+        if state.isOnboardingCompleted {
+            HomeView(state: state)
+        } else {
+            OnboardingView(isCompleted: $state.isOnboardingCompleted)
+        }
+    }
+}
+</code></pre>
+<p>以上可能也是一个相对较小的更改，但它绝对使有条件地创建单独的视图类型变得更简单和直观，在许多基于SwiftUI的应用程序中，这将会导致更少的AnyView实例，从而使代码更简单，整体性能更好</p>
+<h2 id="function-builder-control-flow-improvements">Function builder control flow improvements</h2>
+<p>就像上面提到的，SwiftUI的整体API在很大程度上是由Swift的函数构建器(function builders)特性支持的——这使得我们能够简单地表达我们想要渲染的各种视图，而且SwiftUI会自动组合这些表达式以形成我们最终的UI。</p>
+<p>然而，这种强大和方便也有一定的局限性和缺点。例如，在Swift 5.2及更早版本中，只能在函数生成器的上下文中使用非常有限的一组控制流机制——比如基本的if和else语句。</p>
+<p>所以如果我们想用稍微复杂一点的方式来处理多个状态，例如通过使用switch语句，然后，在我们的主体实现中不得不再次求助于显式返回AnyView包装的视图作为独立的表达式-像这样:</p>
+<pre><code class="language-swift">struct ContentView&lt;Content: View&gt;: View {
+    enum State {
+        case loading
+        case loaded(Content)
+        case failed(Error)
+    }
+
+    var state: State
+
+    var body: some View {
+        switch state {
+        case .loading:
+            return AnyView(LoadingSpinner())
+        case .loaded(let content):
+            return AnyView(content)
+        case .failed(let error):
+            return AnyView(ErrorView(error: error))
+        }
+    }
+}
+</code></pre>
+<p>然而，在Swift 5.3中，Switch语句现在在函数生成器的上下文中得到了完全支持——这意味着我们可以再次删除AnyView包装器，仅仅表达我们在每个代码分支中要渲染的视图:</p>
+<pre><code class="language-swift">struct ContentView&lt;Content: View&gt;: View {
+    ...
+    var body: some View {
+        switch state {
+        case .loading:
+            LoadingSpinner()
+        case .loaded(let content):
+            content
+        case .failed(let error):
+            ErrorView(error: error)
+        }
+    }
+}
+</code></pre>
+<p>同样，现在也完全支持可选解包 if let条件——这意味着我们不再需要自己的技术来渲染依赖于某种形式的可选数据的视图，Swift 5.2及更早版本中常用的一种技术是将规则的if语句与强制展开结合起来，例如:</p>
+<pre><code class="language-swift">struct HomeView: View {
+    @ObservedObject var userController: UserController
+
+    var body: some View {
+        VStack {
+            if userController.loggedInUser != nil {
+                ProfileView(user: userController.loggedInUser!)
+            }
+            ...
+        }
+    }
+}
+</code></pre>
+<p>现在，一旦我们准备好升级到Swift 5.3，我们就可以使用标准的if let条件简单地编写上述类型的表达式——这既使这类代码变得更简单，也删除了force-unwrapped可选的(大赢家!):</p>
+<pre><code class="language-swift">struct HomeView: View {
+    @ObservedObject var userController: UserController
+    var body: some View {
+        VStack {
+            if let user = userController.loggedInUser {
+                ProfileView(user: user)
+            }
+            ...
+        }
+    }
+}
+</code></pre>
+<h2 id="multiple-trailing-closures">Multiple trailing closures</h2>
+<p>Swift 5.3还引入了一个新的(有点争议的)特性，称为多个尾随闭包，顾名思义； 允许我们在调用需要多个闭包的函数或初始化器时附加多个尾随闭包。</p>
+<p>尽管自该特性首次引入以来，其确切的语法就在Swift论坛上引起了激烈的争论，但它确实使某些api的调用站点变得更清晰、更容易阅读。 例如，如果我们在创建按钮实例时使用多个尾随闭包，下面是我们以前的FavoriteButton实现的样子:</p>
+<pre><code class="language-swift">struct FavoriteButton: View {
+    @Binding var isOn: Bool
+    var body: some View {
+        Button {
+            isOn.toggle()
+        } label: {
+            Image(systemName: &quot;heart&quot; + (isOn ? &quot;.fill&quot; : &quot;&quot;))
+        }
+    }
+}
+</code></pre>
+<p>上述语法的主要优点是，它使使用多个闭包的api(几乎所有提供某种事件处理形式的swift视图都是这样做的)在swift DSL中感觉更“自在”，并使我们能够使用附加的尾随闭包逐步扩展给定的调用，而不必重写整个表达式</p>
+<p>然而，尤其是在像上面这样的情况下，也可以认为第一个尾随的闭包(现在没有标记)做了什么不再是非常清楚的——所以在某些情况下，我们可能仍然希望显式地标记每个闭包，这当然仍然是一个选项</p>
+<h2 id="type-based-program-entry-points">Type-based program entry points</h2>
+<p>最后，让我们看看Xcode 12附带的SwiftUI版本是如何利用Swift 5.3的新@main属性来声明应用程序的主入口点的，就像我们定义各种视图的方式一样。</p>
+<p>作为一种语言特性，@main属性允许任何Swift程序定义一个基于类型的入口点——即实现了用于运行程序根逻辑的静态main方法的类型:</p>
+<pre><code class="language-swift">@main struct MyApp {
+    static func main() {
+        // Run our program's root logic
+    }
+}
+</code></pre>
+<p>而上面定义应用程序的主要入口点的方法对于完全定制的程序来说可能非常有效。比如脚本和命令行工具——当涉及到iOS和macOS应用程序时，我们可能不想完全控制应用程序启动和运行所涉及的一切——由于SwiftUI的新App协议，我们不必完全控制</p>
+<p>通过将@main属性与新协议结合起来，我们可以简单地使用SwiftUI的DSL来定义应用程序的各个场景，以及这些场景中包含的根视图——这意味着现在整个应用程序都可以直接使用SwiftUI来构建——例如:</p>
+<pre><code class="language-swift">@main struct MyApp: App {
+    @StateObject var state = AppState()
+
+    var body: some Scene {
+        WindowGroup {
+            if state.isOnboardingCompleted  {
+                HomeView(state: state)
+            } else {
+                OnboardingView(isCompleted: $state.isOnboardingCompleted)
+            }
+        }
+    }
+}
+</code></pre>
+<p>虽然上述新的API(在撰写本文时)和UIKit UIApplicationDelegate提供的所有功能相比SwiftUI提供非常有限的功能，好消息是,我们也可以轻松地使用UIApplicationDelegateAdaptor属性包装这两个世界的桥梁。要了解更多，请查看这篇迷你文章。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift 5.3为SwiftUI的整体API带来了一些非常受欢迎的增强，虽然它可能不会从根本上改变我们使用Swift的方式(这很奇怪，因为这只是一个小的版本升级)，但它显示了Swift和SwiftUI是如何紧密地同时发展的。</p>
+<p>然而,作为语言本身的特性,而不是任何特定的SDK,我们既可以利用这些新功能在SwiftUI和苹果之外的平台,我们也可以使用它们,而无需增加我们的应用程序部署的最低目标iOS 14或macOS大苏尔。我们所要做的就是使用Xcode 12来构建我们的项目，我们可以充分利用Swift 5.3所提供的一切。</p>
+<p>唯一的例外是App协议，它只能在2020年的苹果操作系统上使用，因为它是一个更通用的具体SwiftUI特有的(向后兼容的)@main属性。</p>
+<p><a href="https://www.swiftbysundell.com/articles/how-swift-5-3-enhances-swiftui-dsl/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_Xob8a1C4/" class="tag">
+                    what&#39;s new
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/building-modern-collection-views-in-swift/">
+                  <h3 class="post-title">
+                    Building modern collection views in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

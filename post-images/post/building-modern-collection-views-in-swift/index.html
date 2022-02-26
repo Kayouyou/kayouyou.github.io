@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Building modern collection views in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在过去的两年中，在iOS 13和14中，苹果对UICollectionView和它周围的各种类型做了一些重大的改变。不仅引入了新的api，而且用于构建集合视图的基本概念和约定也转向了一系列现代编程趋势——如声明式UI开发、组合和强类型安全。..." />
+    <meta name="keywords" content="what's new,uikit" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Building modern collection views in Swift</h2>
+            <div class="post-date">2020-09-06</div>
+            
+            <div class="post-content" v-pre>
+              <p>在过去的两年中，在iOS 13和14中，苹果对UICollectionView和它周围的各种类型做了一些重大的改变。不仅引入了新的api，而且用于构建集合视图的基本概念和约定也转向了一系列现代编程趋势——如声明式UI开发、组合和强类型安全。</p>
+<p>因此，术语“现代集合视图”经常被苹果和社区使用，来指代这些新的api和约定——而不是UICollectionView在iOS 6中引入时最初使用的那些。 本周，让我们来看看其中一些现代工具，以及如何使用它们构建集合视图。</p>
+<h2 id="diffable-data-sources">Diffable data sources</h2>
+<p>在iOS 13之前的操作系统上使用集合视图时，最常见的一个问题是，所有的更新都需要程序员手动协调(使用像performBatchUpdates这样的api)，当这些更新与所使用的底层数据模型不同步时，这通常会导致崩溃和错误。</p>
+<p>然而，当使用UICollectionViewDiffableDataSource时，情况就不再是这样了——正如它的名字所暗示的，这个类将计算应用到它的状态之间的差异，然后将自动执行正确的视图更新代表我们。</p>
+<p>例如，假设我们正在开发一个购物应用程序，它包含一个用于显示给定产品列表的ProductListViewController。 为了让视图控制器使用一个可变化的数据源，我们首先必须使用cellProvider闭包来创建一个，它将给定的索引路径和模型转换为UICollectionViewCell——像这样:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeDataSource() -&gt; UICollectionViewDiffableDataSource&lt;Section, Product&gt; {
+        UICollectionViewDiffableDataSource(
+            collectionView: collectionView,
+            cellProvider: { collectionView, indexPath, product in
+                let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: Self.cellReuseID,
+                    for: indexPath
+                ) as! ListCollectionViewCell
+
+                cell.textLabel.text = product.name
+                ...
+
+                return cell
+            }
+        )
+    }
+}
+</code></pre>
+<p>甚至在我们开始探索上述API的不同方面之前，我们已经可以看到它很好地利用了Swift的强类型系统 - 通过确保模型数据的完全类型安全，并允许我们使用任何自定义的哈希类型来标识我们的section(而不是总是通过基于int的索引来引用它们)。在这种情况下，我们使用了名为Section的枚举来实现:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    enum Section: Int, CaseIterable {
+        case featured
+        case onSale
+        case all
+    }
+}
+</code></pre>
+<p>接下来，让我们把上面的数据源分配给我们的集合视图，就像我们在使用前面的api集合(我们应该称它们为“经典”吗?)</p>
+<pre><code class="language-swift">class ProductListViewController: UIViewController {
+    private static let cellReuseID = &quot;product-cell&quot;
+
+    private lazy var collectionView = makeCollectionView()
+    private lazy var dataSource = makeDataSource()
+    
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Registering our cell class with the collection view
+        // and assigning our diffable data source to it:
+        collectionView.register(ListCollectionViewCell.self,
+            forCellWithReuseIdentifier: Self.cellReuseID
+        )
+        collectionView.dataSource = dataSource
+        ...
+    }
+    
+    ...
+}
+</code></pre>
+<p>注意，我们必须在上面的视图控制器中单独保留我们的数据源，因为UICollectionView不持有对它的数据源的强引用。</p>
+<p>然后，每当底层数据模型更新时，我们只需向可扩展数据源描述当前视图状态，它将自动为我们处理所有实际的单元格更新。</p>
+<p>为此，我们将创建一个快照——我们首先在其中添加节标识符，然后用模型中的数据(在本例中是名为ProductList的类型)填充每个节。最后，我们将把快照应用到我们的数据源，它将在对它包含的任何以前的状态执行diff后，使用它来更新我们的集合视图:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func productListDidLoad(_ list: ProductList) {
+        var snapshot = NSDiffableDataSourceSnapshot&lt;Section, Product&gt;()
+        snapshot.appendSections(Section.allCases)
+
+        snapshot.appendItems(list.featured, toSection: .featured)
+        snapshot.appendItems(list.onSale, toSection: .onSale)
+        snapshot.appendItems(list.all, toSection: .all)
+
+        dataSource.apply(snapshot)
+    }
+}
+</code></pre>
+<p>上面的代码示例中值得注意的是，我们将Product模型直接传递到数据源——这是可以做到的，因为这个特定的模型类型符合Hashable。然而，如果我们由于某种原因不能让我们的模型符合那个协议——或者如果这样传递它们太昂贵，否则就麻烦了——我们总是可以将某种形式的标识符传递给数据源，然后在cellProvider闭包中为每个标识符解析完整的模型。</p>
+<p>默认情况下，当应用一个给定的快照时，一个可扩展的数据源也将自动决定应该使用哪种动画，这是可以通过传递额外的参数到我们上面调用的apply方法来调整的东西。</p>
+<h2 id="cell-registrations">Cell registrations</h2>
+<p>在iOS 14中，单元注册是一个新概念，它使我们能够封装给定UICollectionViewCell子类的注册——以及我们的单元配置代码——在一个专用对象中。这样做的好处是，我们不再需要总是记住为给定的重用标识符注册正确的单元类型，并且在单元配置代码中再次获得完全的类型安全——不再需要进行单元类型转换。</p>
+<p>下面是我们如何使用这个新API在我们的ProductListViewController中实现集合视图单元的注册和配置:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    typealias Cell = ListCollectionViewCell
+    typealias CellRegistration = UICollectionView.CellRegistration&lt;Cell, Product&gt;
+
+    func makeCellRegistration() -&gt; CellRegistration {
+        CellRegistration { cell, indexPath, product in
+            cell.textLabel.text = product.name
+            ...
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以回到之前的makeDataSource方法，并修改我们的cellProvider闭包，使用我们新的注册实现简单地返回一个单元格退出队列的结果——像这样:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeDataSource() -&gt; UICollectionViewDiffableDataSource&lt;Section, Product&gt; {
+        let cellRegistration = makeCellRegistration()
+
+        return UICollectionViewDiffableDataSource(
+            collectionView: collectionView,
+            cellProvider: { collectionView, indexPath, product in
+                collectionView.dequeueConfiguredReusableCell(
+                    using: cellRegistration,
+                    for: indexPath,
+                    item: product
+                )
+            }
+        )
+    }
+}
+</code></pre>
+<p>这对于我们之前的代码来说已经是一个相当大的改进了，但是因为上面的模式我们可能会在我们的应用程序的不同集合视图中重复  - 让我们看看是否可以通过直接从我们的cell注册实例中检索cellProvider闭包来让它变得更好，这可以通过添加以下扩展来实现:</p>
+<pre><code class="language-swift">extension UICollectionView.CellRegistration {
+    var cellProvider: (UICollectionView, IndexPath, Item) -&gt; Cell {
+        return { collectionView, indexPath, product in
+            collectionView.dequeueConfiguredReusableCell(
+                using: self,
+                for: indexPath,
+                item: product
+            )
+        }
+    }
+}
+</code></pre>
+<p>使用上面的新方法，我们现在可以将我们的数据源构造代码简化为下面这个表达式:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeDataSource() -&gt; UICollectionViewDiffableDataSource&lt;Section, Product&gt; {
+        UICollectionViewDiffableDataSource(
+            collectionView: collectionView,
+            cellProvider: makeCellRegistration().cellProvider
+        )
+    }
+}
+</code></pre>
+<p>真的很不错!虽然新的CellRegistration API是我们在iOS 14之前就可以自己开发的(很多团队都这么做了)，但它是对内置API套件的一个很好的补充， 因为它完美地补充了不同的数据源，从而进一步从集合视图相关的代码中消除了常见的歧义来源。</p>
+<p>同样值得注意的是，有了上述改变，我们现在可以从视图控制器的viewDidLoad方法中删除我们的单元类注册代码。</p>
+<h2 id="compositional-layouts">Compositional layouts</h2>
+<p>除了创建数据源和注册单元类之外，构建基于uicollectionview的UI的另一个主要部分是定义布局。在iOS 13之前，我们基本上有两个截然不同的选项来做这个——我们要么使用UICollectionViewFlowLayout，它在集合视图第一次被引入时就已经可用了，要么我们必须完全从头开始建立我们自己的自定义布局。</p>
+<p>但是现在(如果我们正在开发的应用程序使用iOS 13作为它的最小部署目标)，我们有了第三个选择——在之前的两种方法之间提供了一个整洁的中间地带——那就是使用新的组合布局系统。</p>
+<p>在定义组合布局时，我们通过组合三种不同的布局结构——项、组和节来实现。项描述单个单元格的布局，组允许我们将多个单元格封装到一个组合布局元素中，而节决定集合视图中给定部分的总体布局。</p>
+<p>举个例子，假设我们想给上面的product list视图一个布局，其中我们的featured和onSale部分使用两列网格呈现，而我们的all部分呈现为全宽列表。为了实现这一点，让我们从定义我们的网格布局开始，可以这样做:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeGridLayoutSection() -&gt; NSCollectionLayoutSection {
+        // Each item will take up half of the width of the group
+        // that contains it, as well as the entire available height:
+        let item = NSCollectionLayoutItem(layoutSize: NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(0.5),
+            heightDimension: .fractionalHeight(1)
+        ))
+
+        // Each group will then take up the entire available
+        // width, and set its height to half of that width, to
+        // make each item square-shaped:
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .fractionalWidth(0.5)
+            ),
+            subitem: item,
+            count: 2
+        )
+
+        return NSCollectionLayoutSection(group: group)
+    }
+}
+</code></pre>
+<p>如上例所示，组合布局的强大之处不仅在于我们能够将多个布局构造组合为一个，而且现在我们可以更容易地使用小数来描述我们想要的布局 -这意味着我们不再需要自己做任何“像素计算” 我们的布局会自动适应我们的应用显示在屏幕上的大小。</p>
+<p>接下来，让我们定义集合视图底部的all部分使用的列表布局:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeListLayoutSection() -&gt; NSCollectionLayoutSection {
+        // Here, each item completely fills its parent group:
+        let item = NSCollectionLayoutItem(layoutSize: NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1),
+            heightDimension: .fractionalHeight(1)
+        ))
+    
+        // Each group then contains just a single item, and fills
+        // the entire available width, while defining a fixed
+        // height of 50 points:
+        let group = NSCollectionLayoutGroup.vertical(
+            layoutSize: NSCollectionLayoutSize(
+                widthDimension: .fractionalWidth(1),
+                heightDimension: .absolute(50)
+            ),
+            subitems: [item]
+        )
+
+        return NSCollectionLayoutSection(group: group)
+    }
+}
+</code></pre>
+<p>有了以上两部分，现在是时候利用组合布局的组合方面了——通过使用一个闭包来定义我们的最终布局，在给定基于int的section索引的情况下，它可以解析正确的NSCollectionLayoutSection:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeCollectionViewLayout() -&gt; UICollectionViewLayout {
+        UICollectionViewCompositionalLayout {
+            [weak self] sectionIndex, _ in
+            
+            switch Section(rawValue: sectionIndex) {
+            case .featured, .onSale:
+                return self?.makeGridLayoutSection()
+            case .all:
+                return self?.makeListLayoutSection()
+            case nil:
+                return nil
+            }
+        }
+    }
+}
+</code></pre>
+<p>现在剩下的就是让我们的UICollectionView使用上面的布局，例如，当我们的集合视图被创建时注入它:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeCollectionView() -&gt; UICollectionView {
+        UICollectionView(
+            frame: .zero,
+            collectionViewLayout: makeCollectionViewLayout()
+        )
+    }
+}
+</code></pre>
+<p>上面的例子当然只是对组合布局的快速介绍，它提供了许多强大的自定义选项——比如向每个项目、组和部分添加insets的能力 - 所以我们很可能会在以后的文章中更仔细地研究这个api套件。</p>
+<h2 id="list-views-and-content-configurations">List views and content configurations</h2>
+<p>最后，让我们看看iOS 14是如何在上面的很多概念的基础上，使用UICollectionView来构建类似表视图的列表的。 例如，为了渲染我们的all section，我们现在可以简单地使用预定义的list layout section，而不必创建我们自己的:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeCollectionViewLayout() -&gt; UICollectionViewLayout {
+        UICollectionViewCompositionalLayout {
+            [weak self] sectionIndex, environment in
+
+            switch Section(rawValue: sectionIndex) {
+            case .featured, .onSale:
+                return self?.makeGridLayoutSection()
+            case .all:
+                // Creating our table view-like list layout using
+                // a given appearence. Here we simply use 'plain':
+                return .list(
+                    using: UICollectionLayoutListConfiguration(
+                        appearance: .plain
+                    ),
+                    layoutEnvironment: environment
+                )
+            case nil:
+                return nil
+            }
+        }
+    }
+}
+</code></pre>
+<p>虽然上面已经是一个很好的改进，但是让我们看看，如果我们要使用一个类似表格视图的布局来呈现整个产品列表，我们的设置是如何彻底简化的。如果是这样的话，那么我们可以简单地使用UIKit附带的现成的列表布局——这意味着我们不再需要编写任何自定义布局代码。我们所要做的就是再次指定我们想要的列表外观——在本例中是insetGrouped:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    func makeCollectionView() -&gt; UICollectionView {
+        let layout = UICollectionViewCompositionalLayout.list(
+            using: UICollectionLayoutListConfiguration(
+                appearance: .insetGrouped
+            )
+        )
+        
+        return UICollectionView(
+            frame: .zero,
+            collectionViewLayout: layout
+        )
+    }
+}
+</code></pre>
+<p>我们还可以使用新的UICollectionViewListCell类型，它是一个内置的集合视图单元，模仿了UITableViewCell的外观-它能够渲染文字，图像，以及附件，如揭露指示器。如果我们采用那个单元格类，我们的makeCellRegistration方法会是这样的:</p>
+<pre><code class="language-swift">private extension ProductListViewController {
+    typealias Cell = UICollectionViewListCell
+    typealias CellRegistration = UICollectionView.CellRegistration&lt;Cell, Product&gt;
+
+    func makeCellRegistration() -&gt; CellRegistration {
+        CellRegistration { cell, indexPath, product in
+            var config = cell.defaultContentConfiguration()
+            config.text = product.name
+            ...
+            cell.contentConfiguration = config
+
+            cell.accessories = [.disclosureIndicator()]
+        }
+    }
+}
+</code></pre>
+<p>上面我们使用了iOS 14中引入的另一个新的UIKit特性——内容配置——它让我们描述我们想要渲染的单元格的内容，而不必直接修改该单元格的子视图。反过来，这可以帮助我们完全将单元配置代码与用于渲染UI的底层单元实现解耦——进一步使我们的代码更加动态，更少纠缠在一起。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然UICollectionView在过去几年中经历了一些相当大的变化，但所有这些变化都是纯粹的附加 - 这意味着我们可以在准备好的时候逐渐采用新的api，而且(如果我们愿意的话)我们可以继续使用“经典”的方式来构建集合视图，而不会出现任何弃用警告或实质性的负面影响(至少现在不会)。</p>
+<p>当然，这种灵活性也可能带来困惑——特别是对于新开发人员——因为我们并不总是清楚哪些api使集合视图实现“现代”，哪些api被认为是“遗留”。因此，我希望本文能够对这些更现代的api提供一个清晰的概述，我也期待着在未来就其中一些api撰写更详细的文章。</p>
+<p><a href="https://www.swiftbysundell.com/articles/building-modern-collection-views-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_Xob8a1C4/" class="tag">
+                    what&#39;s new
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l8xvWHOizF/" class="tag">
+                    uikit
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/working-with-files-and-folders-in-swift/">
+                  <h3 class="post-title">
+                    Working with files and folders in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

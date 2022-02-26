@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Mixing enums with other Swift types | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift一个非常有趣的方面是它支持多少种不同的语言特性。 虽然我们可以肯定地说，拥有大量的特性可能会使语言变得比它需要的更复杂，但这也是Swift在编写和构造代码时变得如此灵活的一个重要原因。
+虽然尽可能多地使用Swift的所有语言特性并..." />
+    <meta name="keywords" content="enums,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Mixing enums with other Swift types</h2>
+            <div class="post-date">2020-04-19</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift一个非常有趣的方面是它支持多少种不同的语言特性。 虽然我们可以肯定地说，拥有大量的特性可能会使语言变得比它需要的更复杂，但这也是Swift在编写和构造代码时变得如此灵活的一个重要原因。</p>
+<p>虽然尽可能多地使用Swift的所有语言特性并不是一个好的目标，但构建一个真正出色的Swift程序往往要做到最好地利用与我们想要构建的功能相关的每个特性-这通常意味着混合它们，以便最好地利用每个功能所提供的优势。</p>
+<p>本周，让我们来看看几个这样做的例子——特别是当涉及到如何将枚举与Swift的一些其他特性混合以提高我们逻辑的可预测性，同时减少样板文件。</p>
+<h2 id="eliminating-multiple-sources-of-truth">Eliminating multiple sources of truth</h2>
+<p>一般来说，软件工程中最常见的一个问题是，对于给定的数据块，逻辑依赖于多个真实来源——特别是当这些来源可能最终相互矛盾时，这往往会导致未定义的状态。</p>
+<p>例如，假设我们正在开发一个写文章的应用程序，并且我们希望使用相同的数据模型来表示已经发表的文章和未发表的草稿。</p>
+<p>为了处理这两种情况，我们可以给我们的数据模型一个isDraft属性，该属性指示它是否表示一个草稿，我们还需要将发表文章特有的任何数据转换为可选的——像这样:</p>
+<pre><code class="language-swift">struct Article {
+    var title: String
+    var body: Content
+    var url: URL? // Only assigned to published articles
+    var isDraft: Bool // Indicates whether this is a draft
+    ...
+}
+</code></pre>
+<p>乍一看，上面的模型似乎并没有多重的真理来源——但它确实有，因为一篇文章是否应该被视为已发布既可以通过查看它是否有一个url分配给它，也可以通过查看它的isDraft属性是否为真来确定。</p>
+<p>这似乎不是什么大事，但它可能很快就会导致代码库的不一致，而且还需要不必要的样板代码 - 因为每个调用站点都必须检查isDraft标志，并打开可选的url属性，以确保其逻辑是正确的。</p>
+<p>这正是Swift枚举的真正亮点所在——因为它们让我们将上述类型的变量作为明确的状态建模，每一个都可以以一种非可选的方式携带自己的数据集-像这样:</p>
+<pre><code class="language-swift">extension Article {
+    enum State {
+        case published(URL)
+        case draft
+    }
+}
+</code></pre>
+<p>上面的enum能让我们用一个新的state属性替换之前的url和isDraft属性 -它将作为单一的真相来源，以确定每一篇文章的状态:</p>
+<pre><code class="language-swift">struct Article {
+    var title: String
+    var body: Content
+    var state: State
+}
+</code></pre>
+<p>有了上面的内容，我们现在只要在需要检查文章是否已经发布时，就可以简单地打开我们的新state属性-已发布文章的代码路径不再需要处理任何可选的url。例如，我们现在可以有条件地创建一个UIActivityViewController来共享发布的文章:</p>
+<pre><code class="language-swift">func makeActivityViewController(
+    for article: Article
+) -&gt; UIActivityViewController? {
+    switch article.state {
+    case .published(let url):
+        return UIActivityViewController(
+            activityItems: [url],
+            applicationActivities: nil
+        )
+    case .draft:
+        return nil
+    }
+}
+</code></pre>
+<p>然而，当对我们的一个核心数据模型进行上述结构更改时，我们可能还需要更新大量使用该模型的代码——而且我们可能无法一次执行所有这些更新。</p>
+<p>幸运的是，通过某种形式的临时向后兼容层来解决这类问题通常是相对容易的-它在底层使用了我们新的单一的真相来源，同时仍然将我们之前的API暴露给我们的代码库的其余部分。</p>
+<p>例如，我们可以让Article暂时保留它的url属性，直到我们把所有的代码迁移到它的新状态API:</p>
+<pre><code class="language-swift">#warning(&quot;Temporary backward compatibility. Remove ASAP.&quot;)
+extension Article {
+    @available(*, deprecated, message: &quot;Use state instead&quot;)
+    var url: URL? {
+        get {
+            switch state {
+            case .draft:
+                return nil
+            case .published(let url):
+                return url
+            }
+        }
+        set {
+            state = newValue.map(State.published) ?? .draft
+        }
+    }
+}
+</code></pre>
+<p>上面我们同时使用了#warning编译器指令和@available属性，让编译器在url属性仍在使用的地方发出警告，并提醒我们应该尽快删除这个扩展。</p>
+<p>这就是我们如何将结构和其他类型与枚举混合以便为各种状态建立一个单一的真理来源的例子。接下来，让我们看看如何反过来做，并增加一些枚举，使它们更强大——同时也减少过程中switch语句的总体数量。</p>
+<h2 id="enums-versus-protocols">Enums versus protocols</h2>
+<p>按照上面的想法，使用枚举来建模不同的状态——现在假设我们正在开发一个绘图应用程序，我们现在已经使用enum实现了工具选择代码，它包含了我们应用程序支持的所有绘图工具:</p>
+<pre><code class="language-swift">enum Tool: CaseIterable {
+    case pen
+    case brush
+    case fill
+    case text
+    ...
+}
+</code></pre>
+<p>除了状态管理方面，在这种情况下使用enum的另一个好处是CaseIterable协议，我们的工具类型也遵循这个协议。 就像我们在“Swift中的枚举迭代”中看到的，遵循该协议使编译器自动生成一个静态的allCases属性， 然后，我们可以使用它来轻松地遍历我们所有的案例——例如，为了构建一个包含每个绘图工具按钮的工具箱视图:</p>
+<pre><code class="language-swift">func makeToolboxView() -&gt; UIView {
+    let toolbox = UIView()
+    for tool in Tool.allCases {
+        // Add a button for selecting the tool
+        ...
+    }
+    return toolbox
+}
+</code></pre>
+<p>然而，尽管将所有的工具都集中在一个类型中非常简洁，但这种设置在这种情况下确实有一个很大的缺点。</p>
+<p>因为我们所有的工具都可能需要大量的逻辑，而使用enum要求我们在一个地方实现所有的逻辑，我们可能会以一系列越来越复杂的switch语句结束——看起来像这样:</p>
+<pre><code class="language-swift">extension Tool {
+    var icon: Icon {
+        switch self {
+        case .pen:
+            ...
+        case .brush:
+            ...
+        case .fill:
+            ...
+        case .text:
+            ...
+        ...
+        }
+    }
+    
+    var name: String {
+        switch self {
+        ...
+        }
+    }
+
+    func apply(at point: CGPoint, on canvas: Canvas) {
+        switch self {
+        ...
+        }
+    }
+}
+</code></pre>
+<p>我们当前方法的另一个问题是，它很难存储特定于工具的状态 - 因为符合CaseIterable的枚举不能携带任何关联值。</p>
+<p>为了解决上述两个问题，让我们尝试使用协议来实现我们的每一个工具 - 这将为我们提供一个共享的接口，同时仍然能够单独声明和实现每个工具:</p>
+<pre><code class="language-swift">// A protocol that acts as a shared interface for each of our tools:
+protocol Tool {
+    var icon: Icon { get }
+    var name: String { get }
+    func apply(at point: CGPoint, on canvas: Canvas)
+}
+
+// Simpler tools can just implement the required properties, as well
+// as the 'apply' method for performing their drawing:
+struct PenTool: Tool {
+    let icon = Icon.pen
+    let name = &quot;Draw using a pen&quot;
+
+    func apply(at point: CGPoint, on canvas: Canvas) {
+        ...
+    }
+}
+
+// More complex tools are now free to declare their own state properties,
+// which could then be used within their drawing code:
+struct TextTool: Tool {
+    let icon = Icon.letter
+    let name = &quot;Add text&quot;
+
+    var font = UIFont.systemFont(ofSize: UIFont.systemFontSize)
+    var characterSpacing: CGFloat = 0
+
+    func apply(at point: CGPoint, on canvas: Canvas) {
+        ...
+    }
+}
+</code></pre>
+<p>然而，尽管上述更改使我们能够完全解耦各种工具实现，但我们也失去了基于枚举方法的一个主要好处 -我们可以使用tool . allcases轻松地遍历每个工具。</p>
+<p>然我们可以使用手动实现的函数(或使用某种形式的代码生成)实现相同的功能，这是额外的代码，我们必须维护和保持与我们的各种工具类型同步-这不是理想的:</p>
+<pre><code class="language-swift">func allTools() -&gt; [Tool] {
+    return [
+        PenTool(),
+        BrushTool(),
+        FillTool(),
+        TextTool()
+        ...
+    ]
+}
+</code></pre>
+<p>但是，如果我们不需要在协议和枚举之间做出选择，而是可以将它们混合在一起，以达到这两种情况的最佳效果，那会怎么样呢?</p>
+<h2 id="enum-on-the-outside-protocol-on-the-inside">Enum on the outside, protocol on the inside</h2>
+<p>让我们将工具类型恢复为enum，而不是再次将所有逻辑实现为充满switch语句的方法和属性-让我们保持这些实现面向协议，只是这一次我们将使它们成为我们工具的控制器，而不是工具本身的模型表示。</p>
+<p>使用我们以前的工具协议作为起点，让我们定义一个叫做ToolController的新协议，它和我们以前的需求一样，包括一个方法，让每个工具提供和管理它自己的选项视图。这样，我们便能够创造出一个真正解耦的架构，即每个控制器能够完全管理每个工具所需要的逻辑和UI。</p>
+<pre><code class="language-swift">protocol ToolController {
+    var icon: Icon { get }
+    var name: String { get }
+
+    func apply(at point: CGPoint, on canvas: Canvas)
+    func makeOptionsView() -&gt; UIView?
+}
+</code></pre>
+<p>回到我们之前的TextTool实现，这里是我们如何修改它，而不是成为符合我们的新协议的TextToolController:</p>
+<pre><code class="language-swift">class TextToolController: ToolController {
+    let icon = Icon.letter
+    let name = &quot;Add text&quot;
+
+    private var font = UIFont.systemFont(ofSize: UIFont.systemFontSize)
+    private var characterSpacing: CGFloat = 0
+
+    func apply(at point: CGPoint, on canvas: Canvas) {
+        ...
+    }
+
+    func makeOptionsView() -&gt; UIView? {
+        let view = UIView()
+
+        let characterSpacingStepper = UIStepper()
+        view.addSubview(characterSpacingStepper)
+
+        // When creating our tool-specific options view, our
+        // controller can now reference its own instance methods
+        // and properties, just like a view controller would:
+        characterSpacingStepper.addTarget(self,
+            action: #selector(handleCharacterSpacingStepper),
+            for: .valueChanged
+        )
+        
+        ...
+
+        return view
+    }
+    
+    ...
+}
+</code></pre>
+<p>然后，我们不让我们的工具枚举包含任何实际的逻辑，我们只给它一个方法来创建一个对应于它当前状态的工具控制器-省去了我们不得不写所有那些switch语句的麻烦，同时仍然使我们能够充分利用CaseIterable:</p>
+<pre><code class="language-swift">enum Tool: CaseIterable {
+    case pen
+    case brush
+    case fill
+    case text
+    ...
+}
+
+extension Tool {
+    func makeController() -&gt; ToolController {
+        switch self {
+        case .pen:
+            return PenToolController()
+        case .brush:
+            return BrushToolController()
+        case .fill:
+            return FillToolController()
+        case .text:
+            return TextToolController()
+        ...
+        }
+    }
+}
+</code></pre>
+<p>上述方法的另一种替代方法是创建一个专用的ToolControllerFactory，而不是让工具自己创建我们的控制器。要了解更多关于这个模式的信息，请查看这个页面。</p>
+<p>最后，把所有的部分放在一起，我们现在就可以轻松地遍历每个工具来构建我们的工具箱视图，并通过与工具控制器通信来触发当前工具的逻辑——像这样:</p>
+<pre><code class="language-swift">class CanvasViewController: UIViewController {
+    private var tool = Tool.pen {
+        didSet { controller = tool.makeController() }
+    }
+    private lazy var controller = tool.makeController()
+    private let canvas = Canvas()
+    
+    ...
+    
+    private func makeToolboxView() -&gt; UIView {
+        let toolbox = UIView()
+    
+        for tool in Tool.allCases {
+            // Add a button for selecting the tool
+            ...
+        }
+    
+        return toolbox
+    }
+
+    private func handleTapRecognizer(_ recognizer: UITapGestureRecognizer) {
+        // Handling taps on the canvas using the current tool's controller:
+        let location = recognizer.location(in: view)
+        controller.apply(at: location, on: canvas)
+    }
+    
+    ...
+}
+</code></pre>
+<p>上述方法的美妙之处在于，它使我们能够完全解耦我们的逻辑，同时仍然为我们所有的状态和变体建立一个单一的真理来源。我们也可以选择以不同的方式分割代码，例如将每个工具的图标和名称保留在枚举中，并只将我们的实际逻辑移到工具控制器实现中——但这总是我们可以继续调整的东西。</p>
+<p><a href="https://www.swiftbysundell.com/articles/mixing-enums-with-other-swift-types/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5CEvLT7HIN/" class="tag">
+                    enums
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/combine/">
+                  <h3 class="post-title">
+                    Combine
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

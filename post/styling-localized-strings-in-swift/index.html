@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Styling localized strings in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="将应用本土化成多种语言通常能够显著提升其在app Store上的成功几率，因为许多用户倾向于使用支持自己母语的应用。
+然而，尽管苹果确实提供了许多api和其他类型的基础设施来处理本地化字符串等资源，但如果我们想在应用中呈现的字符串中加入某种..." />
+    <meta name="keywords" content="strings,localization" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Styling localized strings in Swift</h2>
+            <div class="post-date">2021-04-23</div>
+            
+            <div class="post-content" v-pre>
+              <p>将应用本土化成多种语言通常能够显著提升其在app Store上的成功几率，因为许多用户倾向于使用支持自己母语的应用。</p>
+<p>然而，尽管苹果确实提供了许多api和其他类型的基础设施来处理本地化字符串等资源，但如果我们想在应用中呈现的字符串中加入某种混合样式，事情往往会变得相当棘手。</p>
+<p>例如，假设我们正在开发一个显示新电影列表的应用程序，我们想要在一个ui的标题中强调单词“new”。如果我们的应用程序没有本地化，那么这样做会很简单——我们可以简单地搜索标题字符串的特定单词，然后在呈现其标签时区别对待它——但如果我们的应用程序确实支持多种语言呢?</p>
+<p>处理这种情况的一种方法是在本地化的字符串文件中标记我们希望强调的每个字符串的哪一部分——像这样:</p>
+<pre><code class="language-swift">// English
+&quot;NewMovies&quot; = &quot;**New** movies&quot;;
+
+// Swedish
+&quot;NewMovies&quot; = &quot;**Nya** filmer&quot;;
+
+// Polish
+&quot;NewMovies&quot; = &quot;**Nowe** filmy&quot;;
+</code></pre>
+<blockquote>
+<p>看一下上面的例子，另一个选项似乎是简单地强调每个字符串中的第一个单词。然而，这是一个非常脆弱的解决方案，因为不是所有的语言都使用相同的词序，如果我们将来在字符串中添加某种形式的前缀会怎么样呢?</p>
+</blockquote>
+<p>接下来，我们将不得不解析上述字符串格式，以便将每段文本转换为NSAttributedString(用于基于UIKit的ui)或SwiftUI text实例。</p>
+<p>首先，让我们定义一个专用的LocalizedString类型，在该类型中，我们将能够实现所有必需的逻辑。 最初，我们可以实现使用本地化字符串键初始化实例的api，以及使用内置的NSLocalizedString函数解析原始字符串:</p>
+<pre><code class="language-swift">struct LocalizedString {
+    var key: String
+
+    init(_ key: String) {
+        self.key = key
+    }
+
+    func resolve() -&gt; String {
+        NSLocalizedString(key, comment: &quot;&quot;)
+    }
+}
+
+extension LocalizedString: ExpressibleByStringLiteral {
+    init(stringLiteral value: StringLiteralType) {
+        key = value
+    }
+}
+</code></pre>
+<blockquote>
+<p>我们还可以使用字符串字面量来表示LocalizedString值，一旦我们开始将新的类型与UIKit和SwiftUI集成，这将非常方便。</p>
+</blockquote>
+<p>上面的类型就绪后，现在让我们继续进行实际的解析和呈现，从NSAttributedString开始。</p>
+<h2 id="attributed-strings">Attributed strings</h2>
+<p>正如类型的名称所暗示的那样，NSAttributedString使我们能够向普通String添加呈现属性，在本例中，这使我们能够对给定本地化字符串的某些部分进行编码，以强调其重要性。</p>
+<p>为了实现这一点，让我们使用一个方法扩展我们的LocalizedString类型，该方法使用我们选择的标记(**，markdown样式)将给定的原始本地化字符串分割成组件， 然后根据给定组件的索引是偶数还是奇数选择默认字体或粗体字体:</p>
+<pre><code class="language-swift">extension LocalizedString {
+    typealias Fonts = (default: UIFont, bold: UIFont)
+
+    static func defaultFonts() -&gt; Fonts {
+        let font = UIFont.preferredFont(forTextStyle: .body)
+        return (font, .boldSystemFont(ofSize: font.pointSize))
+    }
+
+    func attributedString(
+        withFonts fonts: Fonts = defaultFonts()
+    ) -&gt; NSAttributedString {
+        let components = resolve().components(separatedBy: &quot;**&quot;)
+        let sequence = components.enumerated()
+        let attributedString = NSMutableAttributedString()
+
+        return sequence.reduce(into: attributedString) { string, pair in
+            let isBold = !pair.offset.isMultiple(of: 2)
+            let font = isBold ? fonts.bold : fonts.default
+
+            string.append(NSAttributedString(
+                string: pair.element,
+                attributes: [.font: font]
+            ))
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>要了解以上使用元组定义轻量级类型的更多信息，<a href="https://www.swiftbysundell.com/articles/using-tuples-as-lightweight-types-in-swift/">请查看本文</a>。</p>
+</blockquote>
+<p>使用上面的新API，我们现在可以使用UILabel和UITextView等UIKit类混合样式渲染本地化的字符串，它们都支持带属性的字符串。</p>
+<p>现在，在我们继续实现与上述功能等价的SwifitUI之前，让我们花点时间将实际的字符串解析和呈现逻辑重构为一个可重用的实用程序，以便我们能够从两个实现中调用这个实用程序，以避免代码重复。</p>
+<p>一种方法是实现一个通用的、简化风格的呈现函数，它接受一个初始结果，以及一个处理程序，执行实际的字符串连接-例如:</p>
+<pre><code class="language-swift">private extension LocalizedString {
+    func render&lt;T&gt;(
+        into initialResult: T,
+        handler: (inout T, String, _ isBold: Bool) -&gt; Void
+    ) -&gt; T {
+        let components = resolve().components(separatedBy: &quot;**&quot;)
+        let sequence = components.enumerated()
+
+        return sequence.reduce(into: initialResult) { result, pair in
+            let isBold = !pair.offset.isMultiple(of: 2)
+            handler(&amp;result, pair.element, isBold)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们可以大大简化之前基于nsattributedstring的方法，因为它现在可以专注于注释和组合传递到它的 <em>handler</em> 中的字符串:</p>
+<pre><code class="language-swift">extension LocalizedString {
+    ...
+
+    func attributedString(
+        withFonts fonts: Fonts = defaultFonts()
+    ) -&gt; NSAttributedString {
+        render(
+            into: NSMutableAttributedString(),
+            handler: { fullString, string, isBold in
+                let font = isBold ? fonts.bold : fonts.default
+
+                fullString.append(NSAttributedString(
+                    string: string,
+                    attributes: [.font: font]
+                ))
+            }
+        )
+    }
+}
+</code></pre>
+<p>完成了这个小小的重构任务后，现在让我们开始实现基于SwifitUI的字符串呈现。</p>
+<h2 id="swiftui-texts">SwiftUI texts</h2>
+<p>SwifitUI的Text类型的一个有点“隐藏”的特性是，可以使用<a href="https://www.swiftbysundell.com/questions/swiftui-text-mixed-styles/">add操作符直接连接多个文本值</a>，就像它们是原始的String值一样——这仍然保留了每个单独实例的样式。</p>
+<p>所以我们要做的就是把基于SwifttUI的渲染API添加到LocalizedString类型中，调用新的渲染方法，然后把它给我们的每个字符串组合起来，就像这样:</p>
+<pre><code class="language-swift">extension LocalizedString {
+    func styledText() -&gt; Text {
+        render(into: Text(&quot;&quot;)) { fullText, string, isBold in
+            var text = Text(string)
+
+            if isBold {
+                text = text.bold()
+            }
+
+            fullText = fullText + text
+        }
+    }
+}
+</code></pre>
+<h2 id="time-to-integrate">Time to integrate</h2>
+<p>接下来，为了让我们的UIKit和基于SwiftUI的方法更容易使用，让我们用方便的api扩展UILabel和Text，让我们直接使用LocalizedString值初始化标签:</p>
+<pre><code class="language-swift">extension UILabel {
+    convenience init(styledLocalizedString string: LocalizedString) {
+        self.init(frame: .zero)
+        attributedText = string.attributedString()
+    }
+}
+
+extension Text {
+    init(styledLocalizedString string: LocalizedString) {
+        self = string.styledText()
+    }
+}
+</code></pre>
+<p>在上面的地方，我们现在可以使用swifitui或UIKit，使用LocalizedString值可以用字符串字面量来表示来创建样式化、本地化的标签，只需这样做:</p>
+<pre><code class="language-swift">// UIKit
+UILabel(styledLocalizedString: &quot;NewMovies&quot;)
+
+// SwiftUI
+Text(styledLocalizedString: &quot;NewMovies&quot;)
+</code></pre>
+<p>非常好! 然而，目前我们总是在每次请求时都重新解析每个字符串，如果我们不太频繁地更新UI，这可能不是问题，但让我们也探讨一下如何在实现中添加缓存。</p>
+<h2 id="caching">Caching</h2>
+<p>因为我们解析的所有字符串都是从静态资源(用户当前语言的本地化字符串文件)加载的，所以我们应该能够非常积极地缓存它们。一种方法是使用我们在“<a href="https://www.swiftbysundell.com/articles/caching-in-swift/">在Swift中缓存</a>”中构建的缓存类型，然后修改我们的渲染函数，使其支持从这样的缓存读取和写入-像这样:</p>
+<pre><code class="language-swift">private extension LocalizedString {
+    /// cache
+    static let attributedStringCache = Cache&lt;String, NSMutableAttributedString&gt;()
+    static let swiftUITextCache = Cache&lt;String, Text&gt;()
+
+    func render&lt;T&gt;(
+        into initialResult: @autoclosure () -&gt; T,
+        cache: Cache&lt;String, T&gt;,
+        handler: (inout T, String, _ isBold: Bool) -&gt; Void
+    ) -&gt; T {
+        /// cache
+        if let cached = cache.value(forKey: key) {
+            return cached
+        }
+
+        let components = resolve().components(separatedBy: &quot;**&quot;)
+        let sequence = components.enumerated()
+
+        let result = sequence.reduce(into: initialResult()) { result, pair in
+            let isBold = !pair.offset.isMultiple(of: 2)
+            handler(&amp;result, pair.element, isBold)
+        }
+        /// cache
+        cache.insert(result, forKey: key)
+        return result
+    }
+}
+</code></pre>
+<blockquote>
+<p>我们现在将<em>initialResult参数标记为@autoclosure</em>属性的原因是防止在找到缓存值时对其进行计算。要了解更多，<a href="https://www.swiftbysundell.com/articles/using-autoclosure-when-designing-swift-apis/">请查看这篇文章</a>。</p>
+</blockquote>
+<p>请注意，attributedStringCache存储了NSMutableAttributedString实例，这是因为这是我们在从attributedString方法调用render时使用的类型。虽然在LocalizedString类型内部使用此类可变实例并没有真正的危害，但我们现在应该在返回带属性字符串之前必须复制所有带属性字符串，以防止任何意外共享可变状态。</p>
+<p>让我们这样做，同时也更新我们的两个字符串呈现方法来支持我们新的缓存功能:</p>
+<pre><code class="language-swift">extension LocalizedString {
+    ...
+
+    func attributedString(
+        withFonts fonts: Fonts = defaultFonts()
+    ) -&gt; NSAttributedString {
+        let string = render(
+            into: NSMutableAttributedString(),
+            cache: Self.attributedStringCache,
+            handler: { fullString, string, isBold in
+                ...
+            }
+        )
+
+        return NSAttributedString(attributedString: string)
+    }
+
+    func styledText() -&gt; Text {
+        render(
+            into: Text(&quot;&quot;),
+            cache: Self.swiftUITextCache,
+            handler: { fullText, string, isBold in
+                ...
+            }
+        )
+    }
+}
+</code></pre>
+<p>后一块就绪后，我们的新LocalizedString API就完成了，我们现在可以使用SwiftUI或UIKit以一种性能和可预测的方式呈现完全本地化、样式化的字符串。</p>
+<h2 id="supporting-multiple-styles-and-html-as-an-alternative">Supporting multiple styles, and HTML as an alternative</h2>
+<p>当然，我们在本文中构建的系统目前只支持将字符串的一部分加粗，但是如果我们想添加对多种样式的支持，我们总是可以继续对其进行迭代，尽管这可能需要更复杂的字符串解析技术。</p>
+<p>例如，我们可以使用<a href="">开源的Sweep库</a>来识别应该用一组给定的属性进行样式化的范围，或者使用“<a href="https://www.swiftbysundell.com/articles/string-parsing-in-swift/">Swift中的字符串解析</a>”中涉及的技术来实现这一点。</p>
+<p>另一种选择，它有自己的一组权衡，将某些字符串呈现为HTML, NSAttributedString实际上完全支持。 这样，我们就可以在本地化的字符串中放置任何类型的HTML样式(如<b>或<em>)，然后将它们转换为完全可渲染的带属性字符串，就像这样:</p>
+<pre><code class="language-swift">extension LocalizedString {
+   func attributedString() throws -&gt; NSAttributedString {
+       let data = Data(resolve().utf8)
+
+       return try NSAttributedString(
+           data: data,
+           options: [
+               .documentType: NSAttributedString.DocumentType.html,
+               .characterEncoding: String.Encoding.utf8.rawValue
+           ],
+           documentAttributes: nil
+       )
+   }
+}
+</code></pre>
+<p>然而，上述技术的一个重大缺点是，它要求我们的本地化字符串文件包含HTML代码(这很容易出现畸形，因为随着时间的推移，可能有多个人(包括外部翻译人员)编辑这些文件)。此外，由于我们将呈现这些字符串，如果他们是web剪辑，我们也必须使用web技术样式每个这样的标签，这可能很快使我们的设置相当复杂和难以维护。</p>
+<p>Conclusion</p>
+<p>将本地化与动态呈现的内容或样式相结合有时可能相当困难——即使是一些相对简单的内容，如强调给定字符串的部分，也可能需要相当多的代码来实现。 希望本文向您展示了一些关于如何做到这一点的技巧和技巧，所涉及的技术可能为构建自己的呈现样式化、本地化字符串的系统提供了一个起点。</p>
+<p><a href="https://www.swiftbysundell.com/articles/styled-localized-strings-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/-e6COW1bj/" class="tag">
+                    strings
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EVnUJ6QNSn/" class="tag">
+                    localization
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-tip-of-option-pattern/">
+                  <h3 class="post-title">
+                    A tip of Option Pattern 
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

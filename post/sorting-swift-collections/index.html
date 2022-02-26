@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Sorting Swift collections | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在处理数组和其他集合时，想要对它们包含的值进行排序是非常常见的，尤其是在处理本地用户数据时。在某些情况下，我们可能会让用户明确控制各种列表的排序方式，而在其他情况下，可能需要我们自动对给定的数据集进行排序，以便使其更容易预测和处理。
+不管怎..." />
+    <meta name="keywords" content="algorithms" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Sorting Swift collections</h2>
+            <div class="post-date">2020-11-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>在处理数组和其他集合时，想要对它们包含的值进行排序是非常常见的，尤其是在处理本地用户数据时。在某些情况下，我们可能会让用户明确控制各种列表的排序方式，而在其他情况下，可能需要我们自动对给定的数据集进行排序，以便使其更容易预测和处理。</p>
+<p>不管怎样，Foundation和Swift标准库都提供了许多不同的api，可以用来实现这种排序逻辑。本周，让我们来看看其中的一些api，以及我们如何对它们进行扩展，以使更高级的排序任务更容易执行。</p>
+<h2 id="lets-start-with-the-basics">Let’s start with the basics</h2>
+<p>任何Swift序列(包括常见的数据结构，如数组、字典和集合)都可以使用sorted API进行排序，它接受一个闭包，这个闭包用于通过一次比较两个元素来确定排序顺序。</p>
+<p>例如，这里我们根据每个实例的日期对TodoItem值数组进行排序， 通过使用小于操作符(&lt;)进行比较，我们将得到一个按升序排序的数组:</p>
+<pre><code class="language-swift">struct TodoItem {
+    var date: Date
+    ...
+}
+
+func sortItemsByDate(_ items: [TodoItem]) -&gt; [TodoItem] {
+    items.sorted { itemA, itemB in
+        itemA.date &lt; itemB.date
+    }
+}
+</code></pre>
+<p>内置的sorted方法可以在任何序列上调用(所以不仅仅是数组)。但是，它总是返回一个数组作为其输出，而不管调用它的是哪种类型的集合。</p>
+<p>虽然像上面那样使用sorted可以让我们完全控制排序操作， 真正好的是，任何包含Comparable值的集合都可以进行排序，而不需要传递任何闭包—这意味着像Int数组这样的数组可以简单地这样排序:</p>
+<pre><code class="language-swift">let numbers: [Int] = ...
+let sortedNumbers = numbers.sorted()
+</code></pre>
+<p>默认情况下，上述版本的sorted将按升序对每个元素进行排序，但如果我们更愿意使用降序排序，那么我们可以将基于闭包的版本与Swift支持将操作符作为函数传递的事实结合起来——这让我们可以这样做:</p>
+<pre><code class="language-swift">let numbers: [Int] = ...
+let sortedNumbers = numbers.sorted(by: &gt;)
+</code></pre>
+<p>因此，内置的排序API(及其就地变体，称为sort)在处理Comparable值时非常容易使用， 由于Swift有这样一个面向协议的设计，使我们自己的类型符合Comparable通常是使包含这些值的集合能够排序的最简单的方法。</p>
+<p>例如，这里我们使用底层的rawValue使标签类型符合Comparable，这样一来，我们就可以对任何包含标签值的集合调用sorted():</p>
+<pre><code class="language-swift">struct Tag: RawRepresentable {
+    var rawValue: String
+}
+
+extension Tag: Comparable {
+    static func &lt;(lhs: Tag, rhs: Tag) -&gt; Bool {
+        lhs.rawValue &lt; rhs.rawValue
+    }
+}
+
+let tags = loadAllTags()
+let sortedTags = tags.sorted()
+</code></pre>
+<p>然而，尽管对涉及任何类型排序的所有类型使用上述方法可能很诱人，但这样做可能会给某些类型带来相当奇怪的语义。</p>
+<p>以我们前面使用的TodoItem类型为例。尽管我们可以使用它的date属性使其符合Comparable，但在排序领域之外，这实际上没有任何意义，如果我们想根据date以外的属性对一些TodoItem集合进行排序呢?</p>
+<h2 id="custom-sorting-using-key-paths">Custom sorting using key paths</h2>
+<p>当然，处理non-Comparable值的一种方法是继续使用排序API，这需要我们传递一个手动闭包， 但是，如果我们在代码库的多个地方执行这种操作，那么总是必须编写这样的闭包很快就会变得重复而且很容易出错。</p>
+<p>因此，我们还将探索如何扩展内置的排序api套件，并提供一些便利，使我们能够根据元素类型的某个属性轻松地对任何集合进行排序。一种方法是像我们在“key paths in Swift”中所做的那样，用一个API扩展Sequence，让我们可以使用KeyPath来排序给定的集合——像这样:</p>
+<pre><code class="language-swift">extension Sequence {
+    func sorted&lt;T: Comparable&gt;(by keyPath: KeyPath&lt;Element, T&gt;) -&gt; [Element] {
+        sorted { a, b in
+            a[keyPath: keyPath] &lt; b[keyPath: keyPath]
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就可以使用Swift的键路径文字语法来根据元素包含的任何Comparable属性对集合进行排序了:</p>
+<pre><code class="language-swift">let sortedTags = tags.sorted(by: \.rawValue)
+let sortedTodoItems = todoItems.sorted(by: \.date)
+</code></pre>
+<p>这绝对是对我们之前基于闭包的方法的改进。 然而，我们目前假设所有集合都应该按升序排序，但事实可能并非如此。</p>
+<p>因此，为了支持其他排序顺序(包括完全自定义的排序顺序)，让我们也为我们的新API添加一个闭包参数。 多亏了默认参数的强大功能，我们可以以一种不会让我们之前的API更难使用的方式进行更改，因为可以使用&lt;操作符作为默认闭包——像这样:</p>
+<pre><code class="language-swift">extension Sequence {
+    func sorted&lt;T: Comparable&gt;(
+        by keyPath: KeyPath&lt;Element, T&gt;,
+        using comparator: (T, T) -&gt; Bool = (&lt;)
+    ) -&gt; [Element] {
+        sorted { a, b in
+            comparator(a[keyPath: keyPath], b[keyPath: keyPath])
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就可以通过传递大于操作符作为比较器，轻松地按降序对任何集合(比如之前的todoItems数组)进行排序-就像我们在使用内置排序API时所做的那样:</p>
+<pre><code class="language-swift">let mostRecentTodoItems = todoItems.sorted(by: \.date, using: &gt;)
+</code></pre>
+<p>真的很不错! 接下来，让我们看看如何继续扩展上面的API，以支持多个键路径，而不仅仅是一个。</p>
+<h2 id="sorting-on-multiple-properties">Sorting on multiple properties</h2>
+<p>现在，假设我们想要对一组文章排序，首先根据它们所属的类别，然后根据它们的标题按字母顺序排序。一种实现的方法是再次回到sorted基于闭包的版本，并实现如下内容:</p>
+<pre><code class="language-swift">func sortArticlesByCategory(_ articles: [Article]) -&gt; [Article] {
+    articles.sorted { articleA, articleB in
+        guard articleA.category == articleB.category else {
+            return articleA.category &lt; articleB.category
+        }
+
+        return articleA.title &lt; articleB.title
+    }
+}
+</code></pre>
+<p>就像我们目前看到的其他例子一样，如果上面的方法是我们需要根据多个属性对集合进行排序的唯一位置，那就没有必要做任何改变了。然而，如果这是一个我们在多个地方重复的模式，那么它可能证明了另一个抽象。</p>
+<p>这一次，让我们从Swift的前身Objective-C中获得一些灵感，它附带了一个名为NSSortDescriptor的类型，可以用来准确地描述我们希望给定集合如何排序。尽管该类型也可以在Swift中使用，但它只能用于Objective-C集合，如NSArray -这就需要我们swift的collections 给我们带来的强大类型安全。</p>
+<p>值得庆幸的是，创建一个“Swift-native”版本并不需要那么复杂。让我们从一个名为SortDescriptor的结构体开始，它实际上只是一个封闭包的包装，它比较两个值并返回一个ComparisonResult(这是我们将直接使用的另一种Objective-C类型):</p>
+<pre><code class="language-swift">struct SortDescriptor&lt;Value&gt; {
+    var comparator: (Value, Value) -&gt; ComparisonResult
+}
+</code></pre>
+<p>然后，由于我们仍然主要希望基于键路径对各种集合进行排序，让我们使用一个静态方法来扩展新的SortDescriptor类型，该方法可以让我们轻松地使用给定的KeyPath创建一个实例:</p>
+<pre><code class="language-swift">extension SortDescriptor {
+    static func keyPath&lt;T: Comparable&gt;(_ keyPath: KeyPath&lt;Value, T&gt;) -&gt; Self {
+        Self { rootA, rootB in
+            let valueA = rootA[keyPath: keyPath]
+            let valueB = rootB[keyPath: keyPath]
+
+            guard valueA != valueB else {
+                return .orderedSame
+            }
+            return valueA &lt; valueB ? .orderedAscending : .orderedDescending
+        }
+    }
+}
+</code></pre>
+<p>因为我们现在使用的是ComparisonResult，而不是普通的Bool值，所以我们需要一种新的方式来描述我们想要的排序顺序。一种方法是引入一个简单的枚举来描述我们希望支持的每个顺序，例如:</p>
+<pre><code class="language-swift">enum SortOrder {
+    case ascending
+    case descending
+}
+</code></pre>
+<p>有了上述内容，现在让我们继续并实现我们实际的排序算法 - 它将使用SortDescriptor的值数组，以及给定的SortOrder，来形成一个闭包，然后我们可以传递给标准库的sorted方法:</p>
+<pre><code class="language-swift">extension Sequence {
+    func sorted(using descriptors: [SortDescriptor&lt;Element&gt;],
+                order: SortOrder) -&gt; [Element] {
+        sorted { valueA, valueB in
+            for descriptor in descriptors {
+                let result = descriptor.comparator(valueA, valueB)
+                switch result {
+                case .orderedSame:
+                    // Keep iterating if the two elements are equal,
+                    // since that'll let the next descriptor determine
+                    // the sort order:
+                    break
+                case .orderedAscending:
+                    return order == .ascending
+                case .orderedDescending:
+                    return order == .descending
+                }
+            }
+            // If no descriptor was able to determine the sort
+            // order, we'll default to false (similar to when
+            // using the '&lt;' operator with the built-in API):
+            return false
+        }
+    }
+}
+</code></pre>
+<p>虽然上面的新方法已经为我们提供了一种非常好的、简单的方法来根据多个元素属性对集合进行排序，如果我们主要使用升序作为排序顺序，那么我们还可以添加下面的便利API-这将让我们使用可变参数语法传递SortDescriptor的值列表:</p>
+<pre><code class="language-swift">extension Sequence {
+    func sorted(using descriptors: SortDescriptor&lt;Element&gt;...) -&gt; [Element] {
+        sorted(using: descriptors, order: .ascending)
+    }
+}
+</code></pre>
+<p>是的，上面是一个在另一个便利API之上的便利API。全栈很方便，如果你愿意的话。</p>
+<p>有了这些，我们新的多属性排序API现在就完成了，所以让我们来进行一次旋转。下面是我们如何轻松地排序我们的文章数组，通过简单地传递一个我们想要排序的关键路径列表:</p>
+<pre><code class="language-swift">func sortArticlesByCategory(_ articles: [Article]) -&gt; [Article] {
+    articles.sorted(using: .keyPath(\.category), .keyPath(\.title))
+}
+</code></pre>
+<p>另外，由于我们没有硬编码SortDescriptor类型以始终使用键路径 - 我们现在可以使用它作为一个强大的，通用的排序API，即使我们想使用一个高度定制的排序算法列表。</p>
+<h2 id="in-place-sorting-and-performance">In-place sorting and performance‘</h2>
+<p>到目前为止，我们所看到的示例都使用了系统提供的排序API，但根据每个用例和我们要追求的性能特征，使用该API的就地变体实际上可能是更好的选择。</p>
+<p>为了说明这一点，让我们假设我们正在制作一款包含以下分数列表类型的游戏，这确保了基于int的分数的底层数组仍然是有序的，即使添加了新分数:</p>
+<pre><code class="language-swift">struct ScoreList {
+    private(set) var scores: [Int]
+
+    init(scores: [Int]) {
+        self.scores = scores.sorted()
+    }
+
+    mutating func addScore(_ score: Int) {
+        scores.append(score)
+        scores = scores.sorted()
+    }
+}
+</code></pre>
+<p>现在，让我们将上面的实现与下面的实现进行比较，下面的实现使用sort方法对我们的scores数组进行排序，而不是创建它的副本:</p>
+<pre><code class="language-swift">struct ScoreList {
+    ...
+    mutating func addScore(_ score: Int) {
+        scores.append(score)
+        scores.sort()
+    }
+}
+
+</code></pre>
+<p>在调试模式下运行时，上述两种实现具有几乎相同的性能特征——这是意料之中的，因为sort和sorted的时间复杂度都是O(n log n)。然而，如果我们以发布模式运行我们的应用(通常在比较性能时使用)，那么就会发生一些有趣的事情。</p>
+<p>我们的两个实现不仅在发布模式下要快100倍(是的，不是开玩笑!) 但是我们的就地、基于排序的版本现在几乎比基于排序的方法快两倍。这是因为，在发布版本构建期间，编译器在涉及集合和值类型时执行多种优化，在本例中，这非常有效——特别是在集合被适当地改变时。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift的内置排序功能是一个很好的例子，它展示了标准库如何将几个高级的、高性能的算法作为一套真正简单的api，尤其是在处理Comparable值时。</p>
+<p><a href="https://www.swiftbysundell.com/articles/sorting-swift-collections/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/qdJBgIYtC/" class="tag">
+                    algorithms
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/extending-combine-with-convenience-apis/">
+                  <h3 class="post-title">
+                    Extending Combine with convenience APIs
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 72:Modular State Management: Reducers | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+PointFree Episode 72:Modular State Management: Reducers
+
+Introduction
+Recap
+What does modularity mean?
+Modularizing ou..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 72:Modular State Management: Reducers</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#pointfree-episode-72modular-state-management-reducers">PointFree Episode 72:Modular State Management: Reducers</a>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#recap">Recap</a></li>
+<li><a href="#what-does-modularity-mean">What does modularity mean?</a></li>
+<li><a href="#modularizing-our-reducers">Modularizing our reducers</a></li>
+<li><a href="#modularizing-the-composable-architecture">Modularizing the Composable Architecture</a></li>
+<li><a href="#modularizing-the-favorite-primes-reducer">Modularizing the favorite primes reducer</a></li>
+<li><a href="#modularizing-the-counter-reducer">Modularizing the counter reducer</a></li>
+<li><a href="#modularizing-the-prime-modal-reducer">Modularizing the prime modal reducer</a></li>
+<li><a href="#till-next-time">Till next time...</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<!-- # PointFree Episode 72:Modular State Management: Reducers -->
+<h2 id="introduction">Introduction</h2>
+<p>在过去的4周里，我们一直在探索一个从函数式编程中汲取灵感的应用程序架构。 它是原始的，原子单位只是一个函数，被称为<strong>reducer</strong>，我们发现了许多不同的方法可以将这些函数组合在一起，这是一个在Point-Free上多次上演的故事。</p>
+<p>我们开始这一探索是因为我们发现尽管<strong>SwiftUI</strong>解决了我们在构建应用程序时面临的许多问题，而且是以一种漂亮而强大的方式，但仍然有一些问题没有解决。特别是，我们需要知道如何做以下事情:</p>
+<ul>
+<li><strong>创建复杂的应用状态模型，最好使用简单的值类型。</strong></li>
+<li><strong>有一个一致的方式来改变应用状态，而不是仅仅在我们的视图里乱放突变代码。</strong></li>
+<li><strong>有一种方法可以将一个大的应用程序分解成小块，然后再粘在一起形成一个整体。</strong></li>
+<li><strong>有一个定义良好的机制来执行副作用并将结果反馈到应用程序中。</strong></li>
+<li><strong>用最少的设置和努力来测试我们的应用程序。</strong></li>
+</ul>
+<p>到目前为止，我们已经解决了其中的两个半问题:</p>
+<ul>
+<li><strong>现在我们将状态建模为一个简单的值类型。</strong></li>
+<li><strong>我们现在以一致的方式改变我们的状态。</strong></li>
+<li><strong>最后，我们通过使用不同的组合物，将一个非常大的应用范围的reducer分解成小型的、针对屏幕的reducer</strong></li>
+</ul>
+<p>然而，当谈到这个体系结构时，我们认为最后一点只解决了模块化故事的一半。</p>
+<p>尽管我们的<strong>reducer</strong>可以被分解和模块化，但是呈现<strong>state</strong>和向<strong>store</strong>发送<strong>action</strong>的视图却不能。它们仍然运行于整个应用<strong>state</strong>和应用<strong>actions</strong>。</p>
+<p>如果我们能够将<strong>store</strong>集中在特定视图关心的<strong>state</strong>和<strong>actions</strong>上，那么我们就增加了视图被提取到它自己的模块中的机会。这将是一场巨大的胜利。无法隔离应用程序的组件可能是我们在其他人的代码库中看到的最大的复杂性来源之一。组件开始变得不必要地相互纠缠，而且随时间变化很难理解组件的所有方式。</p>
+<p>所以今天我们要完成的模块化架构故事，首先直接显示模块化的含义和为什么它是有益的，然后通过展示我们的<strong>Store</strong>类型如何支持两种类型的转换，这两种转换允许我们将其意图集中在视图真正关心的事情上。</p>
+<p>让我们先快速浏览一下到目前为止所编写的代码。</p>
+<h2 id="recap">Recap</h2>
+<p>我们正在开发的应用程序是“最受欢迎的质数计算应用程序”。</p>
+<p>从根视图我们可以深入到一个<strong>counter</strong>，它显示了一个可以递增和递减的数字。我们可以询问当前数字是否为质数，如果是，我们可以将其保存到收藏夹中，或者如果我们改变主意，将其从收藏夹中删除。我们也可以请求第<strong>n</strong>个素数，这将把请求交给<strong>Wolfram Alpha</strong>，一个强大的科学计算平台。</p>
+<p>如果我们回到根视图我们还可以深入到我们保存的所有收藏质数的列表。我们甚至可以去掉所有不喜欢的质数。</p>
+<p>这是一个简单的示例，但它具有许多比较复杂的现实应用程序的特征。特别是:</p>
+<ul>
+<li>它管理跨多个屏幕持久存在的全局、可变<strong>state</strong></li>
+<li>它以网络请求的形式执行副作用</li>
+</ul>
+<p>在之前的章节中，我们在<strong>playground</strong>上构建所有内容，但为了准备模块化，我们将这些代码转移到一个专门的iOS项目中。我们使用“<strong>Single View</strong>”应用模板配置使用<strong>SwiftUI</strong>，并做了以下最小的更改:</p>
+<ul>
+<li>我们用<strong>playground</strong>的内容替换了有根的ContentView，不包括顶层的、特定于<strong>playground</strong>的逻辑</li>
+<li>我们在项目的场景委托中配置了根视图和一个<strong>store</strong></li>
+<li>我们从<strong>playground</strong>的源代码目录中引入了一些<strong>utils</strong>，包括一些<strong>Wolfram Alpha API</strong>代码</li>
+</ul>
+<p>让我们浏览一下包含到目前为止所有应用程序逻辑的文件。</p>
+<p>在顶部，我们有驱动应用架构的核心库代码，从<strong>Store</strong>类开始。<strong>Store</strong>是一个容器，用来存放可变的应用状态和所有可以改变它的逻辑。它还通过遵循<strong>ObservableObject</strong>协议将我们的应用状态连接到<strong>SwiftUI</strong>。</p>
+<pre><code class="language-swift">final class Store&lt;Value, Action&gt;: ObservableObject {
+  let reducer: (inout Value, Action) -&gt; Void
+  @Published private(set) var value: Value
+
+  init(initialValue: Value, reducer: @escaping (inout Value, Action) -&gt; Void) {
+    self.reducer = reducer
+    self.value = initialValue
+  }
+
+  func send(_ action: Action) {
+    self.reducer(&amp;self.value, action)
+  }
+}
+</code></pre>
+<p>接下来，我们有两个功能，构成<strong>reducer</strong>组成的基础，首先是<strong>combine</strong>函数，它允许我们将多个<strong>reducers</strong>连接到一起，形成一个单一的大型<strong>reducer</strong>:</p>
+<pre><code class="language-swift">func combine&lt;Value, Action&gt;(
+  _ reducers: (inout Value, Action) -&gt; Void...
+) -&gt; (inout Value, Action) -&gt; Void {
+  return { value, action in
+    for reducer in reducers {
+      reducer(&amp;value, action)
+    }
+  }
+}
+</code></pre>
+<p>还有<strong>pullback</strong>函数，它让我们把一个理解局部<strong>state和action</strong>的<strong>reducer</strong>转换成一个理解全局<strong>state和action</strong>的<strong>reducer</strong>:</p>
+<pre><code class="language-swift">func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction&gt;(
+  _ reducer: @escaping (inout LocalValue, LocalAction) -&gt; Void,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; (inout GlobalValue, GlobalAction) -&gt; Void {
+  return { globalValue, globalAction in
+    guard let localAction = globalAction[keyPath: action] else { return }
+    reducer(&amp;globalValue[keyPath: value], localAction)
+  }
+}
+</code></pre>
+<p>这种操作使我们能够让<strong>reducer</strong>只关注它所关心的<strong>state和action</strong>，而不是整个全局的<strong>state和action</strong>。</p>
+<p>我们还定义了“<strong>higher-order” reducers</strong>:以<strong>reducers</strong>作为输入并产生<strong>reducers</strong>作为输出的函数。 这让我们能够以一种中心方式实现应用级的“横切（cross-cutting）”关注点，比如日志记录并且不会污染更多本地<strong>reducers</strong>。</p>
+<pre><code class="language-swift">func logging&lt;Value, Action&gt;(
+  _ reducer: @escaping (inout Value, Action) -&gt; Void
+) -&gt; (inout Value, Action) -&gt; Void {
+  …
+}
+</code></pre>
+<p>然后我们有<strong>AppState</strong>，这是一个用简单值类型建模整个应用状态的结构体:</p>
+<pre><code class="language-swift">struct AppState {
+  var count = 0
+  var favoritePrimes: [Int] = []
+  var loggedInUser: User? = nil
+  var activityFeed: [Activity] = []
+
+  struct Activity {
+    let timestamp: Date
+    let type: ActivityType
+
+    enum ActivityType {
+      case addedFavoritePrime(Int)
+      case removedFavoritePrime(Int)
+    }
+  }
+
+  struct User {
+    let id: Int
+    let name: String
+    let bio: String
+  }
+}
+</code></pre>
+<p>我们有一堆枚举来描述应用在不同组件和屏幕上的所有用户动作。</p>
+<pre><code class="language-swift">enum CounterAction {
+  case decrTapped
+  case incrTapped
+}
+
+enum PrimeModalAction {
+  case saveFavoritePrimeTapped
+  case removeFavoritePrimeTapped
+}
+
+enum FavoritePrimesAction {
+  case deleteFavoritePrimes(IndexSet)
+}
+</code></pre>
+<p>这些枚举中的每一个都聚集在一个<strong>AppAction</strong>枚举中。</p>
+<pre><code class="language-swift">enum AppAction {
+  case counter(CounterAction)
+  case primeModal(PrimeModalAction)
+  case favoritePrimes(FavoritePrimesAction)
+
+  var counter: CounterAction? { … }
+  var primeModal: PrimeModalAction? { … }
+  var favoritePrimes: FavoritePrimesAction? { … }
+}
+</code></pre>
+<p>值得注意的是，我们正在使用我们在以前的Point-Free章节中开发的代码生成工具来生成我们所说的“枚举属性”。这些计算属性通过提供对枚举案例关联值的点语法访问，在结构体和枚举之间架起了一个人机工程学的桥梁。定义了这些属性后，Swift将自动合成关键路径，这使我们能够将局部<strong>actions</strong>的<strong>reducer</strong>拉回全局<strong>actions</strong>的<strong>reducer</strong>。</p>
+<p>接下来是我们的<strong>reducer</strong>，它描述了应用程序的所有业务逻辑，并被分解成各种组件。每一个都负责处理我们应用程序中三个屏幕的状态和动作:计数器屏幕、主要模态和收藏列表。</p>
+<pre><code class="language-swift">func counterReducer(state: inout Int, action: CounterAction) {
+  …
+}
+
+func primeModalReducer(state: inout AppState, action: PrimeModalAction) {
+  …
+}
+
+func favoritePrimesReducer(state: inout [Int], action: FavoritePrimesAction) {
+  …
+}
+</code></pre>
+<p>在最终聚集在我们的巨型<strong>appReducer</strong>之前，这是通过拉回这些更小，更集中的<strong>reducers</strong>，并将它们组合而成。</p>
+<pre><code class="language-swift">let appReducer: (inout AppState, AppAction) -&gt; Void = combine(
+  pullback(counterReducer, value: \.count, action: \.counter),
+  pullback(primeModalReducer, value: \.self, action: \.primeModal),
+  pullback(favoritePrimesReducer, value: \.favoritePrimes, action: \.favoritePrimes)
+)
+</code></pre>
+<p>我们还定义了一个<strong>higher-order reducer</strong>，它更特定于领域:</p>
+<pre><code class="language-swift">func activityFeed(
+  _ reducer: @escaping (inout AppState, AppAction) -&gt; Void
+) -&gt; (inout AppState, AppAction) -&gt; Void {
+  …
+}
+</code></pre>
+<p>最后，我们有了所有视图，这在这个架构中是非常简单的，因为我们已经将所有的应用程序逻辑提取到一个由<strong>Store</strong>持有的<strong>reducer</strong>中。视图现在仅描述给定<strong>store</strong>当前值的子视图的层次结构，并将用户操作反馈给<strong>store</strong>。</p>
+<pre><code class="language-swift">struct CounterView: View {
+  …
+}
+
+struct IsPrimeModalView: View {
+  …
+}
+
+struct FavoritePrimesView: View {
+  …
+}
+
+struct ContentView: View {
+  …
+}
+</code></pre>
+<h2 id="what-does-modularity-mean">What does modularity mean?</h2>
+<p>现在，我们已经准备好开始模块化我们的应用程序了，但是在开始之前，我们需要定义什么是“模块化”。</p>
+<p>在这种情况下，字面上的意思是“模块”。模块是自包含代码的单元，可以导入并在应用程序中使用。这包括Swift自带的模块，如<strong>Foundation</strong>和<strong>Dispatch</strong>，特定于平台的模块，如<strong>Combine和SwiftUI</strong>，甚至是你可能已经引入到代码库中的第三方库。</p>
+<p>模块是他们选择公开的各种功能和行为的公共接口。但最重要的是，模块无法访问<strong>importer</strong>正在做的任何事情:它们无法了解你的类型、你的视图控制器等等，这就是它的强大之处:模块与依赖它们的代码隔离开来。</p>
+<p>我们认为将应用程序分解成模块是很重要的。通过这样做，您可以创建更容易理解的单元，这些单元可以单独构建、测试和分发。 然后，您的应用程序可以导入所有这些单元并将它们组合在一起。</p>
+<p>那么我们该如何将应用分解成更小的单元呢?有许多方法可以为Swift构建模块。 我们有框架、静态库，甚至还有Swift包。自从2015年Swift 2.2第一个开源版本发布以来，Swift包管理器就一直存在。 然而，直到最近它才被集成到Xcode 11测试版中。我们对SwiftPM非常兴奋，但它还处于起步阶段，还不支持我们在UI开发中需要的一些特性，比如保存资源的能力，比如图像，所以今天我们将使用框架来模块化。</p>
+<h2 id="modularizing-our-reducers">Modularizing our reducers</h2>
+<p>我们已经声明过我们的<strong>reducer</strong>是模块化的，所以是时候进行测试了:让我们将它们提取到一些一流的模块中。</p>
+<p>我们定义的每个<strong>reducer</strong>都是一个描述组件逻辑的自包含单元，这意味着我们应该能够将每个<strong>reducer</strong>提取到它自己的模块中。我们有三个<strong>reducer</strong>，<strong>counterReducer, primeModalReducer，和favoritePrimesReducer</strong>，它们中的每一个都代表了可以对<strong>counter screen</strong>,<strong>prime modal</strong>，和<strong>favorite primesreducer</strong>进行相应的突变。</p>
+<p>让我们转到我们的项目文件，并为每个<strong>reducer</strong>添加一个框架目标。我们可以创建一个“<strong>Counter</strong>”框架、一个“<strong>PrimeModal</strong>”框架和一个“<strong>favorite primesreducer</strong>”框架。</p>
+<p>我们还有支持架构的核心库代码，包括<strong>Store</strong>类和<strong>reducr</strong>组合函数，所以让我们再创建一个名为“可组合架构(ComposableArchitecture)”的框架。</p>
+<h2 id="modularizing-the-composable-architecture">Modularizing the Composable Architecture</h2>
+<p>我们可以通过向名为“<strong>composableararchitecture .swift</strong>”的“<strong>composableararchitecture</strong>”框架中添加一个源文件来提取库代码。</p>
+<p>然后我们可以剪切并粘贴我们的库代码到它:</p>
+<pre><code class="language-swift">final class Store&lt;Value, Action&gt;: ObservableObject {
+  …
+}
+
+func combine&lt;Value, Action&gt;(
+  _ reducers: (inout Value, Action) -&gt; Void...
+) -&gt; (inout Value, Action) -&gt; Void {
+  …
+}
+
+func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction&gt;(
+  _ reducer: @escaping (inout LocalValue, LocalAction) -&gt; Void,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; (inout GlobalValue, GlobalAction) -&gt; Void {
+  …
+}
+
+public func logging&lt;Value, Action&gt;(
+  _ reducer: @escaping (inout Value, Action) -&gt; Void
+) -&gt; (inout Value, Action) -&gt; Void {
+  …
+}
+</code></pre>
+<p>因为这段代码是自包含的，所以已经可以构建模块了。</p>
+<p>但是，它不能被使用，因为它的<strong>api</strong>还没有公开。默认情况下，每个Swift接口(类型、属性、方法、函数等等)都具有“<strong>internal</strong>”可见性。这意味着同一目标中的每个源文件默认情况下都可以访问它，但它将对外部模块不可见。 接口必须以<strong>public</strong>修饰符为前缀，以便在模块被导入时可以访问。</p>
+<pre><code class="language-swift">public final class Store&lt;Value, Action&gt;: ObservableObject {
+</code></pre>
+<p>但我们不需要它的减速器公开。实际上，我们可以将它设置为私有，因为它不能在类之外访问。</p>
+<pre><code class="language-swift">private let reducer: (inout Value, Action) -&gt; Void
+</code></pre>
+<p>它的<strong>value</strong>应该可以被应用程序的视图访问，因此我们将其设置为<strong>public</strong>，而保留其<strong>setter private</strong>。</p>
+<pre><code class="language-swift">@Published public private(set) var value: Value
+</code></pre>
+<p>它的初始化器和<strong>send</strong>方法应该是公共的，这样我们的应用程序就有能力创建<strong>store</strong>并向它们发送用户操作。</p>
+<pre><code class="language-swift">public init(
+  initialValue: Value,
+  reducer: @escaping (inout Value, Action) -&gt; Void
+) {
+…
+public func send(_ action: Action) {
+</code></pre>
+<p>最后，<strong>combine、pullback和logging</strong>函数应该是公共的，这样我们的应用程序就可以用更小的部分组成根<strong>reducer</strong>。</p>
+<pre><code class="language-swift">public func combine&lt;Value, Action&gt;(
+  _ reducers: (inout Value, Action) -&gt; Void...
+) -&gt; (inout Value, Action) -&gt; Void {
+…
+public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction&gt;(
+  _ reducer: @escaping (inout LocalValue, LocalAction) -&gt; Void,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; (inout GlobalValue, GlobalAction) -&gt; Void {
+…
+public func logging&lt;Value, Action&gt;(
+  _ reducer: @escaping (inout Value, Action) -&gt; Void
+) -&gt; (inout Value, Action) -&gt; Void {
+</code></pre>
+<p>在提取代码并审计其接口之后，我们终于可以将模块导入到我们的应用程序中了。</p>
+<p>我们需要在“<strong>ContentView.swift</strong>”中这样做:</p>
+<pre><code class="language-swift">import ComposableArchitecture
+</code></pre>
+<p>在“<strong>SceneDelegate.swift</strong>”:</p>
+<pre><code class="language-swift">import ComposableArchitecture
+</code></pre>
+<p>一切都将构建并运行，因为没有更改代码，所以它的工作方式与以前一样。</p>
+<p>我们应该注意到，<strong>ComposableArchitecture</strong>是非常通用的、可重用的代码，我们甚至可以从当前的应用程序中提取它到它自己的repo中，这样我们就可以在许多不同的应用程序中使用它。也许有一天我们可以把它开源😉。</p>
+<h2 id="modularizing-the-favorite-primes-reducer">Modularizing the favorite primes reducer</h2>
+<p>让我们回到更多的应用级模块化。我们可以从一些简单的东西开始:最受欢迎的质数<strong>reducer</strong>。</p>
+<p>首先，我们需要向“<strong>FavoritePrimes</strong>”模块引入一个源文件。我们可以叫它“<strong>FavoritePrimes.swift</strong>”。然后我们可以移动<strong>favoritePrimesReducer</strong>到它里面。</p>
+<pre><code class="language-swift">func favoritePrimesReducer(state: inout [Int], action: FavoritePrimesAction) {
+  switch action {
+  case let .deleteFavoritePrimes(indexSet):
+    for index in indexSet {
+      state.remove(at: index)
+    }
+  }
+}
+</code></pre>
+<p>这个减速器依赖于<strong>FavoritePrimesAction enum</strong>，所以我们也想移动它。</p>
+<pre><code class="language-swift">enum FavoritePrimesAction {
+  case deleteFavoritePrimes(IndexSet)
+}
+</code></pre>
+<p>就像这样，“<strong>favoritprime</strong>”模块已经可以构建了，但应用程序无法构建，因为它不再访问“<strong>favorite prime</strong>”<strong>action or reducer</strong>。</p>
+<p>我们可以导入“<strong>ContentView.swift</strong>”中的模块:</p>
+<pre><code class="language-swift">import FavoritePrimes
+</code></pre>
+<p>但是我们还需要在收藏素数模块中将其标记为公有，以便在导入时可以访问它们。</p>
+<pre><code class="language-swift">public enum FavoritePrimesAction {
+…
+public func favoritePrimesReducer(state: inout [Int], action: FavoritePrimesAction) {
+</code></pre>
+<p>一切都构建得很好。</p>
+<p>这句话很快就过去了，所以让我们再来看看“<strong>favoriteprime .swift</strong>”:</p>
+<pre><code class="language-swift">public enum FavoritePrimesAction {
+  case deleteFavoritePrimes(IndexSet)
+}
+
+public func favoritePrimesReducer(state: inout [Int], action: FavoritePrimesAction) {
+  switch action {
+  case let .deleteFavoritePrimes(indexSet):
+    for index in indexSet {
+      state.remove(at: index)
+    }
+  }
+}
+</code></pre>
+<p>我们能够将这些行提取到一个模块中，并将它们重新整合到我们的应用程序中，速度如此之快，而且所做的工作如此之少，几乎让人感觉我们什么都没做:我们只是将代码混放到了另一个文件中。但是因为这个文件位于它自己的模块中，所以我们实际上已经做了很多了!</p>
+<p>这里我们有11行高度集中、易于阅读的代码。这段代码无法访问全局应用状态或全局用户动作——如果尝试使用<strong>AppState</strong>或<strong>AppAction</strong>，则无法使用。它也不能访问任何东西，除了它的内容和Swift标准库。我们已经将它与应用程序的其他部分完全隔离，使得任何代码都不可能溢出。</p>
+<h2 id="modularizing-the-counter-reducer">Modularizing the counter reducer</h2>
+<p>一个减速器已经完成，还有两个。<strong>counter reducer</strong>非常简单，所以让我们快速通过它。</p>
+<pre><code class="language-swift">public enum CounterAction {
+  case decrTapped
+  case incrTapped
+}
+
+public func counterReducer(state: inout Int, action: CounterAction) {
+  switch action {
+  case .decrTapped:
+    state -= 1
+
+  case .incrTapped:
+    state += 1
+  }
+}
+</code></pre>
+<p>只是一些剪切和粘贴，和一些<strong>publics</strong>，我们现在可以:</p>
+<pre><code class="language-swift">import Counter
+</code></pre>
+<p>所有的构建，运行，和我们应用的另一部分已经完全从其他一切隔离。</p>
+<h2 id="modularizing-the-prime-modal-reducer">Modularizing the prime modal reducer</h2>
+<p>我们还有一个<strong>reducer</strong>要提取:<strong>the prime modal reducer</strong>。它有点复杂，但让我们用和其他<strong>reducer</strong>相同的方法看看哪里出了问题。</p>
+<p>首先，我们将在“<strong>PrimeModal</strong>”框架中添加一个“<strong>PrimeModal.swift</strong>”源文件，该文件将包含<strong>primeModalReducer</strong>及其相关的操作。</p>
+<pre><code class="language-swift">public enum PrimeModalAction {
+  case saveFavoritePrimeTapped
+  case removeFavoritePrimeTapped
+}
+
+public func primeModalReducer(state: inout AppState, action: PrimeModalAction) {
+  switch action {
+  case .removeFavoritePrimeTapped:
+    state.favoritePrimes.removeAll(where: { $0 == state.count })
+
+  case .saveFavoritePrimeTapped:
+    state.favoritePrimes.append(state.count)
+  }
+}
+</code></pre>
+<blockquote>
+<p>🛑 Use of undeclared type ‘AppState’</p>
+</blockquote>
+<p>我们有一个问题:<strong>primeModalReducer</strong>依赖于<strong>AppState</strong>，但我们肯定不想把所有的<strong>AppState</strong>都放到“<strong>PrimeModal</strong>”模块中，特别是当<strong>reducer</strong>只依赖于该状态的一小部分时。在本例中，它只需要当前计数和收藏素数数组。</p>
+<p>我们可以做的一件事是引入一个全新的类型，<strong>PrimeModalState</strong>，它捕获主要<strong>primeModalReducer</strong>所关心的<strong>state</strong>。</p>
+<pre><code class="language-swift">public struct PrimeModalState {
+  public var count: Int
+  public var favoritePrimes: [Int]
+}
+</code></pre>
+<p>然后我们可以更新<strong>primeModalReducer</strong>的签名。</p>
+<pre><code class="language-swift">func primeModalReducer(state: inout PrimeModalState, action: PrimeModalAction) {
+</code></pre>
+<p>因为字段是相同的，所以<strong>body</strong>的任何部分都不需要改变。“<strong>PrimeModal</strong>”框架现在独立构建。</p>
+<p>现在我们应该能够将内容导入到“<strong>ContentView.swift</strong>”中，看看会发生什么。</p>
+<pre><code class="language-swift">import PrimeModal
+</code></pre>
+<p>当我们将<strong>primeModalReducer</strong>传递给回拨函数时，只有一个错误:</p>
+<pre><code class="language-swift">pullback(primeModalReducer, value: \.self, action: \.primeModal),
+</code></pre>
+<blockquote>
+<p>🛑 Type of expression is ambiguous without more context</p>
+</blockquote>
+<p>错误消息不是很好，但问题是<strong>primeModalReducer</strong>以前与<strong>AppState</strong>一起工作，现在它与<strong>PrimeModalState</strong>一起工作。 以前，我们可以使用标识键路径，.<strong>self</strong>，以保持<strong>AppState</strong>不变，当将<strong>reducer</strong>拉回主要模态动作时。但是我们如何将<strong>PrimeModalState</strong>拉回<strong>AppState</strong>呢?我们需要一个从<strong>AppState到PrimeModalState</strong>的键路径，但是不存在这样的键路径。</p>
+<p>我们可能会想要做些改变，让<strong>AppState</strong>保持顶层的<strong>primeModal</strong>，它嵌入<strong>count和favoritprime</strong>。</p>
+<pre><code class="language-swift">struct AppState {
+//  var count = 0
+//  var favoritePrimes: [Int] = []
+  var primeModal: PrimeModalState
+</code></pre>
+<p>但是，我们将被迫通过<strong>primeModal</strong>属性向下钻取<strong>count和favoritprime</strong>。这两个属性都可以在主模态以外的屏幕上访问:计数器屏幕上显示当前计数，最喜欢的质数显示在最喜欢的质数屏幕上。这不是建模的方法。</p>
+<p>相反，我们可以向<strong>AppState</strong>添加一个<strong>computed</strong>属性，该属性负责接收这两位状态并将它们打包为<strong>PrimeModalState</strong>。</p>
+<pre><code class="language-swift">extension AppState {
+  var primeModal: PrimeModalState {
+    PrimeModalState.init
+  }
+</code></pre>
+<p>我们不能实例化一个值，因为我们不能访问Swift为我们生成的那个结构体初始化器。 这些默认的“成员式”初始化器不是公有的，所以<strong>PrimeModalState</strong>目前只能在它自己的模块中初始化。</p>
+<p>相反，我们必须定义一个公共初始化式。这是再简单不过了:</p>
+<pre><code class="language-swift">public struct PrimeModalState {
+  public var count: Int
+  public var favoritePrimes: [Int]
+
+  public init(count: Int, favoritePrimes: [Int]) {
+    self.count = count
+    self.favoritePrimes = favoritePrimes
+  }
+}
+</code></pre>
+<p>这是我们在模块化代码时需要做的一点额外工作。 我们认为这个样板是值得的，尽管我们必须手动编写内容，但Xcode的未来版本应该能够为我们做这些工作。</p>
+<p>我们现在可以构建以下值之一:</p>
+<pre><code class="language-swift">extension AppState {
+  var primeModal: PrimeModalState {
+    PrimeModalState(count: self.count, favoritePrimes: self.favoritePrimes)
+  }
+</code></pre>
+<p>但我们还没有完成。<strong>pullback</strong>函数需要一个可写的键路径来实现突变。我们可以用<strong>set</strong>块使这个属性可写，它只是在给定一个新的素数模态的情况下设置这两个属性。</p>
+<pre><code class="language-swift">extension AppState {
+  var primeModal: PrimeModalState {
+    get {
+      PrimeModalState(
+        count: self.count,
+        favoritePrimes: self.favoritePrimes
+      )
+    }
+    set {
+      self.count = newValue.count
+      self.favoritePrimes = newValue.favoritePrimes
+    }
+  }
+</code></pre>
+<p>最后我们可以用一个进入素数态的键路径来替换恒等键路径:</p>
+<pre><code class="language-swift">pullback(primeModalReducer, value: \.primeModal, action: \.primeModal),
+</code></pre>
+<p>一切都像以前一样在建造和工作。</p>
+<p>我们现在已经完全模块化了所有应用程序的<strong>reducer</strong>。其中两个非常容易提取:我们只需要移动、发布和导入一些代码。模块化<strong>prime modal reducer</strong>并不是那么简单，因为它必须访问应用状态的几个独立部分。 但是，我们发现，通过引入一个只保存它所关心的状态的中间结构，我们可以限定访问的范围。然后，我们可以将全局状态的<strong>computed</strong>属性引入到这个更局部的状态中，它为我们提供了一个键路径，当我们将局部状态的<strong>reducer</strong>转换为全局状态的<strong>reducer</strong>时，可以通过该键路径进行回拉。</p>
+<p>当我们需要将多个全局<strong>state</strong>传递给一个更局部的组件时，我们可以一次又一次地使用这个方便的技巧。不幸的是，它付出了样板的代价:我们创建了一个全新的类型来表示这种状态，我们定义了一个公共初始化器以便其他模块可以实例化它，我们定义了一个<strong>computed</strong>属性以便使用<strong>pullback</strong>。</p>
+<p>可以通过使用元组的类型别名来消除初始化式样板:</p>
+<pre><code class="language-swift">public typealias PrimeModalState = (count: Int, favoritePrimes: [Int])
+</code></pre>
+<p>一切都可以正常构建，这很好。然而，Swift与元组之间有一种奇怪的关系，当你过多地使用它们时，它们经常会引起麻烦。<br>
+所以，如果您更愿意使用元组还是结构，这取决于您和您的团队。甚至可以从一开始就使用元组，然后在需要额外结构时才移到结构体中。</p>
+<p>样板文件的其余部分是不可避免的，但它是相当机械且易于编写的，当最终结果是另一个孤立的、易于推理的模块时，我们认为它是非常值得的。</p>
+<p>我们将这些简化器模块化的轻松程度说明了该体系结构在默认情况下是多么模块化。我们不需要对逻辑进行任何显著的重构或更改，因为边界已经非常清晰地定义了。最糟糕的情况是，需要为状态更复杂的组件引入一些额外的样板文件。</p>
+<h2 id="till-next-time">Till next time...</h2>
+<p>虽然我们的体系结构已经极大地简化了视图，但它仍然没有将视图模块化。我们已经将我们的<strong>reducer</strong>从整个应用<strong>state</strong>和应用<strong>actions</strong>中分离出来，但我们还没有将我们的视图分离出来。所以，让我们开始解决这个问题的一部分……下次!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-71-composable-state-management-higher-order-reducers/">
+                  <h3 class="post-title">
+                    PointFree Episode 71: Composable State Management: Higher-Order Reducers
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

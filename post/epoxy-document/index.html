@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Epoxy Document | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Epoxy
+
+EpoxyCore
+
+Views
+
+StyledView
+ContentConfigurableView
+BehaviorsConfigurableView
+
+
+Diffing
+Logging
+
+
+EpoxyCollect..." />
+    <meta name="keywords" content="epoxy,dynamic programming" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Epoxy Document</h2>
+            <div class="post-date">2021-06-05</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#epoxy">Epoxy</a>
+<ul>
+<li><a href="#epoxycore">EpoxyCore</a>
+<ul>
+<li><a href="#views">Views</a>
+<ul>
+<li><a href="#styledview">StyledView</a></li>
+<li><a href="#contentconfigurableview">ContentConfigurableView</a></li>
+<li><a href="#behaviorsconfigurableview">BehaviorsConfigurableView</a></li>
+</ul>
+</li>
+<li><a href="#diffing">Diffing</a></li>
+<li><a href="#logging">Logging</a></li>
+</ul>
+</li>
+<li><a href="#epoxycollectionview">EpoxyCollectionView</a>
+<ul>
+<li><a href="#overview">Overview</a>
+<ul>
+<li><a href="#declarative-views">Declarative views</a></li>
+<li><a href="#simple-update-animations">Simple update animations</a></li>
+<li><a href="#avoiding-index-math">Avoiding index math</a></li>
+<li><a href="#dataids-and-diffing-animations">DataIDs and Diffing Animations</a></li>
+</ul>
+</li>
+<li><a href="#collectionviewcontroller">CollectionViewController</a></li>
+<li><a href="#collectionview">CollectionView</a></li>
+<li><a href="#itemmodel-and-itemmodeling">ItemModel and ItemModeling</a></li>
+<li><a href="#using-epoxyableview">Using EpoxyableView</a>
+<ul>
+<li><a href="#a-note-about-reuse-and-styles">A note about reuse and styles</a></li>
+</ul>
+</li>
+<li><a href="#handling-selection">Handling selection</a></li>
+<li><a href="#setting-a-views-delegate">Setting a view's delegate</a></li>
+<li><a href="#hightlight-and-selection-states">Hightlight and selection states</a></li>
+<li><a href="#responding-to-view-appear--disappear-events">Responding to view appear / disappear events</a>
+<ul>
+<li><a href="#uicollectionviewflowlayout">UICollectionViewFlowLayout</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#epoxylayoutgroups">EpoxyLayoutGroups</a>
+<ul>
+<li><a href="#overview-1">Overview</a></li>
+<li><a href="#groupitem-and-groupitemmodeling">GroupItem and GroupItemModeling</a></li>
+<li><a href="#composing-groups">Composing groups</a></li>
+<li><a href="#spacing">Spacing</a></li>
+<li><a href="#staticgroupitem">StaticGroupItem</a></li>
+<li><a href="#groupitem-without-epoxyableview">GroupItem without EpoxyableView</a></li>
+<li><a href="#creating-components-inline-in-epoxycollectionview">Creating components inline in EpoxyCollectionView</a></li>
+<li><a href="#alignment">Alignment</a>
+<ul>
+<li><a href="#group-alignments">Group alignments</a></li>
+</ul>
+</li>
+<li><a href="#accessibility-layouts">Accessibility layouts</a></li>
+<li><a href="#constrainable-and-constrainablecontainer">Constrainable and ConstrainableContainer</a>
+<ul>
+<li><a href="#constrainable-protocol">Constrainable protocol</a></li>
+<li><a href="#constrainablecontainer">ConstrainableContainer</a></li>
+<li><a href="#complex-component">Complex component</a></li>
+</ul>
+</li>
+<li><a href="#accessing-properties-of-underlying-constrainables">Accessing properties of underlying Constrainables</a></li>
+<li><a href="#performance-and-testing">Performance and Testing</a></li>
+</ul>
+</li>
+<li><a href="#epoxybars">EpoxyBars</a>
+<ul>
+<li><a href="#overview-2">Overview</a></li>
+<li><a href="#keyboard-avoidance">Keyboard Avoidance</a></li>
+<li><a href="#overview-3">Overview</a></li>
+<li><a href="#updating-the-bars">Updating the bars</a></li>
+<li><a href="#barmodel">BarModel</a></li>
+<li><a href="#animations">Animations</a></li>
+<li><a href="#keyboard-avoidance">Keyboard avoidance</a></li>
+<li><a href="#safe-area-insets">Safe area insets</a></li>
+<li><a href="#differences-from-uinavigationbar-and-uitoolbar">Differences from UINavigationBar and UIToolbar</a></li>
+<li><a href="#advanced-use-cases">Advanced use cases</a>
+<ul>
+<li><a href="#animated-bar-height-changes">Animated bar height changes</a></li>
+<li><a href="#bar-coordinators">Bar Coordinators</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#epoxynavigation">EpoxyNavigation</a>
+<ul>
+<li><a href="#basic-usage">Basic usage</a></li>
+<li><a href="#nested-uinavigationcontrollers">Nested UINavigationControllers</a></li>
+<li><a href="#navigation-callbacks">Navigation callbacks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="epoxy">Epoxy</h1>
+<h2 id="epoxycore">EpoxyCore</h2>
+<p><strong>EpoxyCore</strong>包含所有其他Epoxy模块所依赖的共享逻辑。虽然我们认为EpoxyCore最好与Epoxy的其余部分一起使用，但您当然可以单独使用它。</p>
+<h3 id="views">Views</h3>
+<p>EpoxyCore的views部分包含一些协议，这些协议定义了在应用程序中创建和配置UIView的标准化方法。</p>
+<p>这些协议共同构成了EpoxyableView协议组合，您可以对自定义视图进行整合，使其易于与任何Epoxy api集成：</p>
+<pre><code class="language-swift">public typealias EpoxyableView = StyledView &amp; ContentConfigurableView &amp; BehaviorsConfigurableView
+</code></pre>
+<p>当UIView符合EpoxyableView时，可以使用方便的API为该视图创建Epoxy模型，例如，下面是如何为符合EpoxyableView的ButtonRow视图创建ItemModel：</p>
+<pre><code class="language-swift">ButtonRow.barModel(
+  content: .init(text: &quot;Click me!&quot;),
+  behaviors: .init(didTap: {
+    // Handle button selection
+  }),
+  style: .system)
+</code></pre>
+<p>让我们浏览一下EpoxyableView的每个组成协议，看看它们各自定义了什么，以及它们为什么有用：</p>
+<h4 id="styledview">StyledView</h4>
+<p>StyledView协议定义了用关联样式类型初始化UIView的标准方法：</p>
+<pre><code class="language-swift">public protocol StyledView: UIView {
+  associatedtype Style: Hashable = Never
+
+  init(style: Style)
+}
+</code></pre>
+<p>其目的是让样式类型包含初始化给定视图时配置该视图所需的所有内容。例如，我们可以为UILabel编写一个样式，用字体和文本颜色配置标签</p>
+<pre><code class="language-swift">extension UILabel: StyledView {
+  struct Style: Hashable {
+    let font: UIFont
+    let textColor: UIColor
+  }
+
+  convenience init(style: Style) {
+    super.init(frame: .zero)
+    font = style.font
+    textColor = style.textColor
+  }
+}
+
+let label = UILabel(style: .init(font: UIFont.preferredFont(forTextStyle: .body), textColor: .black))
+</code></pre>
+<p>使用一致的方法初始化应用程序中的所有视图，可以更轻松地使用组件，并且在保持清晰性的同时需要更少的文档。</p>
+<p>样式是Hashable，可以区分不同的样式，主要由EpoxyCollectionView使用，允许重用具有相同Style的相同类型的视图。</p>
+<p>样式默认为Never是为没有初始值设定项参数的视图符合EpoxyableView。例如，一个简单的divider视图可能没有初始值设定项参数。</p>
+<h4 id="contentconfigurableview">ContentConfigurableView</h4>
+<p>ContentConfigurableView协议定义了设置视图内容的标准化方法。我们没有为视图显示的内容的每个部分提供单独的属性，而是将其打包为一种类型，以便一次设置所有属性：</p>
+<pre><code class="language-swift">public protocol ContentConfigurableView: UIView {
+  associatedtype Content: Equatable = Never
+
+  func setContent(_ content: Self.Content, animated: Bool)
+}
+</code></pre>
+<p>举个例子，假设我们有一个名为CheckboxRow的组件，它显示一个标题、副标题和一个复选框，该复选框可以是选中的，也可以是未选中的。这个组件可以有3个属性：title:String、subtitle:String和isChecked:Bool。虽然这无疑是一种可以接受的编写组件的方法，但我们发现，在任何组件上设置内容的一致性方法更容易，这使得了解如何使用组件以及如何与组件交互更容易。以下是CheckboxRow的内容：</p>
+<pre><code class="language-swift">class CheckboxRow: UIView, ContentConfigurableView {
+
+  struct Content: Equatable {
+    var title: String?
+    var subtitle: String?
+    var isChecked: Bool
+  }
+
+  let titleLabel = UILabel()
+  let subtitleLabel = UILabel()
+  let checkboxView = UIImageView()
+
+  func setContent(_ content: Content, animated: Bool) {
+    titleLabel.text = content.title
+    subtitleLabel.text = content.subtitle
+    checkboxView.image = content.isChecked ? style.checkedImage : style.uncheckedImage
+  }
+}
+</code></pre>
+<p>当在CollectionView上设置sections时，EpoxyCollectionView使用equalable的内容类型来执行性能差异。</p>
+<p>内容默认Never是为没有内容的视图符合EpoxyableView。例如，一个简单的分隔器视图可能没有内容。</p>
+<h4 id="behaviorsconfigurableview">BehaviorsConfigurableView</h4>
+<p>BehaviorsConfigurableView协议定义了设置与视图相关联的“behaviors”的标准化方法。Behaviors是定义为不属于内容的non-Equatable属性，例如回调闭包或委托。与ContentConfigurableView类似，我们将所有行为打包为一种类型，以便可以一次设置所有行为：</p>
+<pre><code class="language-swift">public protocol BehaviorsConfigurableView: UIView {
+  associatedtype Behaviors = Never
+
+  func setBehaviors(_ behaviors: Self.Behaviors?)
+}
+</code></pre>
+<p>例如，我们可以定义一个ButtonRow，它的行为中包含一个tap处理程序闭包：</p>
+<pre><code class="language-swift">final class ButtonRow: UIView, BehaviorsConfigurableView {
+
+  struct Behaviors {
+    var didTap: (() -&gt; Void)?
+  }
+
+  func setBehaviors(_ behaviors: Behaviors?) {
+    didTap = behaviors?.didTap
+  }
+
+  private let button = UIButton(type: .system)
+  private var didTap: (() -&gt; Void)?
+
+  private func setUp() {
+    button.addTarget(self, action: #selector(handleTap), for: .touchUpInside)
+  }
+
+  @objc
+  private func handleTap() {
+    didTap?()
+  }
+}
+</code></pre>
+<p>setBehaviors函数接受一个可选的行为参数，因为在创建模型时行为是可选的。如果在创建EpoxyableView时不提供行为，则在使用nil behaviors参数调用setBehaviors重用该视图之前，将在该视图上重置这些行为。</p>
+<p>与content不同的是，行为不需要是Equatable。因此，设置行为的频率将高于设置内容的频率，需要在每次更新视图的相应模型时进行更新。因此，设置行为应该尽可能轻量级。</p>
+<p>行为默认是Never是为了没有符合EpoxyableView的behavior的视图。例如，一个简单的分隔器视图可能没有行为。</p>
+<hr>
+<h3 id="diffing">Diffing</h3>
+<p>EpoxyCore的diffing部分实现了paulheckel的差分算法(<a href="https://dl.acm.org/doi/10.1145/359460.359467">Paul Heckel's difference algorithm</a>)的一个版本，用于在两个集合之间快速高效地进行差分。这里需要注意的两个协议是Diffable和DiffableSection：</p>
+<pre><code class="language-swift">/// A protocol that allows us to check identity and equality between items for the purposes of
+/// diffing.
+public protocol Diffable {
+  /// Checks for equality between items when diffing.
+  ///
+  /// - Parameters:
+  ///     - otherDiffableItem: The other item to check equality against while diffing.
+  func isDiffableItemEqual(to otherDiffableItem: Diffable) -&gt; Bool
+
+  /// The identifier to use when checking identity while diffing.
+  var diffIdentifier: AnyHashable { get }
+}
+
+
+/// A protocol that allows us to check identity and equality between sections of `Diffable` items
+/// for the purposes of diffing.
+public protocol DiffableSection: Diffable {
+  /// The diffable items in this section.
+  associatedtype DiffableItems: Collection where
+    DiffableItems.Index == Int,
+    DiffableItems.Element: Diffable
+
+  /// The diffable items in this section.
+  var diffableItems: DiffableItems { get }
+}
+</code></pre>
+<p>符合这些协议允许您在两组Diffables或两组diffablesection之间轻松创建变更集：</p>
+<pre><code class="language-swift">extension String: Diffable {
+  public func isDiffableItemEqual(to otherDiffableItem: Diffable) -&gt; Bool {
+    guard let otherString = otherDiffableItem as? String else { return false }
+    return self == otherString
+  }
+
+  public var diffIdentifier: AnyHashable { self }
+}
+
+let set1 = [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;]
+let set2 = [&quot;c&quot;, &quot;d&quot;, &quot;e&quot;, &quot;a&quot;]
+
+let changeset = set1.makeChangeset(from: set2)
+</code></pre>
+<p>makeChangeset(from:)调用的结果将是一个IndexChangeset，其中包含从set1到set2所需的插入、删除、更新和移动的最小集合</p>
+<p>DiffableSection非常类似，每个DiffableSection内部都包含一组Diffable项。作为一个例子，我们可以使用上面的字符串扩展并引入StringSection来获取Strings部分之间的变更集</p>
+<pre><code class="language-swift">struct StringSection: DiffableSection, Equatable {
+  var diffIdentifier: AnyHashable
+  var diffableItems: [String]
+
+  func isDiffableItemEqual(to otherDiffableItem: Diffable) -&gt; Bool {
+    guard let otherSection = otherDiffableItem as? StringSection else { return false }
+    return self == otherSection
+  }
+}
+
+let section1 = StringSection(
+  diffIdentifier: 1,
+  diffableItems: [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;])
+let section2 = StringSection(
+  diffIdentifier: 2,
+  diffableItems: [&quot;c&quot;, &quot;d&quot;, &quot;e&quot;, &quot;a&quot;])
+let section3 = StringSection(
+  diffIdentifier: 1,
+  diffableItems: [&quot;d&quot;, &quot;e&quot;, &quot;f&quot;])
+
+let changeset = [section1, section2].makeSectionedChangeset(from: [section3])
+</code></pre>
+<p>上面生成的变更集将填充从第一个数组中的节集到第二个数组中的节集所需的更改。它将包括有关已移动、插入或删除的节的信息，以及已移动、插入或删除的项的信息，使用IndexPaths提供有关该项在节中位置的信息。</p>
+<h3 id="logging">Logging</h3>
+<p>EpoxyLogger提供了一种截获在Epoxy中发生的断言、断言失败和警告的方法。为了使用它，您只需要将全局EpoxyLogger.shared设置为您自己的EpoxyLogger实例。例如，您可以在AppDelegate中执行此操作以截获断言并将其记录到服务器：</p>
+<pre><code class="language-swift">import Epoxy
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+ func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?)
+    -&gt; Bool
+  {
+    ...
+    EpoxyLogger.shared = EpoxyLogger(
+      assert: { condition, message, fileID, line in
+        // custom handling of assertions here
+      },
+      assertionFailure: { message, fileID, line in
+        // custom handling of assertion failures here
+      },
+      warn: { message, fileID, line in
+        // custom handling of warnings here
+      })
+    return true
+  }
+}
+</code></pre>
+<h2 id="epoxycollectionview">EpoxyCollectionView</h2>
+<h3 id="overview">Overview</h3>
+<p>Epoxy的CollectionView是一种在语义上声明屏幕布局的方法。集合视图中的每个项都由一个模型表示，该模型表示一个视图，跟踪其ID，并用数据配置视图。这些模型将按您希望它们显示的顺序添加到“Epoxy”视图中，而“Epoxy”视图将为您处理显示这些模型的复杂性。</p>
+<hr>
+<h4 id="declarative-views">Declarative views</h4>
+<p>声明每个视图类的一个数组和一个闭包，用于为每个视图配置数据，Epoxy将处理这些视图的显示。</p>
+<p>它可以用于干净、简单的静态页面，也可以用于具有许多视图类型的复杂页面，这些视图类型需要为响应用户交互或网络请求的更改设置动画。API在这两种情况下都一样简单。</p>
+<p>在简单的静态情况下，有这么多代码：</p>
+<pre><code class="language-swift">collectionView.setSections([
+  SectionModel(items: [
+    Row.itemModel(
+      dataID: DataID.first,
+      content: &quot;first&quot;,
+      style: .standard),
+    Row.itemModel(
+      dataID: DataID.second,
+      content: &quot;second&quot;,
+      style: .standard),
+    Row.itemModel(
+      dataID: DataID.third,
+      content: &quot;third&quot;,
+      style: .standard),
+  ])
+], animated: true)
+</code></pre>
+<p>您可以让CollectionView使用提供的内容呈现3行。</p>
+<h4 id="simple-update-animations">Simple update animations</h4>
+<p>在需要设置更改动画的复杂视图中，只需设置一个新的sections数组，就可以自动生成动画，而无需额外的工作。Epoxy在两种状态之间进行内部区分，并自动处理任何视图更新。</p>
+<h4 id="avoiding-index-math">Avoiding index math</h4>
+<p>在最简单的情况下，使用索引路径来引用屏幕上的视图是很好的，但是在视图可能处于不同的实验状态的情况下，或者在异步输入（如用户交互或网络请求）可能导致视图与其数据源不同步的情况下，索引路径很快就会变得很复杂。在Epoxy之前，这是常见的撞车原因。</p>
+<p>Epoxy避免了脆弱的、难以检查的代码，这些代码在cellForRowAtIndexPath、didSelectRowAtIndexPath和numberOfRowsInSection等函数中充满了复杂的布尔值。它在内部处理从您设置的数据到视图的索引路径的映射，并且从不失去同步。如果您重新设计视图或添加一个实验，您就不会冒引入会导致越界崩溃的bug的风险，因为所有与索引路径相关的代码都包含在Epoxy中，并且不会随着功能的更改而更改。</p>
+<p>Epoxy使用dataid来引用视图，而不是索引路径。</p>
+<p>Epoxy的一个要求是，每一行始终包含一个唯一的dataID。如果您有重复的dataID，Epoxy会打印警告。</p>
+<h4 id="dataids-and-diffing-animations">DataIDs and Diffing Animations</h4>
+<p>更新数据并刷新内容时（例如，通过调用CollectionViewController.updateData（）），Epoxy使用这些数据标识来知道旧数据集中的视图应设置为与新数据集中的视图相同的视图，即使其内容已更改。例如，在已更新以显示购物车中当前项目数的文本单元格中，Epoxy知道如何将内容从状态a更新为状态B，而不是设置删除单元格并插入新单元格的动画，因为两个单元格共享相同的dataID。</p>
+<h3 id="collectionviewcontroller">CollectionViewController</h3>
+<p>CollectionViewController可以通过传入一组节来按原样使用，也可以对其进行子类化并自己设置sections。下面是一个子类的示例：</p>
+<pre><code class="language-swift">final class FeatureViewController: CollectionViewController {
+
+  init() {
+    super.init(layout: UICollectionViewCompositionalLayout.list())
+    setSections(sections, animated: false)
+  }
+
+  var sections: [SectionModel] {
+    [
+      SectionModel(items: items)
+    ]
+  }
+
+  private enum DataIDs {
+    case title
+  }
+
+  private var items: [ItemModeling] {
+    [
+      ItemModel&lt;UILabel, String&gt;(
+        dataID: DataIDs.title,
+        content: &quot;This is my title&quot;,
+        configureView: { context in
+          // context contains data coming from Epoxy to populate the content of your view
+          context.view.text = context.content
+        })
+    ]
+  }
+
+}
+</code></pre>
+<p>我可以通过使用要渲染的部分初始化CollectionViewController来创建相同的ViewController：</p>
+<pre><code class="language-swift">let viewController = CollectionViewController(
+  layout: UICollectionViewCompositionalLayout.list(),
+  sections: sections)
+</code></pre>
+<h3 id="collectionview">CollectionView</h3>
+<p>也可以单独使用CollectionView而不使用CollectionViewController。CollectionView类是UICollectionView的子类，但必须使用SectionModels而不是委托和数据源进行配置。您只需使用布局设置CollectionView，将其添加到视图层次结构中，并调用setSections（sections:[SectionModel]，animated:Bool）来呈现内容。下面是一个示例实现：</p>
+<pre><code class="language-swift">final class CustomCollectionViewController: UIViewController {
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    view.addSubview(collectionView)
+    NSLayoutConstraint.activate([
+      collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+      collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+    ])
+    updateSections(animated: false)
+  }
+
+  // MARK: Private
+
+  // set up whatever UICollectionViewLayout you want
+  private lazy var collectionView = CollectionView(layout: ...)
+
+  private func updateSections(animated: Bool) {
+    collectionView.setSections(sections, animated: animated)
+  }
+
+  private var sections: [SectionModel] {
+    [
+      // set up items just as before
+      SectionModel(items: ...)
+    ]
+  }
+}
+</code></pre>
+<hr>
+<h3 id="itemmodel-and-itemmodeling">ItemModel and ItemModeling</h3>
+<p>ItemModels是Epoxy的视图模型-它们包含Epoxy在CollectionView中为给定单元呈现视图所需的所有信息。ItemModels有几个核心属性：</p>
+<pre><code class="language-swift">// A simplified version of ItemModel to help explain the important properties
+struct ItemModel&lt;View: UIView, Content: Equatable&gt; {
+  // A unique and stable ID that identifies this model.
+  let dataID: AnyHashable
+
+  // The content used to populate the view backed by the model. Content must be equatable for proper cell reuse.
+  let content: Content
+
+  // A closure invoked with context from Epoxy to give you a chance to set your view's content
+  let setContent: (CallbackContext, Content) -&gt; Void
+
+  // A closure that returns the view that Epoxy will render inside the CollectionView cell. This will only be called when
+  // needed as views are reused.
+  let makeView: () -&gt; View
+}
+</code></pre>
+<p>您可以像这样直接创建ItemModel：</p>
+<pre><code class="language-swift">ItemModel&lt;MyCustomView&gt;(
+  dataID: DataID.title,
+  content: &quot;Hello world&quot;,
+  setContent: { context, content in
+    context.view.titleText = content
+  })
+  .makeView { MyCustomView() } // this is also the default
+</code></pre>
+<p>但是，由于我们通常希望以类似的方式配置相同类型的视图，因此我们可以通过使MyCustomView符合EpoxyableView来简化这一点</p>
+<h3 id="using-epoxyableview">Using EpoxyableView</h3>
+<p>只要UIView子类符合EpoxyCore的EpoxyableView，就可以用比手动初始化更好的语法生成ItemModels。在本例中，我有一个符合EpoxyableView的ImageRow组件：</p>
+<pre><code class="language-swift">// MARK: ImageRow
+
+public final class ImageRow: UIView, EpoxyableView {
+  public init(style: Style) {
+    super.init(frame: .zero)
+    titleLabel.font = style.titleFont
+    subtitleLabel.font = style.subtitleFont
+    imageView.contentMode = style.contentMode
+  }
+
+  struct Style {
+    public var titleFont = UIFont.preferredFont(forTextStyle: .title2)
+    public var subtitleFont = UIFont.preferredFont(forTextStyle: .body)
+    public var imageContentMode = UIView.ContentMode.scaleAspectFill
+
+    public static var standard: Style {
+      .init()
+    }
+  }
+
+  struct Content {
+    let title: String
+    let subtitle: String
+    let imageURL: URL
+  }
+
+  func setContent(_ content: Content, animated: Bool) {
+    titleLabel.text = content.title
+    subtitleLabel.text = content.subtitle
+    imageView.setURL(content.url, animated: animated)
+  }
+
+  // Setup code down here to create the subviews and add them to ImageRow
+}
+</code></pre>
+<p>现在，使用一些漂亮的Swift泛型代码，我们可以创建如下相同的ItemModel：</p>
+<pre><code class="language-swift">ImageRow.itemModel(
+  dataID: DataID.imageRow,
+  content: .init(
+    title: &quot;Title text&quot;,
+    subtitle: &quot;Subtitle text&quot;,
+    imageURL: URL(string: &quot;...&quot;)!),
+  style: .standard)
+</code></pre>
+<p>这个方便的方法将为您生成setContent和makeView闭包。</p>
+<p>要构造不符合EpoxyableView的ItemModel，如下所示：</p>
+<pre><code class="language-swift">let model = ItemModel&lt;ImageRow&gt;(
+  dataID: DataID.imageRow,
+  params: ImageRow.Style.standard,
+  content: ImageRow.Content(
+    title: &quot;Title text&quot;,
+    subtitle: &quot;Subtitle text&quot;,
+    imageURL: URL(string: &quot;...&quot;)!),
+  makeView: { params in 
+    ImageRow(style: params)
+  },
+  setContent: { context, content in 
+    context.view.setContent(content)
+  })
+</code></pre>
+<p>ItemModels是不可变的，但是您可以使用链接语法来创建具有set属性的新ItemModels，就像使用SwiftUI视图一样：</p>
+<pre><code class="language-swift">let item = ImageRow.itemModel(
+  dataID: DataID.imageRow,
+  content: .init(
+    title: &quot;Title text&quot;,
+    subtitle: &quot;Subtitle text&quot;,
+    imageURL: URL(string: &quot;...&quot;)!),
+  style: .standard)
+  .didSelect { context in 
+    // Handle selection of this cell
+  }
+</code></pre>
+<p>以下是可以使用的修饰符列表以及它们与UICollectionView的关系：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Modifier</th>
+<th>Discussion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">content</td>
+<td>将包含在传递到大多数环氧回调的上下文结构中的数据。这是填充视图内容所需的数据。</td>
+</tr>
+<tr>
+<td style="text-align:left">dataID</td>
+<td>此模型的唯一标识符。这对于给定部分中的每个模型都必须是唯一的。</td>
+</tr>
+<tr>
+<td style="text-align:left">didChangeState</td>
+<td>当单元格状态更改时调用的闭包。闭包提供了一个上下文结构，其中包含.normal、.highlighted或.selected之一的EpoxyCellState</td>
+</tr>
+<tr>
+<td style="text-align:left">didEndDisplaying</td>
+<td>包含此模型视图的单元格停止显示时调用的闭包</td>
+</tr>
+<tr>
+<td style="text-align:left">isMovable</td>
+<td>是否可以在CollectionView中移动此项。此属性与CollectionViewEpoxyReorderingDelegate关联</td>
+</tr>
+<tr>
+<td style="text-align:left">makeView</td>
+<td>在需要时调用闭包来构建此模型的视图。此视图将被重用。</td>
+</tr>
+<tr>
+<td style="text-align:left">selectionStyle</td>
+<td>UICollectionView中单元格的选择样式。选项有.noBackground和.color（UIColor）</td>
+</tr>
+<tr>
+<td style="text-align:left">setBehaviors</td>
+<td>当单元格需要重置时调用的闭包。下面将对此进行更详细的讨论。</td>
+</tr>
+<tr>
+<td style="text-align:left">setContent</td>
+<td>调用闭包来设置视图上的内容。每当UICollectionView请求渲染单元格时，都会调用此函数。</td>
+</tr>
+<tr>
+<td style="text-align:left">styleID</td>
+<td>用于在使用具有不同初始化样式的同一视图类型时防止单元重用错误。下面将对此进行更详细的讨论。</td>
+</tr>
+<tr>
+<td style="text-align:left">willDisplay</td>
+<td>将显示包含此模型视图的单元格时调用的闭包。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="a-note-about-reuse-and-styles">A note about reuse and styles</h4>
+<p>Epoxy基于您传递的ItemModel为您创建一个reuseIdentifier。该标识符是ItemModel上的type（of:View）和Style实例的散列的组合（这就是为什么Style需要是可散列的）。如果手动创建ItemModels，则需要为在屏幕上呈现的每个独特的视图样式提供一个styleID，否则会遇到重用错误单元格的问题。</p>
+<h3 id="handling-selection">Handling selection</h3>
+<p>Selection由didSelect闭包处理。这是使用ItemModel直接设置的，允许您将选择逻辑与视图的创建放在一起。</p>
+<pre><code class="language-swift">let items = images.map { imageData in
+  ImageRow.itemModel(
+    dataID: imageData.id,
+    content: .init(...),
+    style: .standard)
+    .didSelect { [weak self] _ in
+      self?.didSelectImage(id: imageData.id)
+    }
+}
+
+collectionView.setSections([SectionModel(items: items)], animated: true)
+</code></pre>
+<h3 id="setting-a-views-delegate">Setting a view's delegate</h3>
+<p>在创建或回收单元格后，设置视图的委托也会延迟进行。因此，ItemModel还可以使用块来处理视图委托的设置。请注意，这必须发生在setBehaviors闭包中，并且还必须将仅偶尔设置的任何块置零。</p>
+<pre><code class="language-swift">ImageRow.itemModel(
+  dataID: imageData.id,
+  content: .init(...),
+  style: .standard)
+  .setBehaviors { [weak self] context in
+    context.view.delegate = self
+  }
+</code></pre>
+<p>强烈建议您改用BehaviorsSettableView协议，它允许您一次定义一组不相等的“行为”，Epoxy将在需要时负责设置它们。</p>
+<pre><code class="language-swift">let behaviors = ImageRow.Behaviors(
+  didTapThumbnailImage: { [weak self] _ in
+    self?.navigateToImageViewer(forImageID: imageData.id)
+  }
+)
+let model = ImageRow.itemModel(
+  dataID: imageData.id,
+  content: .init(...),
+  style: .standard)
+  .behaviors(behaviors)
+</code></pre>
+<h3 id="hightlight-and-selection-states">Hightlight and selection states</h3>
+<p>视图可以更新其视觉状态以显示已更改的高亮显示或选定的外观，例如较暗的背景色。ItemModel有一个可选的didChangeState块，可用于更新视图的外观以获得不同的状态。didChangeState块的ItemCellState参数为.normal、.highlighted或.selected，允许视图根据需要显示每个状态的唯一外观。</p>
+<pre><code class="language-swift">ImageRow.itemModel(
+  dataID: imageData.id,
+  content: .init(...),
+  style: .standard)
+  .didChangeState { context in
+    switch state {
+    case .normal:
+      context.view.backgroundColor = .white
+    case .highlighted, .selected:
+      context.view.backgroundColor = .lightGray
+    }
+  }
+</code></pre>
+<h3 id="responding-to-view-appear-disappear-events">Responding to view appear / disappear events</h3>
+<p>在UICollectionView中，存在用于单元格何时显示以及何时结束显示的委托回调。在Epoxy中，这些已经映射到ItemModel上的块，以符合Epoxy的目标，即成为一个完全声明的UI框架。</p>
+<pre><code class="language-swift">ImageRow.itemModel(
+  dataID: imageData.id,
+  content: .init(...),
+  style: .standard)
+  .willDisplay {
+    // do something when the view will display
+  }
+  .didEndDisplaying {
+    // do something when the view ends displaying
+  }
+</code></pre>
+<h4 id="uicollectionviewflowlayout">UICollectionViewFlowLayout</h4>
+<p>可以将CollectionView和CollectionViewController与标准UICollectionViewFlowLayout一起使用，同时利用Epoxy的声明式API。ItemModeling和SectionModel的扩展为所有UICollectionViewDelegateFlowLayout方法提供了可链接的语法。您可以在“Flow Layout demo”下的示例应用程序中找到一个这样的工作示例。</p>
+<p>ItemModeling supports setting an item size like this:</p>
+<pre><code class="language-swift">Row.itemModel(
+  dataID: DataIDs.row,
+  content: .init(title: &quot;My Row&quot;),
+  style: .small)
+  .flowLayoutItemSize(.init(width: 250, height: 120))
+</code></pre>
+<p>只要使用UICollectionViewFlowLayout初始化CollectionView或CollectionViewController，这些值将自动用于项的大小。</p>
+<p>SectionModel还支持项目大小，它将该项目大小应用于该部分中的每个项目。SectionModel还支持其余的常规委托回调：</p>
+<pre><code class="language-swift">SectionModel(items: [...])
+  .flowLayoutSectionInset(.init(top: 0, left: 24, bottom: 0, right: 24))
+  .flowLayoutMinimumLineSpacing(8)
+  .flowLayoutMinimumInteritemSpacing(8)
+  .flowLayoutHeaderReferenceSize(.init(width: 0, height: 50))
+  .flowLayoutFooterReferenceSize(.init(width: 0, height: 50))
+</code></pre>
+<h2 id="epoxylayoutgroups">EpoxyLayoutGroups</h2>
+<h3 id="overview-2">Overview</h3>
+<p>LayoutGroups遵循与Epoxy其余部分相同的设计模式，它提供了一个声明式API，用于将元素组合到单个视图中。EpoxyCollectionView允许您声明性地指定希望在给定屏幕上显示的组件，而LayoutGroups允许您声明性地指定创建这些组件的元素。</p>
+<p><strong>VGroup</strong>允许您将组件垂直分组，以创建堆叠组件，如下所示：</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gr7p334zcjj31ke0mago5.jpg" alt="avatar" loading="lazy"></figure>
+<pre><code class="language-swift">// Set of dataIDs to have consistent and unique IDs
+enum DataID {
+  case title
+  case subtitle
+  case action
+}
+
+// Groups are created declaratively just like Epoxy ItemModels
+let group = VGroup(alignment: .leading, spacing: 8) {
+  Label.groupItem(
+    dataID: DataID.title,
+    content: &quot;Title text&quot;,
+    style: .title)
+  Label.groupItem(
+    dataID: DataID.subtitle,
+    content: &quot;Subtitle text&quot;,
+    style: .subtitle)
+  Button.groupItem(
+    dataID: DataID.action,
+    content: &quot;Perform action&quot;,
+    behaviors: .init { button in
+      print(&quot;Button tapped! \(button)&quot;)
+    },
+    style: .standard)
+}
+
+// install your group in a view
+group.install(in: view)
+
+// constrain the group like you would a normal subview
+group.constrainToMargins()
+</code></pre>
+<p>如您所见，这与Epoxy中使用的其他API非常相似。需要注意的一点是install（in:view）调用位于底部。HGroup和VGroup都是使用UILayoutGuide编写的，UILayoutGuide可以防止具有大型嵌套视图层次结构。为了解决这个问题，我们添加了这个安装方法来防止用户手动添加子视图和布局指南。</p>
+<p>使用HGroup与VGroup几乎完全相同，但组件现在是水平布局，而不是垂直布局：</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gr7p8awqaoj31kq0d0ta8.jpg" alt="avatar" loading="lazy"></figure>
+<pre><code class="language-swift">enum DataID {
+  case icon
+  case title
+}
+
+let group = HGroup(spacing: 8) {
+  ImageView.groupItem(
+    dataID: DataID.icon,
+    content: UIImage(systemName: &quot;person.fill&quot;)!,
+    style: .init(size: .init(width: 24, height: 24)))
+  Label.groupItem(
+    dataID: DataID.title,
+    content: &quot;This is an IconRow&quot;)
+}
+
+group.install(in: view)
+group.constrainToMargins()
+</code></pre>
+<ul>
+<li>Documentation</li>
+</ul>
+<p>Here’s a high level interface for a group:</p>
+<pre><code class="language-swift">public final class {H|V}Group: UILayoutGuide, Constrainable {
+  /// must be called once set up to install this group in the view hierarchy
+  public func install(in view: UIView)
+
+  /// Replace the current items with a new set of items.
+  /// This does an ordered collection diff to only replace items needed
+  /// and then redoes all of the constraints.
+  /// This method does nothing if the array of new items is identical
+  /// to the existing set of items
+  func setItems(_ newItems: [GroupItemModeling?])
+}
+</code></pre>
+<p>HGroup有几个独特的属性：</p>
+<pre><code class="language-swift">extension HGroup {
+  /// prevents reflow of elements at accessibility type sizes
+  public func reflowsForAccessibilityTypeSizes(_ reflows: Bool) -&gt; HGroup
+
+  /// Forces HGroup to be in a vertical layout
+  /// Can be useful when you want to change layouts without installing a new group
+  public func forceAccessibilityVerticalLayout(_ forceIn: Bool) -&gt; HGroup
+}
+</code></pre>
+<h3 id="groupitem-and-groupitemmodeling">GroupItem and GroupItemModeling</h3>
+<p>每个group接受GroupItemModeling一致类型的数组，它使用这些类型来执行智能差异并延迟实例化子视图。提供了许多符合GroupItemModeling的类型，每个类型都有自己的用途：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Type</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">GroupItem<ItemType></td>
+<td style="text-align:left">可以与任何符合EpoxyableView的ItemType一起使用的通用项。使用StyledView+GroupItem.swift中提供的帮助程序可以更轻松地创建此项目</td>
+</tr>
+<tr>
+<td style="text-align:left">HGroupItem</td>
+<td style="text-align:left">表示在父组中嵌套HGroups时应使用的HGroups的项</td>
+</tr>
+<tr>
+<td style="text-align:left">VGroupItem</td>
+<td style="text-align:left">表示在父组中嵌套VGroups时应使用的VGroups的项</td>
+</tr>
+<tr>
+<td style="text-align:left">SpacerItem</td>
+<td style="text-align:left">表示间隔符的项目</td>
+</tr>
+<tr>
+<td style="text-align:left">StaticGroupItem</td>
+<td style="text-align:left">表示静态可约束项的项。如果子视图已经实例化，或者不想使用LayoutGroups提供的自动差异化算法，则可以使用此选项</td>
+</tr>
+</tbody>
+</table>
+<h3 id="composing-groups">Composing groups</h3>
+<p>有趣的部分来了：HGroup和VGroup不仅接受视图，还可以接受其他组！这允许您轻松地将多个组组合在一起，以获得所需的布局。需要注意的是，在嵌套组时，应该使用每个组的项目版本HGroupItem for HGroup和VGroupItem for VGroup。例如，如果我想创建一个带有复选框行的简单todo应用程序：</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gr7pgos0wej31ks0k6q6y.jpg" alt="avatar" loading="lazy"></figure>
+<p>通过将HGroup与VGroupItem组合起来，我可以很容易地做到：</p>
+<pre><code class="language-swift">enum DataID {
+  case checkbox
+  case titleSubtitleGroup
+  case title
+  case subtitle
+}
+
+HGroup(spacing: 8) {
+  Checkbox.groupItem(
+    dataID: DataID.checkbox,
+    content: .init(isChecked: true),
+    style: .standard)
+  VGroupItem(
+    dataID: DataID.titleSubtitleGroup, 
+    style: .init(spacing: 4)) 
+  {
+    Label.groupItem(
+      dataID: DataID.title,
+      content: &quot;Title&quot;,
+      style: .title)
+    Label.groupItem(
+      dataID: DataID.subtitle,
+      content: &quot;Subtitle&quot;,
+      style: .subtitle)
+  }
+}
+</code></pre>
+<p>在外部HGroup上调用install（in:view）时，它将递归地安装视图中的每个子组。这将展平视图层次结构，以便所有内容都有一个共同的祖先，并使用一组UILayoutGuides进行布局。</p>
+<h3 id="spacing">Spacing</h3>
+<p>可以手动设置组中两个元素之间的间距：</p>
+<pre><code class="language-swift">VGroup(spacing: 16) {
+  Label.groupItem(...)
+  Label.groupItem(...)
+}
+</code></pre>
+<p>Spacer是一个非常简单的组件，它允许您在组或组中的元素之间添加空间。间隔符的作用和其他元素一样，但不呈现任何内容。默认的间隔符将填充尽可能多的空间，这允许您在组之间轻松地移动元素。以下示例显示如何在HGroup中的元素之间使用分隔符将它们推到前缘和后缘：</p>
+<pre><code class="language-swift">HGroup {
+  // name
+  Label.groupItem(...)
+  // message status icon
+  GroupItem&lt;UIView&gt;(...)
+  // spacer
+  SpacerItem(dataID: DataID.spacer)
+  // date label
+  Label.groupItem(...)
+  // disclosure indicator
+  ImageView.groupItem(...)  
+}
+</code></pre>
+<p>如果中间没有间隔符，dateLabel很可能就在messageStatusIcon旁边，而实际上我们希望它被推到后面。我在这里说“可能”，因为这取决于在每个子视图中使用的对齐方式，或者HGroup本身。除此之外，像contentcompressionresistance和contentHuggingPriority这样的东西也将在这里生效。了解AutoLayout的工作原理对于解决像这样的布局问题非常有帮助。</p>
+<p>您还可以显式地指定它的大小，以使用更微调的控件更新元素之间的间距。</p>
+<pre><code class="language-swift">HGroup {
+  ...
+  SpacerItem(dataID: DataID.spacer, style: .init(minWidth: 50))
+  ...
+}
+</code></pre>
+<p>在本例中，messageStatusIcon将始终与dateLabel保持至少50个点的距离，但在其他情况下，它将尽可能远离尾部。</p>
+<p>可以使用以下任何值初始化间隔器的样式：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Spacer values</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">minHeight</td>
+<td style="text-align:left">Spacer将在垂直方向上占据至少最小高度像素</td>
+</tr>
+<tr>
+<td style="text-align:left">maxHeight</td>
+<td style="text-align:left">Spacer将在垂直方向上占用最多maxHeight像素</td>
+</tr>
+<tr>
+<td style="text-align:left">fixedHeight</td>
+<td style="text-align:left">Spacer将在垂直方向上占据完全固定的高度像素</td>
+</tr>
+<tr>
+<td style="text-align:left">minWidth</td>
+<td style="text-align:left">Spacer将在水平方向上占据至少minWidth像素</td>
+</tr>
+<tr>
+<td style="text-align:left">maxWidth</td>
+<td style="text-align:left">Spacer将在水平方向上占据最多maxWidth像素</td>
+</tr>
+<tr>
+<td style="text-align:left">fixedWidth</td>
+<td style="text-align:left">Spacer将在水平方向上占据完全固定的fixedWidth像素</td>
+</tr>
+</tbody>
+</table>
+<h3 id="staticgroupitem">StaticGroupItem</h3>
+<p>如果您有一个不会更新的简单布局，那么您可能不想为每个子视图创建一个组项。在这种情况下，可以使用StaticGroupItem来表示已实例化的可约束项：</p>
+<pre><code class="language-swift">let titleLabel = UILabel(...)
+let subtitleLabel = UILabel(...)
+
+let group = VGroup(spacing: 8) {
+  StaticGroupItem(titleLabel)
+  StaticGroupItem(subtitleLabel)
+}
+
+group.install(in: self)
+group.constrainToMargins()
+</code></pre>
+<h3 id="groupitem-without-epoxyableview">GroupItem without EpoxyableView</h3>
+<p>虽然我们认为所有组件都符合EpoxyableView以保持一致性，但并不需要在Group内使用组件。当您的组件符合EpoxyableView时，您可以使用StyledView+GroupItem中的helper函数，如下所示：</p>
+<pre><code class="language-swift">MyComponent.groupItem(
+  dataID: ...,
+  content: ...,
+  behaviors: ...,
+  style: ...)
+</code></pre>
+<p>但是，如果您的组件不符合EpoxyableView，则可以直接使用GroupItem。例如，假设我想创建一个简单的UILabel，并将内容作为字符串传递，将样式作为UIFont传递。我可以直接这样做：</p>
+<pre><code class="language-swift">GroupItem&lt;UILabel&gt;(
+  dataID: DataID.title,
+  params: UIFont.preferredFont(forTextStyle: .body),
+  content: &quot;This is some body copy&quot;,
+  make: { params in 
+    let label = UILabel(frame: .zero)
+    // this is required by LayoutGroups to ensure AutoLayout works as expected
+    label.translatesAutoresizingMaskIntoConstraints = false
+    label.font = params
+    return label
+  },
+  setContent: { context, content in
+    context.constrainable.text = content
+  })
+</code></pre>
+<h3 id="creating-components-inline-in-epoxycollectionview">Creating components inline in EpoxyCollectionView</h3>
+<p>HGroupView和VGroupView是UIView子类，分别包装HGroup和VGroup。如果要创建包含组的视图实例，可以使用它们，但也可以直接在EpoxyCollectionView中使用它们，因为它们都符合EpoxyableView：</p>
+<pre><code class="language-swift">var items: [ItemModeling] {
+  [
+    VGroupView.itemModel(
+      dataID: RowDataID.textRow,
+      content: .init {
+        Label.groupItem(
+          dataID: GroupDataID.title,
+          content: &quot;Title text&quot;,
+          style: .title)
+        Label.groupItem(
+          dataID: GroupDataID.subtitle,
+          content: &quot;Subtitle text&quot;,
+          style: .subtitle)
+      },
+      style: .init(
+        vGroupStyle: .init(spacing: 8),
+        layoutMargins: .init(top: 16, left: 24, bottom: 16, right: 24))),
+    HGroupView.itemModel(
+      dataID: RowDataID.imageRow,
+      content: .init {
+        ImageView.groupItem(
+          dataID: GroupDataID.image,
+          content: UIImage(systemName: &quot;folder&quot;),
+          style: .init(size: .init(width: 32, height: 32), tintColor: .systemGreen))
+          .verticalAlignment(.top)
+        VGroupItem(
+          dataID: GroupDataID.verticalGroup,
+          style: .init(spacing: 8))
+        {
+          Label.groupItem(
+            dataID: GroupDataID.title,
+            content: &quot;Title text&quot;,
+            style: .title)
+          Label.groupItem(
+            dataID: GroupDataID.subtitle,
+            content: &quot;Subtitle text&quot;,
+            style: .subtitle)
+          }
+      },
+      style: .init(
+        hGroupStyle: .init(spacing: 16),
+        layoutMargins: .init(top: 16, left: 24, bottom: 16, right: 24)))
+  ]
+}
+</code></pre>
+<h3 id="alignment">Alignment</h3>
+<p>组中的每个元素都支持一组路线，这取决于它们所在的组。对于HGroup中的元素，可以设置其垂直对齐方式。下表显示了HGroup支持的所有路线：</p>
+<table>
+<thead>
+<tr>
+<th>HGroup.ItemAlignment value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>.fill</td>
+<td>将项目的顶部和底部边缘与组的前缘和后缘紧密对齐。短于组高度的组件将拉伸到组的高度</td>
+</tr>
+<tr>
+<td>.top</td>
+<td>将项目的上边缘与组的上边缘紧密对齐。短于组高度的组件将不会拉伸。</td>
+</tr>
+<tr>
+<td>.bottom</td>
+<td>将物品的底边与容器的底边紧密对齐。短于组高度的组件将不会拉伸。</td>
+</tr>
+<tr>
+<td>.center</td>
+<td>将项目的中心与组的中心垂直对齐。短于组高度的组件将不会拉伸。</td>
+</tr>
+<tr>
+<td>.centered(to: Constrainable)</td>
+<td>将一个项目垂直居中于另一个项目。另一个项不需要在同一个组中，但它必须与以它为中心的项共享一个共同的祖先。短于组高度的组件将不会拉伸。</td>
+</tr>
+<tr>
+<td>.custom((_ container: Constrainable, _ constrainable: Constrainable) -&gt; [NSLayoutConstraint])</td>
+<td>提供一个返回一组自定义约束的块。参数容器：应约束到的父容器。参数可约束：此对齐影响的可约束</td>
+</tr>
+</tbody>
+</table>
+<p>此表显示了VGroup中支持的所有水平对齐：</p>
+<table>
+<thead>
+<tr>
+<th>VGroup.ItemAlignment value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>.fill</td>
+<td>将项目的前缘和后缘与组的前缘和后缘紧密对齐。小于组宽度的组件将拉伸到组的宽度</td>
+</tr>
+<tr>
+<td>.leading</td>
+<td>将项目的前缘与组的前缘对齐。小于组宽度的组件将不会拉伸</td>
+</tr>
+<tr>
+<td>.trailing</td>
+<td>将项目的后缘与组的后缘对齐。小于组宽度的组件将不会拉伸</td>
+</tr>
+<tr>
+<td>.center</td>
+<td>将项目的中心与组的中心水平对齐。小于组宽度的组件将不会拉伸</td>
+</tr>
+<tr>
+<td>. centered(to: Constrainable)</td>
+<td>水平居中一个项目到另一个。另一个项不需要在同一个组中，但它必须与以它为中心的项共享一个共同的祖先。小于组宽度的组件将不会拉伸</td>
+</tr>
+<tr>
+<td>.custom((_ container: Constrainable, _ constrainable: Constrainable) -&gt; [NSLayoutConstraint])</td>
+<td>提供一个返回一组自定义约束的块。参数容器：应约束到的父容器。参数可约束：此对齐影响的可约束</td>
+</tr>
+</tbody>
+</table>
+<p>例如，下面是一个复选框行，其中包含用于更改复选框与文本对齐方式的各种垂直对齐方式：</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gr7q072ddoj30xf0u0jzv.jpg" alt="avatar" loading="lazy"></figure>
+<p>应用对齐方式很简单，设置组时只需对要对齐的视图调用.verticalAlignment或.horizontalAlignment方法：</p>
+<pre><code class="language-swift">// HGroup's verticalAlignment
+let hGroup = HGroup {
+  checkbox
+    .verticalAlignment(.center)
+  titleLabel
+}
+hGroup.install(in: view)
+hGroup.constrainToMargins()
+
+// VGroup's horizontalAlignment
+let vGroup = VGroup {
+  checkbox
+    .horizontalAlignment(.leading)
+  titleLabel
+}
+vGroup.install(in: view)
+vGroup.constrainToMargins()
+</code></pre>
+<h4 id="group-alignments">Group alignments</h4>
+<p>HGroup和VGroup还接受其初始值设定项中的对齐方式，该初始值设定项将对齐方式应用于组中的每个元素。如果元素上设置了对齐方式，它将使用该对齐方式，而不是组的对齐方式属性。两个组的默认值都是.fill。</p>
+<pre><code class="language-swift">HGroup(alignment: .center) {
+  imageView
+  VGroup {
+    titleLabel
+    subtitleLabel
+    actionLabel
+  }
+}
+</code></pre>
+<h3 id="accessibility-layouts">Accessibility layouts</h3>
+<p>使行更容易访问的一种技术是，当类型大小设置为非常大时，将元素的轴从水平更改为垂直。通过使用HGroup，您可以免费获得此行为。此消息行的示例如下：左侧是使用默认类型大小设置的行，右侧是使用辅助功能类型大小设置的同一行：</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gr7q3zifinj31fq0o2dks.jpg" alt="avatar" loading="lazy"></figure>
+<p>当然，您可能并不希望您的组件（或组件的一部分）执行此操作，因此可以通过在HGroup上设置reflowsForAccessibilityTypeSizes=false来禁用此行为。</p>
+<pre><code class="language-swift">public final class CheckboxRow: UIView {
+
+  public init() {
+    super.init()
+    hGroup.install(in: self)
+    hGroup.constrainToMargins()
+  }
+
+  private lazy var hGroup = HGroup {
+    checkbox
+    VGroup {
+      titleLabel
+      subtitleLabel
+    }
+  }
+  .reflowsForAccessibilityTypeSizes(false)
+
+}
+</code></pre>
+<h3 id="constrainable-and-constrainablecontainer">Constrainable and ConstrainableContainer</h3>
+<h4 id="constrainable-protocol">Constrainable protocol</h4>
+<p>为了使HGroup和VGroup都能够接受UIView和其他HGroup和VGroup实例，我们创建了一个可约束协议，该协议定义了一些可以使用auto layout进行布局的内容：</p>
+<pre><code class="language-swift">/// Defines something that can be constrainted with AutoLayout
+public protocol Constrainable {
+  var leadingAnchor: NSLayoutXAxisAnchor { get }
+  var trailingAnchor: NSLayoutXAxisAnchor { get }
+  var leftAnchor: NSLayoutXAxisAnchor { get }
+  var rightAnchor: NSLayoutXAxisAnchor { get }
+  var topAnchor: NSLayoutYAxisAnchor { get }
+  var bottomAnchor: NSLayoutYAxisAnchor { get }
+  var widthAnchor: NSLayoutDimension { get }
+  var heightAnchor: NSLayoutDimension { get }
+  var centerXAnchor: NSLayoutXAxisAnchor { get }
+  var centerYAnchor: NSLayoutYAxisAnchor { get }
+  var firstBaselineAnchor: NSLayoutYAxisAnchor { get }
+  var lastBaselineAnchor: NSLayoutYAxisAnchor { get }
+  /// unique identifier for this constrainable
+  var dataID: AnyHashable { get }
+  /// View that owns this constrainable
+  var owningView: UIView? { get }
+
+  /// install the Constrainable into the provided view
+  func install(in view: UIView)
+  /// uninstalls the Constrainable
+  func uninstall()
+  /// equality function
+  func isEqual(to constrainable: Constrainable) -&gt; Bool
+}
+</code></pre>
+<p>将来，我们可以创建一个ZGroup或任何数量的其他符合此协议的布局对象，它们将一起工作。</p>
+<h4 id="constrainablecontainer">ConstrainableContainer</h4>
+<p>在内部，每个HGroup和VGroup将每个元素包装在可约束容器中。通过此类型可以访问“verticalAlignment”和“horizontalAlignment”属性，并允许我们在将来向堆叠元素添加新功能。每次对组中的某个元素调用其中一个对齐方法时，它都会将该元素包装在可约束容器中。这就避免了我们必须使用关联对象或其他方式将对齐值与元素关联起来。</p>
+<h4 id="complex-component">Complex component</h4>
+<p>以下是与前面相同的MessageRow，作为使用HGroup、VGroup和Spacer构建的更复杂组件的示例：</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gr7q7vp6elj31fu0n6448.jpg" alt="avatar" loading="lazy"></figure>
+<p>创建此组件的代码如下所示：</p>
+<pre><code class="language-swift">// Perform this as part of initialization of the component
+let group = HGroup(spacing: 8)
+group.install(in: self)
+group.constrainToMargins()
+
+// The setContent method can be called anytime and the group will
+// perform an intelligent diff to only create, delete, move, or update views as needed
+func setContent(_ content: Content, animated: Bool) {
+  group.setItems {
+    avatar
+    VGroupItem(
+      dataID: DataID.contentGroup,
+      style: .init(spacing: 8))
+    {
+      HGroupItem(
+        dataID: DataID.topContainer,
+        style: .init(alignment: .center, spacing: 8))
+      {
+        HGroupItem(
+          dataID: DataID.nameGroup,
+          style: .init(alignment: .center, spacing: 8))
+        {
+          name(content.name)
+          unreadIndicator
+        }
+        .reflowsForAccessibilityTypeSizes(false)
+      
+        SpacerItem(dataID: DataID.topSpacer)
+
+        HGroupItem(
+          dataID: DataID.disclosureGroup,
+          style: .init(alignment: .center, spacing: 8))
+        {
+          date(content.date)
+          disclosureIndicator
+        }
+        .reflowsForAccessibilityTypeSizes(false)
+      }
+      
+      messagePreview(content.messagePreview)
+      seenText(content.seenText)
+    }
+  }
+}
+
+// Computed variables and functions to create the nested group items
+
+private var avatar: GroupItemModeling {
+  ImageView.groupItem(
+    dataID: DataID.avatar,
+    content: UIImage(systemName: &quot;person.crop.circle&quot;),
+    style: .init(
+      size: .init(width: 48, height: 48),
+      tintColor: .black))
+    .set(\ImageView.layer.cornerRadius, value: 24)
+}
+
+private func name(_ name: String) -&gt; GroupItemModeling {
+  Label.groupItem(
+    dataID: DataID.name,
+    content: name,
+    style: .style(with: .title3))
+    .numberOfLines(1)
+}
+
+private var unreadIndicator: GroupItemModeling {
+  ColorView.groupItem(
+    dataID: DataID.unread,
+    style: .init(size: .init(width: 8, height: 8), color: .systemBlue))
+    .set(\ColorView.layer.cornerRadius, value: 4)
+}
+
+private func date(_ date: String) -&gt; GroupItemModeling {
+  Label.groupItem(
+    dataID: DataID.date,
+    content: date,
+    style: .style(with: .subheadline))
+    .contentCompressionResistancePriority(.required, for: .horizontal)
+}
+
+private var disclosureIndicator: GroupItemModeling {
+  ImageView.groupItem(
+    dataID: DataID.disclosureArrow,
+    content: UIImage(systemName: &quot;chevron.right&quot;),
+    style: .init(
+      size: .init(width: 12, height: 16),
+      tintColor: .black))
+    .contentMode(.center)
+    .contentCompressionResistancePriority(.required, for: .horizontal)
+}
+
+private func messagePreview(_ messagePreview: String) -&gt; GroupItemModeling {
+  Label.groupItem(
+    dataID: DataID.message,
+    content: messagePreview,
+    style: .style(with: .body))
+    .numberOfLines(3)
+}
+
+private func seenText(_ seenText: String) -&gt; GroupItemModeling {
+  Label.groupItem(
+    dataID: DataID.seen,
+    content: seenText,
+    style: .style(with: .footnote))
+}
+</code></pre>
+<p>将组件分解为元素以及这些元素如何堆叠在一起，可以使用很少的代码创建非常复杂的组件，而无需手动创建任何约束。</p>
+<h3 id="accessing-properties-of-underlying-constrainables">Accessing properties of underlying Constrainables</h3>
+<p>在MessageRow示例中，您可能已经注意到一些令人惊讶的调用，特别是处理numberOfLines、ImageView的corneradius和contentCompressionResistancePriority的调用。GroupItem允许您通过使用动态成员查找或显式调用set（\keypath:value：）具有提供的键路径。</p>
+<p>例如，UILabel或子类可以使用动态成员查找设置其numberOfLines：</p>
+<pre><code class="language-swift">Label.groupItem(
+  dataID: DataID.message,
+  content: content.messagePreview,
+  style: .style(with: .body))
+  .numberOfLines(3)
+</code></pre>
+<p>由于layer.cornerRadius是嵌套调用，因此我们必须使用如下显式键路径：</p>
+<pre><code class="language-swift">ImageView.groupItem(
+  dataID: DataID.avatar,
+  content: UIImage(systemName: &quot;person.crop.circle&quot;),
+  style: .init(
+    size: .init(width: 48, height: 48),
+    tintColor: .black))
+  .set(\ImageView.layer.cornerRadius, value: 24)
+</code></pre>
+<p>GroupItem有几个独特的方法专门用于contentCompressionResistancePriority和contentHuggingPriority，您可以按如下方式使用这些方法：</p>
+<pre><code class="language-swift">ImageView.groupItem(
+  dataID: DataID.disclosureArrow,
+  content: UIImage(systemName: &quot;chevron.right&quot;),
+  style: .init(
+    size: .init(width: 12, height: 16),
+    tintColor: .black))
+  .contentMode(.center)
+  .contentCompressionResistancePriority(.required, for: .horizontal)
+  .contentHuggingPriority(.required, for: .horizontal)
+</code></pre>
+<h3 id="performance-and-testing">Performance and Testing</h3>
+<p>我使用LayoutGroups和UIStackView实现了上面看到的相同的复杂组件，并进行了一些简单的性能测试。工具表明，每种实现方式都是可比较的（尽管无可否认，要从UIStackView上获得好的数据有点困难）。在Airbnb，我们发现在一个组件中嵌套多个视图并在一个屏幕中多次使用该组件可能会阻碍滚动性能，而LayoutGroups没有相同的问题。您可以通过构建示例项目并使用“messagelist（LayoutGroups）”和“messagelist（UIStackView）”屏幕进行分析来为自己分析这一点。</p>
+<p>还有一些基本的性能测试可以验证组的性能是否至少与具有相同配置的UIStackView相同。</p>
+<p>我们已经使用了出色的Swift快照测试来创建我们的演示视图控制器的快照测试，以确保版本之间没有回归。由于这段代码大部分与UI相关，因此编写单元测试是一项挑战。</p>
+<p>我用HGroup/VGroup代替UIStackView做什么？</p>
+<p>我们在UIStackView上做了一些性能测试，发现当UIScrollView中有很多嵌套的堆栈视图时，它会迅速降低滚动性能。以下是一篇有类似发现的<a href="https://medium.com/kinandcartacreated/uistackview-a-public-service-announcement-61dfd1e88e43">媒体文章</a>。LayoutGroups旨在提供一种更有效的布局子视图的方法，方法是不使用嵌套的视图层次结构，并使用UILayoutGuide展平布局。除此之外，LayoutGroups还提供了一个一致的声明式API，允许高效的更新和更具反应性的编程方法。</p>
+<h2 id="epoxybars">EpoxyBars</h2>
+<h3 id="overview-3">Overview</h3>
+<p>EpoxyBars是一个声明性API，用于向UIViewController添加固定的顶部和底部条形图。添加这些条很简单：</p>
+<pre><code class="language-swift">final class ViewController: UIViewController {
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    topBarInstaller.install()
+    bottomBarInstaller.install()
+  }
+
+  private lazy var topBarInstaller = TopBarInstaller(viewController: self, bars: topBars)
+  private lazy var bottomBarInstaller = BottomBarInstaller(viewController: self, bars: bottomBars)
+
+  private var topBars: [BarModeling] {
+    [
+      // Instantiate BarModels for the top bars here
+    ]
+  }
+
+  private var bottomBars: [BarModeling] {
+    [
+      // Instantiate BarModels for the bottom bars here
+    ]
+  }
+}
+</code></pre>
+<h3 id="keyboard-avoidance">Keyboard Avoidance</h3>
+<h3 id="overview-4">Overview</h3>
+<h3 id="updating-the-bars">Updating the bars</h3>
+<p>您可以通过在具有表示bar图的条形图模型数组的bar图安装程序上调用setbar（\animated：）来更新bar图安装程序的内容或切换bar图视图 您希望看到的视图。bar图在模型更新之间按其视图类型进行标识。更新bar图模型时，bar图安装程序使用以下启发式方法更新每个条形图视图：</p>
+<ul>
+<li>如果在更新中添加了模型，则会将其相应的视图插入堆栈中。</li>
+<li>如果模型更新之间的视图样式和内容相同，则视图不会发生更新。</li>
+<li>如果视图的内容在模型更新之间不同，则会重用现有视图，并通过setContent（\animated：）用新内容更新现有视图。</li>
+<li>如果视图的样式在模型更新之间不同（由模型的styleID确定），则会删除以前的视图并替换为新视图。</li>
+<li>如果在更新中删除了模型，则会从堆栈中删除相应的视图。</li>
+</ul>
+<h3 id="barmodel">BarModel</h3>
+<p>BarModel是用于向bar安装程序添加视图的模型类型。它是一个轻量级模型，应该在每次状态更改时重新创建，这样您就可以声明性地在特性中编写bar逻辑。</p>
+<p>BarModel使用所需的bar形图内容、样式和用于在更新之间标识模型的可选替代数据ID（数据ID默认为bar视图的类型）进行初始化。它支持链接语法以获取各种生命周期事件的回调并自定义模型属性：</p>
+<pre><code class="language-swift">let model = ButtonRow.barModel(
+  content: .init(text: &quot;Tap me&quot;),
+  behaviors: .init(didTap: { _ in
+    // Handle the button being tapped
+  })
+  style: .system)
+  // You can call optional &quot;chaining&quot; methods to further customize your bar model:
+  .willDisplay { context in
+    // Called when the bar view is about to be added to the view hierarchy.
+  }
+  .didDisplay { context in
+    // Called once the bar view has been added to the view hierarchy.
+  }
+</code></pre>
+<h3 id="animations">Animations</h3>
+<p>将true传递给setBars(_:animated:)的animated参数时，将对bar图堆栈进行动画更新。如果模型更新之间的条形图不同，则使用交叉淡入淡出动画在视图之间进行转换。Any inserted bars slide in, and any removed bars slide out.</p>
+<h3 id="keyboard-avoidance-2">Keyboard avoidance</h3>
+<p>要使BottomBarInstaller的条堆栈避免显示和隐藏键盘，请将true传递给BottomBarInstaller的avoidsKeyboard参数初始值设定项，或在创建后将同名属性设置为true。</p>
+<h3 id="safe-area-insets">Safe area insets</h3>
+<p>Bar安装程序根据条形图堆栈视图（如果可见）的高度调整视图控制器的additionalSafeAreaInsets。这可以确保任何滚动视图内容都会自动按bar堆栈的高度插入，以便滚动视图在其内容的顶部或底部时考虑bar堆栈的高度。</p>
+<p>Bar图将视图控制器的原始安全区域插入应用于其布局边距。这样可以确保条形图内容不会和状态栏或主指示器重叠，但它们的背景可以在其下方流动。</p>
+<p>需要注意的是，由于bar图视图被安全区域覆盖，因此任何将其子视图约束到布局边距的条形图子视图都必须确保insetsLayoutMarginsFromSafeArea设置为false，否则可能会遇到无限的布局循环。</p>
+<h3 id="differences-from-uinavigationbar-and-uitoolbar">Differences from UINavigationBar and UIToolbar</h3>
+<p>在Airbnb，我们使用bar安装程序而不是UINavigationItem/UIBarButtonItem向屏幕添加顶部和底部条。与vanilla UIKit不同，对于要绘制的导航栏和工具栏，bar安装程序不需要将UIViewController嵌套在UINavigationController中。相反，bars是由条形图安装程序添加到视图控制器的视图层次结构中的。</p>
+<p>我们发现，这种模式使得在具有bars的屏幕之间导航变得更加简单，因为在UINavigationController中包装所有屏幕以绘制bars已不再是一项困难的要求。</p>
+<p>此外，我们发现bar安装程序天生比UIKit-UINavigationItem/UIBarButtonItem更灵活，因为它们支持任意数量的bar的堆栈，而不仅仅是单个bar。</p>
+<h3 id="advanced-use-cases">Advanced use cases</h3>
+<h4 id="animated-bar-height-changes">Animated bar height changes</h4>
+<p>有时，bar形图需要在动画中更改其高度。例如，当用户点击按钮时，自定义栏视图可以展开以显示更多内容。通过使条形图符合HeightInvalizangBarView协议，可以启用此行为：</p>
+<pre><code class="language-swift">final class MyCustomBarView: HeightInvalidatingBarView {
+  func changeHeight() {
+    // Can be called prior to height invalidation to ensure that other changes are not batched
+    // within the animation transaction. Triggers the bar view to be laid out.
+    prepareHeightBarHeightInvalidation()
+
+    UIView.animate(…, animations: {
+      // Perform constraint updates for this bar view so that the intrinsic height will change.
+
+      // Triggers another animated layout pass that will animatedly update the bar height.
+      self.invalidateBarHeight()
+    })
+  }
+}
+</code></pre>
+<p>要以动画方式更改高度，条形图应首先调用prepareHeightBarHeightInvalidation（）以执行任何挂起的布局更改，然后在更新约束以触发条形图具有新的固有高度后，在动画事务中调用invalidateBarHeightInvalidation（）。这将产生一个动画，其中条形图改变高度，条形图堆栈在同一动画中动态调整其他视图以适应高度变化。</p>
+<h4 id="bar-coordinators">Bar Coordinators</h4>
+<p>您可以选择通过调用.makeCoordinator方法为BarModel指定一个“协调器”，该方法接受一个闭包，当bar视图添加到视图层次结构时，该闭包用于生成协调器对象。协调器是一个对象，它的存在时间和bar视图一样长，并且能够从BarModel更新接收“out of band”更新，它可以直接应用于其bar视图。例如，条形图协调器可用于以下类型的行为：</p>
+<ul>
+<li>
+<p>向导航栏提供导航操作，以便它们触发正确的操作，例如，在每个使用者都不需要手动配置此行为的情况下，解除•可见视图控制器或从导航堆栈中弹出俯视图控制器。</p>
+</li>
+<li>
+<p>允许将滚动视图偏移传递到导航栏，以便它们可以显示或隐藏分割线视图，而无需在每一帧绘制时重新创建BarModel视图。</p>
+</li>
+<li>
+<p>进一步定制将以消费者不了解的其他行为向用户显示的条形图模型，例如，基于演示上下文的“x”或“&lt;”图标的上下文导航条按钮样式。</p>
+</li>
+</ul>
+<p>BarCoordinator通过BarCoordinatorProperty接收安装程序的更新。例如，我们可以定义一个“滚动百分比”属性，如下所示，以便在滚动百分比更改时可以更新条：</p>
+<pre><code class="language-swift">public protocol BarScrollPercentageCoordinating: AnyObject {
+  var scrollPercentage: CGFloat { get set }
+}
+
+private extension BarCoordinatorProperty {
+  static var scrollPercentage: BarCoordinatorProperty&lt;CGFloat&gt; {
+    .init(keyPath: \BarScrollPercentageCoordinating.scrollPercentage, default: 0)
+  }
+}
+
+extension BottomBarInstaller: BarScrollPercentageConfigurable {
+  public var scrollPercentage: CGFloat {
+    get { self[.scrollPercentage] }
+    set { self[.scrollPercentage] = newValue }
+  }
+}
+</code></pre>
+<p>有了这个工具，每次滚动偏移量改变时，bar安装程序的使用者现在可以在BottomBarInstaller上设置滚动百分比：</p>
+<pre><code class="language-swift">bottomBarInstaller.scrollPercentage = ...
+</code></pre>
+<p>这些滚动百分比更新现在被传送到任何实现BarScrollPercentageCoordinating的可见条的协调器。协调器可以实现BarCoordinating，然后在每个scroll事件上更新构造的bar视图：</p>
+<pre><code class="language-swift">final class ScrollPercentageBarCoordinator: BarCoordinating, BarScrollPercentageCoordinating {
+  public init(updateBarModel: @escaping (_ animated: Bool) -&gt; Void) {}
+
+  public func barModel(for model: BarModel&lt;MyCustomBarView&gt;) -&gt; BarModeling {
+    model.willDisplay { [weak self] view in
+      self?.view = view
+    }
+  }
+
+  public var scrollPercentage: CGFloat = 0 {
+    didSet { updateScrollPercentage() }
+  }
+
+  private weak var view: ViewType? {
+    didSet { updateScrollPercentage() }
+  }
+
+  private func updateScrollPercentage() {
+    view?.scrollPercentage = scrollPercentage
+  }
+}
+</code></pre>
+<p>最后，要指定要在MyCustomBarView中使用此协调器，只需调用：</p>
+<pre><code class="language-swift">MyCustomBarView.barModel(...)
+  .makeCoordinator(ScrollPercentageBarCoordinator.init)
+</code></pre>
+<p>就这样！现在，每次滚动百分比发生变化时，您都可以用频繁变化的滚动百分比以一种高效的方式更新MyCustomBarView实例。</p>
+<h2 id="epoxynavigation">EpoxyNavigation</h2>
+<p>NavigationController为UINavigationController带来了一个易于使用的声明性API，它明确了导航堆栈的当前状态，同时也便于更新。</p>
+<h3 id="basic-usage">Basic usage</h3>
+<p>假设您有一个要协调的视图控制器流。可能您正在使用多个步骤处理表单或入职流程。在命令式世界中，当操作发生时，需要根据需要手动推送和弹出视图控制器。这会很快变得毛茸茸的，并导致意外的状态和错误。NavigationController通过为导航堆栈的当前状态提供一个真实的中心源来解决这个问题。</p>
+<p>作为一个例子，假设我们正在构建一个包含3个步骤的表单。我们可以通过共享状态对象跟踪导航堆栈中的哪些步骤，如果应该显示，只需返回NavigationModel，如果应该隐藏，则返回nil。代码如下：</p>
+<pre><code class="language-swift">
+final class FormViewController: NavigationController {
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    setStack(stack, animated: false)
+  }
+
+  // MARK: Private
+
+  private struct State {
+    // we don't need a showStep1 flag because it will always be on the stack
+    var showStep2 = false
+    var showStep3 = false
+  }
+
+  private enum DataIDs {
+    case step1
+    case step2
+    case step3
+  }
+
+  private var state = State() {
+    didSet {
+      setStack(stack, animated: true)
+    }
+  }
+
+  private var stack: [NavigationModel?] {
+    // Note that when this view loads, only step1 is non-nil which will have the result
+    // of our navigation stack only having one UIViewController.
+    // Order is important here - the order you return these in 
+    // will determine the order they are pushed onto the stack
+    [
+      step1,
+      step2,
+      step3
+    ]
+  }
+
+  private var step1: NavigationModel {
+    // we use the `root` `NavigationModel` here because `step1` will always be present in the stack
+    // acting as our UINavigationController's rootViewController
+    .root(dataID: DataIDs.step1) { [weak self] in
+      let viewController = Step1ViewController()
+      viewController.didTapNext = {
+        // setting this property on our state will automatically update the `state` instance variable
+        // which will cause the stack to be re-created and reset. This will have the effect of pushing on Step2ViewController.
+        self?.state.showStep2 = true
+      }
+    }
+  }
+
+  private var step2: NavigationModel? {
+    guard state.showStep2 else { return nil }
+    return NavigationModel(
+      dataID: DataIDs.step2,
+      makeViewController: { [weak self] in
+        let vc = Step2ViewController()
+        vc.didTapNext = {
+          self?.showStep3 = true
+        }
+        return vc
+      },
+      // if the user taps back (or we programmatically pop this VC) this closure will be called so we can
+      // keep our navigation stack state up-to-date
+      remove: { [weak self] in
+        self?.state.showStep2 = false
+      })
+  }
+
+  private var step3: NavigationModel? {
+    guard state.showStep3 else { return nil }
+    return NavigationModel(
+      dataID: DataIDs.step3,
+      makeViewController: { [weak self] in
+        let vc = Step3ViewController()
+        vc.didTapNext = {
+          // Handle dismissal of this flow, or navigate somewhere else
+        }
+        return vc
+      },
+      remove: { [weak self] in
+        self?.state.showStep3 = false
+      })
+  }
+}
+</code></pre>
+<h3 id="nested-uinavigationcontrollers">Nested UINavigationControllers</h3>
+<p>UINavigationController现在的一个问题是不能嵌套它们。如果您尝试将UINavigationController推送到另一个UINavigationController的导航堆栈上，您的应用程序将崩溃。Epoxy的NavigationController通过允许您使用可选的wrapNavigation闭包对其进行初始化来解决此问题，该闭包返回标准UIViewController，并期望提供的UINavigationController是该UINavigationController的子级。</p>
+<pre><code class="language-swift">final class ComplexFormViewController: NavigationController {
+
+  init() {
+    super.init(wrapNavigation: { navigationController in 
+      // wrap the navigationController in a `UIViewController` and return that view controller
+    })
+  }
+
+}
+</code></pre>
+<p>请注意，确保嵌套的UINavigationControllers隐藏其导航栏非常重要。您可以使用EpoxyBars TopBarInstaller创建位于UINavigationController之外的自定义导航栏作为替代。</p>
+<h3 id="navigation-callbacks">Navigation callbacks</h3>
+<p>NavigationModel有一些有用的回调，您可以设置它们来响应导航生命周期事件。例如，如果希望在堆栈中某个特定视图控制器可见时记录事件，可以这样做：</p>
+<pre><code class="language-swift">private var step2: NavigationModel? {
+  guard state.showStep2 else { return nil }
+  return NavigationModel(
+    dataID: DataIDs.step2,
+    makeViewController: { ... },
+    remove: { ... })
+  .didShow { [weak self] viewController in
+    self?.logDidShowEvents(for: viewController)
+  }
+}
+</code></pre>
+<p>您可以使用4个可用回调：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">CallBack</th>
+<th style="text-align:left">Discussion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">didShow</td>
+<td style="text-align:left">当视图控制器成为导航堆栈（当前可见的视图控制器）上的顶部视图控制器时调用</td>
+</tr>
+<tr>
+<td style="text-align:left">didHide</td>
+<td style="text-align:left">当视图控制器不再是导航堆栈上的顶部视图控制器时调用</td>
+</tr>
+<tr>
+<td style="text-align:left">didAdd</td>
+<td style="text-align:left">将视图控制器添加到导航堆栈时调用</td>
+</tr>
+<tr>
+<td style="text-align:left">didRemove</td>
+<td style="text-align:left">从导航堆栈中删除视图控制器时调用</td>
+</tr>
+</tbody>
+</table>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/CRESbZiWM/" class="tag">
+                    epoxy
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/9lckLyokR/" class="tag">
+                    dynamic programming
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/realmswift-reading-objects/">
+                  <h3 class="post-title">
+                    RealmSwift Reading Objects
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

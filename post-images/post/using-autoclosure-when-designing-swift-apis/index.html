@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using @autoclosure when designing Swift APIs | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift的@autoclosure属性允许你定义一个参数，该参数自动被封装在一个闭包中。 它主要用于将表达式的执行延迟到实际需要的时候，而不是在传递参数时直接执行。
+在Swift标准库中使用该函数的一个例子是assert函数。由于断言只在..." />
+    <meta name="keywords" content="api design" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using @autoclosure when designing Swift APIs</h2>
+            <div class="post-date">2017-05-28</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift的@autoclosure属性允许你定义一个参数，该参数自动被封装在一个闭包中。 它主要用于将表达式的执行延迟到实际需要的时候，而不是在传递参数时直接执行。</p>
+<p>在Swift标准库中使用该函数的一个例子是assert函数。由于断言只在调试构建中触发，所以不需要计算在发布构建中断言的表达式。这就是@autoclosure的作用:</p>
+<pre><code class="language-swift">func assert(_ expression: @autoclosure () -&gt; Bool,
+            _ message: @autoclosure () -&gt; String) {
+    guard isDebug else {
+        return
+    }
+
+    // Inside assert we can refer to expression as a normal closure
+    if !expression() {
+        assertionFailure(message())
+    }  
+}
+</code></pre>
+<p>@autoclosure的好处是它对调用站点没有影响。如果assert是用“普通”闭包实现的，你必须这样使用它:</p>
+<pre><code class="language-swift">assert({ someCondition() }, { &quot;Hey, it failed!&quot; })
+</code></pre>
+<p>但是现在，你可以像调用任何带有非闭包参数的函数一样调用它:</p>
+<pre><code class="language-swift">assert(someCondition(), &quot;Hey it failed!&quot;)
+</code></pre>
+<p>本周，让我们看看如何在我们自己的代码中使用@autoclosure，以及它如何使我们能够设计一些漂亮的api。</p>
+<h2 id="inlining-assignments">Inlining assignments</h2>
+<p>@autoclosure支持的一件事是在函数调用中内联表达式。这使我们能够做一些事情，比如将赋值表达式作为参数传递。让我们看一个例子，在这个例子中这是很有用的。</p>
+<p>在iOS上，你通常使用这个API来定义视图动画:</p>
+<pre><code class="language-swift">UIView.animate(withDuration: 0.25) {
+    view.frame.origin.y = 100
+}
+</code></pre>
+<p>通过@autoclosure，我们可以编写一个动画函数，自动创建一个动画闭包并执行它，如下所示:</p>
+<pre><code class="language-swift">func animate(_ animation: @autoclosure @escaping () -&gt; Void,
+             duration: TimeInterval = 0.25) {
+    UIView.animate(withDuration: duration, animations: animation)
+}
+</code></pre>
+<p>现在，我们可以通过一个简单的函数调用来执行动画，而不需要任何额外的{}语法:</p>
+<pre><code class="language-swift">animate(view.frame.origin.y = 100)
+</code></pre>
+<p>使用上述技术，我们可以真正减少动画代码的冗长，而不牺牲可读性和表现力🎉</p>
+<h2 id="passing-errors-as-expressions">Passing errors as expressions</h2>
+<p>我发现@autoclosure非常有用的另一种情况是在编写处理错误的实用程序时。 例如，假设我们想在Optional上添加一个扩展，使我们能够使用一个抛出API来展开它。 这样我们就可以要求optional为非nil，或者抛出一个错误，像这样:</p>
+<pre><code class="language-swift">extension Optional {
+    func unwrapOrThrow(_ errorExpression: @autoclosure () -&gt; Error) throws -&gt; Wrapped {
+        guard let value = self else {
+            throw errorExpression()
+        }
+
+        return value
+    }
+}
+</code></pre>
+<p>与实现assert的方式类似，我们只在需要时才计算错误表达式，而不是每次试图打开可选对象时都必须这样做。现在我们可以像这样使用unwrapOrThrow API:</p>
+<pre><code class="language-swift">let name = try argument(at: 1).unwrapOrThrow(ArgumentError.missingName)
+</code></pre>
+<h2 id="type-inference-using-default-values">Type inference using default values</h2>
+<p>我发现的@autoclosure的最后一个用例是在从字典、数据库或UserDefaults中提取可选值时。</p>
+<p>通常，当从一个无类型字典中提取一个值并提供一个默认值时，你必须这样写:</p>
+<pre><code class="language-swift">let coins = (dictionary[&quot;numberOfCoins&quot;] as? Int) ?? 100
+</code></pre>
+<p>这有点难读，并且有很多语法混乱的类型转换和??操作符。通过@autoclosure，我们可以定义一个API，让我们可以像下面这样编写相同的表达式:</p>
+<pre><code class="language-swift">let coins = dictionary.value(forKey: &quot;numberOfCoins&quot;, defaultValue: 100)
+</code></pre>
+<p>在上面，我们可以看到，默认值既用于缺少值时，也允许Swift对该值进行类型推断，而不需要指定类型或执行类型转换。漂亮整洁的👍</p>
+<p>让我们看看如何编写这样的API:</p>
+<pre><code class="language-swift">extension Dictionary where Value == Any {
+    func value&lt;T&gt;(forKey key: Key, defaultValue: @autoclosure () -&gt; T) -&gt; T {
+        guard let value = self[key] as? T else {
+            return defaultValue()
+        }
+
+        return value
+    }
+}
+</code></pre>
+<p>同样，我们使用@autoclosure来避免每次调用该方法时都必须计算默认值。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>减少冗长总是需要仔细考虑的事情。我们的目标应该始终是编写富有表现力、易于阅读的代码，因此在设计低冗长的api时，我们需要确保不会从调用站点删除重要的信息。</p>
+<p>我认为在适当的情况下使用@autoclosure是一个很好的工具。处理表达式，而不仅仅是值，使我们能够减少冗长和繁琐，同时还可能获得更好的性能。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-autoclosure-when-designing-swift-apis/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rkVUhmDgHK/" class="tag">
+                    api design
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/picking-the-right-way-of-failing-in-swift/">
+                  <h3 class="post-title">
+                    Picking the right way of failing in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

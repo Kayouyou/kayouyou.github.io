@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Coordinators Part I | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Coordinators Part I
+
+What is flow in mobile applications?
+
+How do we usually manage screens in flow?
+Summary of the in..." />
+    <meta name="keywords" content="coordinator" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Coordinators Part I</h2>
+            <div class="post-date">2021-06-08</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#coordinators-part-i">Coordinators Part I</a>
+<ul>
+<li><a href="#what-is-flow-in-mobile-applications">What is flow in mobile applications?</a>
+<ul>
+<li><a href="#how-do-we-usually-manage-screens-in-flow">How do we usually manage screens in flow?</a></li>
+<li><a href="#summary-of-the-introduction">Summary of the introduction</a></li>
+</ul>
+</li>
+<li><a href="#coordinators">Coordinators</a>
+<ul>
+<li><a href="#module">Module</a></li>
+<li><a href="#what-is-coordinator">What is Coordinator?</a></li>
+<li><a href="#why-should-we-use-it">Why should we use it?</a></li>
+<li><a href="#what-parts-does-the-coordinator-consist-of">What parts does the Coordinator consist of?</a></li>
+<li><a href="#what-do-we-need-for-coordinators-to-work">What do we need for Coordinators to work?</a></li>
+</ul>
+</li>
+<li><a href="#router">Router</a></li>
+<li><a href="#factory">Factory</a></li>
+<li><a href="#storage">Storage</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="coordinators-part-i">Coordinators Part I</h1>
+<h2 id="what-is-flow-in-mobile-applications">What is flow in mobile applications?</h2>
+<p>流是逻辑链接的屏幕队列。我们所有的屏幕都可以按流程划分：身份验证流程、电话验证流程、预订流程、个人资料编辑流程等。</p>
+<h3 id="how-do-we-usually-manage-screens-in-flow">How do we usually manage screens in flow?</h3>
+<p>假设我们有一个auth流，在这个流中我们需要验证用户的电话。</p>
+<p>我们以这样一个方案为例：</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gralo5ta4yj312w0md410.jpg" alt="avatar" loading="lazy"></figure>
+<p>我们通常如何处理这个流程中的导航？</p>
+<p>在最常见的情况下，controller告诉router推送一个新的控制器。在代码中是这样的：</p>
+<pre><code class="language-swift">func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+        if 🍌🍌 {
+            router.openControllerA()
+        } else if 🍌🍌🍌 {
+            router.openControllerB()
+        } else if 🍐  {
+            router.openControllerC()
+        } else if 🍐🍐 {
+            router.openControllerD()
+        }
+}
+</code></pre>
+<p>控制器与所有相邻的控制器完全链接，并试图对其进行管理。看起来像苏联漫画里的格罗莫泽卡：</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gralpvn9j8j30go0cial2.jpg" alt="avatar" loading="lazy"></figure>
+<p>下一种常见情况是在控制器之间发送数据。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gralq8rdrtj312w07zdhj.jpg" alt="avatar" loading="lazy"></figure>
+<p>假设我们有一堆控制器，我们需要在它们之间共享数据。我们如何做到这一点？</p>
+<pre><code class="language-swift">func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+  if segue.identifier == &quot;openControllerA&quot; {
+    let vc = segue.destinationViewController as! ControllerA
+    vc.monkey = 🐒
+  } else if segue.identifier == &quot;openControllerB&quot; {
+    let vc = segue.destinationViewController as! ControllerB
+    vc.tiger = 🐯
+  } else if segue.identifier == &quot;openControllerC&quot; {
+    let vc = segue.destinationViewController as! ControllerC
+    vc.frog = 🐸
+  } else if segue.identifier == &quot;openControllerD&quot; {
+    let vc = segue.destinationViewController as! ControllerD
+    vc.snake = 🐍
+  }
+}
+</code></pre>
+<p>太好了！我们创造了一个耦合流。现在项目经理来找我们说：</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNly1grals98airj30eq0b8ahd.jpg" alt="avatar" loading="lazy"></figure>
+<p>使流独立的另一个常见原因是它们能够在不同的地方重用。例如，假设您有一个phone verify流，并成功地将其用作auth流的一部分。现在，如果您需要在配置文件中使用相同的流，you can。</p>
+<h3 id="summary-of-the-introduction">Summary of the introduction</h3>
+<p>直接处理流的方法通常结果很糟糕：</p>
+<ul>
+<li>controllers are hard to reuse</li>
+<li>every controller knows about other controllers</li>
+<li>hard to change flow</li>
+<li>hard to test</li>
+</ul>
+<h2 id="coordinators">Coordinators</h2>
+<h3 id="module">Module</h3>
+<p>首先，让我们介绍一下模块。模块是MVC、MVP、MVVM和Viper架构方法的一个架构元素。在最简单的情况下，对于MVC，module是一个控制器，对于Viper，module是一个Interactor-Presenter视图。</p>
+<p>我们需要做的是编排模块。</p>
+<h3 id="what-is-coordinator">What is Coordinator?</h3>
+<p>Coordinator是一个处理导航流的对象，它在切换到下一个链之后为下一个Coordinator共享流的处理。这意味着协调器应该只在屏幕之间保持导航逻辑。协调器可以保留对存储的引用，存储包含工厂用于创建模块的数据，但它们永远不能处理模块的业务逻辑，也永远不能驱动单元的行为。只有在点击一个单元格后按下下一个屏幕时，才会发生单元格交互。</p>
+<h3 id="why-should-we-use-it">Why should we use it?</h3>
+<p>主要目标是不受模块间职责限制，并完全独立地构建模块。在这个迭代之后，我们可以很容易地在不同的流中重用它们。</p>
+<p>回到前面的示例，让我们看看如何改进auth流。首先，我们需要分离两个不同的流：auth和phone verify。拆分后，我们可以在任何地方重复使用它们。</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNly1graly15bglj312w0b70uh.jpg" alt="avatar" loading="lazy"></figure>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNly1graly8vuw9j30sa07o3z8.jpg" alt="avatar" loading="lazy"></figure>
+<p>现在我们有两个分开的流。</p>
+<p>让我们看看引擎盖下面。</p>
+<h3 id="what-parts-does-the-coordinator-consist-of">What parts does the Coordinator consist of?</h3>
+<p>让我们从通用接口开始。</p>
+<p>所有Coordinator必须遵守协议：</p>
+<pre><code class="language-swift">protocol Coordinator: class {
+    func start()
+}
+</code></pre>
+<p>这意味着如果您想运行一个新的流，您需要使用factory创建一个协调器并调用start（）。</p>
+<p>所有协调器都有单独的finish块来支持业务规则：</p>
+<pre><code class="language-swift">protocol CoordinatorOutput {
+    var finishFlow: (Item -&gt; Void)? { get set }
+}
+</code></pre>
+<p>例如，如果流的结果应该是创建item，那么协调器可以将其返回到finish块。在这种情况下，协调器的接口将由两个协议组成，Coordinator &amp; CoordinatorOutput.</p>
+<p>在身份验证流期间，用户必须验证用户的电话。这是两个独立的流（auth和phone verify），但是当我们运行auth Coordinator时，我们并不关心这个逻辑。我们只需创建协调器，配置finish块，然后调用start（）。</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gram6c6t69j30r80gygm9.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="what-do-we-need-for-coordinators-to-work">What do we need for Coordinators to work?</h3>
+<p>我们可以轻松地更改要使用的类的数量，但通常的设置如下所示：</p>
+<ul>
+<li><strong>Router</strong>, 用于导航（路由器只是路线！在我们的案例中是被动的）。</li>
+<li><strong>Modules’ factory</strong>, 用于创建模块和注入所有依赖项。</li>
+<li><strong>Coordinators’ factory</strong> (optional), 以防我们需要切换到另一个流。</li>
+<li><strong>Storage</strong> (optional), 只有我们需要存储数据并将其注入到模块中。</li>
+</ul>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gram8waxdnj312w0fwabr.jpg" alt="avatar" loading="lazy"></figure>
+<p>Coordinator’s initialization:</p>
+<pre><code class="language-swift">final class ItemCoordinator {
+  private let factory: ItemModuleFactory
+  private let coordinatorFactory: CoordinatorFactory
+  private let router: Router
+  
+  init(router: Router,
+       factory: ItemModuleFactory,
+       coordinatorFactory: CoordinatorFactory) {
+    self.router = router
+    self.factory = factory
+    self.coordinatorFactory = coordinatorFactory
+  }
+}
+</code></pre>
+<p>协调器的主体由两类函数组成。如果您需要启动一个新模块，第一个func应该以“show”前缀命名：</p>
+<pre><code class="language-swift">func showItemList() {
+    let itemsView = factory.makeItemsView()
+    itemsView.onItemSelect = { [weak self] (item) in
+      self?.showItemDetail(item)
+    }
+    itemsView.onCreateButtonTap = { [weak self] in
+      self?.runCreationCoordinator()
+    }
+    router.setRootModule(itemsView)
+}
+</code></pre>
+<p>我们在第一个函数中做什么？我们要求工厂创建一个模块，配置回调，并要求路由器push它。</p>
+<p>第二个func运行新的流，因为我们需要在它们之间切换。其名称始终以“run”前缀开头：</p>
+<pre><code class="language-swift">func runCreationFlow() {
+  let (coordinator, module) = coordinatorFactory.makeItemCoordinatorBox()
+  coordinator.finishFlow = { [weak self, weak coordinator] item in
+    self?.router.dismissModule()
+    self?.removeDependency(coordinator)
+    self?.showItemDetail(item)
+  }
+  addDependency(coordinator)
+  router.present(module)
+  coordinator.start()
+}
+</code></pre>
+<p>工厂创建第一个流的模块和协调器。我们推送模块，协调器运行流。因为协调器有一个finish块，所以我们必须配置删除所有依赖项、解除模块并显示流处理的结果所创建的项。</p>
+<p>所有协调器都从基本协调器继承。基本协调器类保留所有依赖逻辑。出于内存管理的原因，我们需要它来保持对所有子协调器的强引用，并允许协调器调用其子函数（这就是深度链接的工作原理）。</p>
+<p>基本协调器类如下所示：</p>
+<pre><code class="language-swift">class BaseCoordinator {
+  var childCoordinators: [Coordinator] = []
+  
+  // add only unique object
+  func addDependency(_ coordinator: Coordinator) {
+    for element in childCoordinators {
+      if element === coordinator { return }
+    }
+    childCoordinators.append(coordinator)
+  }
+  
+  func removeDependency(_ coordinator: Coordinator?) {
+    guard
+      childCoordinators.isEmpty == false,
+      let coordinator = coordinator
+      else { return }
+    
+    for (index, element) in childCoordinators.enumerated() {
+      if element === coordinator {
+        childCoordinators.remove(at: index)
+        break
+      }
+    }
+  }
+}
+</code></pre>
+<p>从这个例子可以理解，父协调器拥有所有子对象的引用。</p>
+<h2 id="router">Router</h2>
+<p>我们来谈谈路由器。我们为什么要使用这种模式？为什么我们不能保持UINavigationController的引用和协调器本身的推送？</p>
+<p>首先，它打破了单一责任原则: coordinator管理流，但从不负责routing。</p>
+<p>其次，我们可以支持iPad，也可以添加自定义屏幕过渡。Coordinator永远不会知道，因为它可以继续使用路由器的协议接口，比如“push”，而不关心新的转换动画。推送的实现细节由router决定。因此，我们可以为不同的设备（如iPhone、iPad、TV或Watch）创建路由器类的组合，并使它们符合一个通用协议。</p>
+<p>路由器的funcs 用 Presentable protocol作为参数：</p>
+<pre><code class="language-swift">func push(_ module: Presentable?)
+</code></pre>
+<p>Presentable looks like this:</p>
+<pre><code class="language-swift">protocol Presentable {
+  func toPresent() -&gt; UIViewController?
+}
+</code></pre>
+<p>它是为灵活性和抽象性而设计的。我们可以根据需要创建一个复杂的模块，但是需要提取UIViewController以供路由器使用。模块将使用哪种方法获取此控制器并不重要。</p>
+<h2 id="factory">Factory</h2>
+<p>我相信每个人都知道我们应该使用这种模式的情况。在我们的例子中，它的工作原理类似于Viper的组装，这意味着工厂负责模块的构建。它创建所有对象，设置所有依赖项，注入属性，并返回协议。</p>
+<p>在一个简单的情况下，它将只是一个控制器：</p>
+<pre><code class="language-swift">func makeItemDetailOutput(item: Item) -&gt; ItemDetailView {
+  let controller = ItemDetailController.controllerFromStoryboard(.items)
+  controller.item = item
+  return controller
+}
+</code></pre>
+<p>我们返回协议是因为它易于测试，在这种情况下，我们遵循开-关原则。</p>
+<p>在我们的项目中，我们为模块和协调器使用了两个工厂类。在我们的团队中，我们经历了很多圣战，决定在哪些情况下我们应该建立一个工厂。为每个流创建一个工厂类，还是将所有流都保存在一个工厂类中？问题是，如果我们在不同的流中重用一个模块，我们必须在不同的工厂中复制粘贴这些方法。所以我们决定将所有模块放在一个工厂类中，将所有协调器放在另一个工厂类中。对于每一个流程，我们都会创建包含所有必要模块的工厂协议，如下所示：</p>
+<pre><code class="language-swift">protocol ItemModuleFactory {
+  func makeItemsOutput() -&gt; ItemsListView
+  func makeItemDetailOutput(item: ItemList) -&gt; ItemDetailView
+}
+</code></pre>
+<p>工厂的类应符合所有这些协议：</p>
+<pre><code class="language-swift">class ModuleFactoryImp:
+  AuthModuleFactory,
+  ItemModuleFactory,
+  ItemCreateModuleFactory,
+  SettingsModuleFactory {
+  /* implementation */
+}
+</code></pre>
+<p>或者coordinator工厂我们只创建一个协议，但每个协调员都应该有可能创建任何其他coordinator。</p>
+<h2 id="storage">Storage</h2>
+<p>存储器保存工厂用于创建下一个模块的所有数据。</p>
+<p>例如，我们想要创建一个对象，我们的流由三个模块组成：A、B和C。在一些工作之后，我们从模块a检索字典，从模块B检索字符串。最后，我们将这些数据发送到模块C。然后，模块C可以添加一些其他数据并将其发送到服务器。</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1grams8lt1nj312w0edtai.jpg" alt="avatar" loading="lazy"></figure>
+<pre><code class="language-swift">moduleA.onNext = { [weak self] dict in
+  self?.storage.dict = dict
+  self?.showModuleB()
+}
+</code></pre>
+<p>我们可以在存储中添加一些附加逻辑，以便将数据保存在光盘上或将数据格式化为json。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>这对于第一部分可能已经足够了。我们学到了什么好处？</p>
+<ul>
+<li>控制器对其他控制器一无所知</li>
+<li>控制器可以很容易地集成到不同的流中</li>
+<li>控制器不向其他控制器发送数据</li>
+<li>容易重用</li>
+<li>简化测试</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fkXsOWHsE/" class="tag">
+                    coordinator
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/epoxy-document/">
+                  <h3 class="post-title">
+                    Epoxy Document
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

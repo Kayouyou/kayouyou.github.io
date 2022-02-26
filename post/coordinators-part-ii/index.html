@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Coordinators Part II | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Coordinators Part II
+
+How to configure AppDelegate with main app coordinator?
+Let’s introduce Instructor
+Deep Links, P..." />
+    <meta name="keywords" content="coordinator" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Coordinators Part II</h2>
+            <div class="post-date">2021-06-08</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#coordinators-part-ii">Coordinators Part II</a>
+<ul>
+<li><a href="#how-to-configure-appdelegate-with-main-app-coordinator">How to configure AppDelegate with main app coordinator?</a></li>
+<li><a href="#lets-introduce-instructor">Let’s introduce Instructor</a></li>
+<li><a href="#deep-links-push-notifications-force-touch">Deep Links, Push Notifications, Force Touch</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="coordinators-part-ii">Coordinators Part II</h1>
+<p>在本教程的第一部分中，我大体上讨论了coordinator的方法，并展示了一些与我的实现相关的常见示例。为了与本文保持一致，请阅读上一部分。</p>
+<p>在这一部分中，我想介绍一些使用协调器的边缘情况。</p>
+<p>我想最有趣的部分是：</p>
+<ul>
+<li>AppDelegate配置</li>
+<li>管理启动选项</li>
+<li>深度链接和协调员处理推送通知</li>
+</ul>
+<p>我将展示一步一步的解决方案并给出解释。</p>
+<h2 id="how-to-configure-appdelegate-with-main-app-coordinator">How to configure AppDelegate with main app coordinator?</h2>
+<p>AppDelegate变得非常简单，因为所有导航逻辑都移动到AppCoordinator。</p>
+<p>所以，您需要做的是创建一个协调器，注入rootController并调用start（）。</p>
+<pre><code class="language-swift">@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  
+  var window: UIWindow?
+  var rootController: UINavigationController {
+    return self.window!.rootViewController as! UINavigationController
+  }
+  private lazy var applicationCoordinator: Coordinator = self.makeCoordinator()
+  
+  func application(_ application: UIApplication,
+                   didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -&gt; Bool {
+    applicationCoordinator.start()
+    return true
+  }
+  
+  private func makeCoordinator() -&gt; Coordinator {
+      return ApplicationCoordinator(
+        router: RouterImp(rootController: rootController),
+        coordinatorFactory: CoordinatorFactoryImp()
+      )
+  }
+}
+</code></pre>
+<p>我们仍然需要在AppDelegate中实现诸如didReceiveRemoteNotification或continueUserActivity之类的委托方法，但是在方法体中，我们只需再次调用协调器start（）（我们将通过此方法发送一些数据，我将在本教程的后面部分展示）。作为一个好处，我们可以通过单元测试覆盖协调器的逻辑并保持AppDelegate的清晰。</p>
+<h2 id="lets-introduce-instructor">Let’s introduce Instructor</h2>
+<p>实际生产应用程序的大多数部分都有不同的启动场景。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1grane899jgj312w0m4760.jpg" alt="avatar" loading="lazy"></figure>
+<p>我们希望通过演示教程、显示身份验证流、通知用户新功能，或者简单地显示主屏幕来向用户介绍我们的应用程序。我们应该小心处理这种行为。</p>
+<p>假设我们有3种不同的情况:</p>
+<ul>
+<li>用户应该看到新手教程(我们显示新手界面)</li>
+<li>用户应该已经登录(我们显示登录屏幕)</li>
+<li>用户已经完成了前面的两个步骤，只看到主屏幕</li>
+</ul>
+<p>为了方便地处理所有这些场景，我们创建了一个enum作为协调器的助手。此枚举应检查所有标志并返回协调器应遵循的正确方案。我将这个实体命名为Instructor，因为它指导协调员下一步要做什么。</p>
+<pre><code class="language-swift">fileprivate enum LaunchInstructor {
+  case main, auth, onboarding
+  
+  static func configure(tutorialWasShown: Bool, isAutorized: Bool) -&gt; LaunchInstructor {
+    switch (tutorialWasShown, isAutorized) {
+      case (true, false), (false, false): return .auth
+      case (false, true): return .onboarding
+      case (true, true): return .main
+    }
+  }
+}
+</code></pre>
+<p>创建之后，AppCoordinator可以遵循start函数并根据状态运行不同的流：</p>
+<pre><code class="language-swift">override func start() {
+  switch instructor {
+    case .onboarding: runOnboardingFlow()
+    case .auth: runAuthFlow()
+    case .main: runMainFlow()
+  }
+}
+</code></pre>
+<p>此方法适用于任何协调程序。在枚举中提取流逻辑时，代码变得清晰且易于阅读。现在假设我们想要显示ItemCreation模块，但是在显示和一个服务器请求之后，我们收到一个非认证错误。我们如何处理这个错误?协调器只是检查指令并运行验证流。完成后，协调器再次请求指导者，然后运行ItemCreation流。</p>
+<pre><code class="language-swift">private func runAuthFlow() {
+  let coordinator = coordinatorFactory.makeAuthCoordinatorBox(router: router)
+  coordinator.finishFlow = { [weak self, weak coordinator] in
+    isAutorized = true
+    self?.start() //here we'll check instruction
+    self?.removeDependency(coordinator)
+  }
+  addDependency(coordinator)
+  coordinator.start()
+}
+</code></pre>
+<h2 id="deep-links-push-notifications-force-touch">Deep Links, Push Notifications, Force Touch</h2>
+<p>我相信协调者的优势在于深度链接，推送通知和Force Touch。我不想涉及权利和证书这些东西。假设所有这些都工作正常，我们只需要处理逻辑。如今，当我们打开应用时，我们有很多选择:按压触摸，推送通知，深度链接，或按下应用的图标(也许将来会有新的图标，苹果?🤓)。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1granjjr3m0j312w0jxmzb.jpg" alt="avatar" loading="lazy"></figure>
+<p>如何处理?如前所述，我介绍了BaseCoordinator，它包含子协调器数组。所有的协调器都继承它。这意味着我们可以循环所有子节点并执行操作。要实现这一点，我们只需添加一个方法来处理DeepLink逻辑本身，或者循环子程序来找到能够处理它的方法。它会像一棵树。我们可以制定具体的协议来实现这个目标。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1grankfxicyj312w0oyad5.jpg" alt="avatar" loading="lazy"></figure>
+<p>让我们更新协调员协议:</p>
+<pre><code class="language-swift">protocol Coordinator: class {
+  func start()
+  func start(with option: DeepLinkOption?)
+}
+</code></pre>
+<p>现在，我们只需要将两个主体为空的方法添加到<strong>BaseCoordinator</strong>，以保持它是可选的。根据我们的目标，孩子可以继承这些方法中的一个，或者两者都继承。在某些情况下，我们可以使用不带选项的start来运行默认行为，但是如果我们继续使用深度链接场景，我们应该添加关于present case的信息。如何实现?更好的方法是在我们的项目中添加一些包含所有深层链接快捷方式的实体，并创建我们可以用**start()**方法发送的对象。</p>
+<p>你错过enums吗？让我们添加一个新的！它将是DeepLinkOption：</p>
+<pre><code class="language-swift">struct DeepLinkURLConstants {
+  static let Onboarding = &quot;onboarding&quot;
+  static let Items = &quot;items&quot;
+  static let Item = &quot;item&quot;
+  static let Settings = &quot;settings&quot;
+}
+
+enum DeepLinkOption {
+  case onboarding
+  case items
+  case settings
+  case item(String?)
+  
+  static func build(with id: String, params: [String : AnyObject]?) -&gt; DeepLinkOption? {
+    let itemID = params?[&quot;item_id&quot;] as? String
+    switch id {
+      case DeepLinkURLConstants.Onboarding: return .onboarding
+      case DeepLinkURLConstants.Items: return .items
+      case DeepLinkURLConstants.Item: return .item(itemID)
+      case DeepLinkURLConstants.Settings: return .settings
+      default: return nil
+    }
+  }
+}
+</code></pre>
+<p>作为一个好处，我们所有的DeepLink方法在协调器将像切换enum。是的，和前面的例子一样，你是正确的。</p>
+<p>我们可以根据需要添加一些额外的构建方法:</p>
+<pre><code class="language-swift">static func build(with userActivity: NSUserActivity) -&gt; DeepLinkOption?
+static func build(with url: URL) -&gt; DeepLinkOption?
+static func build(with dict: [String : AnyObject]?) -&gt; DeepLinkOption?
+</code></pre>
+<p>在这个迭代之后，如果我们返回到AppDelegate并更新它一点，它将会像这样:</p>
+<pre><code class="language-swift">func application(_ application: UIApplication,
+                 didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -&gt; Bool {
+  let notification = launchOptions?[.remoteNotification] as? [String: AnyObject]
+  let deepLink = DeepLinkOption.build(with: notification)
+  applicationCoordinator.start(with: deepLink)
+  return true
+}
+
+func application(_ application: UIApplication,
+                 didReceiveRemoteNotification userInfo: [AnyHashable : Any]) {
+  let dict = userInfo as? [String: AnyObject]
+  let deepLink = DeepLinkOption.build(with: dict)
+  applicationCoordinator.start(with: deepLink)
+}
+
+func application(_ application: UIApplication, continue userActivity: NSUserActivity,
+                 restorationHandler: @escaping ([Any]?) -&gt; Void) -&gt; Bool {
+  let deepLink = DeepLinkOption.build(with: userActivity)
+  applicationCoordinator.start(with: deepLink)
+  return true
+}
+</code></pre>
+<p>好吧，看起来不错？🤔 然后您将收到一个推送通知或一个深度链接，您只需构建您的深度链接并使用AppCoordinator继续此操作。</p>
+<pre><code class="language-swift">override func start(with option: DeepLinkOption?) {
+    //start with deepLink
+    if let option = option {
+        switch option {
+        case .onboarding: runOnboardingFlow()
+        case .signUp: runAuthFlow()
+        default: childCoordinators.forEach { coordinator in
+            coordinator.start(with: option)
+            }
+        }
+    //default start
+    } else {
+        switch instructor {
+        case .onboarding: runOnboardingFlow()
+        case .auth: runAuthFlow()
+        case .main: runMainFlow()
+        }
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>在我们试图在代码中实现的每一个新解决方案中，我们都面临着许多边缘情况和一些不那么漂亮的解决方案。它不应该像炒作驱动的开发，我们只需要适当地逐步完善所有棘手的部分。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fkXsOWHsE/" class="tag">
+                    coordinator
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/coordinators-part-i/">
+                  <h3 class="post-title">
+                    Coordinators Part I
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

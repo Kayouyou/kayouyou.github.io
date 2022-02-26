@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 85:Testable State Management: The Point | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+A tour of the vanilla SwiftUI code base
+
+
+
+
+Testing vanilla SwiftUI
+
+
+
+
+Testing the prime modal
+
+
+
+..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 85:Testable State Management: The Point</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#AtourofthevanillaSwiftUIcodebase">A tour of the vanilla SwiftUI code base</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#TestingvanillaSwiftUI">Testing vanilla SwiftUI</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Testingtheprimemodal">Testing the prime modal</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Testingthefavoriteprimesview">Testing the favorite primes view</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Testingthecounterview:ObservedObject">Testing the counter view: @ObservedObject</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Testingthecounterview:State">Testing the counter view: @State</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 85:Testable State Management: The Point -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>因此，我们现在已经证明了，我们开发的可组合架构不仅是超级可测试的，而且它还可以测试应用程序的深层方面，而且可以通过最小的设置和仪式来完成。如果要激发人们编写测试，这是关键。在编写测试时应该尽可能少地遇到摩擦，并且我们应该确信我们正在测试应用程序的一些现实世界方面。</p>
+<p>那么，有必要做所有这些工作来获得这种水平的可测试性吗?我们能不能不用普通的SwiftUI来做这种测试呢?</p>
+<p>不幸的是，我们确实认为在SwiftUI应用程序中做一些工作来获得可测试性是必要的。你不一定需要使用我们构建的可组合架构，但如果你想测试你的SwiftUI应用程序，你将不可避免地要在SwiftUI上引入一些层来实现这一点。</p>
+<p>为了了解这一点，让我们看看我们很久以前编写的普通的SwiftUI应用程序，这是我们对SwiftUI的介绍，也是我们开始这一系列架构章节的全部原因。</p>
+<hr>
+<h2 id="2-a-nameatourofthevanillaswiftuicodebaseaa-tour-of-the-vanilla-swiftui-code-base">2. <a name='AtourofthevanillaSwiftUIcodebase'></a>A tour of the vanilla SwiftUI code base</h2>
+<p>它从一个保存应用程序状态的类开始:</p>
+<pre><code class="language-swift">class AppState: ObservableObject {
+  @Published var count = 0
+  @Published var favoritePrimes: [Int] = []
+  @Published var loggedInUser: User? = nil
+  @Published var activityFeed: [Activity] = []
+
+  struct Activity {
+    let timestamp: Date
+    let type: ActivityType
+
+    enum ActivityType {
+      case addedFavoritePrime(Int)
+      case removedFavoritePrime(Int)
+    }
+  }
+
+  struct User {
+    let id: Int
+    let name: String
+    let bio: String
+  }
+}
+
+struct PrimeAlert: Identifiable {
+  let prime: Int
+  var id: Int { self.prime }
+}
+</code></pre>
+<p>这个类符合<strong>ObservableObject</strong>协议，因此视图可以被自动通知发生了更改，视图需要重新渲染。我们还让所有应该参与这个变更通知过程的字段使用@<strong>Published</strong>，这多亏了一些Swift运行时的魔力。</p>
+<p><strong>count</strong>和<strong>favoritePrimes</strong>的数组是我们希望在应用程序中跨屏幕持久化的核心数据。我们后来添加了一些额外的状态，只是为了探索架构中需要解决的其他类型的问题。所以我们添加了一个登录<strong>user和activity feed</strong>，尽管我们实际上并不使用这些信息。</p>
+<p>这个类就像是可组合架构的<strong>Store</strong>的一个不那么固执己见的、更特别的版本，它也符合<strong>ObservableObject</strong>，并且对于它的整个状态只有一个@<strong>Published</strong>字段。</p>
+<p>接下来是<strong>ContentView</strong>，它是应用程序的根视图，它简单地显示了在应用程序中可以做的两件事:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  @ObservedObject var state: AppState
+
+  var body: some View {
+    NavigationView {
+      List {
+        NavigationLink(destination: CounterView(state: self.state)) {
+          Text(&quot;Counter demo&quot;)
+        }
+        NavigationLink(
+          destination: FavoritePrimesView(
+            favoritePrimes: self.$state.favoritePrimes,
+            activityFeed: self.$state.activityFeed
+          )
+        ) {
+          Text(&quot;Favorite primes&quot;)
+        }
+      }
+      .navigationBarTitle(&quot;State management&quot;)
+    }
+  }
+}
+</code></pre>
+<p><strong>CounterView</strong>或者<strong>FavoritePrimesView</strong>。这些视图被包装在一个<strong>NavigationView</strong>中，这样我们就可以向下深入子屏幕。在导航视图的内部是一个列表，以便我们可以很容易地显示几个堆叠在一起的按钮。然后在列表中是一些<strong>NavigationLinks</strong>，它允许我们深入到子屏幕。</p>
+<p>让我们从这两个屏幕中比较简单的<strong>FavoritePrimesView</strong>开始。首先注意我们如何创建这个视图:</p>
+<pre><code class="language-swift">FavoritePrimesView(
+  favoritePrimes: self.$state.favoritePrimes,
+  activityFeed: self.$state.activityFeed
+)
+</code></pre>
+<p>这个奇怪的<strong>self.$state</strong>语法允许我们获取应用状态的底层可观察对象，然后进一步链接<strong>favoritePrimes</strong>，让我们可以从<strong>observable object</strong>获得读写绑定。通过向下传递绑定到<strong>FavoritePrimesView</strong>，我们允许该视图对这些值进行更改，并让这些变化往回传播。</p>
+<p>如果我们只传递原始值…</p>
+<pre><code class="language-swift">FavoritePrimesView(
+  favoritePrimes: self.state.favoritePrimes,
+  activityFeed: self.state.activityFeed
+)
+</code></pre>
+<p>然后<strong>FavoritePrimesView</strong>就不能改变这些值，也不能让其他人看到这些变化。</p>
+<p>往下滚动一点，我们会发现<strong>FavoritePrimesView</strong>的实现:</p>
+<pre><code class="language-swift">struct FavoritePrimesView: View {
+  @Binding var favoritePrimes: [Int]
+  @Binding var activityFeed: [AppState.Activity]
+
+  var body: some View {
+    List {
+      ForEach(self.favoritePrimes, id: \.self) { prime in
+        Text(&quot;\(prime)&quot;)
+      }
+      .onDelete { indexSet in
+        for index in indexSet {
+          let prime = self.favoritePrimes[index]
+          self.favoritePrimes.remove(at: index)
+          self.activityFeed.append(
+            .init(timestamp: Date(), type: .removedFavoritePrime(prime))
+          )
+        }
+      }
+    }
+    .navigationBarTitle(Text(&quot;Favorite Primes&quot;))
+    .navigationBarItems(
+      trailing: HStack {
+        Button(&quot;Save&quot;, action: self.saveFavoritePrimes)
+        Button(&quot;Load&quot;, action: self.loadFavoritePrimes)
+      }
+    )
+  }
+
+  func saveFavoritePrimes() {
+    let data = try! JSONEncoder().encode(self.favoritePrimes)
+      let documentsPath = NSSearchPathForDirectoriesInDomains(
+        .documentDirectory, .userDomainMask, true
+        )[0]
+      let documentsUrl = URL(fileURLWithPath: documentsPath)
+      let favoritePrimesUrl = documentsUrl
+        .appendingPathComponent(&quot;favorite-primes.json&quot;)
+      try! data.write(to: favoritePrimesUrl)
+  }
+
+  func loadFavoritePrimes() {
+    let documentsPath = NSSearchPathForDirectoriesInDomains(
+      .documentDirectory, .userDomainMask, true
+      )[0]
+    let documentsUrl = URL(fileURLWithPath: documentsPath)
+    let favoritePrimesUrl = documentsUrl
+      .appendingPathComponent(&quot;favorite-primes.json&quot;)
+    guard
+      let data = try? Data(contentsOf: favoritePrimesUrl),
+      let favoritePrimes = try? JSONDecoder().decode([Int].self, from: data)
+      else { return }
+    self.favoritePrimes = favoritePrimes
+  }
+}
+</code></pre>
+<p>注意，这个结构需要两个绑定才能初始化，但我们使用的是@<strong>Binding</strong>属性包装器。这允许我们将这些字段视为正常值，而实际上，它实际上是使用绑定机制，以便在值更改时重新渲染UI。</p>
+<p><strong>body</strong>是一个<strong>List</strong>，其中嵌套了一个<strong>ForEach</strong>，它允许我们为集合中的每个项呈现一行。我们还有这个<strong>onDelete</strong>操作，它允许我们在一行发生删除操作时执行一些代码。此外，我们还添加了一些导航栏项目来保存“<strong>Save”和“Load</strong>”按钮，它们各自的操作调用了我们在这个视图上拥有的一些副作用方法。</p>
+<p>接下来，让我们向上滚动一点来查看<strong>CounterView:</strong></p>
+<pre><code class="language-swift">struct CounterView: View {
+  @ObservedObject var state: AppState
+  @State var isPrimeModalShown: Bool = false
+  @State var alertNthPrime: PrimeAlert?
+  @State var isNthPrimeButtonDisabled = false
+
+  var body: some View {
+    VStack {
+      HStack {
+        Button(action: { self.state.count -= 1 }) {
+          Text(&quot;-&quot;)
+        }
+        Text(&quot;\(self.state.count)&quot;)
+        Button(action: { self.state.count += 1 }) {
+          Text(&quot;+&quot;)
+        }
+      }
+      Button(action: { self.isPrimeModalShown = true }) {
+        Text(&quot;Is this prime?&quot;)
+      }
+      Button(action: self.nthPrimeButtonAction) {
+        Text(&quot;What is the \(ordinal(self.state.count)) prime?&quot;)
+      }
+      .disabled(self.isNthPrimeButtonDisabled)
+    }
+    .font(.title)
+    .navigationBarTitle(&quot;Counter demo&quot;)
+    .sheet(isPresented: self.$isPrimeModalShown) {
+      IsPrimeModalView(
+        activityFeed: self.$state.activityFeed,
+        count: self.state.count,
+        favoritePrimes: self.$state.favoritePrimes
+      )
+    }
+    .alert(item: self.$alertNthPrime) { alert in
+      Alert(
+        title: Text(&quot;The \(ordinal(self.state.count)) prime is \(alert.prime)&quot;),
+        dismissButton: .default(Text(&quot;Ok&quot;))
+      )
+    }
+  }
+
+  func nthPrimeButtonAction() {
+    self.isNthPrimeButtonDisabled = true
+    nthPrime(self.state.count) { prime in
+      self.alertNthPrime = prime.map(PrimeAlert.init(prime:))
+      self.isNthPrimeButtonDisabled = false
+    }
+  }
+}
+</code></pre>
+<p>绝对是我们应用程序中最大也是最复杂的视图。首先，请注意，它将所有的应用程序状态作为一个观察对象:</p>
+<pre><code class="language-swift">@ObservedObject var state: AppState
+</code></pre>
+<p>这是因为它需要访问几乎所有的状态来完成它的工作。</p>
+<p>它也有所有这些额外的字段:</p>
+<pre><code class="language-swift">@State var isPrimeModalShown: Bool = false
+@State var alertNthPrime: PrimeAlert?
+@State var isNthPrimeButtonDisabled = false
+</code></pre>
+<p>这是只有这个视图关心的局部状态。在创建这个视图时，这些值不需要向下传递，它有一个合理的默认值，可以从它开始。</p>
+<p>视图本身的<strong>body</strong>有很多内容。我们使用<strong>HStack</strong>让视图的主要部分相互堆叠，这包括计数器UI，“<strong>Is this prime?</strong>”按钮，以及“<strong>What is the nth prime?</strong>””按钮。我们还提供了显示<strong>alerts</strong>和<strong>modals</strong>的逻辑，它们都使用$语法来访问为相应的@<strong>State</strong>字段提供动力的<strong>Binding</strong>。</p>
+<p>最后我们有<strong>IsPrimeModalView</strong>:</p>
+<pre><code class="language-swift">struct IsPrimeModalView: View {
+  @Binding var activityFeed: [AppState.Activity]
+  let count: Int
+  @Binding var favoritePrimes: [Int]
+
+  var body: some View {
+    VStack {
+      if isPrime(self.count) {
+        Text(&quot;\(self.count) is prime 🎉&quot;)
+        if self.favoritePrimes.contains(self.count) {
+          Button(action: {
+            self.favoritePrimes.removeAll(where: { $0 == self.count })
+            self.activityFeed.append(
+              .init(timestamp: Date(), type: .removedFavoritePrime(self.count))
+            )
+          }) {
+            Text(&quot;Remove from favorite primes&quot;)
+          }
+        } else {
+          Button(action: {
+            self.favoritePrimes.append(self.count)
+            self.activityFeed.append(
+              .init(timestamp: Date(), type: .addedFavoritePrime(self.count))
+            )
+          }) {
+            Text(&quot;Save to favorite primes&quot;)
+          }
+        }
+      } else {
+        Text(&quot;\(self.count) is not prime :(&quot;)
+      }
+    }
+  }
+}
+</code></pre>
+<p>这个视图接受两个@<strong>Bindings</strong>，因为这表示这个视图希望能够突变，并让更改传播到父视图，它接受一个不可变值，因为这是在这个视图中不会更改的数据。</p>
+<p>这个视图中的其他一切都是相当标准的，尽管它确实包含了相当多的逻辑和细微差别。</p>
+<hr>
+<h2 id="3-a-nametestingvanillaswiftuiatesting-vanilla-swiftui">3. <a name='TestingvanillaSwiftUI'></a>Testing vanilla SwiftUI</h2>
+<p>这就是我们上次构建的应用程序的基础知识。它的设计和架构完全基于苹果提供给我们的文档(包括在线和WWDC视频)，它非常简单。</p>
+<p>相比之下，我们在过去的几个星期里构建的架构有很多关于如何构建事物的观点，这是<em>SwiftUI</em>单独做不到的。它要求我们不再在我们的<strong>state</strong>中散布突变。相反，我们将用户可以接受的所有操作描述为<strong>enum</strong>，并创建一个<strong>reducer</strong>来描述给定用户操作的状态应该如何变化。然后，在视图中，我们只允许将操作发送到<strong>store</strong>，而不允许执行突变。最重要的是，这些操作非常简单地描述了用户做了什么，而不是我们期望在操作发生后发生什么。它们被描述为<strong>saveButtonTapped或incrButtonTapped</strong>，而不是<strong>fetchNthPrime或incrementCount</strong>。</p>
+<p>正如我们在前3集中看到的，这种设置使编写测试变得非常容易。我们花了一点时间来准备架构，但一旦架构就绪，编写测试就变得很简单了，它们允许我们测试应用程序逻辑的非常深入的方面。</p>
+<p>所以问题是:测试一个普通的SwiftUI会是什么样子? 通过使用普通的SwiftUI，而不是在上面添加额外的架构层，我们显然节省了很多工作，但是我们还有能力进行测试吗?</p>
+<p>不幸的是，如果我们保持SwiftUI的使用尽可能简单的话，我们并没有太多可以直接测试的东西。让我们试着编写一些测试来了解原因。</p>
+<hr>
+<h2 id="4-a-nametestingtheprimemodalatesting-the-prime-modal">4. <a name='Testingtheprimemodal'></a>Testing the prime modal</h2>
+<p>让我们从为<strong>IsPrimeModalView</strong>编写一些测试开始，它具有允许我们从收藏列表中保存和删除质数的基本功能。让我们跳转到我们的测试文件，并添加一个测试:</p>
+<pre><code class="language-swift">import XCTest
+@testable import VanillaPrimeTime
+
+class VanillaPrimeTimeTests: XCTestCase {
+  func testIsPrimeModalView() {
+  }
+}
+</code></pre>
+<p>那么，测试视图需要什么呢? 好吧，我们只有实际的视图在我们的支配下，没有其他辅助的物体与我们交互。让我们试着创建一个:</p>
+<pre><code class="language-swift">let view = IsPrimeModalView(
+  activityFeed: &lt;#Binding&lt;[AppState.Activity]&gt;#&gt;,
+  count: &lt;#Int#&gt;,
+  favoritePrimes: &lt;#Binding&lt;[Int]&gt;#&gt;
+)
+</code></pre>
+<p>看起来我们需要提供两个绑定，一个用于活动提要，一个用于最喜欢的质数，以及一个整数。当我们在SwiftUI视图的上下文中创建这个视图时，派生这些绑定真的很容易，因为我们有一个可观察对象，我们可以这样做:</p>
+<pre><code class="language-swift">IsPrimeModalView(
+  activityFeed: self.$state.activityFeed,
+  count: self.state.count,
+  favoritePrimes: self.$state.favoritePrimes
+)
+</code></pre>
+<p>然而，我们在XCTest中没有任何SwiftUI机制可以使用，所以我们必须自己重新创建它。绑定上唯一有用的初始化器是这个:</p>
+<pre><code class="language-swift">Binding(
+  get: &lt;#() -&gt; _#&gt;,
+  set: &lt;#(_) -&gt; Void#&gt;
+)
+</code></pre>
+<p>这允许我们提供自己的<strong>getter和setter</strong>。</p>
+<p>我们如何使用它来创建活动提要绑定呢?</p>
+<pre><code class="language-swift">let activityFeed = Binding(
+  get: {  },
+  set: { newValue in }
+)
+</code></pre>
+<p>在这些闭包中我们要获取和设置什么? 我们需要在外部保留一些额外的可变状态以便在内部使用:</p>
+<pre><code class="language-swift">var _activityFeed: [AppState.Activity] = []
+let activityFeed = Binding(
+  get: { _activityFeed },
+  set: { newValue in _activityFeed = newValue }
+)
+</code></pre>
+<p>这个dance可能只是@<strong>Binding</strong>属性包装器的简化版本，但不幸的是，我们不能在这个范围内使用属性包装器:</p>
+<pre><code class="language-swift">@Binding var _activityFeed: [AppState.Activity] = []
+</code></pre>
+<blockquote>
+<p>🛑 Property wrappers are not yet supported on local properties</p>
+</blockquote>
+<p>而且，我们甚至不能将它用作测试用例的实例变量:</p>
+<pre><code class="language-swift">class FavoritePrimesTests: XCTestCase {
+  @Binding var _activityFeed: [AppState.Activity] = []
+</code></pre>
+<blockquote>
+<p>🛑 Argument labels ‘(wrappedValue:)’ do not match any available overloads</p>
+</blockquote>
+<p>这是因为@<strong>Binding</strong>属性包装器不像@<strong>State</strong>那样允许使用底层值进行初始化。我们也不能去掉初始值:</p>
+<pre><code class="language-swift">class FavoritePrimesTests: XCTestCase {
+  @Binding var _activityFeed: [AppState.Activity]
+</code></pre>
+<blockquote>
+<p>🛑 Class ‘FavoritePrimesTests’ has no initializers</p>
+</blockquote>
+<p>因为我们需要提供一个初始化器，而且我们不控制<strong>XCTestCase</strong>对象的初始化。这是<strong>XCTest</strong>框架和<strong>Xcode</strong>为我们处理的。</p>
+<p>所以看起来我们别无选择，只能直接创建绑定，而不是使用任何SwiftUI的华丽属性包装器。幸运的是，我们可以做一件小事来清理当前创建绑定的两步流程。我们可以提供自己的初始化器来隐藏这个局部可变值:</p>
+<pre><code class="language-swift">extension Binding {
+  init(initialValue: Value) {
+    var value = initialValue
+    self.init(get: { value }, set: { value = $0 })
+  }
+}
+</code></pre>
+<p>现在我们可以简单地做:</p>
+<pre><code class="language-swift">let activityFeed = Binding&lt;[AppState.Activity]&gt;(initialValue: [])
+</code></pre>
+<p>我们甚至可以内联它:</p>
+<pre><code class="language-swift">let view = IsPrimeModalView(
+  activityFeed: Binding&lt;[AppState.Activity]&gt;(initialValue: []),
+  count: 2,
+  favoritePrimes: Binding&lt;[Int]&gt;(initialValue: [2, 3, 5])
+)
+</code></pre>
+<p>这就好多了，如果我们想要从视图中获取值，我们可以简单地这样做:</p>
+<pre><code class="language-swift">view.activityFeed
+view.favoritePrimes
+</code></pre>
+<p>唷，好吧，我们仍然没有编写任何测试!我们只探讨了在测试用例中创建一个接受绑定的SwiftUI视图的意义。</p>
+<p>那么，需要测试什么呢?好吧，在这个视图中，关于当前计数是否为质数，以及这个质数是否在我们喜欢的范围内，有大量的逻辑:</p>
+<pre><code class="language-swift">var body: some View {
+  VStack {
+    if isPrime(self.count) {
+      Text(&quot;\(self.count) is prime 🎉&quot;)
+      if self.favoritePrimes.contains(self.count) {
+        Button(action: { … }) {
+          Text(&quot;Remove from favorite primes&quot;)
+        }
+      } else {
+        Button(action: { … }) {
+          Text(&quot;Save to favorite primes&quot;)
+        }
+      }
+    } else {
+      Text(&quot;\(self.count) is not prime :(&quot;)
+    }
+  }
+}
+</code></pre>
+<p>然而，所有这些逻辑都被困在我们的<strong>body</strong>属性中，没有任何特定领域:</p>
+<pre><code class="language-swift">view.body.
+</code></pre>
+<p>我们只看到SwiftUI api在那里修改这个视图。无法访问这个视图中的子视图这样我们就无法断言发生了什么。本质上，所有发生在这些<strong>body</strong>属性内部的事情都应该被认为是一个黑盒。</p>
+<p>所以，如果我们要测试这里的逻辑，我们需要把它从其他地方提取出来。我们可以做的一件事是，将保存和删除最喜欢的质数的逻辑移动到视图的方法:</p>
+<pre><code class="language-swift">Button(action: self.removeFavoritePrime) {
+}
+// …
+Button(action: self.saveFavoritePrime) {
+}
+// …
+func removeFavoritePrime() {
+  self.favoritePrimes.removeAll(where: { $0 == self.count })
+  self.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(self.count)))
+}
+
+func saveFavoritePrime() {
+  self.favoritePrimes.append(self.count)
+  self.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(self.count)))
+}
+</code></pre>
+<p>现在我们终于准备好写我们的第一个断言:</p>
+<pre><code class="language-swift">view.removeFavoritePrime()
+
+XCTAssertEqual(view.favoritePrimes, [3, 5])
+
+view.saveFavoritePrime()
+
+XCTAssertEqual(view.favoritePrimes, [3, 5, 2])
+</code></pre>
+<p>这些断言都通过了!我们可以简单地调用视图上的几个方法来改变状态，然后断言状态以我们期望的方式改变了。</p>
+<p>为了确保这些测试确实在运行，让我们演示一个失败:</p>
+<pre><code class="language-swift">view.saveFavoritePrime()
+XCTAssertEqual(favoritePrimes.wrappedValue, [3, 5])
+</code></pre>
+<blockquote>
+<p>🛑 XCTAssertEqual failed: (“[3, 5, 2]”) is not equal to (“[3, 5]”)</p>
+</blockquote>
+<p>我们在这个视图中测试一些逻辑。然而，与我们测试架构的方式相比，我们失去了一些东西。当我们在前几集首次测试这一功能时，我们能够全面检查状态中的每个领域:</p>
+<pre><code class="language-swift">func testRemoveFavoritesPrimesTapped() {
+  var state = (count: 3, favoritePrimes: [3, 5])
+  let effects = primeModalReducer(state: &amp;state, action: .removeFavoritePrimeTapped)
+
+  let (count, favoritePrimes) = state
+  XCTAssertEqual(count, 3)
+  XCTAssertEqual(favoritePrimes, [5])
+  XCTAssert(effects.isEmpty)
+}
+</code></pre>
+<p>尤其是这一行…</p>
+<pre><code class="language-swift">let (count, favoritePrimes) = state
+</code></pre>
+<p>如果我们在这个状态中添加更多的字段，将会失败。这对于确保我们继续断言整个<strong>state</strong>来说是非常好的，这样我们就不会不小心错过正在发生的事情。 例如，如果我在<strong>savefaviteprime</strong>方法中做了一些愚蠢的事情，像这样:</p>
+<pre><code class="language-swift">func removeFavoritePrime() {
+  self.favoritePrimes.removeAll(where: { $0 == self.count })
+  self.activityFeed.append(.init(timestamp: Current.date(), type: .removedFavoritePrime(self.count)))
+  self.activityFeed = []
+}
+</code></pre>
+<p>我们的测试还是会通过的。如果我们只测试我们认为会改变的东西，那么我们就会错过意外改变的不相关的状态。</p>
+<p>我们可以做一件事来重新获得详尽的断言，但它带有一些样板。我们需要引入一个新的结构体，它只保存我们所关心的<strong>AppState</strong>的状态，并将其用于绑定:</p>
+<pre><code class="language-swift">struct IsPrimeModalView: View {
+
+  struct State {
+    var activityFeed: [AppState.Activity]
+    let count: Int
+    var favoritePrimes: [Int]
+  }
+  @Binding var state: State
+
+//  @Binding var activityFeed: [AppState.Activity]
+//  let count: Int
+//  @Binding var favoritePrimes: [Int]
+</code></pre>
+<p>然后我们需要在<strong>AppState</strong>上创建一个<strong>getter/setter</strong>属性来派生这个子状态:</p>
+<pre><code class="language-swift">extension AppState {
+  var isPrimeModalViewState: IsPrimeModalView.State {
+    get {
+      IsPrimeModalView.State(
+        activityFeed: self.activityFeed,
+        count: self.count,
+        favoritePrimes: self.favoritePrimes
+      )
+    }
+    set {
+      (
+        self.activityFeed,
+        self.count,
+        self.favoritePrimes
+      ) = (
+        newValue.activityFeed,
+        newValue.count,
+        newValue.favoritePrimes
+      )
+    }
+  }
+}
+</code></pre>
+<p>这将允许我们像这样创建主模态视图:</p>
+<pre><code class="language-swift">IsPrimeModalView(
+  state: self.$state.isPrimeModalViewState
+)
+</code></pre>
+<p>值得一提的是，我们必须编写的这一小段粘合代码基本上与我们使用我们的架构所需要编写的代码相同:</p>
+<pre><code class="language-swift">extension AppState {
+  var isPrimeModalViewState: IsPrimeModalView.State {
+    get { … }
+    set { … }
+  }
+}
+</code></pre>
+<p>我们需要在我们的架构中做几次这样的事情。我们这样做是为了写简化程序只处理局部状态和动作然后把它们拉回处理全局状态和动作。因此，我们在这里看到的是，即使我们想以最简单、最直接的方式使用SwiftUI，有时我们也无法避开编写一些额外的模板。在这里，如果我们想在SwiftUI中挤出一点额外的可测试性，我们就不得不写这些额外的代码。</p>
+<p>让我们退出这个重构。我们只是想展示获得所有可能的路径，而不想更新所有测试。</p>
+<hr>
+<h2 id="5-a-nametestingthefavoriteprimesviewatesting-the-favorite-primes-view">5. <a name='Testingthefavoriteprimesview'></a>Testing the favorite primes view</h2>
+<p>虽然原始模态视图不是超可测试的开箱即用，但我们能够通过一些辅助方法获得可测试性。虽然接受绑定的视图是可测试的，但我们知道彻底测试需要将视图的状态捆绑在一个单一的、可测试的绑定中，这需要大量额外的工作。</p>
+<p>让我们看看测试其他视图需要什么。</p>
+<p>我们可以从快速查看<strong>FavoritePrimesView</strong>开始。它类似于<strong>IsPrimeModal</strong>，它只需要几个绑定值就可以完成它的工作:</p>
+<pre><code class="language-swift">struct FavoritePrimesView: View {
+  @Binding var favoritePrimes: [Int]
+  @Binding var activityFeed: [AppState.Activity]
+</code></pre>
+<p>因此，基于我们对<strong>prime modal</strong>的工作，我们应该能够在测试中非常容易地实例化其中一个视图。如果我们环顾四周，看看哪些是可测试的，我们会看到在这个<strong>onDelete</strong>闭包中填充了一些逻辑:</p>
+<pre><code class="language-swift">.onDelete { indexSet in
+  for index in indexSet {
+    let prime = self.favoritePrimes[index]
+    self.favoritePrimes.remove(at: index)
+    self.activityFeed.append(
+      .init(timestamp: Date(), type: .removedFavoritePrime(prime))
+    )
+  }
+}
+</code></pre>
+<p>如果我们希望这个逻辑是可测试的，我们必须将它提取到一个方法中，以便可以直接调用它。</p>
+<p>我们在视图上也有这些保存和加载方法:</p>
+<pre><code class="language-swift">func saveFavoritePrimes() {
+  // …
+}
+
+func loadFavoritePrimes() {
+  // …
+}
+</code></pre>
+<p>它们也可以用同样的方法进行测试，假设我们能控制在这里发生的副作用。</p>
+<p>我们不打算为这个视图编写任何测试因为测试它应该和测试<strong>FavoritePrimesView</strong>差不多。</p>
+<p>然而，我们有必要重复我们所学到的经验教训。首先，在视图体中所做的一切都是不可测试的。我们应该把它当成一个我们根本无法进入的黑盒。所以我们必须做额外的工作，试图把工作从<strong>body</strong>转移到可以被测试的方法中。</p>
+<p>其次，如果我们想要加强我们的测试，使它们完全覆盖视图的领域模型，那么我们似乎别无选择，只能引入中间结构，以便我们可以一次断言所有的结构。</p>
+<hr>
+<h2 id="6-a-nametestingthecounterviewobservedobjectatesting-the-counter-view-observedobject">6. <a name='Testingthecounterview:ObservedObject'></a>Testing the counter view: @ObservedObject</h2>
+<p>现在让我们看看为我们的<strong>CounterView</strong>编写测试需要什么。这里我们遇到了一些我们在前两个视图中没有看到的东西:</p>
+<pre><code class="language-swift">struct CounterView: View {
+  @ObservedObject var state: AppState
+  @State var isPrimeModalShown: Bool = false
+  @State var alertNthPrime: PrimeAlert?
+  @State var isNthPrimeButtonDisabled = false
+</code></pre>
+<p>该视图的一些状态表示为@O<strong>bservedObject</strong>，其他状态表示为@<strong>State</strong>。我们还没有为这两种状态编写测试。@<strong>ObservedObject</strong>是最容易测试的部分，它甚至比测试@<strong>Bindings</strong>更容易。然而，为了让任何东西都是可测试的，我们必须确保将状态突变移出视图<strong>body</strong>，并转移到专用的方法中。让我们用递增和递减按钮来做:</p>
+<pre><code class="language-swift">struct CounterView: View {
+  // …
+
+  func incrementCount() {
+    self.state.count += 1
+  }
+
+  func decrementCount() {
+    self.state.count -= 1
+  }
+
+  var body: some View {
+    // …
+    Button(action: self.decrementCount) {
+      Text(&quot;-&quot;)
+    }
+    // …
+    Button(action: self.incrementCount) {
+      Text(&quot;+&quot;)
+    }
+    // …
+  }
+}
+</code></pre>
+<p>然后为了测试这个逻辑，我们可以构造一个视图，调用那些端点，并断言状态以我们期望的方式改变了。除了不构造<strong>bindings</strong>，我们可以直接传递应用程序状态:</p>
+<pre><code class="language-swift">func testCounterView() {
+  let view = CounterView(state: AppState())
+
+  view.incrementCount()
+
+  XCTAssertEqual(view.state, AppState(count: 1))
+}
+</code></pre>
+<blockquote>
+<p>🛑 Argument passed to call that takes no arguments</p>
+</blockquote>
+<p>不幸的是，我们不能这样做。作为<strong>ObservableObject</strong>的<strong>AppState</strong>必须是一个类，而且类没有一个默认的成员类初始化器，我们可以调用它。 我们可以创建自己的初始化器来访问这些<strong>helpers</strong>，但我们甚至不能让Xcode为我们生成一个成员逐一初始化器，因为它们不能很好地与默认属性配合。</p>
+<p>我们可以做的一件事是创造一个新的价值，并使其符合我们的期望。</p>
+<pre><code class="language-swift">func testCounterView() {
+  let view = CounterView(state: AppState())
+
+  view.incrementCount()
+
+  let expected = AppState()
+  expected.count = 1
+  XCTAssertEqual(view.state, expected)
+}
+</code></pre>
+<blockquote>
+<p>🛑 Global function ‘XCTAssertEqual(::_:file:line:)’ requires that ‘AppState’ conform to ‘Equatable’</p>
+</blockquote>
+<p>甚至这也不能工作，因为<strong>AppState</strong>不符合<strong>Equatable</strong>。不幸的是，我们甚至不能在<strong>AppState</strong>上自动合成均衡性，因为它是一个类，这意味着我们必须维护我们自己的自定义一致性，这将打破，我们需要记得在我们的状态添加或删除字段时更新它。</p>
+<p>所以这些都不对，真的。唯一简单的步骤是取出状态计数并直接测试它。</p>
+<pre><code class="language-swift">func testCounterView() {
+  let view = CounterView(state: AppState())
+
+  view.incrementCount()
+
+  XCTAssertEqual(view.state.count, 1)
+}
+</code></pre>
+<p>它通过了，但请记住，我们在测试中已经失去了强大的穷举性。 如果<strong>incrementCount</strong>开始对<strong>AppState</strong>做其他事情，我们就没有覆盖来控制它。</p>
+<p>无论如何，让我们通过更多地练习它的方法来充实这个测试。</p>
+<pre><code class="language-swift">func testCounterView() {
+  let view = CounterView(state: AppState())
+
+  view.incrementCount()
+
+  XCTAssertEqual(view.state.count, 1)
+
+  view.incrementCount()
+
+  XCTAssertEqual(view.state.count, 2)
+
+  view.decrementCount()
+
+  XCTAssertEqual(view.state.count, 1)
+}
+</code></pre>
+<p>所以这个测试写起来更容易一些因为可观察对象比绑定更容易创建，但不幸的是，我们遇到了其他麻烦，比如没有简单的方法来创建基于成员的初始化器，也没有简单的方法使可观察对象相等，这意味着我们被迫测试应用状态的部分而不是全部。</p>
+<hr>
+<h2 id="7-a-nametestingthecounterviewstateatesting-the-counter-view-state">7. <a name='Testingthecounterview:State'></a>Testing the counter view: @State</h2>
+<p>我们还希望能够测试这些@<strong>State</strong>字段，因为有一些细微的逻辑指导它们的行为。例如，当你点击“第n个质数是多少?”按钮，我们禁用第n个主要按钮，然后只有当我们从API得到响应时，我们才重新启用它。当我们从API获得成功响应时，我们也只显示警报:</p>
+<pre><code class="language-swift">func nthPrimeButtonAction() {
+  self.isNthPrimeButtonDisabled = true
+  nthPrime(self.state.count) { prime in
+    self.alertNthPrime = prime.map(PrimeAlert.init(prime:))
+    self.isNthPrimeButtonDisabled = false
+  }
+}
+</code></pre>
+<p>w们应该能够编写一些断言，即第n个按钮开始是启用的，然后当第n个按钮被按下时切换到禁用。</p>
+<pre><code class="language-swift">XCTAssertEqual(view.isNthPrimeButtonDisabled, false)
+
+view.nthPrimeButtonAction()
+
+XCTAssertEqual(view.isNthPrimeButtonDisabled, true)
+</code></pre>
+<p>And then we can run our test:</p>
+<blockquote>
+<p>🛑 XCTAssertEqual failed: (“false”) is not equal to (“true”)</p>
+</blockquote>
+<p>那似乎不太对。实际上，<strong>nthPrimeButtonAction</strong>方法做的第一件事就是将这个布尔值翻转为true。让我们通过在状态发生变化之前和之后添加一些print语句来尝试了解这个方法内部发生了什么:</p>
+<pre><code class="language-swift">func nthPrimeButtonAction() {
+  print(self.isNthPrimeButtonDisabled)
+  self.isNthPrimeButtonDisabled = true
+  print(self.isNthPrimeButtonDisabled)
+</code></pre>
+<p>当我们运行这个测试时，我们会看到:</p>
+<pre><code class="language-swift">false
+false
+</code></pre>
+<p>这似乎很奇怪。我们直接在一行上改变这个值，然后下一行就好像什么都没发生一样。</p>
+<p>虽然我们不知道为什么会发生这种情况，但几乎可以肯定的是，这个值存储在@<strong>State</strong>字段中，这就是SwiftUI在任何值发生变化时自动重新呈现该视图的能力。 然而，似乎无论机制的力量是什么，除非它在正确的上下文中运行，比如一个<strong>UIHostingController</strong>，否则它根本无法工作。</p>
+<p>据我们所知，这是无法回避的。基本上，使用@<strong>State</strong>属性包装器建模的任何状态都是不可测试的。也许您并不关心测试这个逻辑，但是如果您关心，那么您别无选择，只能将它移到您的应用程序状态。</p>
+<p>让我们快速做一下。我们可以将这些字段添加到<strong>AppState:</strong></p>
+<pre><code class="language-swift">class AppState: ObservableObject {
+  // …
+  @Published var alertNthPrime: PrimeAlert? = nil
+  @Published var isNthPrimeButtonDisabled = false
+</code></pre>
+<p>然后从我们的视图中删除这些字段，同时修复对这些字段的引用:</p>
+<pre><code class="language-swift">struct CounterView: View {
+  // …
+//  @State var alertNthPrime: PrimeAlert?
+//  @State var isNthPrimeButtonDisabled = false
+</code></pre>
+<p>我们只需要在访问状态时通过<strong>state</strong>属性修复一些编译器错误。</p>
+<p>一旦我们这么做了，我们的测试就会通过:</p>
+<pre><code class="language-swift">XCTAssertEqual(view.state.isNthPrimeButtonDisabled, false)
+
+view.nthPrimeButtonAction()
+
+XCTAssertEqual(view.state.isNthPrimeButtonDisabled, true)
+</code></pre>
+<p>因此，尽管@<strong>State</strong>字段不能直接测试，但我们至少可以将它们提取到应用程序状态中，使其可测试。</p>
+<p>然而，即使这样做了，我们仍然没有恢复与我们的架构相同的测试能力。当我们用可组合架构为这个屏幕编写测试时，我们看到我们可以很容易地添加一个集成测试，也就是说，一个测试可以同时运行应用程序的多个独立部分。我们能够为嵌入在计数器逻辑中的素模态逻辑编写一个测试，只是为了确保这两个特性能够很好地结合在一起。</p>
+<p>这是目前不可能做到的。由于主模态是在<strong>counter</strong>视图主体中呈现的，所以我们在测试中无法访问它。当它们从计数器屏幕上显示时如果用户与主模式交互会发生什么，我们不能调用前面创建的方法来模拟。</p>
+<p>我们可能会恢复一些集成测试的外表，但这将意味着再次将逻辑移到更易于测试的地方。之前我们把逻辑从视图主体移到视图方法中，但现在这还不够，我们可能需要把逻辑直接移到应用程序状态中。但这似乎也很困难，因为我们甚至没有在主模态视图中使用app状态，我们只向下传递绑定，而不是完整的可观察对象。</p>
+<hr>
+<h2 id="8-a-nameconclusionaconclusion">8. <a name='Conclusion'></a>Conclusion</h2>
+<p>我认为我们在这里看到的是，真的没有测试一个普通的SwiftUI应用程序这样的事情。似乎您总是需要做一些前期工作来解锁可测试性。</p>
+<ul>
+<li>
+<p>至少，你需要尽可能多地将你的逻辑移出视图的<strong>body</strong>属性，要么把它放在视图的方法中，要么把它放在状态的方法中。这至少允许您调用这些方法，并断言状态已按您期望的方式更改。但是，这与我们在可组合架构中所做的非常相似。我们决定不直接在视图中执行突变，而是通过枚举描述突变，并编写reducers来实际执行突变。</p>
+</li>
+<li>
+<p>如果你想更进一步，你还应该考虑你使用哪些SwiftUI特性来建模你的状态。将大的状态集合中的几个字段投射到绑定中是很方便的，但是如果这样做，就失去了全面断言测试中状态如何变化的能力。如果你想恢复穷尽性你必须把这些字段捆绑到自己的结构中并在你的应用状态上创建一个计算属性来派生那个子状态。但是，这与我们在可组合架构中所做的非常相似。我们创建了小的状态结构来保存特定于视图的状态，并创建了将其插入到全局状态所需的可组合性工具，因为我们这样做了，所以我们免费获得了详尽的测试。</p>
+</li>
+<li>
+<p>在视图中使用@<strong>State</strong>来建模本地状态也很方便。但这是以无法验证为代价的。在调用视图上的各种方法时，我们似乎无法改变这些值。获得可测试性的唯一方法是将该状态从本地@<strong>State</strong>绑定转移到应用程序状态，这意味着转换为@<strong>Binding</strong>或@<strong>ObservedObject</strong>。再说一次，这正是我们在可组合架构中所做的。我们需要将一些@State字段移出视图，进入全局应用状态，比如警报状态和按钮禁用状态。当时我们这么做是因为控制这种状态的逻辑很微妙，我们想把它移动到我们的<strong>reducers</strong>。但后来我们显示它给我们写一些很神奇的测试的能力,包括能够发挥出一个完整的脚本的用户操作(例如开发一个按钮,运行效果,触发一个警告,并解雇警报),并确保状态改变我们如何期待。</p>
+</li>
+</ul>
+<p>还有很多问题等着我们去回答，还有很多事情等着我们去探索。比如:</p>
+<ul>
+<li>在可组合架构如何正确处理alert，模态和弹窗?</li>
+<li>我们是否可以将这个体系结构用于那些仍然在纯UIKit中构建的视图?</li>
+<li>这个体系结构的性能如何?有什么需要我们注意的吗?</li>
+<li>我们能改善建筑的人体工程学吗?我们已经做过几次了，但还有更多的事情要做。</li>
+<li>在这个体系结构中处理依赖关系的最好方法是什么?我们在我们的环境中做了一点这方面的工作，但它能得到改善吗?</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-84testable-state-management-ergonomics/">
+                  <h3 class="post-title">
+                    PointFree Episode 84:Testable State Management: Ergonomics
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

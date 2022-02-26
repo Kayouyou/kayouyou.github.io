@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Launch arguments in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="启动参数可能是最常用的命令行工具的输入。无论是使用mkdir创建新文件夹，使用xcodebuild运行自定义构建，还是使用curl - launch参数执行网络请求，都提供了一种简单的方法，可以将基于字符串的输入传递到命令行程序中。
+虽然S..." />
+    <meta name="keywords" content="scripting,debugging" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Launch arguments in Swift</h2>
+            <div class="post-date">2018-05-20</div>
+            
+            <div class="post-content" v-pre>
+              <p>启动参数可能是最常用的命令行工具的输入。无论是使用mkdir创建新文件夹，使用xcodebuild运行自定义构建，还是使用curl - launch参数执行网络请求，都提供了一种简单的方法，可以将基于字符串的输入传递到命令行程序中。</p>
+<p>虽然Swift是创建命令行工具的好语言——本周，让我们来看看如何在开发、调试和测试一个iOS应用程序时也使用启动参数的力量。</p>
+<h2 id="parsing">Parsing</h2>
+<p>Swift提供了两种内置方法来解析启动参数。 第一个是通过命令行API，它可以方便地访问在启动应用程序时传递的信息(即使在不附带终端的iOS平台上)。使用CommandLine.arguments，我们得到一个表示每个参数的字符串数组，这里我们用它来确定是否应该使用ProfileViewController的新实现:</p>
+<pre><code class="language-swift">func makeProfileViewController() -&gt; UIViewController {
+    if CommandLine.arguments.contains(&quot;-new-profile&quot;) {
+        // If the &quot;-new-profile&quot; argument was passed, then return
+        // an instance of the new implementation.
+        return ProfileViewController()
+    }
+
+    // Fall back to the old implementation, which is what we
+    // still use in production.
+    return ProfileLegacyViewController()
+}
+</code></pre>
+<p>虽然CommandLine提供了一种访问“原始”参数的简单方法，但它实际上并没有提供任何复杂的解析功能。 为了获得更强大的特性，我们可以使用UserDefaults来解析启动参数。</p>
+<p>事实上，UserDefaults包含所有通过命令行传递的参数，并且可以进行基本的类型转换，如Bool、Int和Double，这是一个隐藏的珍宝。 在这里，我们使用这个特性来覆盖执行一个网络请求时应该加载多少文章:</p>
+<pre><code class="language-swift">func loadArticles(then handler: @escaping (Result&lt;[Article]&gt;) -&gt; Void) {
+    // The UserDefaults API automatically parses types like integers and
+    // doubles from strings passed as launch arguments. In this
+    // case we'll treat 0 as &quot;no limit&quot;.
+    let limit = UserDefaults.standard.integer(forKey: &quot;article-limit&quot;)
+    let endpoint = Endpoint.articleList(limit: limit)
+
+    dataLoader.loadData(from: endpoint) { result in
+        handler(result.decoded())
+    }
+}
+</code></pre>
+<h2 id="passing">Passing</h2>
+<p>现在我们有了在iOS应用程序中解析命令行参数的方法，我们还需要一种传递它们的方法。当运行和调试时，这是通过Xcode完成的，通过添加任何我们想要传递给应用程序方案的参数。 在Xcode中访问这个选项的一个简单方法是按⌘⌥R，选择“Arguments”并添加我们的参数在“Arguments Passed On Launch”下。</p>
+<p>那么发起辩论有什么用呢? 让我们来看看三个用例——调试、开发新特性和UI测试。</p>
+<h2 id="debug-actions">Debug actions</h2>
+<p>启动参数可以在调试应用程序时提供一种简单快捷的方式来执行常见操作。例如，假设我们正在开发一个执行大量网络请求的应用程序，并且我们收到了用户的报告，该应用程序在慢速网络上使用时性能很差。</p>
+<p>为了调试这个问题，我们可能想要给所有的网络请求添加人工延迟，这样我们就可以观察我们的应用程序在这种情况下的行为。虽然iOS提供了Link调节器工具，这是设备上调试的一个很好的选择，但在开始修复时，我们可能希望通过使用模拟器来缩短迭代时间。</p>
+<p>为了做到这一点，我们可以使用一个launch参数来增加所有网络请求的延迟，如下所示:</p>
+<pre><code class="language-swift">class DataLoader {
+    private let session: URLSession
+    private let userDefaults: UserDefaults
+
+    func loadData(from endpoint: Endpoint,
+                  then handler: @escaping (Result&lt;Data&gt;) -&gt; Void) {
+        let url = endpoint.url
+        let task = makeTask(for: url, handler: handler)
+
+        // If the app is running in debug mode, add a delay
+        // according to the &quot;network-delay&quot; launch argument
+        #if DEBUG
+        let delay = userDefaults.double(forKey: &quot;network-delay&quot;)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay,
+                                      execute: task.resume)
+        #else
+        task.resume()
+        #endif
+    }
+}
+</code></pre>
+<p>需要注意的是，我们将延迟代码封装在#if调试编译器条件中，以防止这段代码意外地被发送到App Store。这样，我们的调试代码甚至不会在发布构建时被编译。</p>
+<p>类似地，我们可以添加启动参数来控制应用程序中的其他类型的调试操作——例如;当应用启动时，导航到一个给定的屏幕，是否应用内购买已解锁，或模拟来自健康应用等东西的数据。</p>
+<h2 id="overriding-feature-flags">Overriding feature flags</h2>
+<p>启动参数派上用场的另一种情况是，在开发尚未完全发布的新特性时。就像我们在“Swift中的功能标志”中看到的那样，使用功能标志可以让功能逐步向用户推出，并进行实验和a /B测试。</p>
+<p>然而，当开发一款严重依赖功能标志的应用时，为了能够开发特定功能，让应用进入所需的确切状态可能会花费一些时间和技巧。 为了解决这个问题，我们可以引入launch参数，让我们可以为通常从服务器动态获取值的特性标记添加本地覆盖:</p>
+<pre><code class="language-swift">func enableSearchIfNeeded() {
+    var override: Bool?
+    let key = &quot;search&quot;
+
+    // We first check if the argument was actually passed, before
+    // asking UserDefaults to convert it into a Bool, otherwise
+    // the dynamic value will never be used.
+    #if DEBUG
+    if userDefaults.value(forKey: key) != nil {
+        override = userDefaults.bool(forKey: key)
+    }
+    #endif
+
+    if override ?? featureFlags.searchEnabled {
+        enableSearch()
+    }
+}
+</code></pre>
+<p>虽然上面的代码是特定于搜索特性的，但我们可以很容易地将它普遍化，使其适用于任何特性标志，并在共享代码路径中调用它——例如，当我们从服务器加载值时。</p>
+<h2 id="setting-state">Setting state</h2>
+<p>通常在调试或测试应用时，我们需要将其置于特定状态，以便重现漏洞或使用特定功能。这是一件经常重复的事情(而且有点烦人)，当工作时必须一遍又一遍地做——所以让我们使用启动参数来自动化它!</p>
+<p>首先，让我们添加一个简单的方法来完全重置我们的应用程序。当然，这可以通过手动卸载应用程序来完成，但如果在运行应用程序时简单地传递一个-reset参数，让它在空白状态下启动，会容易得多。为了做到这一点，让我们添加一个resetIfNeeded()方法，当应用启动时，我们会从AppDelegate中调用它，就像这样:</p>
+<pre><code class="language-swift">extension AppDelegate {
+    func resetIfNeeded() {
+        guard CommandLine.arguments.contains(&quot;-reset&quot;) else {
+            return
+        }
+
+        // We can reset our user defaults by removing the persistance
+        // for our app's bundle identifier
+        let defaultsName = Bundle.main.bundleIdentifier!
+        userDefaults.removePersistentDomain(forName: defaultsName)
+
+        // Reset any caching mechanisms, databases, etc.
+        cache.reset()
+        database.reset()
+    }
+}
+</code></pre>
+<p>类似地，它也很方便，不仅能够重置应用程序，还能使它被放置到特定的初始状态。假设我们正在构建一个包含用户联系人列表的应用程序。使用启动参数，我们可以提供一种快速的方法，用给定的姓名列表预填充联系人数据库(在本例中，我们使用逗号分隔的列表作为输入格式):</p>
+<pre><code class="language-swift">extension ContactsManager {
+    func addNamesFromCommandLine() {
+        guard let argument = userDefaults.string(forKey: &quot;contacts&quot;) else {
+            return
+        }
+
+        let names = argument.components(separatedBy: &quot;,&quot;)
+        names.forEach(add)
+    }
+}
+</code></pre>
+<h2 id="containment">Containment</h2>
+<p>在做上述所有工作时，我们所关心的一个问题是，我们现在如何将大量的调试和测试代码分散在我们的常规应用代码中。</p>
+<p>虽然添加专门用于调试的代码不一定是件坏事(毕竟，我们的代码库有点像我们的“数字工作场所”)，但如果我们能将所有代码都包含在一个地方，而不是将其分散到我们的应用程序中，那就更好了。这样我们就能更好地控制我们实际拥有的调试代码，并且更容易防止这些代码意外地进入发布版本。</p>
+<p>一种方法是将所有与启动参数相关的代码移动到专用类型中。 作为一个例子，这里是我们如何移动我们的行动，重置，延迟网络请求和添加模拟联系人到一个单独的，包含LaunchArgumentsHandler:</p>
+<pre><code class="language-swift">struct LaunchArgumentsHandler {
+    let userDefaults: UserDefaults
+    let contactsManager: ContactsManager
+    let dataLoader: DataLoader
+    let cache: Cache
+    let database: Database
+
+    func handle() {
+        resetIfNeeded()
+        addNetworkDelayIfNeeded()
+        addContactsIfNeeded()
+    }
+
+    private func resetIfNeeded() {
+        guard CommandLine.arguments.contains(&quot;-reset&quot;) else {
+            return
+        }
+
+        let defaultsName = Bundle.main.bundleIdentifier!
+        userDefaults.removePersistentDomain(forName: defaultsName)
+
+        cache.reset()
+        database.reset()
+    }
+
+    private func addNetworkDelayIfNeeded() {
+        let delay = userDefaults.double(forKey: &quot;network-delay&quot;)
+
+        guard delay &gt; 0 else {
+            return
+        }
+
+        // We've abstracted the delaying of data loader tasks  
+        // into an &quot;executor&quot; closure, leaving our production
+        // code free of any delaying code.
+        dataLoader.taskExecutor = { task in
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay,
+                                          execute: task.resume)
+        }
+    }
+
+    private func addContactsIfNeeded() {
+        guard let argument = userDefaults.string(forKey: &quot;contacts&quot;) else {
+            return
+        }
+
+        let names = argument.components(separatedBy: &quot;,&quot;)
+        names.forEach(contactsManager.add)
+    }
+}
+</code></pre>
+<p>现在，我们可以用与之前相同的#if调试条件来封装上面的LaunchArgumentsHandler声明，或者如果我们在调试/分段构建和发布构建中使用单独的Xcode目标——我们可以简单地从生产目标中排除LaunchArgumentsHandler.swift文件。</p>
+<p>通过这样做，我们现在对可用的启动参数操作有了更清晰的概述，在发布版本时，我们会得到一个编译错误，以防我们无意中使用了不属于它的调试代码。</p>
+<p>我们现在要做的就是在我们设置好我们的应用程序(例如在AppDelegate中)之后调用LaunchArgumentsHandler，并用#if DEBUG包围这个调用，使它在所有条件下都能正确编译👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>启动参数可以提供一种简单的方法来设置真正有用的调试和模拟操作，这有助于加速我们的开发和测试。 通过添加启动参数，我们可以快速进入我们想要的状态，或在每次启动时完全重置应用，从而无需每次运行应用时手动设置这些内容。</p>
+<p>虽然添加这类调试操作肯定会有风险——因为我们在应用程序中引入了更多的代码路径和可能的状态 -保持启动参数的数量较低，并将处理它们的所有代码包含在一个单独的地方，确实有助于降低风险。 就像许多东西一样，这是一种风险与回报的平衡行为，选择一些关键的发行论据(并清除旧的论据)绝对能够让我们获得有利的平衡。</p>
+<p><a href="https://www.swiftbysundell.com/articles/launch-arguments-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/a9KfQSrRb/" class="tag">
+                    scripting
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/VadC328gp/" class="tag">
+                    debugging
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/type-safe-identifiers-in-swift/">
+                  <h3 class="post-title">
+                    Type-safe identifiers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

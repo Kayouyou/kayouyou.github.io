@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Bindable SwiftUI list elements | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="SwiftUI的绑定属性包装器允许我们在给定的状态块和任何希望修改该状态的视图之间建立双向绑定。 通常，创建这样的绑定只需要引用我们希望使用$前缀绑定到的state属性，但涉及到集合时，事情往往没有那么简单。
+例如，假设我们正在构建一个笔记..." />
+    <meta name="keywords" content="collections,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Bindable SwiftUI list elements</h2>
+            <div class="post-date">2021-03-12</div>
+            
+            <div class="post-content" v-pre>
+              <p>SwiftUI的绑定属性包装器允许我们在给定的状态块和任何希望修改该状态的视图之间建立双向绑定。 通常，创建这样的绑定只需要引用我们希望使用$前缀绑定到的state属性，但涉及到集合时，事情往往没有那么简单。</p>
+<p>例如，假设我们正在构建一个笔记记录应用程序，我们想要将数组中的每个笔记模型绑定到一系列在SwiftUI ForEach循环中创建的NoteEditingView实例，就像这样:</p>
+<pre><code class="language-swift">struct Note: Hashable, Identifiable {
+    let id: UUID
+    var title: String
+    var text: String
+    ...
+}
+
+class NoteList: ObservableObject {
+    @Published var notes: [Note]
+    ...
+}
+
+struct NoteEditView: View {
+    @Binding var note: Note
+
+    var body: some View {
+        ...
+    }
+}
+
+struct NoteListView: View {
+    @ObservedObject var list: NoteList
+
+    var body: some View {
+        List {
+            ForEach(list.notes) { note in
+                NavigationLink(note.title,
+                    destination: NoteEditView(
+                        note: $note
+                    )
+                )
+            }
+        }
+    }
+}
+</code></pre>
+<p>不幸的是，上面的代码示例不能完全编译，原因与我们不能在经典的for循环中直接改变值是一样的-传入ForEach的note参数都是不可变的、不可绑定的值。</p>
+<p>相反，让我们尝试遍历notes数组的索引，这将允许我们通过下标到$list.notes来绑定到我们的Note模型的可变版本。注意:使用现在传入ForEach闭包的索引:</p>
+<pre><code class="language-swift">struct NoteListView: View {
+    @ObservedObject var list: NoteList
+
+    var body: some View {
+        List {
+            ForEach(list.notes.indices) { index in
+                NavigationLink(list.notes[index].title,
+                    destination: NoteEditView(
+                        note: $list.notes[index]
+                   )
+               )
+            }
+        }
+    }
+}
+</code></pre>
+<p>虽然我们的代码现在成功地编译了，而且一开始甚至可能看起来完全工作了——只要我们改变我们的注释数组,我们会在Xcode控制台中得到如下警告:</p>
+<pre><code class="language-swift">ForEach(_:content:) should only be used for *constant* data. Instead conform 
+data to Identifiable or use ForEach(_:id:content:) and provide an explicit id!
+</code></pre>
+<p>好了，那么让我们按照SwiftUI告诉我们的做，在创建ForEach实例时，通过传递一个显式的id键路径——像这样:</p>
+<pre><code class="language-swift">struct NoteListView: View {
+    @ObservedObject var list: NoteList
+
+    var body: some View {
+        List {
+            ForEach(list.notes.indices, id: \.self) { index in
+                NavigationLink(list.notes[index].title,
+                    destination: NoteEditView(
+                        note: $list.notes[index]
+                    )
+                )
+            }
+        }
+    }
+}
+</code></pre>
+<p>note:<br>
+之前我们了解了使用ForEach来创建动态视图的不同方式，它们都有一个共同点：SwiftUI 需要知道如何唯一识别动态视图的每一项，以便正确地动画化改变。<br>
+如果一个对象遵循Identifiable协议，那么 SwiftUI 会自动使用它的id属性作为唯一标识。如果我们不使用Identifiable，那就需要指定一个我们知道是唯一的属性的 key path，比如图书的 ISBN 号。但假如我们不遵循Identifiable也没有唯一的 key path，我们通常会使用.self。<br>
+我们对原始数据类型，例如Int和String使用过.self</p>
+<p>在这一点上，我们可能已经解决了这个问题。没有更多的警告被发出，即使我们改变了我们的Note数组，事情也可能继续完美地工作。然而，“might”实际上是这里的关键字，因为我们实际上所做的是使每个注释的索引成为它的“重用标识符”。 这意味着，如果数组快速变化，我们可能会遇到某些奇怪的行为(甚至崩溃)，由于SwiftUI现在将把每个注释的索引视为特定模型及其关联的NavigationLink的稳定标识符。</p>
+<p>因此，要真正解决这个问题，我们必须重构我们的NoteList类，使它也提供一种通过正确的基于uuid的id访问每个Note的方法 (这将允许我们将这些id的数组传递给ForEach，而不是使用基于int的数组索引)，或者，为了使我们的数组索引真正独一无二，我们将不得不深入研究Swift的集合api。</p>
+<p>在本例中，我们使用第二种策略，通过引入一个自定义集合，它将把另一个集合的索引与它所包含的元素的标识符组合在一起。 首先，让我们定义一个名为IdentifiableIndices的新类型，它封装了一个Base集合，并声明了一个Index和一个Element类型:</p>
+<pre><code class="language-swift">struct IdentifiableIndices&lt;Base: RandomAccessCollection&gt;
+    where Base.Element: Identifiable {
+
+    typealias Index = Base.Index
+
+    struct Element: Identifiable {
+        let id: Base.Element.ID
+        let rawValue: Index
+    }
+
+    fileprivate var base: Base
+}
+</code></pre>
+<p>接下来，让我们的新集合符合标准库的RandomAccessCollection协议， 这主要涉及到将所需的属性和方法转发到我们的底层base集合-除了实现了subscript，它返回了上面定义的元素类型的实例:</p>
+<pre><code class="language-swift">extension IdentifiableIndices: RandomAccessCollection {
+    var startIndex: Index { base.startIndex }
+    var endIndex: Index { base.endIndex }
+
+    subscript(position: Index) -&gt; Element {
+        Element(id: base[position].id, rawValue: position)
+    }
+
+    func index(before index: Index) -&gt; Index {
+        base.index(before: index)
+    }
+
+    func index(after index: Index) -&gt; Index {
+        base.index(after: index)
+    }
+}
+</code></pre>
+<p>就是这样!我们的新系列已经准备好了。但是，为了让它使用起来更方便一些，我们还将介绍两个小的扩展，它们将极大地改进它的整体人机工程学。首先，通过将以下计算属性添加到所有兼容的基本集合中，让我们简化创建IdentifiableIndices实例的操作(也就是支持随机访问，并且包含可识别元素的那些):</p>
+<pre><code class="language-swift">extension RandomAccessCollection where Element: Identifiable {
+    var identifiableIndices: IdentifiableIndices&lt;Self&gt; {
+        IdentifiableIndices(base: self)
+    }
+}
+</code></pre>
+<p>我们之所以可以确信地将上面的属性作为计算属性，而不是方法，是因为IdentifiableIndices计算它的元素是惰性的。也就是说，在第一次创建基集合时，它并不遍历该集合，而更像是对该集合的索引和标识符的一个镜头。所以创建它是一个O(1)操作。</p>
+<p>最后，让我们用一个方便的API来扩展SwiftUI的ForEach类型，这个API允许我们遍历一个IdentifiableIndices集合，而不必手动访问每个索引的rawValue</p>
+<pre><code class="language-swift">extension ForEach where ID == Data.Element.ID,
+                        Data.Element: Identifiable,
+                        Content: View {
+    init&lt;T&gt;(
+        _ indices: Data,
+        @ViewBuilder content: @escaping (Data.Index) -&gt; Content
+    ) where Data == IdentifiableIndices&lt;T&gt; {
+        self.init(indices) { index in
+            content(index.rawValue)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的部分，我们现在可以回到我们的nottelistview，通过迭代我们的Note数组的identifiableIndices，让ForEach的使用更加稳定和可靠——像这样:</p>
+<pre><code class="language-swift">struct NoteListView: View {
+    @ObservedObject var list: NoteList
+
+    var body: some View {
+        List {
+            ForEach(list.notes.identifiableIndices) { index in
+                NavigationLink(list.notes[index].title,
+                    destination: NoteEditView(
+                        note: $list.notes[index]
+                    )
+                )
+            }
+        }
+    }
+}
+</code></pre>
+<p>然而，尽管上述解决方案在许多不同的情况下都能很好地工作，但如果我们的集合的最后一个元素被删除，仍然有可能遇到崩溃和其他bug。看起来SwiftUI对它创建的集合绑定应用了某种形式的缓存， 当下标到我们的基础笔记数组时，也许会导致索引越界-如果发生当最后一个元素被删除时这种情况，那么我们的应用程序将崩溃，出现越界错误。不是很好。</p>
+<p>虽然这似乎是SwiftUI本身的一个漏洞，但我们仍然可以在本地解决这个问题。 我们不再使用SwiftUI的内置API为每个集合元素检索嵌套绑定，而是创建自定义Binding实例，这(至少以我的经验)将完全解决问题。</p>
+<p>为了实现这一点，让我们修改之前的ForEach扩展，以接受要迭代的集合的Binding引用 (这反过来要求该集合符合MutableCollection)，然后使用它来创建自定义绑定实例来获取和设置每个元素。最后，我们将每个这样的自定义绑定以及当前元素的索引传递给内容闭包，——像这样:</p>
+<pre><code class="language-swift">extension ForEach where ID == Data.Element.ID,
+                        Data.Element: Identifiable,
+                        Content: View {
+    init&lt;T&gt;(
+        _ data: Binding&lt;T&gt;,
+        @ViewBuilder content: @escaping (T.Index, Binding&lt;T.Element&gt;) -&gt; Content
+    ) where Data == IdentifiableIndices&lt;T&gt;, T: MutableCollection {
+        self.init(data.wrappedValue.identifiableIndices) { index in
+            content(
+                index.rawValue,
+                Binding(
+                    get: { data.wrappedValue[index.rawValue] },
+                    set: { data.wrappedValue[index.rawValue] = $0 }
+                )
+            )
+        }
+    }
+}
+</code></pre>
+<p>如果我们现在使用上面的新API将我们的NoteListView更新成这样，那么我们应该能够随心所欲地修改我们的NoteList模型对象，而不会在我们的视图中遇到任何与swift相关的问题</p>
+<pre><code class="language-swift">struct NoteListView: View {
+    @ObservedObject var list: NoteList
+
+    var body: some View {
+        List {
+            ForEach($list.notes) { index, note in
+                NavigationLink(note.wrappedValue.title,
+                    destination: NoteEditView(
+                        note: note
+                    )
+                )
+           }
+        }
+    }
+}
+</code></pre>
+<p>虽然我确实希望未来的SwiftUI发行版能够添加新的api来创建到集合元素的绑定，Swift使用标准的Swift协议(如RandomAccessCollection和可识别协议)来驱动其逻辑，这意味着我们可以经常扩充它以满足我们的需求， 或者暂时解决bug和其他问题，这在这种情况下是一个巨大的好处。</p>
+<p>感谢您的阅读，如果您有任何问题、评论或反馈，请随时通过Twitter或电子邮件联系我们。</p>
+<p><a href="https://www.swiftbysundell.com/articles/bindable-swiftui-list-elements/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/J3hVc8gY-/" class="tag">
+                    collections
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/ignoring-invalid-json-elements-when-using-codable/">
+                  <h3 class="post-title">
+                    Ignoring invalid JSON elements when using Codable
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

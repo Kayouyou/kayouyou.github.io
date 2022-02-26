@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>App&#39;s challenges - Part Four | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+LANGUAGES AND CROSS-PLATFORM APPROACHES
+
+
+1.1. ADOPTING NEW LANGUAGES AND FRAMEWORKS
+1.2. KOTLIN MULTIPLATFORM AND K..." />
+    <meta name="keywords" content="app-challenge-4" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">App&#39;s challenges - Part Four</h2>
+            <div class="post-date">2021-05-05</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.pexels.com/photos/3077882/pexels-photo-3077882.jpeg?auto=compress&amp;cs=tinysrgb&amp;dpr=2&amp;w=500')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#LANGUAGESANDCROSS-PLATFORMAPPROACHES">LANGUAGES AND CROSS-PLATFORM APPROACHES</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#ADOPTINGNEWLANGUAGESANDFRAMEWORKS">ADOPTING NEW LANGUAGES AND FRAMEWORKS</a></li>
+<li>1.2. <a href="#KOTLINMULTIPLATFORMANDKMM">KOTLIN MULTIPLATFORM AND KMM</a></li>
+<li>1.3. <a href="#CROSS-PLATFORMFEATUREDEVELOPMENT">CROSS-PLATFORM FEATURE DEVELOPMENT</a></li>
+<li>1.4. <a href="#CROSS-PLATFORMAPPDEVELOPMENTVERSUSNATIVE">CROSS-PLATFORM APP DEVELOPMENT VERSUS NATIVE</a></li>
+<li>1.5. <a href="#WEBPWABACKEND-DRIVENMOBILEAPPS">WEB, PWA &amp; BACKEND-DRIVEN MOBILE APPS</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namelanguagesandcross-platformapproachesalanguages-and-cross-platform-approaches">1. <a name='LANGUAGESANDCROSS-PLATFORMAPPROACHES'></a>LANGUAGES AND CROSS-PLATFORM APPROACHES</h2>
+<p>开发移动应用的工具一直在变化。新的语言、框架和方法都承诺要解决移动工程的痛点，并不断出现。</p>
+<p>但你应该选择哪种方法呢?你应该使用Objective C还是Swift开发iOS应用?Android上的Java还是Kotlin ?或者你应该投资一个跨平台的方法，承诺“编写一次，到处运行”的方法，像Flutter, React Native, Cordova?或者折衷一下，或者重用用Kotlin、c#、c++或其他语言编写的业务逻辑?</p>
+<p>在本节中，我们将讨论在构建移动应用程序时有关语言、框架和跨平台方法的最常见行业选择。关于如何构建应用程序的工具并不匮乏。这将取决于你在iOS、Android(可能还有其他)平台上构建时所选择的方法的约束和权衡。</p>
+<h3 id="11-a-nameadoptingnewlanguagesandframeworksaadopting-new-languages-and-frameworks">1.1. <a name='ADOPTINGNEWLANGUAGESANDFRAMEWORKS'></a>ADOPTING NEW LANGUAGES AND FRAMEWORKS</h3>
+<p>我们应该什么时候开始学习一门新语言?”我们是否应该开始使用一个新的、有希望的框架?不幸的是，没有简单的答案，即使你做了调查，你也可能会后悔你的决定。</p>
+<p>应用越复杂，采用新语言或切换到不同的“核心”框架的风险就越大。所谓的“核心”框架，我指的是跨应用程序使用的框架，比如网络库、依赖注入框架、实现跨平台业务逻辑的库等等。</p>
+<p>2016年，Swift的版本是2.2。当重写Uber的Rider应用程序时，Uber的工程团队决定100%使用Swift。这个决定几乎是一场灾难，主要是因为团队没有想到Swift的二进制规模会是ObjectiveC的几倍。</p>
+<p>前手机平台经理Chris Brauchli在<a href="https://medium.com/nerd-for-tech/binary-size-woes-acb5d96f058a">这篇文章</a>中详细解释了这些问题。 在吸取了这一经验后，优步更加小心地评估了使用一种新语言的各个方面。对于Kotlin，团队进行了广泛的评估和性能测量。</p>
+<p><strong>你会想要投入精力来评估一种新的语言或框架，它与工作采用的含义以及它所带来的风险相一致</strong>。优步投入了大量精力来评估Kotlin，因为推出Kotlin会影响数百名Android工程师，也会影响每月产生数十亿美元收入的应用程序。</p>
+<p>你想要评估的领域与你如何评估跨平台框架类似。在这些考虑之上，值得考虑的领域是:</p>
+<ul>
+<li>
+<p><strong>语言/框架的成熟度</strong>。API有多稳定?是否有在野外使用语言或框架的成功故事，这与你试图构建的内容有关?</p>
+</li>
+<li>
+<p>将来会有<strong>迁移</strong>。如果您采用这种语言或框架，您是否需要迁移现有的代码?要付出多大的努力?</p>
+</li>
+<li>
+<p><strong>工程的热情</strong>。这是一项让工程师们感到兴奋的技术吗? 团队中是否有足够的支持来继续采用这种技术?团队中有多少人对这项技术持怀疑态度，为什么?</p>
+</li>
+<li>
+<p><strong>风险</strong>。会出什么问题呢?这将如何影响应用程序、客户或业务?</p>
+</li>
+</ul>
+<p>用新语言或框架构建一个较小的“试验”项目是一个很好的方式来更好地了解它，并回答关于可用性、明显问题和工具的问题。</p>
+<p>我个人的方法是支持尝试任何新的东西，但在某种程度上限制了“爆炸半径”。我们能否在应用中不那么重要的部分使用新技术?我们是否可以在使用人数较少的应用中进行试验?我们能不能先做个改变，在我们采取进一步行动之前，只让公司员工测试这个新设备?</p>
+<p>移动工程不断发展，我们使用的语言、框架和工具也会不断发展。我们应该不害怕尝试新的方法，像Uber的Swift改写这样的故事应该提醒人们，当你没有“B计划”时，会发生什么。</p>
+<h3 id="12-a-namekotlinmultiplatformandkmmakotlin-multiplatform-and-kmm">1.2. <a name='KOTLINMULTIPLATFORMANDKMM'></a>KOTLIN MULTIPLATFORM AND KMM</h3>
+<p>Kotlin Multiplatform是通过与Kotlin语言共享公共代码来构建跨平台功能或应用的几种方法之一。我们将这种方法与其他跨平台功能开发和应用开发方法分开讨论，因为大型应用和开发团队迅速采用了这种方法。</p>
+<p>Kotlin Multiplatform于2017年宣布成立。有了它，你可以编写Kotlin并构建:</p>
+<ul>
+<li>针对Android的JVM库，或后端服务</li>
+<li>原生框架的iOS和桌面</li>
+<li>前端web或后端服务的JavaScript构件</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq6fgjs6bej30g40gb79f.jpg" alt="avatar" loading="lazy"></figure>
+<p>Kotlin Multiplatform Mobile (KMM)于2020年发布，是Kotlin Multiplatform之上的一个工具层。KMM为工程师提供了简化IOS和Android开发的工具。这些工具包括:</p>
+<ul>
+<li>Rich IDE integration</li>
+<li>Better debugging capabilities for mobile apps</li>
+<li>Good support for Cocoapods</li>
+</ul>
+<hr>
+<p>Touchlab是Kotlin Multiplatform Mobile (KMM)的全球专家。Touchlab通过产品和SDK开发、早期采用者支持、架构和产品就绪审查以及开源项目加速了KMM的采用。 Touchlab为Square和NBC等企业提供扩展KMM的建议，并与JetBrains合作增加KMM的采用。想开始使用KMM吗?在<a href="https://touchlab.co/kamp-kit-touchlab/?utm_source=pdf&amp;utm_medium=sponsorship&amp;utm_campaign=gergely-ebook-sponsorship">Touchlab.co</a>上查看他们的Kotlin多平台入门工具包。</p>
+<hr>
+<p>几家大型公司已经推出了Kotlin Multiplatform项目，其中包括Netflix、Square、Careem和VMWare。采用这种方法有几个好处:</p>
+<ul>
+<li>
+<p><strong>对于许多移动工程师来说，使用Kotlin是一个自然的选择</strong>。Android工程师很可能已经在使用它了，如果你已经了解Swift，那么学习它很容易。对于一名iOS工程师来说，将自己的技能扩展到Android系统也是有益的。</p>
+</li>
+<li>
+<p><strong>KMM鼓励完全原生的UI组件</strong>。与Flutter和React Native等工具所采用的方法不同，KMM的设计目的是允许本地手机开发者以用户和开发者习惯的方式构建ui。</p>
+</li>
+<li>
+<p><strong>JetBrains和谷歌</strong>对Kotlin基金会拥有该项目的投资。这也意味着JetBrains ide和Android Studio对Kotlin和KMM的一流支持。</p>
+</li>
+</ul>
+<p>Square将Cash App转移到Kotlin Multiplatform的<a href="https://kotlinlang.org/lp/mobile/case-studies/cash-app/">案例研究</a>突出了一些团队可能采用这种方法的原因。Cash App团队希望他们的大部分代码都是本地的，所以选择Kotlin作为共享组件的语言是有意义的。他们开始与Touchlab(本书的赞助商)合作测试这项技术。他们注意到，由于Kotlin在平台上的优势类似于Swift，所以iOS工程师可以掌控这种转变。更重要的是，他们也有来自服务器团队的贡献。</p>
+<p><strong>采用KMM的缺点都是技术不够成熟</strong>。到2021年为止，KMM工具还处于试验阶段，可能会对早期采用者产生影响。较大的团队会发现令人痛苦的工具差距。VMWare团队指出，缺乏支持的库也是他们最终克服的一个挑战。</p>
+<p>在所有跨平台特性开发方法中，我认为Kotlin Multiplatform和KMM是最有前途的。这是唯一能让现有Android工程师感觉舒适的跨平台方法，iOS工程师在采用Kotlin和工具时也能获得最少的学习曲线。</p>
+<hr>
+<p>关于KMM的首要问题</p>
+<p>Touchlab的合作伙伴Kevin Galligan分享了他对团队对KMM最关心的问题的看法。</p>
+<ol>
+<li><strong>稳定</strong>。是否会有强制返工的改动?它会消失还是会继续改进和维护? 开发人员经验对于大规模采用共享代码解决方案至关重要。JetBrains拥有在各种生态系统中制作一些世界上最流行的开发工具的记录。我们分享了JetBrains对该技术的承诺:“Kotlin 1.4发布后，KMM处于Alpha状态。这意味着Kotlin团队完全致力于改进和发展这项技术，不会突然放弃它。”</li>
+</ol>
+<p>随着我们继续帮助我们的客户将KMM投入生产，我们将密切关注KMM走向Beta的路径。</p>
+<ol start="2">
+<li><strong>依赖管理</strong>。模块化、在各种配置中创建和使用库又如何呢? Kotlin是Android的原生语言，是Android开发的首选语言。Android方面的模块化遵循类似的模式，使用与“标准”Android相同的工具。Android工具团队知道KMP，并与Jetbrains一起工作以确保兼容性。</li>
+</ol>
+<p>在iOS方面，Kotlin是一个Xcode框架，多个Kotlin模块可以被打包到一个框架中。目前，需要为不同的Kotlin模块组合构建不同的Xcode框架。如果你有多个带有不同Kotlin模块组合的应用实例，你应该为每个构建和部署一个包装器Xcode框架，而不是从每个Kotlin模块发布一个Xcode框架。直接包含多个Xcode框架而不是构造一个包装器框架的能力将继续是一个值得讨论的话题。</p>
+<p>在消费端，团队需要决定是在本地构建Kotlin还是发布预编译的二进制文件，这避免了安装和配置Kotlin工具以及相关的构建时间开销。多种配置选项可用。</p>
+<ol start="3">
+<li><strong>iOS DX</strong>。iOS开发者体验(DX)将受到怎样的影响? KMM被设计为直接与平台原生技术互操作，而不是取代它们，这就是为什么我们在Square和NBC等客户中与我们合作的工程师选择它的原因。Kotlin被导出为一个Xcode框架，Swift/Objc代码直接调用它，而不需要通过某种进程间层进行通信。</li>
+</ol>
+<p>我们与JetBrains等公司合作，为Kotlin的浏览和调试提供直接的Xcode集成。其目标是提供“本地代码共享”vs“跨平台”。目前，互操作是通过Objective-C接口进行的，尽管直接Swift互操作计划在未来发布。</p>
+<p>iOS资源:</p>
+<ul>
+<li>CrashKiOS: Kotlin/Native iOS应用的崩溃报告</li>
+<li>Kotlin Native Xcode Plugin:在Xcode中使用Kotlin Native来方便调试iOS应用</li>
+</ul>
+<p>要了解Touchlab如何帮助您的组织扩展KMM，请通过Touchlab.co联系他们。</p>
+<hr>
+<p>延伸阅读:</p>
+<ul>
+<li><a href="https://kotlinlang.org/lp/mobile/">Kotlin Multiplatform Mobile overview</a> and <a href="https://kotlinlang.org/lp/mobile/case-studies/">case studies</a> from Kotlin Multiplatform</li>
+<li><a href="https://kotlinlang.org/lp/mobile/case-studies/cash-app">Moving Cash App to Kotlin Multiplatform</a> from Square</li>
+<li><a href="https://medium.com/m/global-identity?redirectUrl=https%3A%2F%2Fnetflixtechblog.com%2Fnetflix-android-and-ios-studio-apps-kotlin-multiplatform-d6d4d8d25d23">Netflix Android and iOS Studio apps powered by Kotlin Multiplatform</a> from Netflix</li>
+<li><a href="https://kotlinlang.org/lp/mobile/case-studies/quizlet/">Moving from shared Javascript business logic to Kotlin Multiplatform</a> from Quizlet</li>
+<li><a href="https://kotlinconf.com/2019/talks/video/2019/127172/?_ga=2.228164052.836663087.1614315124-599272789.1614315124">Your multiplatform kaptain has arrived</a> from Careem</li>
+<li><a href="https://kotlinlang.org/lp/mobile/case-studies/vmware/">The move to Kotlin Multiplatform</a> from VMWare</li>
+<li><a href="https://medium.com/wantedly-engineering/moving-from-react-native-to-kotlin-multiplatform-292c7569692">Moving from React Native to Kotlin Multiplatform</a> from Wantendly</li>
+</ul>
+<h3 id="13-a-namecross-platformfeaturedevelopmentacross-platform-feature-development">1.3. <a name='CROSS-PLATFORMFEATUREDEVELOPMENT'></a>CROSS-PLATFORM FEATURE DEVELOPMENT</h3>
+<p>编写一款手机应用的通用部分，然后在iOS和Android上重复使用，这是一种明显的优化，并带来了一些好处。</p>
+<ul>
+<li>
+<p><strong>通过一次性实现业务逻辑来减少构建特性的时间</strong>。大多数人都高估了在这方面节省的时间。在第一次构建时，您仍然需要在两个平台上进行测试。如果做得对，你可以节省一些时间，但这不是最大的胜利。</p>
+</li>
+<li>
+<p><strong>减少iOS和Android的不一致性</strong>。当独立工作时，iOS和Android团队通常以不同或不一致的方式实现业务逻辑。使用共享业务逻辑，这就不会发生。</p>
+</li>
+<li>
+<p><strong>减少了维护共享逻辑的时间</strong>。一个代码库而不是两个。</p>
+</li>
+<li>
+<p><strong>打破iOS / Android孤岛</strong>。在许多组织中，iOS和Android团队是完全隔离的。即使是一些小的跨功能开发也会打破这些“竖井”。我发现，只有iOS和Android工程师多说话，事情才会变得更好。</p>
+</li>
+</ul>
+<p>你怎么能实现这个目标呢?”有几种方法允许一次性编写业务逻辑，将其包装在库或组件中，然后在两个本地应用中重用此逻辑:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq6g2ur23jj30ba07laas.jpg" alt="avatar" loading="lazy"></figure>
+<p>跨平台特性开发方法的数量在不断增加。</p>
+<p><strong>使用肋骨的跨平台架构是我们在Uber使用的方法</strong>。在这种方法中，iOS和Android的代码库仍然是分开的;但是，体系结构术语和工具是共享的。<a href="https://github.com/uber/RIBs/wiki">肋骨的架构、工具和培训材料是开源的</a>，被数百家公司使用。</p>
+<p>在它发布之前，我就已经在使用它构建应用了，以下是我对使用这种方法的团队的观察。</p>
+<ul>
+<li>
+<p><strong>支持跨平台的计划</strong>。使用共享架构方法的最大好处之一是，您现在可以使用rfc或类似方法为这两个平台设计特性。我们将分享功能的主要运作方式，并在这个阶段明确iOS和Android的执行差异。</p>
+</li>
+<li>
+<p><strong>鼓励跨平台代码审查</strong>。业务逻辑仍然在iOS的Swift和Android的Java/Kotlin中实现。尽管如此，由于工程师们正在构建类似的结构，他们可以更好地审查彼此的代码。</p>
+</li>
+<li>
+<p><strong>鼓励员工进入“另一个”平台</strong>。如果你一直在使用iOS系统，那么《肋骨》让你更容易“选择”Android系统。在优步，我估计近一半的本土工程师在“其他”平台上做出了贡献。跨平台规划过程和代码审查降低了准入门槛。</p>
+</li>
+<li>
+<p><strong>工具是这种方法的核心</strong>。肋骨同时为iOS和Android提供了组件生成，取消了类的手动连接。在Uber，我们也在“监督”架构一致性的毛毡规则上投入了大量资金。</p>
+</li>
+<li>
+<p><strong>最大的缺点是这种方法的“重量级”性质</strong>。肋骨为iOS和Android的代码库都带来了结构，而这种结构对许多工程师来说可能是有限的。</p>
+</li>
+</ul>
+<p>共享c++库是一种经过实战测试的方式，可以在iOS和Android应用程序之间共享代码或专门的业务逻辑。构建游戏、音频和视频处理应用程序以及其他性能密集型用例的团队通常会选择这种方法。</p>
+<p>在Skype，大部分调用逻辑都是在早期用c++构建的，并在所有平台上共享，包括Mac和Windows平台。Slack在2017年的客户端应用开发、编写、优化和重用数据获取、解析和缓存流逻辑的过程中也采用了类似的方法，这些流程横跨iOS、Android、Windows和Linux。2016年，PSPDFKit在评估其他跨平台语言后，选择了c++作为他们的跨平台语言。</p>
+<p>当使用c++组件时，你需要为Android (Java)和iOS (Objective C)生成自定义头文件。Djinni是这方面比较流行的库之一，你必须建立一个构建管道来持续完成这一工作。</p>
+<p>选择c++最大的好处是你可以使用c++库，不仅可以在iOS和Android上使用，还可以在Windows、Mac和Linux客户端上使用。对库性能和资源使用有更多的控制是另一个主要优点。</p>
+<p>其他跨平台库选项包括Go Mobile(从Go包生成绑定并在Android或iOS上调用它们)、J2ObjC(用Java编写的共享业务逻辑)或使用JavaScript和iOS和Android解释器来执行共享JS业务逻辑。所有的方法都是可行的，尽管在构建复杂移动应用程序的团队中，这两种方法都没有得到太大的欢迎。</p>
+<p>缺乏可见的成功案例并不意味着你应该将其排除在市场之外:Freshworks选择了Go Mobile作为他们的跨平台方法，并且对结果感到满意。他们最大的痛点不是技术，而是一些本地移动工程师对不得不维护Go代码库感到不满。</p>
+<p><strong>你的应用程序越复杂，你就越有理由考虑跨平台业务逻辑</strong>。肋骨可以是打破iOS和Android孤岛的良好开端，但不需要转向新技术。Kotlin Multiplatform对于那些想要拥抱现代Kotlin语言的团队来说是一项非常有前途的技术。c++是一种经过实战测试的语言，对于那些业务逻辑不仅在移动设备上共享，而且也在桌面设备上共享的应用程序尤其有用。</p>
+<p><strong>不要低估跨平台代码共享的开销</strong>。直到2019年，Dropbox使用c++在iOS和Android之间共享代码。然而，他们发现以非标准方式编写代码的开销最终比只编写两次代码的开销更大。他们在自己的工程博客上分享了他们面临的挑战。自定义框架和库的开销、自定义开发环境、平台差异以及培训、招聘和再培训开发者的开销，都是Dropbox遵循行业标准的原因。</p>
+<p>许多采用跨平台代码共享的公司往往会低估失去优秀的本地移动工程师的成本。例如，如果你选择的共享组件语言不是Swift或Kotlin，你可能会失去团队中一些最强大的原生iOS或Android工程师;那些想要在先进的本土环境中工作的人。</p>
+<p>延伸阅读:</p>
+<ul>
+<li><a href="https://github.com/uber/RIBs/wiki">RIBs: Uber’s cross-platform mobile architecture</a> from Uber</li>
+<li><a href="https://eng.uber.com/driver-app-ribs-architecture/">Architecting Uber’s new Driver app using RIBs</a> from Uber</li>
+<li><a href="https://slack.engineering/libslack-the-c-library-at-the-foundation-of-our-client-application-architecture/">LibStack: the C++ library foundation for client application architecture</a> from Slack</li>
+<li><a href="https://github.com/dropbox/djinni">Djinni connect C++ with Java or Objective-C declarations</a> from Dropbox</li>
+<li><a href="https://pspdfkit.com/blog/2016/a-pragmatic-approach-to-cross-platform/">C++: a pragmatic approach to cross-platform</a> from PSPPDKKit</li>
+<li><a href="https://dropbox.tech/mobile/the-not-so-hidden-cost-of-sharing-code-between-ios-and-android">The (not so) hidden cost of sharing code between iOS and Android</a> from Dropbox</li>
+<li><a href="https://www.freshworks.com/company/cross-platform-development-blog/">Our journey towards cross-platform development with Go Mobile</a> from Freshworks</li>
+</ul>
+<h3 id="14-a-namecross-platformappdevelopmentversusnativeacross-platform-app-development-versus-native">1.4. <a name='CROSS-PLATFORMAPPDEVELOPMENTVERSUSNATIVE'></a>CROSS-PLATFORM APP DEVELOPMENT VERSUS NATIVE</h3>
+<p>用共享语言编写业务逻辑和库可以让移动ui保持原生，同时共享业务逻辑的代码。跨平台应用程序开发框架如Flutter, React Native or Cordova 还是让你别无选择,只能共享应用程序的UI层。对于想要更复杂的应用程序,或有更多的控制在本地用户界面级别,跨平台的业务逻辑的解决方案可能更有意义。</p>
+<p>考虑跨平台应用开发方法的动机:</p>
+<ul>
+<li>
+<p><strong>“速度需求”</strong>。在两个平台上构建一个特性需要多长时间，这让人感到沮丧。如果采用一种能够保证更快的特性开发时间的方法，那么在两个平台上都行得通吗?</p>
+</li>
+<li>
+<p><strong>希望有一个工程师横跨两个平台</strong>，而不是需要两个工程师。要发布最简单的UI更改，两个工程师需要在两个平台上分别进行两个更改。两者都需要进行测试，而且通常需要协调推出。如果一个人可以同时做两件事不是很好吗?</p>
+</li>
+<li>
+<p><strong>希望iOS和Android应用能够完全相同</strong>。同一款产品的iOS和Android应用程序通常在小方面有所不同。安卓系统会出现bug，但iOS系统不会。两个应用以相同的方式运行不是很好吗?</p>
+</li>
+<li>
+<p><strong>统一iOS和Android应用程序的外观和感觉</strong>。随着时间的推移，设计团队将提倡共享UI/UX方法。从品牌的角度来看，这是很有意义的，同时也可以将两个平台的设计工作简化为一个统一的平台。</p>
+</li>
+<li>
+<p><strong>渴望“热加载”</strong>，而不是等待建造火车。即使是最小的移动应用更改也需要数周时间才能发布，因为代码更改需要通过app Store发布。如果能够在构建过程中无需等待而进行试验或发布bug修复，这难道不是一件很美妙的事情吗?</p>
+</li>
+</ul>
+<p>跨平台功能开发有助于统一iOS和Android应用之间的大部分业务逻辑，而跨平台应用开发则更进一步，通过统一两个平台之间的UI层。你可以选择几种技术来构建跨平台应用。下面是最受欢迎的。</p>
+<p>到目前为止，<strong>Flutter</strong>似乎是2021年采用的势头最强的框架。宝马已经<a href="https://www.droidcon.com/media-detail?video=362740965">完全转向</a>Flutter, eBay Motors和Nubank也选择了Flutter作为他们的跨平台应用开发技术。谷歌在Flutter上投入了大量资金，并且只使用这项技术开发了大部分新应用，其规模之大是其他跨平台应用开发方法所无法比拟的。</p>
+<p>最大的缺点是你必须通过学习和开发才能使用Dart。这种语言很容易掌握，除此之外，似乎没有什么理由不投资于这种方法。到2021年为止，Flutter是市场上最成熟的跨平台应用开发方法，而现在有几家公司正全力支持Flutter的应用开发，这也证明了这一方法的可行性。</p>
+<p>Examples of companies using Flutter:</p>
+<ul>
+<li>
+<p>Google building <a href="https://developers.googleblog.com/2020/09/google-pay-picks-flutter-to-drive-its.html">Google Pay</a>, Stadia, Google Ads, and Google Nest Hub</p>
+</li>
+<li>
+<p><a href="https://tech.ebayinc.com/product/ebay-motors-accelerating-with-fluttertm/">eBay Motors app case study</a>: moving to Flutter and writing 220,000 lines of Dart code</p>
+</li>
+<li>
+<p><a href="https://blog.bitrise.io/scaling-with-flutter-nubank">Nubank migration to Flutter</a>: their approach, progress, and the rapid launch their LifeInsurance app</p>
+</li>
+<li>
+<p><a href="https://www.droidcon.com/media-detail?video=362740965">BMW moving over to one single Flutter codebase</a>, as told by Jorge Coca at Droidcon</p>
+</li>
+<li>
+<p><a href="https://flutter.dev/showcase">A showcase of Flutter apps</a> collected by Google</p>
+</li>
+</ul>
+<p>React Native在2016年势头强劲，但在2018年，Airbnb在投入两年时间后放弃了它。在详细的事后分析中，他们分享了他们所面临的技术和组织问题。然而，Shopify宣布将于2020年在React Native上下注，但与其他几家公司相比，该公司采取了更为谨慎的策略。</p>
+<p>微软(Microsoft)、Coinbase、特斯拉(Tesla)和亚马逊(Amazon)等其他大型科技公司也同样谨慎地在部分应用中引入React Native。亚马逊甚至有自己的内部React Native会议，数百名工程师在一些项目中使用了React Native。</p>
+<p>对于那些拥有大量现有网页工程师和熟悉使用JavaScript开发原生移动应用的人的公司来说，React Native是一种很好的方法。许多使用RN构建的应用程序一开始都是mvp，或者是独立的、不那么复杂的应用程序。随着技术的成熟，我们有望看到更多复杂的应用程序使用这种方法来构建和维护。</p>
+<p>Examples of companies using React Native, or moving off it:</p>
+<ul>
+<li><a href="https://shopify.engineering/react-native-future-mobile-shopify">Shopify and their cautious investment in React Native</a>. Shopify will not rewrite existing apps, will keep hiring native engineers, and seem to be doing one-off React Native experiments, such as how they launched the Shopify Compass app using React Native, and are also building the Shopify Ping Android version using React Native.</li>
+<li><a href="https://medium.com/wix-engineering/react-native-at-wix-the-architecture-db6361764da6">Wix building their app</a> fully on React Native.</li>
+<li>UberEats building the <a href="https://eng.uber.com/ubereats-react-native/">Restaurant Dashboard app</a>. Note that this is the only Uber app as of 2021 that uses React Native.</li>
+<li><a href="https://go.mobileatscale.com/airbnb-react-native-learnings">Airbnb moving off React Native: Three years of learning</a>. The story of how Airbnb adopted React Native, and why they moved off of it.</li>
+</ul>
+<p>Xamarin/MAUI是一个使用c#的流行的跨平台框架。微软在2021年底宣布“更新”Xamarin为。net MAUI框架。使用c#代码库的公司在使用该框架跨后端和本地应用共享代码方面取得了巨大成功。</p>
+<p>对于拥有c#工程师的.net商店和公司来说，Xamarin是一个可行的选择，可以引导应用程序。Xamarin周围的社区要比Flutter或React Native小得多。然而，由于微软对该平台的投资，这种方式很可能会越来越受欢迎。</p>
+<p>Examples of companies using Xamarin/MAUI:</p>
+<ul>
+<li>DraftKings building their Sportsbook and Casino apps</li>
+<li>BBVA — one of the biggest banks in Spain — building its Valora View app</li>
+<li>Philips building its VitaHealth Engage platform</li>
+</ul>
+<p>其他跨平台框架包括Cordova(原名PhoneGap)、Ionic和NativeScript。在这些技术上构建复杂应用程序的公共案例研究较少。在Cordova/Ionic平台上构建的一个较大的应用程序是荷兰合作银行(Rabobank)应用程序，大约有50万荷兰客户在使用它。在大型项目中采用这些技术的最大障碍通常是性能和工具问题。</p>
+<p>跨平台应用开发的前景不容忽视:</p>
+<ul>
+<li>
+<p><strong>Cost</strong>. 最大的好处。编写一次代码，部署到iOS、Android，最好是web和桌面。</p>
+</li>
+<li>
+<p><strong>可重用性</strong>。在两个平台之间重用代码，也许还可以在web上重用。</p>
+</li>
+<li>
+<p><strong>新奇</strong>和凉爽的新技术的尝试。我们工程师经常会因为研究一些新的有趣的东西而感到兴奋，比如一个有前途的框架。</p>
+</li>
+<li>
+<p><strong>iOS和Android都有相同的功能</strong>。无需再担心这两个“应用程序工作方式不同</p>
+</li>
+<li>
+<p><strong>假设招聘或(再)培训网络工程师更容易</strong>。一些工程领导认为，通过使用跨平台框架，他们现有的工程师可以快速上手手机开发，而能够在Android和iOS上发布手机应用的人就更少了。这是一个往往不能实现的承诺。</p>
+</li>
+</ul>
+<p>这种方法有明显的缺点——即使在较小的应用程序中也可以看到:</p>
+<ul>
+<li>
+<p><strong>还有一件事可能出错</strong>。React Native和Flutter都在iOS和Android原生代码上添加了另一个层。它们确实抽象了一些复杂性:但当你看到一个bug只发生在一个平台上时，你就必须调试这个问题是与你的代码有关，是与React Native/Flutter有关，还是在平台层面上。</p>
+</li>
+<li>
+<p><strong>(仍然)需要本地代码</strong>——特别是高级部分。使用跨平台框架并不会消除为半高级情况或特定于平台特性编写本机代码的需求。</p>
+</li>
+<li>
+<p><strong>总是落后一步</strong>。每次iOS或Android引入一个新的API，这些框架都要花几个月的时间——如果不是更长的话——来提出一个抽象来包装这些API。如果您是这些api的早期采用者，则必须在本地实现它们。</p>
+</li>
+</ul>
+<p>但也有一些你以后才会看到的缺点.</p>
+<ul>
+<li>假设启动过渡的工程师将在几年后出现。有几家公司在一两个有发言权的工程师的领导下，决定采用一个框架，这让他们吃苦头。然而，一旦这些工程师离开，团队发现自己不确定是应该继续前进，还是掉头。</li>
+<li>大多数移动工程师总是偏爱本地工程师。你可能很难聘请到真正关心手机体验的工程师，或者他们会抱怨跨平台方法，并寻求将内容迁移回本地。</li>
+<li>工具变更的痛苦是大多数团队大大低估的。</li>
+<li>跨平台框架总是会比原生框架对你的限制更多，而且这些限制还会不断出现。它可以是用户体验、性能或如何完成某事;你必须在他们身上投入大量的时间。</li>
+</ul>
+<p>在引入React Native、Flutter、Cordova或其他带有大型应用或团队的跨应用框架之前，你需要仔细评估许多权衡。在决定引入或传递这些框架之前，您需要评估以下几个方面。</p>
+<ol>
+<li>
+<p><strong>性能</strong>与本地的。如何影响应用程序启动时间? 屏幕加载有多快? 你有多少余地优化UI性能?</p>
+</li>
+<li>
+<p><strong>开发经验</strong>vs本地开发经验。在开发过程中是否支持热加载?在开发人员环境中测试变更的速度有多快?开发者工具有多好和可靠?</p>
+</li>
+<li>
+<p><strong>工具</strong>。对调试的支持程度如何?性能和内存分析?编写自动化测试、做lint /静态分析是容易还是困难?CI/CD工具如何?</p>
+</li>
+<li>
+<p><strong>设备支持</strong>——特别是低端设备。框架在旧模型上是如何运行的?该公司或应用希望在这些模式上做多少生意?</p>
+</li>
+<li>
+<p><strong>UX/UX“本地”外观和感觉</strong>，以及围绕它们的权衡。许多跨平台框架带来了更“通用”的UX，这让人感觉与原生iOS或Android应用格格不入。框架在这个层次上做什么?</p>
+</li>
+<li>
+<p><strong>发布速度和质量</strong>。发布一个版本有多容易? 一个发布的执行速度有多快? 哪些质量检查可以自动化，以及框架不支持的检查?</p>
+</li>
+<li>
+<p><strong>二进制大小的影响</strong>。使用这些框架会给应用程序带来什么影响? 执行一个屏幕或一个类要大多少?</p>
+</li>
+<li>
+<p><strong>平台的局限性</strong>。iOS和Android平台的已知问题是什么，何时以及如何解决这些对应用至关重要的问题?</p>
+</li>
+<li>
+<p><strong>与本地代码混合</strong>。添加本地代码是容易还是困难?工具呢，比如添加测试和静态分析?</p>
+</li>
+<li>
+<p>框架和本机代码之间接口的类型安全。你能如何安全地来回传递对象?</p>
+</li>
+<li>
+<p><strong>构建性能</strong>。构建和运行测试慢多少或快多少?构建速度成为大型开发团队的关键。</p>
+</li>
+<li>
+<p><strong>版本控制选项</strong>，以防止类似React Native的热加载解决方案。你该如何处理只在特定版本以上的应用中推出代码?</p>
+</li>
+<li>
+<p>移动团队在做出继续使用框架的决定时的自主权。如果使用或不使用跨平台框架的决定不是由工程团队做出的，那么最终的结果是，与他们做出决定时相比，工程师的授权更少。</p>
+</li>
+</ol>
+<p>一些大型公司如果不采用知名的跨平台框架，有时会实施解决方案来解决上述一个或多个问题。或者它可能是一个允许某种程度的“热加载”的框架。它可能是一个跨平台的声明式UI框架。当你有资源来建造这样的东西时，这可能是一项有意义的投资。然而，如果你不这么做，你仍然需要弄清楚这些问题有多紧迫，以及你打算如何解决它们。</p>
+<p>大规模跨平台应用的最大障碍似乎是工具支持，以及在开发跨平台应用解决方案时必须放弃ui级别的控制。许多大型应用希望在UI层面保持细粒度控制，以确保最佳性能，因此坚持使用两个本地代码库，或转向跨平台功能开发。</p>
+<p><strong>评估你需要做什么</strong>，而不是复制其他公司已经在做的事情。跨平台功能开发和应用开发工具集都在快速发展，你有许多可供选择的方法。</p>
+<p>为了找出哪种方法适合你，回答以下问题:哪些是最大的移动工程痛点，哪些是你的约束条件?跨平台框架工具是否为您的用例提供了合适的优点和可接受的缺点?</p>
+<h3 id="15-a-namewebpwabackend-drivenmobileappsaweb-pwa-backend-driven-mobile-apps">1.5. <a name='WEBPWABACKEND-DRIVENMOBILEAPPS'></a>WEB, PWA &amp; BACKEND-DRIVEN MOBILE APPS</h3>
+<p>无法及时更新手机应用是原生应用的一大痛点，这也是我们在《难以恢复的错误》和《旧应用版本的长尾》章节中所提到的问题。但如果我们有一根魔杖能让这一切消失，立即更新应用呢?</p>
+<p>事实证明，我们确实有立即更新手机应用的魔杖。其实是几根魔杖。</p>
+<p>PWA(渐进式web应用)使用web浏览器api来构建类似于本机的用户体验。PWAs可以支持应用外壳、Android推送通知或资产缓存。PWAs可能是增强移动网络的下一步。Pinterest是早期投资建设一个进步的PWA，以改善其移动网络使用的公司之一。</p>
+<p>对于复杂的应用，PWAs不太可能成为原生应用的替代品或竞争对手。然而，关注这项技术的发展是值得的。</p>
+<p><strong>在手机应用中嵌入网页屏幕是最常见和最简单的方法</strong>。对于你想要有动态内容的部分应用，在iOS上添加一个WKWebView或在Android上添加一个WebView是一种明智的做法。值得注意的是，苹果明确表示，他们拒绝只包装一个网站、不添加任何功能的应用程序，但应用程序内的web视图添加额外的商业逻辑是没问题的。</p>
+<p>在应用离线时建立支持是一个挑战。在这种情况下，你必须从本地数据加载webview内容，然后在连接返回时同步本地数据。</p>
+<p>用户体验对操作系统来说不自然通常是这种方法的最大缺点。你必须在样式组件上投入大量精力，让它们看起来更适合你的应用。然而，使用基于webview的方法，你就有了无法复制的动画，比如从iOS的主视图到细节视图的动画。</p>
+<p>对于Android来说，这种方法需要注意一些问题，特别是在较老的设备和操作系统版本上。在iOS上，使用JavascriptCore几乎总是存在性能缺陷。Lucidchart将他们的混合应用移植到WKWebView上，并获得了10-15倍的主要性能提升。需要注意的是，对于那些执行简单JavaScript操作且花费很少时间的应用程序，这种性能改进可能不太明显。当他们为开发工具放宽这一政策时。将JavaScript代码从后端发送到移动应用程序目前是允许的，但只有在没有实质上改变应用程序工作方式的情况下。不过，苹果未来可能会决定改变这一政策。</p>
+<p>发送控制移动应用程序行为的元数据是一种更常见的方法。即使苹果决定禁止将Javascript可执行代码发送到应用程序中，这个解决方案在iOS上也是经得起时间检验的。这个想法是创建一个shell来解释元数据，并在应用程序中动态构建接口和功能。像这样的应用程序仍然不能回避这样一个事实，即移动shell不能轻易更新。除了解释后端指令外，shell不应该包含任何客户端业务逻辑。即使是这个shell的v1，您也需要提前考虑几个后端版本。</p>
+<p>后端需要知道不同的移动版本，并确保它向每个客户端发送兼容的“消息”。这导致需要决定如何处理版本控制;什么时候对API进行更改，什么时候引入新的API版本，什么时候创建新的端点。幸运的是，无论是版本控制还是构建向后兼容性都不是新问题。但是，如果您决定构建一个解释元数据的移动shell，您可能会面临挑战。</p>
+<p>在优步，我们建立了一个类似的内部系统，并学习了不把硬编码的客户端逻辑放在外壳代码中，如何获得正确的版本控制，以及这样一个系统的测试是多么具有挑战性。Lyft、Airbnb、Zalando和许多其他公司都建立了自己的后驱动ui方法。你可以在Mobile Native Foundation的讨论中阅读更多关于各种方法的内容。</p>
+<p>Further reading:</p>
+<ul>
+<li><a href="https://medium.com/pinterest-engineering/a-one-year-pwa-retrospective-f4a2f4129e05">A one-year PWA retrospective</a> from Pinterest</li>
+<li><a href="https://eng.uber.com/m-uber/">Engineering a high performance web app for the global market</a> from Uber</li>
+<li><a href="https://www.capitalone.com/tech/software-engineering/javascript-manipulation-on-ios-using-webkit/">Javascript manipulation on iOS using WebKit</a> from Capital One</li>
+<li><a href="https://www.lucidchart.com/techblog/2019/01/03/javascriptcore-10-months-later/">Migrating to WKWebView</a> from Lucidchart</li>
+<li><a href="https://medium.com/1mgofficial/pitfalls-in-android-webview-implementation-b6524f9f38bb">Pitfalls in Android Webview implementation</a> from 1mg Technology</li>
+<li><a href="https://podcasts.apple.com/us/podcast/server-driven-ui-with-kevin-fang-jeff-hurray/id1453587931?i=1000509742062">Server-driven UI approach</a> from Lyft</li>
+<li><a href="https://medium.com/airbnb-engineering/whats-next-for-mobile-at-airbnb-5e71618576ab">Server-driven rendering</a> from Airbnb</li>
+<li><a href="https://github.com/MobileNativeFoundation/discussions/discussions/47#discussioncomment-480176">Backend-driven UI strategy</a> from Zalando</li>
+<li><a href="">Backend-driven UI strategies</a> from the Mobile Native Foundation discussion boards</li>
+<li><a href="">Backend-driven UI strategies</a> from the Mobile Native Foundation discussion boards</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/0QYVNHJF3/" class="tag">
+                    app-challenge-4
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/apps-challenges-part-3/">
+                  <h3 class="post-title">
+                    App&#39;s challenges - Part Three
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

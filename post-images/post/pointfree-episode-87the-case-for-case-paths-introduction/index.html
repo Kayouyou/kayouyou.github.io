@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 87:The Case for Case Paths: Introduction | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Key paths: a refresher
+
+
+
+
+Key paths in practice: bindings
+
+
+
+
+
+
+1. Key paths: a refresher
+让我们从定义一个简单的结构体开始:
+struct ..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 87:The Case for Case Paths: Introduction</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Keypaths:arefresher">Key paths: a refresher</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Keypathsinpractice:bindings">Key paths in practice: bindings</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 87:The Case for Case Paths: Introduction -->
+<h2 id="1-a-namekeypathsarefresherakey-paths-a-refresher">1. <a name='Keypaths:arefresher'></a>Key paths: a refresher</h2>
+<p>让我们从定义一个简单的结构体开始:</p>
+<pre><code class="language-swift">struct User {
+  var id: Int
+  var isAdmin: Bool
+  var name: String
+}
+</code></pre>
+<p>每个字段都有一个对应的关键路径，可以使用特殊的反斜杠语法访问:</p>
+<pre><code class="language-swift">\User.id
+</code></pre>
+<p>不幸的是，由于在<strong>Swift playgrounds</strong>的一个bug，这打印出一些非常奇怪的类型信息，但这个值的类型是:</p>
+<pre><code class="language-swift">\User.id as WritableKeyPath&lt;User, Int&gt;
+</code></pre>
+<p>所有这些字段都有一个关键路径:</p>
+<pre><code class="language-swift">\User.id      as WritableKeyPath&lt;User, Int&gt;
+\User.isAdmin as WritableKeyPath&lt;User, Bool&gt;
+\User.name    as WritableKeyPath&lt;User, String&gt;
+</code></pre>
+<p>一个可写键路径的核心是一对<strong>getter和setter</strong>函数。你可以使用以下特殊的下标语法来访问它的“<strong>get</strong>”功能:</p>
+<pre><code class="language-swift">var user = User(id: 42, isAdmin: true, name: &quot;Blob&quot;)
+
+user[keyPath: \User.id] // 42
+</code></pre>
+<p>你甚至可以使用类型推断来忽略<strong>User</strong>，因为编译器可以找出它:</p>
+<pre><code class="language-swift">user[keyPath: \.id]
+</code></pre>
+<p>此外，你可以通过以下步骤访问关键路径的“<strong>setter</strong>”功能:</p>
+<pre><code class="language-swift">user[keyPath: \.id] = 57
+</code></pre>
+<p>我们可以访问这个<strong>setter</strong>功能，因为<strong>User</strong>结构体的字段都是<strong>vars</strong>。如果在结构体中使用了<strong>let</strong>，则只会得到一个<strong>KeyPath</strong>而不是<strong>WritableKeyPath</strong>。例如，让我们将<strong>isAdmin</strong>字段翻转为<strong>let</strong>:</p>
+<pre><code class="language-swift">struct User {
+  var id: Int
+  let isAdmin: Bool
+  var name: String
+}
+</code></pre>
+<p>我们可以检查<strong>isAdmin</strong>是否为<strong>WritableKeyPath</strong>:</p>
+<pre><code class="language-swift">\User.isAdmin as WritableKeyPath&lt;User, Bool&gt;
+</code></pre>
+<blockquote>
+<p>🛑 ‘KeyPath&lt;User, Bool&gt;’ is not convertible to ‘WritableKeyPath&lt;User, Bool&gt;’</p>
+</blockquote>
+<p>但我们发现事实并非如此。然而，它是一个普通的老<strong>KeyPath</strong>:</p>
+<pre><code class="language-swift">\User.isAdmin as KeyPath&lt;User, Bool&gt;
+</code></pre>
+<p>像这样的<strong>KeyPath</strong>只有<strong>getter</strong>功能，因为你不可能设置<strong>isAdmin</strong>字段，毕竟它是<strong>let</strong>!</p>
+<p>当然，你永远不会使用这样的关键路径，因为直接使用点语法要好得多:</p>
+<pre><code class="language-swift">user.id = 57
+user.name = &quot;Blob Jr.&quot;
+</code></pre>
+<hr>
+<h2 id="2-a-namekeypathsinpracticebindingsakey-paths-in-practice-bindings">2. <a name='Keypathsinpractice:bindings'></a>Key paths in practice: bindings</h2>
+<p>关键路径真正发挥作用的是在泛型函数中，因为它们允许你免费传递这个<strong>getter/setter</strong>功能。有许多关键路径的应用程序，但它们的一个常见用途是促进在两个对象之间建立绑定关系的想法。</p>
+<p>这个想法是，你会有某种对象来代表屏幕上的一个UI，比如一个标签:</p>
+<pre><code class="language-swift">class Label {
+  var font = &quot;Helvetica&quot;
+  var fontSize = 12
+  var text = &quot;&quot;
+}
+</code></pre>
+<p>当然，如果你在使用UIKit，你会使用一个UILabel，但这个想法甚至适用于UIKit世界之外的东西。</p>
+<p>接下来，你会有一些代表你的应用程序状态的模型对象:</p>
+<pre><code class="language-swift">class Model {
+  var userName = &quot;&quot;
+}
+</code></pre>
+<p>我们还希望将该模型的<strong>userName</strong>字段“绑定”到标签的文本字段，以便对该模型的任何更改都能立即反映在UI中。做这件事的API可能是这样的:</p>
+<pre><code class="language-swift">let model = Model()
+let label = Label()
+
+bind(model: model, \.userName, to: label, \.text)
+</code></pre>
+<p>然后，随着模型随时间变化，标签将自动更新。</p>
+<p>如果我们愿意使用Objective-C运行时，我们可以很容易地实现绑定，实际上我们在游乐场的source目录中就有一个实现。实现并不重要，所以我们不讨论它，但我们可以使用它，只要我们让我们的<strong>Model和Label</strong>类在Objective-C运行时可见:</p>
+<pre><code class="language-swift">class Label: NSObject {
+  @objc dynamic var font = &quot;Helvetica&quot;
+  @objc dynamic var fontSize = 12
+  @objc dynamic var text = &quot;&quot;
+}
+
+class Model: NSObject {
+  @objc dynamic var userName = &quot;&quot;
+}
+</code></pre>
+<p>通过这些变化，我们现在可以看到，我们对模型做出的任何突变都立即反映在标签中:</p>
+<pre><code class="language-swift">label.text
+model.userName = &quot;blob&quot;
+label.text // &quot;blob&quot;
+model.userName = &quot;XxFP_FANxX93&quot;
+label.text // &quot;XxFP_FANxX93&quot;
+</code></pre>
+<p>值得注意的是，关键路径使得这个API的调用站点读起来非常流畅:</p>
+<pre><code class="language-swift">bind(model: model, \.userName, to: label, \.text)
+</code></pre>
+<p>我们可以从字面上理解为“绑定模型的用户名到标签的文本”。</p>
+<p>另一方面，如果我们没有键路径，API将不得不要求我们为这些字段传递显式的getter和setter。这可能看起来像这样:</p>
+<pre><code class="language-swift">bind(model: model, get: { $0.userName }, to: label, get: { $0.text }, set: { $0.text = $1 })```
+
+**userName**字段只需要一个getter，而标签的文本同时需要一个getter和一个setter。这不仅使API的调用站点看起来更粗糙，而且我们必须编写额外的代码来实现这一点。这就是我们之前说的关键路径就像“编译器生成的代码”，它可以代替所有创建闭包来访问和设置字段值的样板。关键路径允许我们将所有这些工作打包到一个单独的包中，编译器自动为我们创建这些包。
+
+这种UI绑定在UIKit中是很常见的，但SwiftUI倾向于在我们没有真正考虑它的情况下为我们处理很多这类事情。然而，苹果的Combine框架为它的**publishers**提供了这种绑定API，它看起来与我们上面所做的非常相似:
+
+```swift
+let subject = PassthroughSubject&lt;String, Never&gt;()
+subject.assign(to: \.text, on: label)
+
+subject.send(&quot;MaTh_FaN96&quot;)
+label.text // &quot;MaTh_FaN96&quot;
+</code></pre>
+<hr>
+<h2 id="key-paths-in-practice-reducers">Key paths in practice: reducers</h2>
+<p>我们还想快速演示另一个关键路径的应用程序，这是我们在讨论可组合架构时在Point-Free上看到的。我们想强调的是，理解这个例子并不需要理解我们过去关于可组合架构的所有章节。很高兴看到另一个地方，关键路径是非常有用的，帮助清理我们的代码。</p>
+<p>我们在寻找转换<strong>reducer</strong>的方法时遇到了关键路径，<strong>reducer</strong>是为我们的架构提供动力的核心单元。本质上，<strong>reducer</strong>只是一个具有以下特征的函数:</p>
+<pre><code class="language-swift">typealias Reducer&lt;Value, Action&gt; = (inout Value, Action) -&gt; Void
+</code></pre>
+<p>它表示一个可以改变给定操作(通常是用户操作)的值的流程。</p>
+<p>我们在可组合架构中处理的<strong>reducer</strong>要比这个复杂一点，但是这个签名将服务于我们现在的目的。</p>
+<p>我们称其为<strong>reducer</strong>，因为它正是你在标准库中的**reduce(into:)**函数中输入的东西:</p>
+<pre><code class="language-swift">[1, 2, 3].reduce(into: &lt;#Result#&gt;, &lt;#(inout Result, Int) throws -&gt; ()#&gt;)
+
+[1, 2, 3].reduce(into: 0) { $0 += $1 }
+[1, 2, 3].reduce(into: 0, +=)
+</code></pre>
+<p>在探索可组合架构时，我们发现我们经常会有处理整个应用程序的一小部分数据的<strong>reducer</strong>，但是我们想要以某种方式对它们进行转换，以便它们能够处理整个应用程序数据。我们想要这个，因为它可以让我们有很多不同的小<strong>reducers</strong>，它们只专注于它们所关心的数据，然后把它们都插到一个大<strong>reducer</strong>上。</p>
+<p>为了做到这一点，我们最终得出的结论是，我们需要实现一个具有以下签名的函数:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: @escaping Reducer&lt;LocalValue, Action&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  fatalError()
+}
+</code></pre>
+<p>这允许我们将处理局部值的简化程序“拉回”到处理全局值的简化程序。你给它一个作用于局部值的<strong>reducer</strong>，和一个能把全局值转换成局部值的关键路径，它会给你一个能作用于全局值的<strong>reducer</strong>。</p>
+<p>这个函数的实现非常简单，实际上它几乎是自己写的。我们可以从返回一个带有<strong>reducer</strong>签名的函数开始，因为我们知道至少我们必须这样做:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: @escaping Reducer&lt;LocalValue, Action&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  return { globalValue, action in
+
+  }
+}
+</code></pre>
+<p>然后在这里，我们可以访问一个全局值和一个对局部值起作用的<strong>reducer</strong>。因此，我们可以使用关键路径从全局值中提取局部值，对该局部值运行<strong>reducer</strong>，然后将该局部值插入到全局值中:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: @escaping Reducer&lt;LocalValue, Action&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  return { globalValue, action in
+    var localValue = globalValue[keyPath: value]
+    reducer(&amp;localValue, action)
+    globalValue[keyPath: value] = localValue
+  }
+}
+</code></pre>
+<p>注意，在这个函数中，我们同时使用了键路径的<strong>getter和setter</strong>功能。如果我们只有getter功能，我们就无法实现这个。</p>
+<p>此外，由于<strong>reducer</strong>使用了一个inout参数，这一切都可以在一行中完成:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: @escaping Reducer&lt;LocalValue, Action&gt;,
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  return { globalValue, action in
+//  var localValue = globalValue[keyPath: value]
+//  reducer(&amp;localValue, action)
+//  globalValue[keyPath: value] = localValue
+    reducer(&amp;globalValue[keyPath: value], action)
+  }
+}
+</code></pre>
+<p>多亏了这个转换，我们可以做一些强大的事情，比如对普通整数进行<strong>reducer</strong>:</p>
+<pre><code class="language-swift">let counterReducer: Reducer&lt;Int, Void&gt; = { count, _ in count += 1 }
+</code></pre>
+<p>并将其拉回一个<strong>reducer</strong>，该<strong>reducer</strong>通过增加用户的id来操作用户:</p>
+<pre><code class="language-swift">pullback(reducer: counterReducer, value: \User.id)
+</code></pre>
+<p>这最后一行代码对我们来说是一记重拳，因为它为我们提供了一种将<strong>reducer</strong>从一个领域转换为另一个领域的超轻量级方法。这类似于使用<strong>map</strong>操作来转换数组的强大程度:</p>
+<pre><code class="language-swift">[1, 2, 3].map(String.init) // [&quot;1&quot;, &quot;2&quot;, &quot;3&quot;]
+</code></pre>
+<p>如果你还记得在你知道映射操作之前编码的样子，你就会知道管理for循环和突变是多么的痛苦，只是为了做这样简单的事情。<br>
+这是回调操作为我们做的，但对<strong>reducer</strong>来说是。它使我们不必编写一堆样板代码，我们可以处理更高层次的概念。</p>
+<p>如果我们生活在一个没有键路径的世界里，回调函数将被迫在<strong>reducer</strong>之外接受一个getter和setter函数:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: @escaping Reducer&lt;LocalValue, Action&gt;,
+  getLocalValue: @escaping (GlobalValue) -&gt; LocalValue,
+  setLocalValue: @escaping (inout GlobalValue, LocalValue) -&gt; Void
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+</code></pre>
+<p>为了实现这一点，我们需要执行多个步骤来提取局部值，运行<strong>reducer</strong>，然后在全局值中设置新的局部值:</p>
+<pre><code class="language-swift">func pullback&lt;GlobalValue, LocalValue, Action&gt;(
+  reducer: @escaping Reducer&lt;LocalValue, Action&gt;,
+  getLocalValue: @escaping (GlobalValue) -&gt; LocalValue,
+  setLocalValue: @escaping (inout GlobalValue, LocalValue) -&gt; Void
+) -&gt; Reducer&lt;GlobalValue, Action&gt; {
+  return { globalValue, action in
+    var newLocalValue = getLocalValue(globalValue)
+    reducer(&amp;newLocalValue, action)
+    setLocalValue(&amp;globalValue, newLocalValue)
+  }
+}
+</code></pre>
+<p>然后要使用这个函数，我们需要同时提供一个getter和一个setter，这样它才能完成它的工作:</p>
+<pre><code class="language-swift">pullback(
+  reducer: counterReducer,
+  getLocalValue: { $0.id },
+  setLocalValue: { $0.id = $1 }
+)
+</code></pre>
+<p>但这不起作用，因为编译器不知道$0是什么类型。我们需要给它一个提示，就像我们对关键路径所做的那样，我们可以这样做:</p>
+<pre><code class="language-swift">pullback(
+  reducer: counterReducer,
+  getLocalValue: { (user: User) in user.id },
+  setLocalValue: { $0.id = $1 }
+)
+</code></pre>
+<p>这正是Swift编译器在使用键路径时可以为我们编写的代码。所有这些用于创建闭包的样板都只是简单地从结构中取出一个字段并将其插入。关键路径让这变得简单:</p>
+<pre><code class="language-swift">pullback(reducer: counterReducer, value: \User.id)
+</code></pre>
+<p>这也是为什么我们把键路径称为“编译器生成的代码”。</p>
+<hr>
+<h2 id="introducing-case-paths">Introducing: case paths</h2>
+<p>所以现在我们已经看到了关键路径在Swift中非常强大，结构体的每个字段都自动拥有一个关键路径，是时候问:枚举对应的故事是什么?</p>
+<p>正如我们在之前的章节中看到的，并且希望您相信，任何时候结构体被赋予某种特性或功能，我们应该立即开始想知道枚举对应的故事是什么样子的。没有问这个,我们只是看到故事的一半,并有可能错过一些真正伟大的功能,可以帮助清理我们今天的代码,或者更好,可以帮助我们设计我们甚至都没有考虑过的api，因为我们现在还没有工具和概念。</p>
+<p>要理解枚举的关键路径等价是什么，让我们看看关键路径在Swift中的形状。</p>
+<p>在Swift中关键路径的实际实现有点复杂，由于各种原因，它被建模为一个类层次结构，但在其核心，它只是一对getter和setter函数，我们可以包装在一个结构体:</p>
+<pre><code class="language-swift">struct _WritableKeyPath&lt;Root, Value&gt; {
+  let get: (Root) -&gt; Value
+  let set: (inout Root, Value) -&gt; Void
+}
+</code></pre>
+<p>为了防止与标准库类型的混淆，我们在该类型前面加了下划线作为前缀。</p>
+<p>所以，一个关键路径就是一个get函数，它允许我们从根中提取一个值，还有一个set函数，它允许我们在根中改变一个新值。</p>
+<p>让我们开始把这个转换成我们预想的枚举的等效API。首先，我们应该怎么称呼它? “键路径”这个名字很可能来自于<strong>Objective-C</strong>中使用的命名和所谓的“键-值观察”，也被称为KVO。在KVO中，关键路径是一个在结构中导航到一些数据的字符串，在实践中可以是这样的:</p>
+<pre><code class="language-swift">// [user valueForKeyPath:@&quot;location.city&quot;]
+</code></pre>
+<p>名称“key”可能会被使用，因为我们使用的是结构字段的字符串表示，而“path”可能是使用的，因为您可以一次遍历多个键。Swift的键路径帮助实现了同样的功能，但是以静态的、类型安全的方式实现的，这可能就是为什么它们也被称为键路径。</p>
+<p>另一个合适的名称可能是“属性路径”，因为数据类型的每个属性都会产生一个键路径。它不像“<strong>key path</strong>”那么短，但它是一个非常好的名称，我们可以用它来启发我们为枚举指定一个名称。 由于结构体上的每个属性都指向一个键路径，所以我们期望枚举的每一种<strong>case</strong>都指向某个东西。因此，也许这是一个好名字“<strong>case path</strong>”:</p>
+<pre><code class="language-swift">struct CasePath
+</code></pre>
+<p>与键路径一样，键路径在<strong>Root</strong>结构体和<strong>value</strong>属性上是通用的，案例路径将在其枚举<strong>Root</strong>和案例<strong>value</strong>上是通用的。</p>
+<pre><code class="language-swift">struct CasePath&lt;Root, Value&gt; {
+}
+</code></pre>
+<p>就像关键路径表达了结构体可以实现的两种基本操作一样，<strong>case path</strong>也应该表达了枚举可以实现的两种基本操作。<br>
+使用struct，我们可以从struct中“获得”一个属性，但使用enum，我们可以尝试从enum中“提取”一个case。这个摘录并不总是成功的，因此它必须是可失败的:</p>
+<pre><code class="language-swift">struct CasePath&lt;Root, Value&gt; {
+  let extract: (Root) -&gt; Value?
+}
+</code></pre>
+<p>这个extract函数是structs的get函数的enum版本。允许我们获取枚举内部的数据，只是它并不总是能成功做到这一点。</p>
+<p>结构体上的属性具有的另一个基本操作是通过设置属性来改变整个结构体的能力。对于enum，我们也可以做类似的事情，但我们可以取其中一个case的关联值，并将其嵌入到根enum中:</p>
+<pre><code class="language-swift">struct CasePath&lt;Root, Value&gt; {
+  let extract: (Root) -&gt; Value?
+  let embed: (Value) -&gt; Root
+}
+</code></pre>
+<p>这个<strong>embed</strong>函数是structs的set函数的enum版本。奇怪的是，它不像set那样同时需要根和值来完成它的工作，但这是因为枚举提供了一种非常简单的方法来将值嵌入其中。</p>
+<p>这是我们对<strong>CasePath</strong>的定义，类似于struct键路径，但用于枚举。案例路径和关键路径之间有很强的联系，它们确实是同一枚硬币的两面，就像枚举和结构一样。</p>
+<p>关键路径允许我们分离一个结构，独立地分析和更新它的各个部分。例如，User类型的name键路径允许我们专注于name字段，如果需要的话应用转换，然后将范围缩小到整个用户。<strong>CasePath</strong>允许我们做同样的事情，枚举除外。我们可以只关注枚举的一个案例，孤立地考虑它，然后缩小到整个枚举。</p>
+<hr>
+<h2 id="defining-a-couple-case-paths">Defining a couple case paths</h2>
+<p>为了了解这一点，让我们从头创建几个<strong>case paths</strong>。 标准库附带的一个枚举是Result类型，我们可以为每个case创建<strong>case paths</strong>。因为Result类型是泛型的，我们不能创建一个单独的CasePath，用于所有可能的Result参数化:</p>
+<pre><code class="language-swift">let successCasePath: CasePath&lt;Result&lt;Success, Failure&gt;, Success&gt;
+</code></pre>
+<blockquote>
+<p>🛑 Use of undeclared type ‘Success’</p>
+</blockquote>
+<p>一个简单的解决方法是将case路径存储在Result类型中，这样我们就可以自由访问它的泛型:</p>
+<pre><code class="language-swift">extension Result {
+  static var successCasePath: CasePath&lt;Result, Success&gt; {
+    CasePath&lt;Result, Success&gt;(
+      extract: { result in
+        if case let .success(success) = result {
+          return success
+        }
+        return nil
+    },
+      embed: Result.success
+    )
+  }
+}
+</code></pre>
+<p>对于.failure情况，我们也可以这样做:</p>
+<pre><code class="language-swift">static var failureCasePath: CasePath&lt;Result, Failure&gt; {
+  CasePath&lt;Result, Failure&gt;(
+    extract: { result in
+      if case let .failure(failure) = result {
+        return failure
+      }
+      return nil
+  },
+    embed: Result.failure
+  )
+}
+</code></pre>
+<p>所以创建<strong>case paths</strong>非常简单。提取只需要检查枚举值是否符合我们所期望的情况，如果是，则返回其关联的值，否则返回nil。<strong>embed</strong>甚至更容易，因为enum的case充当了将关联值导入enum的函数。</p>
+<p>有了这些定义，我们就可以在Result上直接访问这些<strong>case paths</strong>。</p>
+<pre><code class="language-swift">Result&lt;Int, Error&gt;.successCasePath // CasePath&lt;Result&lt;Int, Error&gt;, Int&gt;
+Result&lt;Int, Error&gt;.failureCasePath // CasePath&lt;Result&lt;Int, Error&gt;, Error&gt;
+</code></pre>
+<p>现在，这个代码片段有很多地方不是完全正确的。首先，用这些静态变量污染Result命名空间是不对的，最好有一个不同的地方来存储它们。此外，在创建这些<strong>case paths</strong>时还涉及一些样板。我们在这里看到<strong>if case let</strong> stuff实现提取时，基本上我们创建的每个case路径都是这个样子的，一段时间后，它会很痛苦，需要一遍又一遍地写。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-85testable-state-management-the-point/">
+                  <h3 class="post-title">
+                    PointFree Episode 85:Testable State Management: The Point
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

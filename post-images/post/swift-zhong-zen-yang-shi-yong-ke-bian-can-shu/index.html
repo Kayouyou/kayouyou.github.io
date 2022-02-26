@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift中怎样使用可变参数？ | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+How to use Variadic parameters in Swift
+
+
+1.1. What is a Variadic Parameter?
+1.2. Understanding the limitations of V..." />
+    <meta name="keywords" content="variadic,parameters" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift中怎样使用可变参数？</h2>
+            <div class="post-date">2021-05-08</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#HowtouseVariadicparametersinSwift">How to use Variadic parameters in Swift</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#WhatisaVariadicParameter">What is a Variadic Parameter?</a></li>
+<li>1.2. <a href="#UnderstandingthelimitationsofVariadicParameters">Understanding the limitations of Variadic Parameters</a>
+<ul>
+<li>1.2.1. <a href="#AVariadicArgumentcanalsobeempty">A Variadic Argument can also be empty</a></li>
+<li>1.2.2. <a href="#Passinganarrayofvaluesasavariadicargumentdoesntwork">Passing an array of values as a variadic argument doesn’t work</a></li>
+</ul>
+</li>
+<li>1.3. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namehowtousevariadicparametersinswiftahow-to-use-variadic-parameters-in-swift">1. <a name='HowtouseVariadicparametersinSwift'></a>How to use Variadic parameters in Swift</h2>
+<p>可变参数使向函数传递零个或多个特定类型的值成为可能。对于经常使用一个元素的方法来说，它是一种干净的替代方法，并且您不希望为实现级别为单个值的创建组件数组。</p>
+<p>可变参数的伟大之处在于Swift处理将单个值转换为值的集合。当Swift处理转换时，我们可以保持我们的api更容易读懂和干净。让我们看看它是如何工作的。</p>
+<h3 id="11-a-namewhatisavariadicparameterawhat-is-a-variadic-parameter">1.1. <a name='WhatisaVariadicParameter'></a>What is a Variadic Parameter?</h3>
+<p>可变参数是用值类型后跟3个点来定义的，例如:</p>
+<pre><code class="language-swift">mutating func add(_ newContent: Content...) {
+    content.append(contentsOf: newContent)
+}
+</code></pre>
+<p>这个add(_:)方法现在只能同时接受一个或多个值:</p>
+<pre><code class="language-swift">struct Content {
+     let title: String
+}
+
+struct Bucket {
+    private(set) var content: [Content] = []
+    
+    mutating func add(_ newContent: Content...) {
+        content.append(contentsOf: newContent)
+    }
+}
+
+var bucket = Bucket()
+
+/// Add only a single content item:
+bucket.add(Content(title: &quot;Blog post 1&quot;))
+
+/// Add multiple items:
+bucket.add(Content(title: &quot;Blog post 2&quot;), Content(title: &quot;Blog post 3&quot;)) 
+</code></pre>
+<p>自从Swift 5.4随Xcode 12.5一起发布以来，我们现在也可以在方法定义中定义多个可变参数:</p>
+<pre><code class="language-swfit">mutating func add(_ newContent: Content..., newUsers: User...) {
+    content.append(contentsOf: newContent)
+    users.append(contentsOf: newUsers)
+} 
+</code></pre>
+<p>如果您希望多个参数能够灵活地接收零个或多个值，那么这非常好。</p>
+<h3 id="12-a-nameunderstandingthelimitationsofvariadicparametersaunderstanding-the-limitations-of-variadic-parameters">1.2. <a name='UnderstandingthelimitationsofVariadicParameters'></a>Understanding the limitations of Variadic Parameters</h3>
+<p>可变参数在许多情况下是非常适合的，但也不是正确的解决方案。这是由于它的局限性，知道它对决定使用可变参数是否有用很重要。</p>
+<h4 id="121-a-nameavariadicargumentcanalsobeemptyaa-variadic-argument-can-also-be-empty">1.2.1. <a name='AVariadicArgumentcanalsobeempty'></a>A Variadic Argument can also be empty</h4>
+<p>如果参数被隐式定义为一个数组，那么理解传入一个空数组是合乎逻辑的</p>
+<pre><code class="language-swift">struct Bucket {
+    private(set) var content: [Content] = []
+    
+    mutating func add(_ newContent: [Content]) {
+        content.append(contentsOf: newContent)
+    }
+}
+
+var bucket = Bucket()
+bucket.add([]) 
+</code></pre>
+<p>可变参数的基础值也是一个数组，这意味着我们可以做完全相同的事情:</p>
+<pre><code class="language-swift">struct Bucket {
+    private(set) var content: [Content] = []
+    
+    mutating func add(_ newContent: Content...) {
+        content.append(contentsOf: newContent)
+    }
+}
+
+var bucket = Bucket()
+bucket.add()
+</code></pre>
+<p>在大多数情况下，这应该不是问题，因为您的方法的实现需要处理元素数组。但是，您可能有一些内置的日志记录，在这些情况下也可以执行。只是要注意!</p>
+<h4 id="122-a-namepassinganarrayofvaluesasavariadicargumentdoesntworkapassing-an-array-of-values-as-a-variadic-argument-doesnt-work">1.2.2. <a name='Passinganarrayofvaluesasavariadicargumentdoesntwork'></a>Passing an array of values as a variadic argument doesn’t work</h4>
+<p>虽然在2019年有一个提议让这个工作，但仍然不可能将数组作为可变参数传入:</p>
+<p>虽然它可能期望这工作，你会遇到以下错误:</p>
+<blockquote>
+<p>不能传递类型“[内容]”的数组作为类型“内容”的可变参数</p>
+</blockquote>
+<p>目前解决这个问题的唯一方法是添加另一个重载方法来接受内容数组:</p>
+<pre><code class="language-swift">struct Bucket {
+    private(set) var content: [Content] = []
+    private(set) var users: [User] = []
+    
+    mutating func add(_ newContent: Content..., newUsers: User...) {
+        content.append(contentsOf: newContent)
+        users.append(contentsOf: newUsers)
+    }
+    
+    mutating func add(_ newContent: [Content]) {
+        content.append(contentsOf: newContent)
+    }
+} 
+</code></pre>
+<p>或者通过创建一个协议使单个项目和多个项目相等。</p>
+<h3 id="13-a-nameconclusionaconclusion">1.3. <a name='Conclusion'></a>Conclusion</h3>
+<p>当一个方法经常接收一个或多个值时，可变参数是在实现级别上保持代码整洁的好方法。然而，可变参数有一些限制，在决定在您的场景中使用它们之前需要考虑这些限制。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/WhhUOrvYO/" class="tag">
+                    variadic
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hAHtmlGpGZ/" class="tag">
+                    parameters
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/performance-functional-programming-and-collections-in-swift/">
+                  <h3 class="post-title">
+                    Performance, functional programming and collections in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

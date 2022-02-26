@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Five powerful, yet lesser-known ways to use Swift enums | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift对枚举的实现可以说是整个语言中最有趣的方面之一。从定义类型安全值的有限列表，到如何使用关联值来表示模型变体，等等-在很多情况下，Swift枚举可以使用非常强大的方式。
+本周，让我们聚焦于“以及其他”部分，通过看一些不太为人所知的方..." />
+    <meta name="keywords" content="combine,enums" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Five powerful, yet lesser-known ways to use Swift enums</h2>
+            <div class="post-date">2020-07-19</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift对枚举的实现可以说是整个语言中最有趣的方面之一。从定义类型安全值的有限列表，到如何使用关联值来表示模型变体，等等-在很多情况下，Swift枚举可以使用非常强大的方式。</p>
+<p>本周，让我们聚焦于“以及其他”部分，通过看一些不太为人所知的方法，枚举可以用来解决基于swift的应用程序和库中的各种问题。</p>
+<h2 id="namespaces-and-non-initializable-types">Namespaces and non-initializable types</h2>
+<p>命名空间是一种编程构造，它允许将各种类型和符号组合在一个名称下。虽然Swift不像其他语言那样附带专门的namespace关键字，但我们可以使用枚举来实现非常相似的结果——在特定情况下，我们可以创建嵌套类型的层次结构来添加一些额外的结构。</p>
+<p>例如，Apple的Combine框架就使用了这种技术，将多个Publisher类型组合到一个Publisher名称空间中，这个名称空间被简单地声明为一个case-less的enum，如下所示</p>
+<pre><code class="language-swift">enum Publishers {}
+</code></pre>
+<p>然后，通过扩展Publisher的“命名空间”来添加每个Publisher类型，例如:</p>
+<pre><code class="language-swift">extension Publishers {
+    struct First&lt;Upstream&gt;: Publisher where Upstream: Publisher {
+        ...
+    }
+}
+</code></pre>
+<p>使用上述类型的名称空间可以为一组类型添加清晰的语义，而不必手工为每个类型的名称添加给定的前缀或后缀。</p>
+<p>因此，虽然上面的第一个类型可以被命名为FirstPublisher并放在全局作用域中，当前的实现使它作为 Publishers.First公开可用-这两个都读起来很好，也给了我们一个提示，First只是Publishers namespace中许多可用的发布者之一。它还允许我们键入publishers. 在Xcode中查看所有可用的publisher变体的列表，作为自动完成建议。</p>
+<p>枚举在这个上下文中特别有用的原因是它们不能被初始化，这将发送另一个强信号，即我们最终作为namespaces使用的类型不打算单独使用。</p>
+<p>同样，在实现幻像类型时，枚举的非初始化特性也使它成为一个很好的选择 -这些类型被用作标记，而不是被实例化来表示值或对象。对于只包含静态api的类型也一样，例如下面的AppConfig类型，它包含应用程序的各种静态配置属性:</p>
+<pre><code class="language-swift">enum AppConfig {
+    static let apiBaseURL = URL(string: &quot;https://api.swiftbysundell.com&quot;)!
+    static var enableExperimentalFeatures = false
+    ...
+}
+</code></pre>
+<h2 id="iterating-over-cases">Iterating over cases</h2>
+<p>接下来，让我们看看如何使用内置的CaseIterable协议迭代枚举。虽然我们之前已经探索过枚举迭代，但让我们仔细看看在设计可重用的抽象和库时如何使用这些功能。</p>
+<p>例如，驱动这个网站的Publish static site generator使用一个Website协议来允许每个网站自由配置它包含的section，并要求定义这些section的类型符合CaseIterable:</p>
+<pre><code class="language-swift">protocol Website {
+    associatedtype SectionID: CaseIterable
+    ...
+}
+</code></pre>
+<p>这种设计又使库能够遍历每个部分以生成HTML-不需要用户手动提供任何形式的数组来迭代其他集合，因为使用CaseIterable会自动生成所有符合标准类型的allCases集合:</p>
+<pre><code class="language-swift">extension Website {
+    func generate() throws {
+        try SectionID.allCases.forEach(generateSection)
+    }
+
+    private func generateSection(_ section: SectionID) throws {
+        ...
+    }
+}
+</code></pre>
+<p>同样，上面是对Publish的实际实现的简化，但核心模式仍然是相同的。</p>
+<p>在调用站点上，一个给定的站点可以通过简单地定义一个符合CaseIterable的嵌套SectionID枚举来声明它所包含的section，像这样:</p>
+<pre><code class="language-swift">struct MyPortfolio: Website {
+    enum SectionID: CaseIterable {
+        case apps
+        case blog
+        case about
+    }
+    ...
+}
+</code></pre>
+<h2 id="custom-raw-types">Custom raw types</h2>
+<p>枚举可以由内置的原始类型支持，例如String或Int，这无疑是一个众所周知且常用的特性，但是对于自定义原始类型却不能这样说——这在某些情况下真的很有用。</p>
+<p>例如，假设我们正在开发一个内容管理应用程序，并且我们允许应用程序中的每个条目使用一系列标记进行标记。 由于我们希望在代码中增加一点额外的类型安全，所以我们不将标记存储为普通字符串，而是使用包装底层String值的标记类型。为了使该类型尽可能易于使用，我们仍然允许使用字符串字面量来表示它，就像原始字符串一样，给出了以下实现:</p>
+<pre><code class="language-swift">struct Tag: Equatable {
+    var string: String
+}
+
+extension Tag: ExpressibleByStringLiteral {
+    init(stringLiteral value: String) {
+        string = value
+    }
+}
+</code></pre>
+<p>现在，假设我们想要定义一组预先确定的高级类别，每个类别都有一个给定的标记支持，从而使我们能够在应用程序中提供一个更精简的过滤UI。如果我们要使用enum来实现这一点，最初可能看起来我们需要恢复到使用原始字符串作为返回每个类别的底层标记——但实际情况并非如此。</p>
+<p>因为我们的标签类型可以用文字来表示，而且它符合Equatable，所以我们实际上可以用我们自己的标签类型作为它的支持原始类型来声明我们的类别enum:</p>
+<pre><code class="language-swift">enum Category: Tag {
+    case articles = &quot;article&quot;
+    case videos = &quot;video&quot;
+    case recommended
+    ...
+}
+</code></pre>
+<p>请注意，我们可以选择是为每种情况定制底层原始值，还是只使用编译器为我们合成的原始值-就像使用原始字符串或任何其他内置类型时一样。很酷!</p>
+<h2 id="convenience-cases">Convenience cases</h2>
+<p>在设计任何类型的API时，都必须在底层实现的结构和一致性之间取得良好的平衡，并使调用站点尽可能清晰和简单。为此，让我们假设我们正在制作一个动画系统，并且我们已经定义了一个RepeatMode enum，它可以方便地定制一个动画在被删除之前应该重复多少次。</p>
+<p>与之前的标签类型类似，我们可以只使用一个简单的Int来表示这种重复计数，但我们选择了下面的API，以便于表示常见的重复模式，例如once和never:</p>
+<pre><code class="language-swift">extension Animation {
+    enum RepeatMode: Equatable {
+        case once
+        case times(Int)
+        case never
+        case forever
+    }
+}
+</code></pre>
+<p>然而，虽然上面的结果是一个非常整洁的API(通过允许我们使用“点语法”，如.times(5)和.forever)，我们的内部处理代码最终变得有些复杂-因为我们需要分别处理每个重复模式的情况，即使所有的逻辑都很相似:</p>
+<pre><code class="language-swift">func animationDidFinish(_ animation: Animation) {
+    switch animation.repeatMode {
+    case .once:
+        if animation.playCount == 1 {
+            startAnimation(animation)
+        }
+    case .times(let times):
+        if animation.playCount &lt;= times {
+            startAnimation(animation)
+        }
+    case .never:
+        break
+    case .forever:
+        startAnimation(animation)
+    }
+}
+</code></pre>
+<p>虽然有很多不同的方法可以解决上述问题(包括使用更自由的结构体，而不是枚举)，让我们暂时保留基于枚举的API，同时简化内部实现和处理代码。</p>
+<p>为了做到这一点，让我们将实际情况减少到两种——一种是让我们指定一个数值重复计数，另一种是告诉我们的系统永远重复给定的动画:</p>
+<pre><code class="language-swift">extension Animation {
+    enum RepeatMode: Equatable {
+        case times(Int)
+        case forever
+    }
+}
+</code></pre>
+<p>然后，为了保持与之前完全相同的公共API，让我们用两个静态属性来增加新版本的enum——一个用于我们刚刚删除的两种情况:</p>
+<pre><code class="language-swift">extension Animation.RepeatMode {
+    static var once: Self { .times(1) }
+    static var never: Self { .times(0) }
+}
+</code></pre>
+<p>关于上面的改变，一个很酷的事情是它实际上根本不需要我们改变我们的代码。我们之前的switch语句将继续像以前一样工作(感谢Swift的高级模式匹配功能)，我们的公共API也保持相同。</p>
+<p>然而，因为我们现在只有两种实际情况需要处理，一旦我们准备好了，我们可以极大地简化我们的代码——例如:</p>
+<pre><code class="language-swift">func animationDidFinish(_ animation: Animation) {
+    switch animation.repeatMode {
+    case .times(let times):
+        if animation.playCount &lt;= times {
+            startAnimation(animation)
+        }
+    case .forever:
+        startAnimation(animation)
+    }
+}
+</code></pre>
+<p>我们仍然永远保留一个单独的情况(而不是使用.times(.max))的原因是，我们可能希望以不同的方式处理这种情况。 例如，为了对我们知道永远不会被删除的动画进行某些优化，并准确地表示无限的重复计数(因为Int.max技术上不是永远的)。</p>
+<h2 id="cases-as-functions">Cases as functions</h2>
+<p>最后，让我们看看枚举用例与函数之间的关系，以及Swift 5.3如何带来一个新特性，让我们能够以全新的方式将协议与枚举结合起来。</p>
+<p>例如，我们现在使用下面的enum来跟踪给定产品模型的加载状态，以及加载实例的相关值，以及遇到的任何错误:</p>
+<pre><code class="language-swift">enum ProductLoadingState {
+    case notLoaded
+    case loading
+    case loaded(Product)
+    case failed(Error)
+}
+</code></pre>
+<p>带有关联值的枚举案例的一个真正有趣的方面是，它们实际上可以直接作为函数使用。例如，这里我们让ProductViewModel可以初始化一个可选的预加载Product值，然后我们把它直接映射到我们的.loaded案例中，就像这个案例是一个函数一样:</p>
+<pre><code class="language-swift">class ProductViewModel: ObservableObject {
+    @Published private(set) var state: ProductLoadingState
+    ...
+
+    init(product: Product?) {
+        state = product.map(ProductLoadingState.loaded) ?? .notLoaded
+    }
+    
+    ...
+}
+</code></pre>
+<p>当将多个表达式链接在一起时(例如使用Combine)，该特性特别方便。下面是上面的ProductViewModel示例的一个更高级版本，它使用组合驱动的URLSession API通过网络加载产品，然后将结果映射到ProductLoadingState值，就像上面那样:</p>
+<pre><code class="language-swift">class ProductViewModel: ObservableObject {
+    @Published private(set) var state = ProductLoadingState.notLoaded
+
+    private let id: Product.ID
+    private let urlSession: URLSession
+    ...
+    func load() {
+        state = .loading
+
+        urlSession
+            .dataTaskPublisher(for: .product(withID: id))
+            .map(\.data)
+            .decode(type: Product.self, decoder: JSONDecoder())
+            .map(ProductLoadingState.loaded)
+            .catch({ Just(.failed($0)) })
+            .receive(on: DispatchQueue.main)
+            .assign(to: &amp;$state)
+    }
+}
+</code></pre>
+<p>Swift 5.3还引入了另一个功能，通过允许枚举案例来满足静态协议的要求，进一步拉近了函数和枚举之间的距离。假设我们想在我们的应用中推广预加载的概念——通过引入一个通用的可预加载协议，它可以用来创建一个给定类型的已经加载的实例，就像这样:</p>
+<pre><code class="language-swift">protocol Preloadable {
+    associatedtype Resource
+    static func loaded(_ resource: Resource) -&gt; Self
+}
+</code></pre>
+<p>真正好的是为了使我们的ProductLoadingState enum符合上面的协议，我们只需要声明它正在加载的资源类型， 并使用我们的加载案例来满足我们协议的功能需求:</p>
+<pre><code class="language-swift">extension ProductLoadingState: Preloadable {
+    typealias Resource = Product
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>根据你问的人的不同，在Swift中，枚举要么没有被充分利用，要么被过度使用。就我个人而言，我认为Swift的枚举提供了如此广泛的功能，可以在如此多不同的情况下使用，这是非常棒的，但这并不意味着它们是我们应该一直使用的“银弹”。</p>
+<p>重要的是要记住，枚举在建模有限列表时工作得最好，而其他语言特性——包括结构和协议——在我们需要构建更灵活或更动态的东西时可能更适合。 但是，最终，我们对Swift的各种语言特征了解得越多，我们就能在每种情况下做出更好的选择。</p>
+<p><a href="https://www.swiftbysundell.com/articles/powerful-ways-to-use-swift-enums/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5CEvLT7HIN/" class="tag">
+                    enums
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swiftui-extensions-using-generic-type-constraints/">
+                  <h3 class="post-title">
+                    SwiftUI extensions using generic type constraints
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

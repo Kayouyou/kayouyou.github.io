@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Attributed Strings with SwiftUI | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在过去的几周里，经常有人问我在SwiftUI如何使用带属性字符串，所以我决定写一篇文章来分享我对这个主题的了解。
+在我们开始之前，让我们把它放在这里:SwiftUI不准备轻松处理带属性字符串。有了这些，让我们来看看填补这一空白的最佳方法，以..." />
+    <meta name="keywords" content="text,strings,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Attributed Strings with SwiftUI</h2>
+            <div class="post-date">2021-04-23</div>
+            
+            <div class="post-content" v-pre>
+              <p>在过去的几周里，经常有人问我在SwiftUI如何使用带属性字符串，所以我决定写一篇文章来分享我对这个主题的了解。</p>
+<p>在我们开始之前，让我们把它放在这里:<em>SwiftUI不准备轻松处理带属性字符串</em>。有了这些，让我们来看看填补这一空白的最佳方法，以及在这一过程中我们会发现的限制或问题。</p>
+<h2 id="attributed-strings">Attributed Strings</h2>
+<p>在本文中，我假设您知道什么是NSAttributedString以及如何创建NSAttributedString。它们已经存在很长时间了。 如果你需要知道如何建立一个，互联网有丰富的资源。谷歌是你的朋友。</p>
+<p>为了简化本文中的示例，它们都将使用相同的带属性字符串，定义为全局变量，并使用以下代码初始化:</p>
+<pre><code class="language-swift">let myAttributedString: NSMutableAttributedString = {
+    
+    let a1: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.systemRed, .kern: 5]
+    let s1 = NSMutableAttributedString(string: &quot;Red spaced &quot;, attributes: a1)
+    
+    let a2: [NSAttributedString.Key: Any] = [.strikethroughStyle: 1, .strikethroughColor: UIColor.systemBlue]
+    let s2 = NSAttributedString(string: &quot;strike through&quot;, attributes: a2)
+    
+    let a3: [NSAttributedString.Key: Any] = [.baselineOffset: 10]
+    let s3 = NSAttributedString(string: &quot; raised &quot;, attributes: a3)
+
+    let a4: [NSAttributedString.Key: Any] = [.font: UIFont(name: &quot;Papyrus&quot;, size: 36.0)!, .foregroundColor: UIColor.green]
+    let s4 = NSAttributedString(string: &quot; papyrus font &quot;, attributes: a4)
+
+    let a5: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.systemBlue, .underlineStyle: 1, .underlineColor: UIColor.systemRed]
+    let s5 = NSAttributedString(string: &quot;underlined &quot;, attributes: a5)
+
+    s1.append(s2)
+    s1.append(s3)
+    s1.append(s4)
+    s1.append(s5)
+    
+    return s1
+}()
+</code></pre>
+<h2 id="the-quick-way-out-ignoring-attributes">The Quick Way Out: Ignoring Attributes</h2>
+<p>有时您可能有一个没有属性的带属性字符串，或者您不介意失去它们的效果。如果你幸运的话，你可以使用它的普通字符串值:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Text(myAttributedString.string)
+            .padding(10)
+            .border(Color.black)
+    }
+}
+</code></pre>
+<p>或者，您可以使用具有自定义初始化器的Text扩展来执行相同的操作。这似乎有些过分，但我想在这里介绍这种技术，因为我们稍后将对其进行扩展。</p>
+<pre><code class="language-swift">extension Text {
+    init(dumbAttributedString: NSAttributedString) {
+        self.init(dumbAttributedString.string)
+    }
+}
+
+struct ContentView: View {
+    var body: some View {
+        Text(dumbAttributedString: myAttributedString)
+            .padding(10)
+            .border(Color.black)
+    }
+} 
+</code></pre>
+<h2 id="a-limited-but-effective-approach-text-concatenation">A Limited, but Effective Approach: Text Concatenation</h2>
+<p>2020年，SwiftUI增加了连接Text视图的能力。将两个文本视图添加到一起会产生一个新的文本视图:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+
+        Text(&quot;Hello &quot;) + Text(&quot;world!&quot;)
+    }
+}
+</code></pre>
+<p>你也可以在这些文本视图上使用修饰符:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+
+        let t = Text(&quot;Hello &quot;).foregroundColor(.red) + Text(&quot;world!&quot;).fontWeight(.heavy)
+        
+        return t
+            .padding(10)
+            .border(Color.black)
+    }
+}
+</code></pre>
+<p>然而，并不是所有的修饰符都能工作，只有那些返回Text的修饰符才能工作。如果一个修饰符返回一些视图，你就不走运了。值得注意的是，在两个版本中存在一些修饰符。例如，foregroundColor是Text视图的一种方法:</p>
+<pre><code class="language-swift">extension Text {
+   public func foregroundColor(_ color: Color?) -&gt; Text
+}
+</code></pre>
+<p>但在View协议中还有另一个同名的方法:</p>
+<pre><code class="language-swift">extension View {
+    @inlinable public func foregroundColor(_ color: Color?) -&gt; some View
+}
+</code></pre>
+<p>他们都做同样的事情，但是如果你注意返回类型，一个返回文本，而另一个返回一些视图。返回类型将取决于您正在修改的视图。如果它是一个Text视图，它将返回Text。否则，它将是一些视图。</p>
+<p>在撰写本文时，可以返回Text的修饰符有:</p>
+<ul>
+<li>baselineOffset()</li>
+<li>bold()</li>
+<li>font()</li>
+<li>fontWeight()</li>
+<li>foregroundColor()</li>
+<li>italic()</li>
+<li>kerning()</li>
+<li>strikethrough()</li>
+<li>tracking()</li>
+<li>underline()</li>
+</ul>
+<h2 id="from-attributed-string-to-concatenated-text">From Attributed String to Concatenated Text</h2>
+<p>既然我们知道了如何连接Text视图，那么让我们探索一种从带属性字符串到复合Text视图的方法。我们想要实现的是一个自定义文本初始化器。它将接收一个带属性的字符串并返回一个由连接的片段组成的Text视图，每个片段都有与带属性字符串中找到的属性相对应的适当修饰符。使用它看起来像这样:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Text(myAttributedString)
+            .padding(10)
+            .border(Color.black)
+    }
+}
+</code></pre>
+<p>参见下面的初始化器代码:</p>
+<pre><code class="language-swift">extension Text {
+    init(_ astring: NSAttributedString) {
+        self.init(&quot;&quot;)
+        
+        astring.enumerateAttributes(in: NSRange(location: 0, length: astring.length), options: []) { (attrs, range, _) in
+            
+            var t = Text(astring.attributedSubstring(from: range).string)
+
+            if let color = attrs[NSAttributedString.Key.foregroundColor] as? UIColor {
+                t  = t.foregroundColor(Color(color))
+            }
+
+            if let font = attrs[NSAttributedString.Key.font] as? UIFont {
+                t  = t.font(.init(font))
+            }
+
+            if let kern = attrs[NSAttributedString.Key.kern] as? CGFloat {
+                t  = t.kerning(kern)
+            }
+            
+            
+            if let striked = attrs[NSAttributedString.Key.strikethroughStyle] as? NSNumber, striked != 0 {
+                if let strikeColor = (attrs[NSAttributedString.Key.strikethroughColor] as? UIColor) {
+                    t = t.strikethrough(true, color: Color(strikeColor))
+                } else {
+                    t = t.strikethrough(true)
+                }
+            }
+            
+            if let baseline = attrs[NSAttributedString.Key.baselineOffset] as? NSNumber {
+                t = t.baselineOffset(CGFloat(baseline.floatValue))
+            }
+            
+            if let underline = attrs[NSAttributedString.Key.underlineStyle] as? NSNumber, underline != 0 {
+                if let underlineColor = (attrs[NSAttributedString.Key.underlineColor] as? UIColor) {
+                    t = t.underline(true, color: Color(underlineColor))
+                } else {
+                    t = t.underline(true)
+                }
+            }
+            
+            self = self + t
+            
+        }
+    }
+}
+</code></pre>
+<p>这是一个很好的解决方案。不幸的是，并非所有属性都可以处理，因为只有少数修饰符返回Text(来自上面列表的那些)。例如，如果带属性的字符串有一个超链接，此解决方案将直接忽略它。如果您不幸有一个不受支持的属性，您可能需要使用下一种方法。</p>
+<h2 id="fallback-to-uikit-with-uiviewrepresentable-ios">Fallback to UIKit, with UIViewRepresentable (iOS)</h2>
+<p>当我们耗尽所有swifttui资源时，可能是时候创建一个UIViewRepresentable了。通常，这有自己的一组问题，但至少支持所有属性。我们将从一个简单的UIViewRepresentable开始:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        AttributedText(attributedString: myAttributedString)
+            .padding(10)
+            .border(Color.black)
+    }
+}
+
+struct AttributedText: UIViewRepresentable {
+    
+    let attributedString: NSAttributedString
+    
+    init(_ attributedString: NSAttributedString) {
+        self.attributedString = attributedString
+    }
+    
+    func makeUIView(context: Context) -&gt; UILabel {
+        let label = UILabel()
+        
+        label.lineBreakMode = .byClipping
+        label.numberOfLines = 0
+
+        return label
+    }
+    
+    func updateUIView(_ uiView: UILabel, context: Context) {
+        uiView.attributedText = attributedString
+    }
+}
+</code></pre>
+<p>正如你所看到的，这个方法的问题是<em>UIViewRepresentable增长到占用所有可用空间</em>。这里是我们需要创造性地让视图遵循我们需要的布局的地方。</p>
+<p>试图解决这个问题时，我们首先需要确定我们到底想要什么。文本应该换行吗? 它应该生长到理想的最大宽度吗? 支持高度? 你会尊重带属性的字符串段落风格，还是忽略它? 一旦你回答了这些问题，了解一点UIKit/AppKit就会大有帮助。</p>
+<p>我将提出一个在某些情况下可能有用的解决方案。当然，您的需求可能会有所不同。如果是这样，我希望本文为您提供了一个良好的起点。</p>
+<h2 id="using-a-binding-with-sizethatfits">Using a Binding with sizeThatFits</h2>
+<p>为了防止视图增长(或收缩太多)，我们可以使用frame(width:height:)强制它到一个特定的尺寸。 挑战是找到正确的宽度和高度值。下面的例子创建了一个Binding来连接一个State大小变量，其结果是在UILabel上调用sizeethatfits。</p>
+<pre><code class="language-swift">struct ContentView: View {   
+   var body: some View {
+       AttributedText(myAttributedString)
+           .padding(10)
+           .border(Color.black)
+   }
+}
+
+struct AttributedText: View {
+   @State private var size: CGSize = .zero
+   let attributedString: NSAttributedString
+   
+   init(_ attributedString: NSAttributedString) {
+       self.attributedString = attributedString
+   }
+   
+   var body: some View {
+       AttributedTextRepresentable(attributedString: attributedString, size: $size)
+           .frame(width: size.width, height: size.height)
+   }
+   
+   struct AttributedTextRepresentable: UIViewRepresentable {
+       
+       let attributedString: NSAttributedString
+       @Binding var size: CGSize
+
+       func makeUIView(context: Context) -&gt; UILabel {
+           let label = UILabel()
+           
+           label.lineBreakMode = .byClipping
+           label.numberOfLines = 0
+
+           return label
+       }
+       
+       func updateUIView(_ uiView: UILabel, context: Context) {
+           uiView.attributedText = attributedString
+           
+           DispatchQueue.main.async {
+               size = uiView.sizeThatFits(uiView.superview?.bounds.size ?? .zero)
+           }
+       }
+   }
+}
+</code></pre>
+<p>这个解决方案不会为每个场景工作，其他选项可能是设置hugging priority和UILabel的压缩阻力(UILabel. setcontenthugingpriority()和UILabel. setcontentcompressionresistance())。最重要的是，你需要有创造性，这取决于你期望的结果。</p>
+<h2 id="summary">Summary</h2>
+<p>SwiftUI远不支持带属性字符串，但是稍加努力，我们至少可以更接近一点。我想我会把它列入明年的愿望清单。</p>
+<p><a href="https://swiftui-lab.com/attributed-strings-with-swiftui/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/lTXfy8La4/" class="tag">
+                    text
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/-e6COW1bj/" class="tag">
+                    strings
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-brief-summary-of-self-in-swift/">
+                  <h3 class="post-title">
+                    A brief summary of Self in Swift 
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

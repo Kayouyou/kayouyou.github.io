@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Splitting up Swift types | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="一款应用的各种功能和系统应该根据它们的职责和关注点，在理想情况下保持清晰的分离，这一理念在整个软件行业中被广泛接受。 多年来，人们发明了许多架构模式、技术和原则，试图引导我们编写更清晰的解耦代码——Swift和许多其他语言都有。
+然而，无论..." />
+    <meta name="keywords" content="code structure,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Splitting up Swift types</h2>
+            <div class="post-date">2020-03-01</div>
+            
+            <div class="post-content" v-pre>
+              <p>一款应用的各种功能和系统应该根据它们的职责和关注点，在理想情况下保持清晰的分离，这一理念在整个软件行业中被广泛接受。 多年来，人们发明了许多架构模式、技术和原则，试图引导我们编写更清晰的解耦代码——Swift和许多其他语言都有。</p>
+<p>然而，无论我们在任何给定的项目中选择采用哪种架构，确保我们的每个类型都有一个狭窄且清晰定义的责任集有时是相当具有挑战性的-特别是当代码库随着新特性不断演进，并响应平台变化时。</p>
+<p>本周，让我们来看看一些可以帮助我们做到这一点的技巧和技巧，一旦他们的职责开始超出单一类型的理想范围，就可以将我们的类型进行划分。</p>
+<h2 id="states-and-scopes">States and scopes</h2>
+<p>一个真正导致代码复杂性的常见原因是，单个类型需要处理多个作用域和不同的状态。例如，假设我们正在开发一个应用程序的网络层，目前我们已经在一个名为NetworkController的单一类中实现了整个网络层:</p>
+<pre><code class="language-swift">class NetworkController {
+    typealias Handler = (Result&lt;Data, NetworkError&gt;) -&gt; Void
+
+    var accessToken: AccessToken?
+    
+    ...
+
+    func request(_ endpoint: Endpoint,
+                 then handler: @escaping Handler) {
+        var request = URLRequest(url: endpoint.url)
+
+        if let token = accessToken {
+            request.addValue(&quot;Bearer \(token)&quot;,
+                forHTTPHeaderField: &quot;Authorization&quot;
+            )
+        }
+
+        // Perform the request
+        ...
+    }
+}
+</code></pre>
+<p>在上面，我们使用一个端点类型来定义应用程序正在与之通信的各种服务器端点。 查看“在Swift中构造url”以获得更多关于这种方法的信息。</p>
+<p>虽然在单个类中实现整个特性或系统不一定是坏事，但在这种情况下，这样做给我们留下了一个相当大的歧义来源。因为我们使用相同的API来请求两个公共端点，以及那些需要身份验证的端点，所以我们团队中的每个开发人员都需要始终记住哪个端点属于哪个组-否则，当一个受保护的终端在没有登录用户的情况下意外被请求时，我们将会导致运行时错误。</p>
+<p>如果我们可以利用Swift的类型系统来防止任何需要身份验证的端点在没有有效访问令牌的情况下被调用，那么可以说情况会好得多。这样一来，我们既可以在编译时更彻底地验证我们的网络代码，也可以使系统更容易使用——因为在任何给定的范围内，都可以非常清楚地知道可能被请求的端点是哪个。</p>
+<p>为了实现这一点，我们首先将处理身份验证和访问令牌的所有代码从NetworkController移到该类的一个新变体中，我们将其命名为AuthenticatedNetworkController。就像它的前任一样，我们的新控制器将使我们能够执行基于端点的网络调用——只是这次我们都将用它所需的令牌初始化它，我们还会确保在执行每个请求之前，这些令牌都是最新的，就像这样:</p>
+<pre><code class="language-swift">class AuthenticatedNetworkController {
+    typealias Handler = (Result&lt;Data, NetworkError&gt;) -&gt; Void
+
+    private var tokens: NetworkTokens
+    ...
+
+    init(tokens: NetworkTokens, ...) {
+        self.tokens = tokens
+        ...
+    }
+
+    func request(_ endpoint: AuthenticatedEndpoint,
+                 then handler: @escaping Handler) {
+        refreshTokensIfNeeded { tokens in
+            var request = URLRequest(url: endpoint.url)
+
+            request.addValue(&quot;Bearer \(tokens.access)&quot;,
+                forHTTPHeaderField: &quot;Authorization&quot;
+            )
+            
+            // Perform the request
+            ...
+        }
+    }
+}
+</code></pre>
+<p>值得注意的是，我们还为我们的新网络控制器提供了自己的专用端点类型——AuthenticatedEndpoint。这也是为了清晰地分离端点定义，以便需要身份验证的端点不会意外地传递到之前的NetworkController。</p>
+<p>由于该类型不再需要处理任何经过身份验证的请求，我们可以极大地简化它，并将其(及其端点类型)重命名为更好地描述其在我们的网络层中的新角色:</p>
+<pre><code class="language-swift">class NonAuthenticatedNetworkController {
+    typealias Handler = (Result&lt;Data, NetworkError&gt;) -&gt; Void
+    
+    ...
+
+    func request(_ endpoint: NonAuthenticatedEndpoint,
+                 then handler: @escaping Handler) {
+        var request = URLRequest(url: endpoint.url)
+        ...
+    }
+}
+</code></pre>
+<p>然而，尽管上述的关注点分离可以在架构和API清晰度方面给我们带来巨大的提升，但它也可能需要相当数量的代码重复。在本例中，我们的两个网络控制器都需要创建URLRequest实例并执行它们，以及处理缓存和其他与网络相关的操作等任务 -所以他们仍然可以共享他们的底层实现，即使我们希望他们的api是分开的。</p>
+<p>对于初学者来说，与其让每个网络相关的类型都声明它们自己的完成处理程序闭包类型，不如定义一个它们可以轻松共享的通用闭包类型:</p>
+<pre><code class="language-swift">typealias NetworkResultHandler&lt;T&gt; = (Result&lt;T, NetworkError&gt;) -&gt; Void
+</code></pre>
+<p>然后，我们可以开始将底层网络实现的部分从控制器本身转移到更小的专用类型中——这些类型应该能够保持相当的无状态。 例如，下面是我们如何创建一个私有的NetworkRequestPerformer类型，我们的两个控制器都可以使用它来实际执行它们的请求——同时仍然保持顶层api完全分离和类型安全:</p>
+<pre><code class="language-swift">private struct NetworkRequestPerformer {
+    var url: URL
+    var accessToken: AccessToken?
+    var cache: Cache&lt;URL, Data&gt;
+
+    func perform(then handler: @escaping NetworkResultHandler&lt;Data&gt;) {
+        if let data = cache.data(forKey: url) {
+            return handler(.success(data))
+        }
+                        
+        var request = URLRequest(url: url)
+
+        // This if-statement is no longer a problem, since it's now
+        // hidden behind a type-safe abstraction that prevents
+        // accidential misuse.
+        if let token = accessToken {
+            request.addValue(&quot;Bearer \(token)&quot;,
+                forHTTPHeaderField: &quot;Authorization&quot;
+            )
+        }
+        
+        ...
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以让我们的两个网络控制器只专注于为执行请求提供类型安全的API-当他们的底层实现被保持同步通过私有共享工具类型:</p>
+<pre><code class="language-swift">class AuthenticatedNetworkController {
+    ...
+
+    func request(
+        _ endpoint: AuthenticatedEndpoint,
+        then handler: @escaping NetworkResultHandler&lt;Data&gt;
+    ) {
+        refreshTokensIfNeeded { [cache] tokens in
+            let performer = NetworkRequestPerformer(
+                url: endpoint.url,
+                accessToken: tokens.access,
+                cache: cache
+            )
+
+            performer.perform(then: handler)
+        }
+    }
+}
+</code></pre>
+<p>我们上面所做的基本上就是利用组合的力量，我们通过将较小的类型组合到定义公共API的类型中来共享各种实现。 然而，在我们能够组合我们的功能之前，我们首先必须分解我们开始使用的单个类型。在持续的基础上进行这种分解通常是保持代码库处于最佳状态的关键，因为随着我们向代码库添加新特性和功能，我们的类型往往会自然增长。</p>
+<h2 id="loading-versus-managing-objects">Loading versus managing objects</h2>
+<p>接下来，让我们看看另一种情况，它会使代码库的某些部分变得比它们需要的更复杂——当同一类型同时负责加载和管理给定对象时。一个很常见的例子是，与用户会话相关的一切都在单一类型中实现——比如UserManager。</p>
+<p>例如，这种类型负责用户登录和退出我们的应用程序，以及保持当前登录的用户实例与我们的服务器同步:</p>
+<pre><code class="language-swift">class UserManager {
+    private(set) var user: User?
+    
+    ...
+
+    func logIn(
+        with credentials: LoginCredentials,
+        then handler: @escaping NetworkResultHandler&lt;User&gt;
+    ) {
+        ...
+    }
+
+    func sync(then handler: @escaping NetworkResultHandler&lt;User&gt;) {
+        ...
+    }
+
+    func logOut(then handler: @escaping NetworkResultHandler&lt;Void&gt;) {
+        ...
+    }
+}
+</code></pre>
+<p>这里我们本质上处理的是一个非可选的可选值——一个在技术上是可选的，但实际上是程序逻辑所需要的值——这意味着，如果它丢失了，我们将面临以未定义状态结束的风险，而编译器无法帮助我们避免这一点。</p>
+<p>所以，在我们的应用程序中不必完全采用基于锁和密钥的架构——我们如何使用这个设计模式中的一些原则来将我们的UserManager分成更小、更集中的类型呢?</p>
+<p>我们要做的第一件事是将所有与从UserManager加载用户实例相关的代码提取出来，并放入一个新的、单独的类型中。我们将它命名为UserLoader，它将使用我们之前的AuthenticatedNetworkController来请求服务器的用户端点，这需要身份验证:</p>
+<pre><code class="language-swift">struct UserLoader {
+    var networkController: AuthenticatedNetworkController
+
+    func loadUser(
+        withID id: User.ID,
+        then handler: @escaping NetworkResultHandler&lt;User&gt;
+    ) {
+        networkController.request(.user(withID: id)) { result in
+            // Decode the network result into a User instance,
+            // then call the passed handler with the end result.
+            ...
+        }
+    }
+}
+</code></pre>
+<p>过将我们的UserManager分解成更小的构建块，就像上面所做的那样，我们可以将大部分功能实现为无状态结构体-因为这些类型只是代表其他对象执行任务(就像我们之前的NetworkRequestPerformer)。</p>
+<p>我们也可以在登录和注销代码上做同样的事情，例如创建一个LoginPerformer，它使用我们未经身份验证的网络控制器向服务器端点发送一组凭据，用于登录用户到我们的应用程序:</p>
+<pre><code class="language-swift">struct LoginPerformer {
+    var networking: NonAuthenticatedNetworkController
+
+    func login(
+        using credentials: LoginCredentials,
+        then handler: @escaping NetworkResultHandler&lt;NetworkTokens&gt;
+    ) {
+        // Send the passed credentials to our server's login
+        // endpoint, and then call the passed completion handler
+        // with the tokens that were returned.
+        ...
+    }
+}
+</code></pre>
+<p>上述方法的美妙之处在于，我们现在可以在需要执行该类型的特定任务时使用其中一种新类型，而不必总是使用相同的UserManager类型，无论我们是登录、退出，还是只是更新当前用户。</p>
+<p>例如,在登录代码,我们现在可以直接使用LoginPerformer——我们可以使用UserLoader加载新登录用户之前将这两个实例注入我们的UserManager——现在只有一个责任,管理我们的当前用户实例:</p>
+<pre><code class="language-swift">class UserManager {
+    private(set) var user: User
+    private let loader: UserLoader
+
+    init(user: User, loader: UserLoader) {
+        self.user = user
+        self.loader = loader
+    }
+
+    func sync(then handler: @escaping NetworkResultHandler&lt;User&gt;) {
+        loader.loadUser(withID: user.id) { [weak self] result in
+            if let user = try? result.get() {
+                self?.user = user
+            }
+
+            handler(result)
+        }
+    }
+}
+</code></pre>
+<p>我们甚至可以将上述类型重命名为UserModelController，因为它现在实际上是我们的用户模型的控制器。</p>
+<p>上面的重构不仅让我们摆脱了一个不必要的可选选项——这反过来又让我们从依赖用户登录的代码中删除了一大堆笨拙的if和guard语句-这也给了我们更大的灵活性，因为我们现在可以选择我们想要在每个新特性中使用的用户相关抽象级别。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>组合是一个难以置信的强大概念，但在我们可以在我们的应用程序中使用它之前，我们首先需要将一些较大的类型分解成较小的构建块——然后将其组装成许多不同的组合和配置。</p>
+<p>当然，我们必须在分割内容和保持代码基础的一致性和易于操作之间取得平衡-所以我们的目标绝对不是尽可能地将事物分割开来，而是创建责任范围狭窄的类型，然后将其组合到更高层次的抽象中。</p>
+<p><a href="https://www.swiftbysundell.com/articles/splitting-up-swift-types/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/what-makes-code-swifty/">
+                  <h3 class="post-title">
+                    What makes code “Swifty”
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

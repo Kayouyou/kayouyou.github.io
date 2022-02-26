@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 88: The Case for Case Paths: Properties | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Appending paths
+
+
+
+
+Introducing the .. operator
+
+
+
+
+Identity paths
+
+
+
+
+Re-introducing the ^ operato..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 88: The Case for Case Paths: Properties</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Appendingpaths">Appending paths</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Introducingthe..operator">Introducing the .. operator</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Identitypaths">Identity paths</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Re-introducingtheoperator">Re-introducing the ^ operator</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Nexttime:casepathsforfree">Next time: case paths for free</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 88: The Case for Case Paths: Properties -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>因此，创建<strong>case path</strong>非常简单，但是这个代码片段有很多地方不完全正确。首先，用这些静态变量污染<strong>Result</strong>命名空间是不对的，最好有一个不同的地方来存储它们。此外，在创建这些<strong>case path</strong>时还涉及一些样板。我们在这里看到<strong>if case let</strong> stuff实现提取时，基本上我们创建的每个<strong>case path</strong>都是这个样子的，一段时间后，它会很痛苦，需要一遍又一遍地写。</p>
+<p>我们很快就会解决这两个问题，但首先我们想要探索<strong>case path</strong>的一些属性，并展示与关键路径的相似之处。Swift标准库为关键路径提供了一些操作，我们当然希望<strong>case path</strong>也有一些版本的这些操作。</p>
+<hr>
+<h2 id="2-a-nameappendingpathsaappending-paths">2. <a name='Appendingpaths'></a>Appending paths</h2>
+<p>首先，关键路径带有一个非常强大的特性，允许您将它们附加在一起，以便更深入地了解一个结构。为了看到这一点，让我们通过让它也持有一个<strong>Location</strong>来加强我们的<strong>User</strong>结构体:</p>
+<pre><code class="language-swift">struct User {
+  var id: Int
+  var isAdmin: Bool
+  var location: Location
+  var name: String
+}
+struct Location {
+  var city: String
+  var country: String
+}
+</code></pre>
+<p>然后我们可以选择从用户到他们所在位置的关键路径:</p>
+<pre><code class="language-swift">\User.location
+</code></pre>
+<p>以及从一个<strong>location</strong>到它所在城市的关键路径:</p>
+<pre><code class="language-swift">\Location.city
+</code></pre>
+<p>我们可以把它们加在一起:</p>
+<pre><code class="language-swift">(\User.location).appending(path: \Location.city)
+</code></pre>
+<p>这样我们就得到了一个全新的键路径，它从一个User值一直延伸到一个字符串，这代表了用户所在的城市:</p>
+<p>Swift甚至在句法上加了一些糖，让这句话看起来更好:</p>
+<pre><code class="language-swift">\User.location.city
+</code></pre>
+<p>这个操作类似于函数的组合。它说，如果我们有一条从A到B的键路径和一条从B到C的键路径，那么我们可以创建一条从A到C的全新键路径。</p>
+<p>那么，问题是，case路径也支持这样的组合操作符吗? 他们确实如此! 如果我们有从A到B的路径和从B到C的路径，我们可以创建一个从A到C的全新路径。为了实现这一点，我们将扩展<strong>CasePath</strong>结构体，添加一个类似于关键路径方法的新方法:</p>
+<pre><code class="language-swift">extension CasePath/*&lt;Root, Value&gt;*/ {
+  func appending&lt;AppendedValue&gt;(
+    path: CasePath&lt;Value, AppendedValue&gt;
+  ) -&gt; CasePath&lt;Root, AppendedValue&gt; {
+
+  }
+}
+</code></pre>
+<p>那么，我们如何实现这个呢? 我们知道我们需要返回一个新的case路径，所以我们也可以得到一个存根:</p>
+<pre><code class="language-swift">extension CasePath/*&lt;Root, Value&gt;*/ {
+  func appending&lt;AppendedValue&gt;(
+    path: CasePath&lt;Value, AppendedValue&gt;
+  ) -&gt; CasePath&lt;Root, AppendedValue&gt; {
+    CasePath&lt;Root, AppendedValue&gt;(
+      extract: &lt;#(Root) -&gt; AppendedValue?#&gt;,
+      embed: &lt;#(AppendedValue) -&gt; Root#&gt;
+    )
+  }
+}
+</code></pre>
+<p>对于<strong>提取(extract)<strong>方法，我们有一个根，我们想从中提取一个</strong>AppendedValue</strong>。我们可以接触<strong>self.extract</strong>它允许我们从根结点中提取一个值，所以我们可以从这里开始:</p>
+<pre><code class="language-swift">extension CasePath/*&lt;Root, Value&gt;*/ {
+  func appending&lt;AppendedValue&gt;(
+    path: CasePath&lt;Value, AppendedValue&gt;
+  ) -&gt; CasePath&lt;Root, AppendedValue&gt; {
+    CasePath&lt;Root, AppendedValue&gt;(
+      extract: { root in
+        let value = self.extract(root)
+    },
+      embed: &lt;#(AppendedValue) -&gt; Root#&gt;
+    )
+  }
+}
+</code></pre>
+<p>它返回一个可选的值，我们可以使用传入的case路径进一步从中提取附加的值。现在，我们的值是可选的，还有<strong>path.Extract</strong>需要一个真实的值，所以我们需要做一些展开来完成这个操作:</p>
+<pre><code class="language-swift">extension CasePath/*&lt;Root, Value&gt;*/ {
+  func appending&lt;AppendedValue&gt;(
+    path: CasePath&lt;Value, AppendedValue&gt;
+  ) -&gt; CasePath&lt;Root, AppendedValue&gt; {
+    CasePath&lt;Root, AppendedValue&gt;(
+      extract: { root in
+        if let value = self.extract(root) {
+          return path.extract(value)
+        }
+        return nil
+      },
+      embed: &lt;#(AppendedValue) -&gt; Root#&gt;
+    )
+  }
+}
+</code></pre>
+<p>但这可以通过使用定义在可选选项上的<strong>flatMap</strong>操作来简化:</p>
+<pre><code class="language-swift">extension CasePath/*&lt;Root, Value&gt;*/ {
+  func appending&lt;AppendedValue&gt;(
+    path: CasePath&lt;Value, AppendedValue&gt;
+  ) -&gt; CasePath&lt;Root, AppendedValue&gt; {
+    CasePath&lt;Root, AppendedValue&gt;(
+      extract: { root in
+        self.extract(root).flatMap(path.extract)
+    },
+      embed: &lt;#(AppendedValue) -&gt; Root#&gt;
+    )
+  }
+}
+</code></pre>
+<p>这就是说，首先我们试着从根结点中提取一个值，然后我们试着从值中提取一个附加的值。</p>
+<p><strong>embed</strong>函数甚至更简单。这里我们从一个附加值开始，我们可以用给定的case路径嵌入它。现在我们有了一个值，我们可以使用<strong>self.embed</strong>将其嵌入到根目录中:</p>
+<pre><code class="language-swift">extension CasePath/*&lt;Root, Value&gt;*/ {
+  func appending&lt;AppendedValue&gt;(
+    path: CasePath&lt;Value, AppendedValue&gt;
+  ) -&gt; CasePath&lt;Root, AppendedValue&gt; {
+    CasePath&lt;Root, AppendedValue&gt;(
+      extract: { root in
+        self.extract(root).flatMap(path.extract)
+    },
+      embed: { appendedValue in
+        self.embed(path.embed(appendedValue))
+    })
+  }
+}
+</code></pre>
+<p>就像那样，我们有一种方法将<strong>case paths</strong>附加在一起，前提是它们的类型匹配。</p>
+<p>为了展示一个示例用例，假设我们有一个enum，它表示用户的身份验证状态。它们可以使用访问令牌进行身份验证，也可以不进行身份验证:</p>
+<pre><code class="language-swift">enum Authentication {
+  case authenticated(AccessToken)
+  case unauthenticated
+}
+
+struct AccessToken {
+  var token: String
+}
+</code></pre>
+<p>让我们也为<strong>enum</strong>的<strong>authenticated</strong>案例快速创建一个<strong>case path</strong>:</p>
+<pre><code class="language-swift">let authenticatedCasePath = CasePath&lt;Authentication, AccessToken&gt;(
+  extract: {
+    if case let .authenticated(accessToken) = $0 { return accessToken }
+    return nil
+},
+  embed: Authentication.authenticated
+)
+</code></pre>
+<p>我们在这里再次看到一些烦人的样板，但我们很快就会解决这个问题。</p>
+<p>我们可以取一个结果用例路径和一个经过验证的用例路径，并将它们附加在一起，以获得一个遍历结果成功用例的用例路径，然后通过验证用例最终获得对令牌的访问:</p>
+<pre><code class="language-swift">Result&lt;Authentication, Error&gt;.successCasePath
+  .appending(path: authenticatedCasePath)
+// CasePath&lt;Result&lt;Authentication, Error&gt;, AccessToken&gt;
+</code></pre>
+<p>现在我们有了一个从<strong>Result</strong>到访问令牌的案例路径。</p>
+<hr>
+<h2 id="3-a-nameintroducingtheoperatoraintroducing-the-operator">3. <a name='Introducingthe..operator'></a>Introducing the .. operator</h2>
+<p>然而，对于如此简单的事情，使用**appending(path:)**是相当冗长的。对于键路径，我们可以使用简单的点语法将键路径附加到一起，但这是在特殊的编译器支持下完成的，所以我们不能对键路径这样做。</p>
+<p>不过，我们可以引入一个模仿点语法样式的中缀操作符。我们已经有一段时间没有在Point-Free上使用操作符了，但是我们可以先声明我们想要使用的操作符符号:</p>
+<pre><code class="language-swift">infix operator ..
+</code></pre>
+<p>然后我们可以用这些符号作为函数名来实现一个函数:</p>
+<pre><code class="language-swift">func .. &lt;A, B, C&gt;(
+  lhs: CasePath&lt;A, B&gt;,
+  rhs: CasePath&lt;B, C&gt;
+) -&gt; CasePath&lt;A, C&gt; {
+  return lhs.appending(path: rhs)
+}
+</code></pre>
+<p>现在，通过这个操作符，我们可以表达遍历结果成功的情况，然后通过下面的方式遍历<strong>Authentication</strong>枚举的经过验证的情况:</p>
+<pre><code class="language-swift">Result&lt;Authentication, Error&gt;.successCasePath .. authenticatedCasePath
+</code></pre>
+<p>这就简单多了，噪音也少了，很快我们会让它变得更简单。</p>
+<p>虽然我们的一些观众很乐意向运营商介绍他们的代码库，但在Swift中这仍然是一件相对不常见的事情。</p>
+<hr>
+<h2 id="4-a-nameidentitypathsaidentity-paths">4. <a name='Identitypaths'></a>Identity paths</h2>
+<p>Swift中还有一个关键路径的小功能，它被称为“<strong>identity</strong>”关键路径。</p>
+<p>Swift中的每一种数据类型都有一个特殊的键路径，您可以通过以下方式访问:</p>
+<pre><code class="language-swift">\User.self     as WritableKeyPath&lt;User, User&gt;
+\Location.self as WritableKeyPath&lt;Location, Location&gt;
+\String.self   as WritableKeyPath&lt;String, String&gt;
+\Int.self      as WritableKeyPath&lt;Int, Int&gt;
+</code></pre>
+<p>这些都是完全有效的关键路径，尽管可能有点愚蠢。这些键路径的“get”只是返回整个值，而“set”只是用一个新值替换整个值。有时，当API强制您提供一个关键路径时，这个关键路径可能很有用，但您不想实际关注结构的一部分，而是想使用整个结构。</p>
+<p>那么，这对于案例路径是什么样的呢? case路径也有一个标识，我们可以很容易地将其实现为CasePath类型上的一个静态变量，只要Root和Value泛型相同:</p>
+<pre><code class="language-swift">extension CasePath where Root == Value {
+  static var `self`: CasePath {
+    CasePath(
+      embed: { $0 },
+      extract: { .some($0) }
+    )
+  }
+}
+</code></pre>
+<p>所以现在我们有一个简单的方法来获得任何类型的恒等情形路径:</p>
+<pre><code class="language-swift">CasePath&lt;Authentication, Authentication&gt;.`self`
+</code></pre>
+<hr>
+<h2 id="5-a-namere-introducingtheoperatorare-introducing-the-operator">5. <a name='Re-introducingtheoperator'></a>Re-introducing the ^ operator</h2>
+<p>还有一个关于关键路径的操作，我们想要讨论，它不是与Swift标准库一起提供的东西，而是我们在之前的Point-Free章节中讨论的东西。</p>
+<pre><code class="language-swift">prefix operator ^
+prefix func ^ &lt;Root, Value&gt;(_ kp: KeyPath&lt;Root, Value&gt;) -&gt; (Root) -&gt; Value {
+  return { root in root[keyPath: kp] }
+}
+</code></pre>
+<p>这允许我们用很少的礼节来编写富有表现力的代码。例如，如果我们有一个用户列表:</p>
+<pre><code class="language-swift">let users = [
+  User(
+    id: 1,
+    isAdmin: true,
+    location: Location(city: &quot;Brooklyn&quot;, country: &quot;USA&quot;),
+    name: &quot;Blob&quot;
+  ),
+  User(
+    id: 2,
+    isAdmin: false,
+    location: Location(city: &quot;Los Angeles&quot;, country: &quot;USA&quot;),
+    name: &quot;Blob Jr.&quot;
+  ),
+  User(
+    id: 3,
+    isAdmin: true,
+    location: Location(city: &quot;Copenhagen&quot;, country: &quot;DK&quot;),
+    name: &quot;Blob Sr.&quot;
+  ),
+]
+</code></pre>
+<p>我们可以很容易地以各种方式转换这个数组:</p>
+<pre><code class="language-swift">users.map(^\.name)
+// [&quot;Blob&quot;, &quot;Blob Jr.&quot;, &quot;Blob Sr.&quot;]
+users.map(^\.location.city)
+// [&quot;Brooklyn&quot;, &quot;Los Angeles&quot;, &quot;Copenhagen&quot;]
+users.filter(^\.isAdmin).count
+// 2
+</code></pre>
+<p>很快我们就不需要这个前缀操作符了。多亏了我们的Stephen Celis和Greg Titus的合作，Swift提出了一个建议，允许关键路径自动转换为功能。它在一段时间前就被接受了，一旦Swift 5.2发布，我们将能够简单地做以下事情:</p>
+<pre><code class="language-swift">users.map(\.name)
+users.map(\.location.city)
+users.filter(\.isAdmin)
+</code></pre>
+<p>不需要特殊操作符。</p>
+<p>尽管不再需要这个操作符，但它所做的事情是访问的重要内容。</p>
+<p>这个操作符应该对案例路径做什么?  由于在关键路径上，操作符充当了将<strong>getter</strong>函数从关键路径中取出的一种方式，因此可以将它用于案例路径以访问提取功能。让我们来定义它:</p>
+<pre><code class="language-swift">prefix func ^ &lt;Root, Value&gt;(
+  path: CasePath&lt;Root, Value&gt;
+) -&gt; (Root) -&gt; Value? {
+  return path.extract
+}
+</code></pre>
+<p>它非常简单，但它允许我们立即将任何case路径转换为一个提取函数:</p>
+<pre><code class="language-swift">^authenticatedCasePath
+// (Authentication) -&gt; AccessToken?
+</code></pre>
+<p>我们可以像使用键路径一样使用这些值，除了如果我们有一个枚举值数组，我们可以尝试从枚举中提取一个值:</p>
+<pre><code class="language-swift">let authentications: [Authentication] = [
+  .authenticated(AccessToken(token: &quot;deadbeef&quot;)),
+  .unauthenticated,
+  .authenticated(AccessToken(token: &quot;cafed00d&quot;))
+]
+
+authentications
+  .compactMap(^authenticatedCasePath)
+// [{token &quot;deadbeef&quot;}, {token &quot;cafed00d&quot;}]
+</code></pre>
+<p>这是一种非常简洁的方法。如果我们试图在没有case路径的情况下这样做，我们将不得不自己解构认证值:</p>
+<pre><code class="language-swift">authentications
+  .compactMap {
+    if case let .authenticated(accessToken) = $0 {
+      return accessToken
+    }
+    return nil
+}
+</code></pre>
+<p>但这行不通，因为多行闭包需要显式类型:</p>
+<pre><code class="language-swift">authentications
+  .compactMap { authentication -&gt; AccessToken? in
+    if case let .authenticated(accessToken) = authentication {
+      return accessToken
+    }
+    return nil
+}
+</code></pre>
+<p>这是我们能得到的最短的代码，它仍然是有噪声的。它要求我们指定闭包的返回类型，因为它是多行的，并且<strong>if case let</strong>比做一个完整的切换要短，但是我总是很难记住准确的语法。</p>
+<hr>
+<h2 id="6-a-namenexttimecasepathsforfreeanext-time-case-paths-for-free">6. <a name='Nexttime:casepathsforfree'></a>Next time: case paths for free</h2>
+<p>现在，把这两个片段并排显示并说其中一个比另一个干净可能不完全公平:</p>
+<pre><code class="language-swift">authentications
+  .compactMap(^authenticatedCasePath)
+
+authentications
+  .compactMap { authentication -&gt; AccessToken? in
+    if case let .authenticated(accessToken) = authentication {
+      return accessToken
+    }
+    return nil
+}
+</code></pre>
+<p>第一个代码片段有完全相同的样板，它只是被隐藏在case路径中，所以我们在调用站点看不到它。这样可能会好一点，但样板还在。</p>
+<p>然而，我们甚至可以对这个样板做一些事情。如前所述，创建case路径的样板与extract函数有关，该函数试图从枚举中提取相关的值。<strong>embed</strong>函数在Swift中是免费的，因为每一个enum的例子都作为一个函数，可以嵌入相关的值到enum中，但提取需要一些工作。</p>
+<p>摆脱这种样板的一种方法是转向代码生成。这是非常强大的，我们可能会转向代码生成的案例路径，但代码生成是相当繁重的。我们需要找到在源代码发生变化时运行该工具的最佳方法，以确保它是最新的，这可能会使构建过程复杂化。</p>
+<p>实际上，对于案例路径，我们可以做一些不同的事情。我们可以神奇地从enum的情况下的embed函数中派生一个case路径的extract函数。我们说这是“神奇的”，因为它使用了Swift的运行时反射能力。</p>
+<p>如果您不熟悉编程中的反射思想，那么您只需要知道它允许您在运行时检查值和对象的内部结构。例如，您可以使用反射来获得结构体所存储属性的所有字符串名称的列表。</p>
+<p>任何时候你在Swift中使用反射，你都是故意超出Swift编译器的权限。这意味着您处于危险的水域中，因为编译器不支持您。然而，如果您轻描淡写地编写大量测试，您可以提出一些合理的方法，可以清除所有重复的样板。让我们从探索反射API开始，看看我们有什么可用的……下次吧!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-87the-case-for-case-paths-introduction/">
+                  <h3 class="post-title">
+                    PointFree Episode 87:The Case for Case Paths: Introduction
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

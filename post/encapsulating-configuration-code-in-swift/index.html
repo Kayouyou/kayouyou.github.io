@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Encapsulating configuration code in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在代码重用和可配置性之间取得很好的平衡通常是很有挑战性的。虽然在理想情况下，我们希望避免重复代码和意外地创建多个真相来源，但我们需要如何配置各种对象和值往往取决于它们使用的上下文。
+本周，让我们来看看一些不同的技术，它们可以让我们实现这样的..." />
+    <meta name="keywords" content="closures,ui developement,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Encapsulating configuration code in Swift</h2>
+            <div class="post-date">2019-10-13</div>
+            
+            <div class="post-content" v-pre>
+              <p>在代码重用和可配置性之间取得很好的平衡通常是很有挑战性的。虽然在理想情况下，我们希望避免重复代码和意外地创建多个真相来源，但我们需要如何配置各种对象和值往往取决于它们使用的上下文。</p>
+<p>本周，让我们来看看一些不同的技术，它们可以让我们实现这样的平衡——通过构建轻量级的抽象，使我们能够封装配置代码， 以及如何在代码库之间共享这些抽象，从而提高其一致性级别。</p>
+<h2 id="building-components-rather-than-screens">Building components, rather than screens</h2>
+<p>在进行任何类型的软件开发时，将程序分割成不同的部分，以便能够将它们作为单独的单元来处理，通常都是有帮助的。对于ui较多的应用程序，如iOS和Mac应用程序，通常会根据组成应用程序的不同屏幕来进行这种划分。例如，购物应用程序可能有一个产品屏幕、一个列表屏幕、一个搜索屏幕等等。</p>
+<p>虽然从高层次的角度来看，这种屏幕层面的划分很有意义(特别是因为它符合我们与其他合作者(如测试人员和设计师)讨论应用的方式)，这往往会导致UI代码需要为每个屏幕进行大量配置。</p>
+<p>以这个ProductViewController为例，它包含一个购买按钮，以及用于显示每个产品的详细信息和相关项目的视图——所有这些都在视图控制器的viewDidLoad方法中配置:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    let product: Product
+    
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Buy button
+        let buyButton = UIButton(type: .custom)
+        buyButton.setImage(.buy, for: .normal)
+        buyButton.backgroundColor = .systemGreen
+        buyButton.addTarget(self,
+            action: #selector(buyButtonTapped),
+            for: .touchUpInside
+        )
+        view.addSubview(buyButton)
+        
+        // Product detail view
+        let productDetailView = UIView()
+        ...
+        
+        // Related products view
+        let relatedProductsView = UIView()
+        ...
+    }
+}
+</code></pre>
+<p>尽管我们试图通过在每个配置块之前添加注释来使上面的代码更容易阅读，但我们当前的viewDidLoad实现确实存在结构缺乏的问题。由于我们所有的配置都发生在一个地方，很容易在错误的上下文中意外地使用变量，并且随着时间的推移，我们的代码变得越来越相互交织。</p>
+<p>就像我们在“编写自文档Swift代码”中看到的那样，缓解上述问题的一种方法是简单地将配置代码的不同部分分解为单独的方法，viewDidLoad可以调用:</p>
+<pre><code class="language-swift">private extension ProductViewController {
+    func setupBuyButton() {
+        let buyButton = UIButton(type: .custom)
+        ...
+    }
+
+    func setupProductDetailView() {
+        let productDetailView = UIView()
+        ...
+    }
+
+    func setupRelatedProductsView() {
+        let relatedProductsView = UIView()
+        ...
+    }
+}
+</code></pre>
+<p>虽然上面的方法确实解决了我们的结构问题，而且肯定会使我们的代码更易于自文档化和阅读，但它仍然强烈地将我们单独的视图组件与它们呈现的容器(在这里是ProductViewController)耦合在一起。</p>
+<p>这对一次性视图可能不是问题，目前只在单个视图控制器中使用，但对于更通用的UI代码，如果我们能够轻松地在代码库中重用我们的各种配置，那就太好了。</p>
+<p>一种不需要定义任何新类型的方法是使用静态工厂方法——它使我们能够封装配置每个视图的方式，以一种既易于定义又易于使用的方式:</p>
+<pre><code class="language-swift">extension UIView {
+    static func buyButton(withTarget target: Any, action: Selector) -&gt; UIButton {
+        let button = UIButton(type: .custom)
+        button.setImage(.buy, for: .normal)
+        button.backgroundColor = .systemGreen
+        button.addTarget(target, action: action, for: .touchUpInside)
+        return button
+    }
+}
+</code></pre>
+<p>静态工厂方法的美妙之处在于，它们使我们能够以一种类似于enum的方式调用api——使用Swift非常轻量级的点语法。 如果我们也定义类似于上面的方法来创建一个购买按钮，那么我们可以结束一个viewDidLoad实现，简单地看起来像这样:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    let product: Product
+    
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        view.addSubview(.buyButton(
+            withTarget: self,
+            action: #selector(buyButtonTapped)
+        ))
+        
+        view.addSubview(.productDetailView(
+            for: product
+        ))
+        
+        view.addSubview(.relatedProductsView(
+            for: product.relatedProducts,
+            delegate: self
+        ))
+    }
+}
+</code></pre>
+<p>那真是太棒了!没有了局部变量，我们仍然可以在一个方法中容纳所有的视图设置代码，同时也给了我们更大程度的封装性和完全的可重用性， 因为我们现在可以在任何需要的地方轻松地构造上述类型的视图。</p>
+<h2 id="multiple-configuration-steps">Multiple configuration steps</h2>
+<p>虽然上面的方法对于理想情况下应该在整个代码库中保持相同的UI配置代码非常有效，比如设置公共组件，但我们也经常需要以一种更加特定于上下文的方式扩展此类配置。</p>
+<p>例如，我们可能需要对视图应用某种形式的布局，以更新或将某些状态片段绑定到它们，或者根据它们所使用的特性定制它们的行为或外观。</p>
+<p>为了更容易做到这一点，让我们用一个方便的API来扩展UIView——它只需要在添加一个给定视图作为子视图之后执行一个闭包，就像这样:</p>
+<pre><code class="language-swift">extension UIView {
+    @discardableResult
+    func add&lt;T: UIView&gt;(_ subview: T, then closure: (T) -&gt; Void) -&gt; T {
+        addSubview(subview)
+        closure(subview)
+        return subview
+    }
+}
+</code></pre>
+<p>有了上面的方法，我们现在可以继续使用漂亮的点语法来创建我们的视图，同时仍然允许我们应用上下文特定的配置——例如为了添加一组自动布局约束:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController {
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        view.add(.buyButton(
+            withTarget: self,
+            action: #selector(buyButtonTapped)
+        ), then: {
+            NSLayoutConstraint.activate([
+                $0.topAnchor.constraint(equalTo: view.topAnchor),
+                $0.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+                ...
+            ])
+        })
+        
+        ...
+    }
+}
+</code></pre>
+<p>尽管上面的语法可能需要一段时间来适应，但它确实在某种程度上给了我们两种世界的最好的东西——我们现在能够完全封装我们的全局和局部配置，同时也强制执行一定程度的结构。它还允许我们在不同的屏幕之间轻松地共享视图组件，而不需要我们定义任何新的UIView子类。</p>
+<h2 id="a-declarative-structure">A declarative structure</h2>
+<p>上述方法的另一个有趣之处在于它如何使我们基于uikit的命令式代码变得更具有声明性-因为我们不再不断地在视图控制器中设置我们的各种视图，而是声明我们希望使用哪种配置。 这让我们离SwiftUI的世界更近了一步，这有助于我们在未来轻松地过渡到那个新世界。</p>
+<p>只需要比较一下我们的ProductViewController如果用SwiftUI视图来代替的话会是什么样子——在结构上，它和我们上面基于uikit的方法非常相似:</p>
+<pre><code class="language-swift">struct ProductView: View {
+    var product: Product
+
+    var body: some View {
+        VStack {
+            BuyButton {
+                // Handling code
+                ...
+            }
+            ProductDetailView(product: product)
+            RelatedProductsView(products: product.relatedProducts) {
+                // Handling code
+                ...
+            }
+        }
+    }
+}
+</code></pre>
+<p>当然，这并不意味着我们已经自动使我们的基于uikit的代码swiftUI兼容，只是通过修改它的结构——但通过使用类似的方式来思考我们如何组织我们的各种视图配置，我们至少可以开始熟悉越来越多的声明式编码风格。</p>
+<h2 id="configuration-closures">Configuration closures</h2>
+<p>尽管我们在开发基于用户界面的应用时编写的大部分配置代码都集中在视图层，我们代码库的其他部分也经常需要大量配置 -特别是直接在系统api上编写的逻辑。</p>
+<p>例如，假设我们正在构建一个类型，用于从字符串解析某种形式的元数据，并且我们希望在该类型的所有实例中使用一个共享的DateFormatter。 为此，可以定义一个私有静态属性，该属性使用自执行闭包配置:</p>
+<pre><code class="language-swift">struct MetadataParser {
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = &quot;yyyy-MM-dd HH:mm&quot;
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter
+    }()
+
+    func metadata(from string: String) throws -&gt; Metadata {
+        ...
+    }
+}
+</code></pre>
+<p>尽管自动执行闭包非常方便，但使用它们来配置属性通常可以将类型的核心功能“推”得越来越远-这反过来会使快速获得一个类型实际在做什么的概览变得更加困难。为了缓解这个问题，让我们看看我们是否可以做些什么，使这样的配置闭包尽可能紧凑，而不牺牲可读性。</p>
+<p>让我们从定义一个名为configure的函数开始，它只接受任何对象或值，并允许我们在闭包中使用inout关键字对其应用任何类型的变化——像这样:</p>
+<pre><code class="language-swift">func configure&lt;T&gt;(_ object: T, using closure: (inout T) -&gt; Void) -&gt; T {
+    var object = object
+    closure(&amp;object)
+    return object
+}
+</code></pre>
+<p>要为我们的元数据解析器配置共享的DateFormatter，我们现在只需将它传递给上述函数，并使用$0闭包参数简化配置它-留给我们更紧凑的代码，同时仍然保持可读性:</p>
+<pre><code class="language-swift">struct MetadataParser {
+    private static let dateFormatter = configure(DateFormatter()) {
+        $0.dateFormat = &quot;yyyy-MM-dd HH:mm&quot;
+        $0.timeZone = TimeZone(secondsFromGMT: 0)
+    }
+
+    func metadata(from string: String) throws -&gt; Metadata {
+        ...
+    }
+}
+</code></pre>
+<p>上面配置属性的方法比自动执行闭包更容易理解 -通过添加对configure的调用，我们清楚地表明了附带闭包的目的实际上是配置传递给它的实例。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>就像任何与代码风格和结构相关的主题一样，如何最好地配置对象和值很可能始终是一个品味问题。 然而，不管我们最终如何配置我们的代码——如果我们能够以一种完全封装的方式这样做，那么这些配置往往更容易重用和管理。</p>
+<p>开始采用越来越多的声明式编码风格和模式也可以进一步帮助简化过渡到SwiftUI和Combine的世界，即使我们可能期望在我们真正开始采用这些框架之前需要一两年的时间。可以说，声明式编程与思考方式、api和语法一样重要。</p>
+<p><a href="https://www.swiftbysundell.com/articles/encapsulating-configuration-code-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/WHIN6Hnog/" class="tag">
+                    closures
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/FhUIK00QN/" class="tag">
+                    ui developement
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/alternatives-to-protocols-in-swift/">
+                  <h3 class="post-title">
+                    Alternatives to protocols in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

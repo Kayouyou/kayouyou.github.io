@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Why I Can Mutate State var? How Does State Property Wrapper Work Inside? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Question?
+struct porque: View {
+    @State private var flag = false
+    private var anotherFlag = false
+
+    mutating fu..." />
+    <meta name="keywords" content="state,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Why I Can Mutate State var? How Does State Property Wrapper Work Inside?</h2>
+            <div class="post-date">2021-10-12</div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="question">Question?</h2>
+<pre><code class="language-swift">struct porque: View {
+    @State private var flag = false
+    private var anotherFlag = false
+
+    mutating func changeMe(_ value: Bool) {
+        self.anotherFlag = value
+    }
+
+    var body: some View {
+        Button(action: {
+            // This is okay
+            self.flag = true
+            // Cannot assign to property: 'self' is immutable
+            self.anotherFlag = true
+            // Cannot use mutating member on immutable value: 'self' is immutable
+            changeMe(true)
+        }) {
+            Text(&quot;Hi&quot;)
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>Why I can mutate @State var, but not regular member var?</p>
+</blockquote>
+<h2 id="answer">Answer</h2>
+<p>这里(至少)有两个问题:为什么我们可以改变<em>flag</em>，为什么我们不能改变另一个<em>anotherFlag</em> ?<br>
+让我们从为什么我们不能改变<em>anotherFlag</em>开始。</p>
+<p>下面是一个关于 <em>immutable property</em> 错误的简单例子:</p>
+<pre><code class="language-swift">struct SimpleStruct {
+    var anotherFlag: Bool {
+        _anotherFlag = true
+//      ^~~~~~~~~~~~
+//      error: cannot assign to property: 'self' is immutable
+        return _anotherFlag
+    }
+
+    private var _anotherFlag = false
+}
+</code></pre>
+<p>通常，在属性getter中，<em>self</em>是不可变的，而且通常， 我们不能给不可变值的属性赋值。因此,报错。</p>
+<p>但是我说了两遍“<em>usually</em>”，每个“<em>usually</em>”都有一个方法。</p>
+<p>第一个<em>usually</em>是，在属性getter中，self是不可变的。我们可以通过声明<em>getter mutating</em>来让<em>self</em>成为<em>mutable</em>:</p>
+<pre><code class="language-swift">struct SimpleStruct {
+    var anotherFlag: Bool {
+        mutating get {
+            _anotherFlag = true
+            return _anotherFlag
+        }
+    }
+
+    private var _anotherFlag = false
+}
+</code></pre>
+<p><em>self</em>在getter中是可变的，所以Swift允许我们赋值给它的可变属性。 但这有两个问题。首先，我们只能在可变值上使用这个getter:</p>
+<pre><code class="language-swift">var s0 = SimpleStruct()
+_ = s0.anotherFlag // ok, and modifies s0
+
+let s1 = SimpleStruct()
+_ = s1.anotherFlag
+//  ^~ error: cannot use mutating getter on immutable value: 's1' is a 'let' constant
+</code></pre>
+<p>其次，SwiftUI不允许我们用<em>mutating get</em>声明body :</p>
+<pre><code class="language-swift">struct SimpleView: View {
+//     ^ error: type 'SimpleView' does not conform to protocol 'View' 
+    var body: some View {
+        mutating get { Text(&quot;Hello&quot;) }
+    }
+}
+</code></pre>
+<p><em>View</em>协议要求body的<em>getter</em>是 <em>non-mutating</em>。</p>
+<p>第二个“<em>usually</em>”是我们不能给一个<em>immutable</em>值的属性赋值。可以通过声明<em>setter nonmutating</em>使属性可赋值:</p>
+<pre><code class="language-swift">struct SimpleStruct {
+    var anotherFlag: Bool {
+        get {
+            _anotherFlag = true
+            return _anotherFlag
+        }
+    }
+
+    private var _anotherFlag: Bool {
+        get { return storage.pointee }
+        nonmutating set { storage.pointee = newValue }
+    }
+
+    private let storage = UnsafeMutablePointer&lt;Bool&gt;.allocate(capacity: 1)
+}
+</code></pre>
+<p>这是有效的，但请注意它的作用类似于引用类型:</p>
+<pre><code class="language-swift">let s0 = SimpleStruct()
+let s1 = s0
+_ = s1.get // effectively mutates both s0 and s1
+</code></pre>
+<p>SwiftUI的<em>State</em>使用<em>nonmutating set</em>。</p>
+<p>具体地说，<strong>State</strong>是一个属性包装器，它的<strong>wrappedValue</strong> 属性是<em>nonmutating set</em>。所以当你像这样声明flag:</p>
+<pre><code class="language-swift">@State private var flag = false
+</code></pre>
+<p>Swift将其转换为三个属性:</p>
+<pre><code class="language-swift">private var _flag: State&lt;Bool&gt; = State(initialValue: false)
+private var $flag: Binding&lt;Bool&gt; { return _flag.projectedValue }
+private var flag: Bool {
+    get { return _flag.wrappedValue }
+    nonmutating set { _flag.wrappedValue = newValue }
+}
+</code></pre>
+<p>这里的<em>flag</em>属性是<em>nonmutating set</em>，因为State的<em>wrappedValue</em>是<em>nonmutating set</em>。</p>
+<p>在内部，SwiftUI为您的<em>flag</em>属性的当前值分配存储空间，并设置State包装器的内部属性来标识该存储空间。您可以通过调用*dump(self._flag)*来了解其内部工作原理。例子:</p>
+<pre><code class="language-swift">struct ExampleView: View {
+    @State var flag = false
+
+    init() {
+        dump(self._flag)
+    }
+
+    var body: some View {
+        Button(&quot;flag = \(flag)&quot; as String, action: { self.flag = true; dump(self._flag) })
+    }
+}
+</code></pre>
+<p>调用dump在init中打印如下:</p>
+<pre><code class="language-swift">▿ SwiftUI.State&lt;Swift.Bool&gt;
+  - _value: false
+  - _location: nil
+</code></pre>
+<p>内部的*_location<em>属性标识</em>SwiftUI<em>私下存储属性当前值的位置。在你将视图传递给SwiftUI后，它会被初始化。当你点击按钮时，在</em>action<em>闭包中的</em>dump*打印如下:</p>
+<pre><code class="language-swift">▿ SwiftUI.State&lt;Swift.Bool&gt;
+  - _value: false
+  ▿ _location: Optional(SwiftUI.StoredLocation&lt;Swift.Bool&gt;)
+    ▿ some: SwiftUI.StoredLocation&lt;Swift.Bool&gt; #0
+      - super: SwiftUI.AnyLocation&lt;Swift.Bool&gt;
+        - super: SwiftUI.AnyLocationBase
+      ▿ viewGraph: Optional(SwiftUI.ViewGraph)
+        - some: SwiftUI.ViewGraph #1
+      ▿ signal: AttributeGraph.WeakAttribute&lt;()&gt;
+        - _subgraph: &lt;AGSubgraph 0x60000353c840 [0x7fff805cbf90]&gt; #2
+          - super: NSObject
+        ▿ _attribute: AttributeGraph.Attribute&lt;()&gt;
+          ▿ identifier: __C.AGAttribute
+            - id: 36
+      ▿ valueLock: SwiftUI.SpinLock
+        ▿ lock: __C.os_unfair_lock_s
+          - _os_unfair_lock_opaque: 0
+      - value: true
+      ▿ savedValues: 1 element
+        - false
+      - _wasRead: true
+      ▿ cache: SwiftUI.AtomicVariable&lt;SwiftUI.LocationProjectionCache&gt;
+        ▿ _value: SwiftUI.LocationProjectionCache
+          - cache: 0 key/value pairs
+        ▿ lock: SwiftUI.SpinLock
+          ▿ lock: __C.os_unfair_lock_s
+            - _os_unfair_lock_opaque: 0
+</code></pre>
+<p>注意，即使在赋值<em>self.flag = true</em>， <em>_flag._value</em>仍然为<em>false</em>。该*_value<em>属性仅存储该属性的初始值; 它不能在body内部被改变(因为self在body的</em>getter<em>内部是不可变的，因为body的getter没有声明为</em>mutating*)。相反，<em>current value</em> 是在*_flag._location!.value*中找到的。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4TsMfMGn4/" class="tag">
+                    state
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/why-swiftui-primitives-have-body-type-never/">
+                  <h3 class="post-title">
+                    Why SwiftUI primitives have body type Never?
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

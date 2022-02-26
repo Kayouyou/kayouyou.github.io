@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift 进阶: Protocol 详解 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Protocol
+
+协议目击者 （Protocol Witnesses）
+条件化协议实现 (Conditional Conformance)
+协议继承
+
+
+使用协议进行设计
+
+协议扩展
+定制协议扩展
+协议组合
+协议继承
+
+
+协议和关联类..." />
+    <meta name="keywords" content="advanced,pwt,pat,protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift 进阶: Protocol 详解</h2>
+            <div class="post-date">2021-05-23</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#protocol">Protocol</a>
+<ul>
+<li><a href="#%E5%8D%8F%E8%AE%AE%E7%9B%AE%E5%87%BB%E8%80%85-protocol-witnesses">协议目击者 （Protocol Witnesses）</a></li>
+<li><a href="#%E6%9D%A1%E4%BB%B6%E5%8C%96%E5%8D%8F%E8%AE%AE%E5%AE%9E%E7%8E%B0-conditional-conformance">条件化协议实现 (Conditional Conformance)</a></li>
+<li><a href="#%E5%8D%8F%E8%AE%AE%E7%BB%A7%E6%89%BF">协议继承</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BD%BF%E7%94%A8%E5%8D%8F%E8%AE%AE%E8%BF%9B%E8%A1%8C%E8%AE%BE%E8%AE%A1">使用协议进行设计</a>
+<ul>
+<li><a href="#%E5%8D%8F%E8%AE%AE%E6%89%A9%E5%B1%95">协议扩展</a></li>
+<li><a href="#%E5%AE%9A%E5%88%B6%E5%8D%8F%E8%AE%AE%E6%89%A9%E5%B1%95">定制协议扩展</a></li>
+<li><a href="#%E5%8D%8F%E8%AE%AE%E7%BB%84%E5%90%88">协议组合</a></li>
+<li><a href="#%E5%8D%8F%E8%AE%AE%E7%BB%A7%E6%89%BF-1">协议继承</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8D%8F%E8%AE%AE%E5%92%8C%E5%85%B3%E8%81%94%E7%B1%BB%E5%9E%8B">协议和关联类型</a>
+<ul>
+<li><a href="#%E5%9F%BA%E4%BA%8E%E5%85%B3%E8%81%94%E7%B1%BB%E5%9E%8B%E7%9A%84%E6%9D%A1%E4%BB%B6%E5%8C%96%E5%8D%8F%E8%AE%AE%E5%AE%9E%E7%8E%B0">基于关联类型的条件化协议实现</a></li>
+</ul>
+</li>
+<li><a href="#%E5%AD%98%E5%9C%A8%E4%BD%93">存在体</a>
+<ul>
+<li><a href="#%E5%AD%98%E5%9C%A8%E4%BD%93%E5%92%8C%E5%85%B3%E8%81%94%E7%B1%BB%E5%9E%8B">存在体和关联类型</a></li>
+</ul>
+</li>
+<li><a href="#%E7%B1%BB%E5%9E%8B%E6%B6%88%E9%99%A4%E5%99%A8">类型消除器</a></li>
+<li><a href="#%E4%B8%80%E4%BA%9B%E8%A1%A5%E5%85%85">一些补充</a>
+<ul>
+<li><a href="#%E5%8D%8F%E8%AE%AE%E4%B8%AD%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96%E6%96%B9%E6%B3%95">协议中的初始化方法</a></li>
+<li><a href="#%E5%A3%B0%E6%98%8E%E5%9C%A8protocol%E4%B8%AD%E7%9A%84%E6%96%B9%E6%B3%95%E5%92%8C%E5%9C%A8protocol%E6%89%A9%E5%B1%95%E4%B8%AD%E5%A3%B0%E6%98%8E%E7%9A%84%E6%96%B9%E6%B3%95%E7%9A%84%E4%B8%8D%E5%90%8C">声明在Protocol中的方法和在Protocol扩展中声明的方法的不同</a></li>
+<li><a href="#%E5%8D%8F%E8%AE%AE%E7%9A%84pwt%E5%AD%98%E5%82%A8%E4%BD%8D%E7%BD%AE">协议的PWT存储位置</a></li>
+<li><a href="#value-buffer">Value Buffer</a></li>
+</ul>
+</li>
+<li><a href="#%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90">相关资源</a></li>
+</ul>
+<!-- /TOC -->
+<h2 id="protocol">Protocol</h2>
+<p>当我们使用泛型类型的时候，通常都会使用协议约束泛型参数的行为。有很多理由使得你应该如此，下面就是一些最常见的例子：</p>
+<ul>
+<li>
+<p>通过协议，你可以构建一个依赖数字 (而不是诸如 Int，Double 等某个具体的数值类型) 或集合类型的算法。这样一来，所有实现了这个协议的类型就都具备了这个新算法提供的能力。</p>
+</li>
+<li>
+<p>通过协议还可以抽象代码接口背后的实现细节，你可以针对协议进行编程，然后让不同的类型实现这个协议。例如，一个使用了 Drawable 协议的画图程序既可以使用 SVG 来渲染图形，也可以使用 Core Graphics。类似的，跨平台的代码可以使用一个 Platform 协议，然后由类似 Linux，macOS 或 iOS 这样的类型来提供具体的实现。</p>
+</li>
+<li>
+<p>你还可以使用协议让代码更具可测试性。更具体地说，当你基于协议而不是一个具体类型来实现某个功能的时候，在测试用例中就很容易把这部分替换成表示各种待测试结果的类型。</p>
+</li>
+</ul>
+<p>在 Swift 里，一个协议表示一组正式提出的<strong>要求 (requirements)</strong>。例如，Equatable 协议要求实现的类型提供 == 操作符。这些要求可以是普通方法、初始化方法、关联类型、属性和继承的协议。有些协议还有一些无法用 Swift 类型系统表达的要求，例如，Collection 协议就要求通过下标操作符访问元素的时间复杂度是 <strong>O(1)</strong> (但你也可以违背这个要求，如果算法的时间复杂度不是<strong>O(1)</strong>，在方法的文档中明确说明就行了)。</p>
+<p>让我们先过一遍 Swift 协议的主要特性。然后，这一章里，我们会深入讨论这些特性</p>
+<p>协议可以自行扩展新的功能。最简单的例子就是 Equatable，它要求实现的类型提供 == 操作符。然后，它会根据 == 的实现提供 != 操作符的功能。类似的，Sequence 协议要求的方法并不多 (它只要求提供一个产生迭代器的方法)，但它却可以通过扩展，为自己加入大量可供使用的方法。</p>
+<p>协议可以通过条件化扩展 (conditional extensions) 添加需要额外约束的 API。例如，在 Collection 协议中，只有 Element 实现了 Comparable 的时候，才提供了 max() 方法。</p>
+<p>协议可以继承其它协议。例如，Hashable 要求实现的类型必须同时实现 Equatable 协议。类似的，RangeReplaceableCollection 继承自 Collection，而 Collection 继承自 Sequence。换句话说，我们可以构建一个协议层次结构</p>
+<p>另外，协议还可以被组合起来形成新的协议。例如，标准库中的 Codable 就是 Encodable 和 Decodable 协议组合之后的别名。</p>
+<p>有时，某个协议的实现还依赖于其它协议的实现。例如，当且仅当数组中 Element 类型实现了 Equatable 的时候，对应的数组类型才实现了 Equatable。这叫做条件化实现 (conditional conformance)：Array 实现 Equatable 的条件，就是 Element 实现了 Equatable。</p>
+<p>协议还可以声明关联类型，实现了这个协议的类型就需要定义关联类型对应的具体类型。例如，IteratorProtocol 定义了一个关联类型 Element，每一个实现了 IteratorProtocol 的类型就都要定义自己的 Element 类型。</p>
+<p>上面提到的这些协议特性并不限于标准库，我们也可以用它们创建自己的协议。尽管面向协议编程在 Swift 中不可或缺，但我们还是要先泼盆冷水。每一个协议都会引入一层额外的抽象，有时，这会增加理解代码的难度。但有时，使用协议又可以极大地简化代码。这需要不断在编码中积累经验，才能 (在复杂度和表意上) 找到平衡。</p>
+<h3 id="协议目击者-protocol-witnesses">协议目击者 （Protocol Witnesses）</h3>
+<p>希望这一节的内容能帮助你更直观地理解协议的工作方式。假设 Swift 中没有协议这个特性，这时，如果要给 Array 添加一个判断元素是否全部相等的方法，没有 Equatable 协议的话，我们就只能给这个方法传递一个用于比较的函数：</p>
+<pre><code class="language-swift">extension Array {
+    func allEqual(_ compare: (Element, Element) -&gt; Bool) -&gt; Bool {
+        guard let f = first else { return true }
+        for el in dropFirst() {
+            guard compare(f, el) else { 
+                return false 
+            }
+        }
+        return true
+    }
+}
+</code></pre>
+<p>为了让事情更正式一些，我们可以基于 allEqual 的参数创建一个封装，让它更明确的表达相等比较的含义：</p>
+<pre><code class="language-swift">struct Eq&lt;A&gt; {
+    let eq: (A, A) -&gt; Bool
+}
+</code></pre>
+<p>现在，我们就可以为比较不同的具体类型 (例如：Int) 创建不同的 Eq 实例了。我们管这些实例，叫做表示相等判断的显式目击者 (explicit witnesses)：</p>
+<pre><code class="language-swift">let eqInt: Eq&lt;Int&gt; = Eq { $0 == $1 }
+</code></pre>
+<p>接下来，就可以用 Eq 改造之前的 allEqual 实现了。要注意的是，我们使用了泛型类型 Element 来表达要比较的所有元素的类型：</p>
+<pre><code class="language-swift">extension Array {
+    func allEqual(_ compare: Eq&lt;Element&gt;) -&gt; Bool {
+    guard let f = first else { return true }
+    for el in dropFirst() {
+        guard compare.eq(f, el) else {
+            return  false 
+        }
+    }
+        return true
+    }
+}
+</code></pre>
+<p>尽管 Eq 放在这里看上去有点儿晦涩，但正是它为我们呈现了协议在背后的工作方式：<strong>当你为一个泛型类型添加了 Equatable 约束之后，只要创建一个对应的具体类型的实例，就会有一个协议目击者传递给它</strong>。在 Equatable 的例子中，这个目击者携带的，正是用于比较两个值的 == 操作符。<strong>基于要创建的具体类型，编译器会自动传入协议目击者</strong>。下面，则是通过协议取代了显式目击者 (explicit witnesses) 的 allEqual 实现：</p>
+<pre><code class="language-swift">extension Array where Element: Equatable {
+    func allEqual() -&gt; Bool {
+        guard let f = first else { return true }
+        for el in dropFirst() {
+            guard f == el else { 
+                return false 
+            }
+        }
+        return true
+    }
+}
+</code></pre>
+<p>我们还可以给 Eq 添加一个扩展。例如，只要定义了比较两个元素是否相等的方法，就可以实现一个判断两个元素不等的方法：</p>
+<pre><code class="language-swift">extension Eq {
+    func notEqual(_ l: A, _ r: A) -&gt; Bool {
+        return !eq(l,r)
+    }
+}
+</code></pre>
+<p>这和通过扩展给协议添加功能是类似的：由于 eq 方法是肯定存在的，我们就能基于这个方法构建更多功能。于是，给 Equatable 添加同样功能的扩展和上面这个 notEqual 的实现，几乎就是一回事儿。只不过，相比泛型参数 A，我们可以使用隐式泛型参数 Self，用它表示实现了协议的类型：</p>
+<pre><code class="language-swift">extension Equatable {
+    static func notEqual(_ l: Self, _ r: Self) -&gt; Bool {
+        return !(l == r)
+    }
+}
+</code></pre>
+<p>而这，正是标准库为 Equatable 实现 != 操作符的方法。</p>
+<h3 id="条件化协议实现-conditional-conformance">条件化协议实现 (Conditional Conformance)</h3>
+<p>为了实现比较数组的 Eq，我们需要一种比较数组中两个元素的方法。这次，我们把 eqArray 定义成函数，然后把显式目击者传递给它：</p>
+<pre><code class="language-swift">func eqArray&lt;El&gt;(_ eqElement: Eq&lt;El&gt;) -&gt; Eq&lt;[El]&gt; {
+    return Eq { arr1, arr2 in
+        guard arr1.count == arr2.count else {       
+            return false 
+        }
+        for (l, r) in zip(arr1, arr2) {
+            guard eqElement.eq(l, r) else { 
+                return false 
+            }
+        }
+        return true
+    }
+}
+</code></pre>
+<p>再一次，eqArray 为我们诠释了 Swift 中条件化协议实现的工作方式。例如，下面是标准库中 Array 对 Equatable 的实现：</p>
+<pre><code class="language-swift">extension Array: Equatable where Element: Equatable {
+    static func ==(lhs: [Element], rhs: [Element]) -&gt; Bool {
+        fatalError(&quot;Implementation left out&quot;)
+    }
+}
+</code></pre>
+<p>这里，给 Element 添加 Equatable 约束，和之前把 eqElement 传递给 eqArray 函数本质上是一样的。在 Array 的扩展里，我们就可以直接使用 == 操作符比较两个元素的值了。而这两种方法最大的区别就是，<strong>使用协议约束类型，编译器会自动传递一个协议目击者</strong>。</p>
+<h3 id="协议继承">协议继承</h3>
+<p>Swift 还支持协议的继承。例如，实现 Comparable 的类型也一定实现了 Equatable。这叫做细化 (refining)，换句话说，Comparable 改进了 Equatable：</p>
+<pre><code class="language-swift">public protocol Comparable : Equatable {
+    static func &lt; (lhs: Self, rhs: Self) -&gt; Bool
+    // ...
+}
+</code></pre>
+<p>在之前假想的没有协议特性的 Swift 版本里，我们也可以表达这种协议细化的想法。为此，先为 Comparable 创建一个显式目击者，让它包含 Equatable 的目击者和一个 lessThan 函数：</p>
+<pre><code class="language-swift">struct Comp&lt;A&gt; {
+    let equatable: Eq&lt;A&gt;
+    let lessThan: (A, A) -&gt; Bool
+}
+</code></pre>
+<p>这次，Comp 的定义向我们诠释了一个从其它协议继承而来的新协议的目击者的工作方式。这样，在 Comp 的扩展里，我们就可以使用 Eq 和 lessThan 了：</p>
+<pre><code class="language-swift">extension Comp {
+    func greaterThanOrEqual(_ l: A, _ r: A) -&gt; Bool {
+        return lessThan(r, l) || equatable.eq(l, r)
+    }
+}
+</code></pre>
+<p><em><strong>这种传递显式目击者的模式对于我们理解编译器内部对协议的支持很有帮助。而这，也有助于在用协议解决问题卡壳的时候，帮我们找到思路</strong></em>。</p>
+<p>但是，（显式传递目击者和使用协议约束类型）这两种做法并不完全相同。<strong>同一种类型可以有无数多个显式目击者，但一个类型只能对协议约束的方法提供一份实现。并且，不像显式目击者可以通过参数手动传递，协议目击者的传递是自动的</strong>。</p>
+<p>如果允许为一个协议提供多份实现，编译器就需要一些方法找到当前环境里最合适的实现。如果这个过程再加上条件化协议实现，就会更加复杂。为了避免这种复杂性，Swift 不允许我们这样做。</p>
+<blockquote>
+<p>译注：为什么同一种类型可以有无数多个显式目击者呢？举个例子：对于 Eq<String> 来说，我们可以有不同的比较字符串相等的逻辑。例如，按字位族比较，按不同的编码比较，或者是其它脑洞大开的比较方法。这些方法，只要创建不同的 Eq<String> 对象，并提供不同的函数定义就好了。因此，对 String 来说，Eq 代表的显式目击者的个数是无限的。并且，我们也可以把不同版本的 Eq<String> 作为参数同时传递给一个函数。而对于通过协议约束的类型，则不具有这样的性质，一个实现了 Equatable 的类型只能提供一份 == 操作符的实现，并且这个实现会被编译器作为协议目击者自动插入到需要 == 操作符的地方。）</p>
+</blockquote>
+<h2 id="使用协议进行设计">使用协议进行设计</h2>
+<p>这一节，我们来看个绘图协议的例子。有两个具体类型会实现这个协议：我们可以把图形绘制成 SVG 或 渲染到 Apple 自家 Core Graphics 框架的图形上下文 (graphics context) 里。让我们从定义一个要求实现绘制椭圆和矩形接口的协议开始：</p>
+<pre><code class="language-swift">protocol DrawingContext {
+    mutating func addEllipse(rect: CGRect, fill: UIColor)
+    mutating func addRectangle(rect: CGRect, fill: UIColor)
+}
+</code></pre>
+<p>让 CGContext 实现这个协议是易如反掌的事情，直接设置填充颜色并填充对应的区域就好了：</p>
+<pre><code class="language-swift">extension CGContext: DrawingContext {
+    func addEllipse(rect: CGRect, fill fillColor: UIColor) {
+        setFillColor(fillColor.cgColor)
+        fillEllipse(in: rect)
+    }
+    func addRectangle(rect: CGRect, fill fillColor: UIColor) {
+        setFillColor(fillColor.cgColor)
+        fill(rect)
+    }
+}
+</code></pre>
+<p>类似的，让 SVG 实现这个协议也不太复杂。我们把矩形转换成一系列 XML 属性，并把 UIColor 转换成一个十六进制字符串：</p>
+<pre><code class="language-swift">extension SVG: DrawingContext {
+    mutating func addEllipse(rect: CGRect, fill: UIColor) {
+        var attributes: [String:String] = rect.svgEllipseAttributes
+        attributes[&quot;fill&quot;] = String(hexColor: fill)
+        append(Node(tag: &quot;ellipse&quot;, attributes: attributes))
+    }
+    mutating func addRectangle(rect: CGRect, fill: UIColor) {
+        var attributes: [String:String] = rect.svgAttributes
+        attributes[&quot;fill&quot;] = String(hexColor: fill)
+        append(Node(tag: &quot;rect&quot;, attributes: attributes))
+    }
+}
+</code></pre>
+<p>(我们没有列出 SVG，CGRect.svgAttributes，CGRect.svgEllipseAttributes 和 String.init(hexColor:) 的定义，它们在这个例子中并不重要。)</p>
+<h3 id="协议扩展">协议扩展</h3>
+<p>Swift 协议中的一个关键特性就是协议扩展 (protocol extension)。只要知道了如何绘制椭圆，就可以添加一个扩展来以某点为圆心绘制圆形。例如，我们给 DrawingContext 添加下面这样的扩展：</p>
+<pre><code class="language-swift">extension DrawingContext {
+    mutating func addCircle(center: CGPoint, radius: CGFloat, fill: UIColor) {
+        let diameter = radius * 2
+        let origin = CGPoint(x: center.x - radius, y: center.y - radius)
+        let size = CGSize(width: diameter, height: diameter)
+        let rect = CGRect(origin: origin, size: size)
+        addEllipse(rect: rect.integral, fill: fill)
+    }
+}
+</code></pre>
+<p>为了使用它，可以给 DrawingContext 再创建一个扩展，给它添加一个在黄色方块中绘制蓝色圆形的方法：</p>
+<pre><code class="language-swift">extension DrawingContext {
+    mutating func drawSomething() {
+        let rect = CGRect(x: 0, y: 0, width: 100, height: 100)
+        addRectangle(rect: rect, fill: .yellow)
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        addCircle(center: center, radius: 25, fill: .blue)
+    }
+}
+</code></pre>
+<p>把这个方法定义在 DrawingContext 的扩展里，我们就能通过 SVG 或 CGContext 实例调用它。这是一种贯穿 Swift 标准库实现的做法：只要你实现协议要求的几个少数方法，就可以“免费”收获这个协议通过扩展得到的所有功能。</p>
+<h3 id="定制协议扩展">定制协议扩展</h3>
+<p>通过扩展给协议添加的方法，并不作为协议约束的一部分。在某些情况下，这会导致出乎意料的结果。回到之前的例子中，我们希望使用 SVG 对圆形内建的支持，也就是说：圆形在 SVG 中应该就按照圆形的方式，而不是椭圆的方式进行绘制。于是，在 SVG 的实现里，我们添加了一个 addCircle 方法：</p>
+<pre><code class="language-swift">extension SVG {
+    mutating func addCircle(center: CGPoint, radius: CGFloat, fill: UIColor) {
+        let attributes = [
+        &quot;cx&quot;: &quot;\(center.x)&quot;,
+        &quot;cy&quot;: &quot;\(center.y)&quot;,
+        &quot;r&quot;: &quot;\(radius)&quot;,
+        &quot;fill&quot;: String(hexColor: fill),
+        ]
+        append(Node(tag: &quot;circle&quot;, attributes: attributes))
+    }
+}
+</code></pre>
+<p>当我们创建一个 SVG 变量并调用 addCircle 方法的时候，它的表现和我们预期是一样的：</p>
+<pre><code class="language-swift">var circle = SVG()
+circle.addCircle(center: .zero, radius: 20, fill: .red)
+circle
+/*
+&lt;svg&gt;
+&lt;circle cx=&quot;0.0&quot; cy=&quot;0.0&quot; fill=&quot;#ff0000&quot; r=&quot;20.0&quot;/&gt;
+&lt;/svg&gt;
+*/
+</code></pre>
+<p>但是，当我们调用定义在 Drawing 上的 drawSomething() (这个方法里有调用 addCircle) 时，为 SVG 扩展的 addCircle 并不会被调用。在下面的结果里可以看到，SVG 语法中包含的是 ellipse 标签而不是我们期望的 circle：</p>
+<pre><code class="language-swift">var drawing = SVG()
+drawing.drawSomething()
+drawing
+/*
+&lt;svg&gt;
+&lt;rect fill=&quot;#ffff00&quot; height=&quot;100.0&quot; width=&quot;100.0&quot; x=&quot;0.0&quot; y=&quot;0.0&quot;/&gt;
+&lt;ellipse cx=&quot;50.0&quot; cy=&quot;50.0&quot; fill=&quot;#0000ff&quot; rx=&quot;25.0&quot; ry=&quot;25.0&quot;/&gt;
+&lt;/svg&gt;
+*/
+</code></pre>
+<p>和实现协议约束的方法对比，这种行为实在是让人惊讶。为了了解发生了什么，我们先把 drawSomething 写成一个泛型全局函数。它表达的语意和协议扩展中的实现是完全一样的：</p>
+<pre><code class="language-swift">func drawSomething&lt;D: DrawingContext&gt;(context: inout D) {
+    let rect = CGRect(x: 0, y: 0, width: 100, height: 100)
+    context.addRectangle(rect: rect, fill: .yellow)
+    let center = CGPoint(x: rect.midX, y: rect.midY)
+    context.addCircle(center: center, radius: 25, fill: .blue)
+}
+</code></pre>
+<p>这里，泛型参数 D 是一个实现了 DrawingContext 的类型。这就意味着调用 drawSomething 的时候，编译期就会自动传递一个 DrawingContext 的协议目击者。<strong>这个目击者只带有协议约束的所有方法，也就是 addRectangle 和 addEllipse。由于 addCircle 仅是一个定义在扩展里的方法，它并不是这个协议约束的一部分，因此也就不在目击者里了</strong>。</p>
+<p>这个问题的关键就是<strong>只有协议目击者中的方法才能被动态派发到一个具体类型对应的实现，因为只有目击者中的信息在运行时是可用的</strong>。在泛型上下文环境中，调用<strong>协议中的非约束方法总是会被静态派发到协议扩展中的实现</strong>。</p>
+<p>结果就是，<strong>当从 drawSomething 中调用 addCircle 的时候，调用总是会静态派发到协议扩展中的实现</strong>。<strong>编译器无法生成必要的动态派发的代码去调用我们给 SVG 扩展中添加的实现</strong>。</p>
+<p>为了获得动态派发的行为，我们应该让 addCircle 成为协议约束的一部分：</p>
+<pre><code class="language-swift">protocol DrawingContext {
+    mutating func addEllipse(rect: CGRect, fill: UIColor)
+    mutating func addRectangle(rect: CGRect, fill: UIColor)
+    mutating func addCircle(center: CGPoint, radius: CGFloat, fill: UIColor)
+}
+</code></pre>
+<p>这样，<strong>在协议扩展中 addCircle 的实现就变成了协议约束的默认实现</strong>。有了这个默认实现，之前实现了 DrawingContext 的代码无需任何修改，仍旧可以通过编译。现在，<strong>addCircle 成了协议的一部分之后，它也就成为了协议目击者中的一员</strong>，当我们再调用 SVG 对象的 drawSomething 方法时，就会调用到预期的 addCircle 实现了：</p>
+<pre><code class="language-swift">var drawing2 = SVG()
+drawing2.drawSomething()
+drawing2
+/*
+&lt;svg&gt;
+&lt;rect fill=&quot;#ffff00&quot; height=&quot;100.0&quot; width=&quot;100.0&quot; x=&quot;0.0&quot; y=&quot;0.0&quot;/&gt;
+&lt;circle cx=&quot;50.0&quot; cy=&quot;50.0&quot; fill=&quot;#0000ff&quot; r=&quot;25.0&quot;/&gt;
+&lt;/svg&gt;
+*/
+</code></pre>
+<p><strong>带有默认实现的协议方法在 Swift 社区中有时也叫做定制点 (customization point)</strong>。实现协议的类型会收到一份方法的默认实现，并有权决定是否要对其进行覆盖。标准库中这种定制点随处可见。一个例子，就是计算集合中两个元素之间距离的 distance(from:to:) 。这个方法默认实现的时间复杂度是<br>
+O(n)，因为它要遍历两个元素之间的所有位置。由于 distance(from:to:) 也是一个定制点，对于那些可以提供更有效率实现的类型，例如 Array，就可以重写默认的实现了。</p>
+<h3 id="协议组合">协议组合</h3>
+<p>协议可以被组合在一起。标准库中的一个例子，就是 Codable，它是 Encodable &amp; Decodable 这种形式的别名：</p>
+<p>typealias Codable = Decodable &amp; Encodable</p>
+<p>这就意味着编写下面的函数，我们就能在它的实现里，通过 value 同时使用这两个协议约束的方法了：</p>
+<pre><code class="language-swift">func useCodable&lt;C: Codable&gt;(value: C) {
+    // ...
+}
+</code></pre>
+<p>我们可以把这种 Encodable &amp; Decodable 组合理解成一个新的协议，并且用别名定义成了 Codable。</p>
+<p>在之前绘图的例子中，我们可能希望渲染一些带有属性的字符串 (这些字符串会包含一些表示格式的子区间，例如：粗体、字体和颜色等)。但是，SVG 并没有提供属性字符串的原生支持 (Core Graphics 是可以的)。相比给 DrawingContext 添加一个新的方法，我们创建了一个新的协议：</p>
+<pre><code class="language-swift">protocol AttributedDrawingContext {
+    mutating func draw(_ str: NSAttributedString, at: CGPoint)
+}
+</code></pre>
+<p>这样，就可以只让 CGContext 实现这个协议，而无需给 SVG 添加同样的支持。并且，我们还可以把这两个协议合在一起。例如，给 DrawContext 添加一个扩展，要求实现它的类型同样实现了 AttributedDrawingContext：</p>
+<pre><code class="language-swift">extension DrawingContext where Self: AttributedDrawingContext {
+    mutating func drawSomething2() {
+        let size = CGSize(width: 200, height: 100)
+        addRectangle(rect: .init(origin: .zero, size: size), fill: .red)
+        draw(NSAttributedString(string: &quot;hello&quot;), at: CGPoint(x: 50,y: 50))
+    }
+}
+</code></pre>
+<p>或者，我们也可以写一个带有泛型参数约束的函数。和之前一样，这个函数和扩展中的方法语意上是一样的：</p>
+<pre><code class="language-swift">func drawSomething2&lt;C: DrawingContext &amp; AttributedDrawingContext&gt;(
+_ c: inout C)
+{
+    // ...
+}
+</code></pre>
+<p>所以，协议组合是非常强大的语法工具，通过它，可以给协议添加一些不是所有实现了该协议的类型都支持的操作。</p>
+<h3 id="协议继承-2">协议继承</h3>
+<p>除了像上一节那样把协议组合起来，协议之间还可以是继承关系。例如，之前定义的 AttributedDrawingContext 还可以写成这样：</p>
+<pre><code class="language-swift">protocol AttributedDrawingContext: DrawingContext {
+    mutating func draw(_ str: NSAttributedString, at: CGPoint)
+}
+</code></pre>
+<p>这个定义就要求实现了 AttributedDrawingContext 的类型，必须同时实现 DrawingContext。</p>
+<p>协议继承和协议组合有它们各自的应用场景。例如：Comparable 协议就继承自 Equatable。这意味着我们只要让实现 Comparable 的类型实现 &lt; 操作符，它就可以自动添加诸如 &gt;= 和 &lt;= 操作符的定义了。而在 Codable 的例子中，让 Encodable 继承自 Decodable，或者反之，都是没道理的。但是，定义一个叫做 Codable 的新协议，让它同时继承自 Encodable 和 Decodable 则完全没问题。实际上，<em>typealias Codable = Encodable &amp; Decodable 这种写法在语法上，和 protocol Codable: Encodable, Decodable {} 是完全一样的</em>。只是别名的写法看上去稍微简洁了一点，它更明确地告诉我们：Codable 仅仅是这两个协议的组合，并没有在组合的结果里添加任何新的方法。</p>
+<h2 id="协议和关联类型">协议和关联类型</h2>
+<p>有些协议需要约束的不仅仅是方法、属性和初始化方法，它们还希望和它相关的一些类型满足特定的条件。这就可以通过关联类型 (associated type) 来实现。</p>
+<p>在我们自己的代码里，关联类型并不常用，但标准库中却随处可见。其中，一个最简短的例子就是标准库中的 IteratorProtocol 协议。它有一个关联类型表示迭代的元素，以及一个访问下个元素的方法：</p>
+<pre><code class="language-swift">protocol IteratorProtocol {
+    associatedtype Element
+    mutating func next() -&gt; Element?
+}
+</code></pre>
+<p>Collection 协议有五个关联类型，它们之中大多都有默认值。例如，关联类型 SubSequence 的默认值是 Slice<Self>。当然一个类型实现 Collection 的时候，这是另外一个定制点：你可以选择使用默认实现来减少开发的工作量。而那些为了性能或使用更加方便的集合类型，通常也会覆盖这个类型 (例如：String 使用 Substring 作为 SubSequence 类型)。</p>
+<p>这一节，我们通过协议关联类型，重新实现一个小型的 UIKit 状态恢复机制。在 UIKit 里，状态恢复需要读取视图控制器以及视图的架构，并在 app 挂起的时候将它们的状态序列化。当 App 下一次加载的时候，UIKit 会尝试恢复应用程序的状态。</p>
+<p>接下来，我们将使用协议，而不是一个类继承结构，来表示视图控制器。在真实的实现中，ViewController 协议可能会包含很多方法，但为了简单起见，我们让它是一个空的协议：</p>
+<pre><code class="language-swift">protocol ViewController {}
+</code></pre>
+<p>为了恢复一个特定的视图控制器，我们需要能够读写它的状态，我们还希望这个状态实现了 Codable 以便进行编码和解码。由于这个状态和具体的视图控制器相关，它就可以定义成一个关联类型：</p>
+<pre><code class="language-swift">protocol Restorable {
+    associatedtype State: Codable
+    var state: State { get set }
+}
+</code></pre>
+<p>为了演示，我们创建一个显示消息的视图控制器。这个视图控制器的状态由一个消息数组以及当前的滚动位置构成，我们把它定义成一个实现了 Codable 的内嵌类型：</p>
+<pre><code class="language-swift">class MessagesVC: ViewController, Restorable {
+    typealias State = MessagesState
+    struct MessagesState: Codable {
+        var messages: [String] = []
+        var scrollPosition: CGFloat = 0
+    }
+    var state: MessagesState = MessagesState()
+}
+</code></pre>
+<p>实际上，在实现 Restorable 的代码里，我们无需声明 typealias State。编译器足够聪明，它可以通过 state 属性推断出 State 的类型。我们也可以把 MessagesState 重命名成 State，一切仍旧可以正常工作。</p>
+<h3 id="基于关联类型的条件化协议实现">基于关联类型的条件化协议实现</h3>
+<p>有些类型只在特定条件下才会实现一个协议。就像之前在条件化协议实现这一节中看到的，只有当数组中元素的类型实现了 Equatable 的时候，Array 才是个 Equatable 的类型。在约束协议实现的条件中，我们也可以使用关联类型的信息。例如，Range 有一个泛型参数 Bound。当且仅当 Bound 实现了 Strideable 协议，并且 Bound 中的 Stride (这是 Strideable 的一个关联类型) 是一个实现了 SignedInteger 协议的时候，Range 才是一个实现了 Sequence 的类型：</p>
+<pre><code class="language-swift">extension Range: Sequence
+where Bound: Strideable, Bound.Stride: SignedInteger
+</code></pre>
+<p>要说明的是，编写这么复杂的约束关系，即便是在标准库的实现里，都只是一个例外情况。</p>
+<p>在之前假想的 UI 框架里，我们还定义了 SplitViewController，它用两个泛型参数表示它的两个子视图控制器：</p>
+<pre><code class="language-swift">class SplitViewController&lt;Master: ViewController, Detail: ViewController&gt; {
+    var master: Master
+    var detail: Detail
+    init(master: Master, detail: Detail) {
+        self.master = master
+        self.detail = detail
+    }
+}
+</code></pre>
+<p>假设分割视图控制器没有它自己的状态，我们就可以把它的两个子视图控制器的状态合并起来作为分割视图控制器的状态。为此，可能我们最自然想到的就是这样：var state: (Master.State, Detail.State)。但遗憾的是，<strong>元组类型没有实现 Codable，也无法通过条件化协议实现为它添加 Codable 支持 (实际上，元组无法实现任何协议)</strong>。因此，我们只能自己编写一个泛型结构体：Pair，然后给它添加 Codable 的条件化协议实现：</p>
+<pre><code class="language-swift">struct Pair&lt;A, B&gt;: Codable where A: Codable, B: Codable {
+    var left: A
+    var right: B
+    init(_ left: A, _ right: B) {
+        self.left = left
+        self.right = right
+    }
+}
+</code></pre>
+<p>最后，为了让 SplitViewController 实现 Restorable，我们必须要求 Master 和 Detail 也是实现了 Restorable 的类型。相对于在 SplitViewController 中单独保存一份组合的状态，我们可以直接从它的两个子视图控制器中计算出来。省去了这个局部变量，我们就把状态的修改立即传递到了两个子控制器：</p>
+<pre><code class="language-swift">extension SplitViewController: Restorable
+where Master: Restorable, Detail: Restorable
+{
+    var state: Pair&lt;Master.State, Detail.State&gt; {
+        get {
+            return Pair(master.state, detail.state)
+        }
+        set {
+            master.state = newValue.left
+            detail.state = newValue.right
+        }
+    }
+}
+</code></pre>
+<p>就像之前在条件化协议实现这一节中提到的，任何类型都只能实现协议一次。这就意味着我们不能再添加诸如 Master 实现了 Restorable，但是 Detail 没有 (或者反之)，这样的协议实现条件了。</p>
+<h2 id="存在体">存在体</h2>
+<p>严格来说，在 Swift 中是不能把协议当作一个具体类型来使用的，它们只能用来约束泛型参数。但让人诧异的是，下面的代码却可以通过编译 (我们使用了上面例子中的 DrawingContext 协议)：</p>
+<pre><code class="language-swift">let context: DrawingContext = SVG()
+</code></pre>
+<p>当我们把协议当作具体类型使用的时候，编译器会为协议创建一个包装类型，叫做存在体 (existential)。let context: DrawingContext 这种写法本质上就是类似 let context: Any<DrawingContext> 这种写法的语法糖。<strong>尽管这种语法并不存在，编译器会创建一个 (32 字节的) Any 盒子，并在其中为类型实现的每个协议添加一个 8 字节的协议目击者</strong>。我们可以通过下面的代码来验证这个结果：</p>
+<pre><code class="language-swift">MemoryLayout&lt;Any&gt;.size // 32
+MemoryLayout&lt;DrawingContext&gt;.size // 40
+</code></pre>
+<p>为协议创建的这个盒子也叫做 存在体容器 (existential container)。这是编译器必须要做的事情，因为它需要在编译期确认类型的大小。不同的类型自身大小有差异 (例如：所有的类都是一个指针的大小，而结构体和枚举的大小则依赖它们的实际内容)，这些类型实现了一个协议的时候，把协议包装在存在体容器中可以让类型的尺寸保持固定，编译器也就能确定对象的内存布局了。</p>
+<p>我们可以看到存在体容器的大小会随着类型实现协议的增多而增长。例如，Codable 是 Encodable 和 Decodable 的组合，所以，我们可以预期 Codable 存在体的大小是 32 字节的 Any 容器，加上 2 个 8 字节的协议目击者</p>
+<pre><code class="language-swift">MemoryLayout&lt;Codable&gt;.size // 48
+</code></pre>
+<p>当我们创建一个 Codable 数组的时候，无论数组中元素的具体类型是什么，编译器都可以确认，每个元素的大小是 48 字节。例如，下面这个包含了三个元素的数组，将会占用 144 字节空间：</p>
+<pre><code class="language-swift">let codables: [Codable] = [Int(42), Double(42), &quot;fourtytwo&quot;]
+</code></pre>
+<p>对于 codables 数组中的元素，我们唯一能做的事情，就是调用 Encodable 和 Decodable 中的 API (这是指不用 as，as? 或 is 等运行时类型转换的条件下)。因为元素的具体类型已经被存在体容器隐藏起来了。</p>
+<p>有时，存在体和带有类型约束的泛型参数是可以交换使用的。来看下面这两个函数：</p>
+<pre><code class="language-swift">func encode1(x: Encodable) { }
+func encode2&lt;E: Encodable&gt;(x: E) { }
+</code></pre>
+<p>尽管这两个函数都可以用一个实现了 Encodable 的类型调用，但让人诧异的是，它们并不完全相同。<strong>对于 encode1 来说，编译器会把参数包装到 Encodable 的存在体容器里。这个包装不仅会带来一些性能开销，如果要包装的值过大以至于无法直接存放到存在体里，就还需要开辟额外的内存空间。可能更重要的是，这还会阻止编译器的进一步优化，因为对被包装类型的所有方法调用都只能经过存在体中的协议目击者表完成</strong>。</p>
+<p><strong>而对于泛型函数，编译器可以为部分或者所有传递给 encode2 的参数类型生成一个特化的版本。这些特化版本的性能，和我们手工去为这些类型重载 encode2 是完全一样的。而相比 encode1，泛型方式实现的缺点，则是更长的编译时间以及更大的二进制程序</strong>。</p>
+<p>对大多数代码来说，存在体带来的性能开销不是问题，但当你编写一些性能关键的代码时，就要把这个影响考虑进来。如果你在一个循环里调用上千次上面这两个 encode 函数，就会发现 encode2 要快的多得多。</p>
+<h3 id="存在体和关联类型">存在体和关联类型</h3>
+<p>在 Swift 5 里，存在体只针对那些没有关联类型和 Self 约束的协议。为了了解为什么，来看下面这个例子：</p>
+<pre><code class="language-swift">let collections: [Collection] = [&quot;foo&quot;, [1]]
+// 错误: 'Collection' 只能用做泛型参数约束
+// 因为它包含了 Self 或关联类型约定。
+</code></pre>
+<p>上面这段代码并不合理：我们不能在不指定关联类型 Element 的情况下使用 Collection。现在，这是个 Swift 中的硬性规定，但在未来的 Swift 版本里，我们可能会写出类似下面这样的代码：</p>
+<pre><code class="language-swift">// 并不是真正的 Swift 语法
+let collections: [any Collection where .Element == Character] = [&quot;foo&quot;, [&quot;b&quot;]]
+</code></pre>
+<p>而对于那些包含 Self 约束的协议，这个限制是类似的。例如，考虑下面这段代码：</p>
+<pre><code class="language-swift">let cmp: Comparable = 15 // 编译错误
+</code></pre>
+<p>定义在 Comparable 中的操作符 (以及从 Equatable 中继承来的操作符) 希望用于比较的两个参数的类型是完全一致的。如果允许定义 Comparable 类型的变量，你就可能会用 Comparable 中的 API 来比较它们，例如：</p>
+<pre><code class="language-swift">(15 as Comparable) &lt; (&quot;16&quot; as Comparable)
+// 错误：二进制操作符 '&lt;' 不能用于两个 'Comparable' 操作数。
+</code></pre>
+<p>但是，这样的写法完全不合理，因为直接比较字符串和整数是不可能的。因此，编译器禁止为包含关联类型约束的协议 (或者使用了 Self 的协议，本质上这也是一种关联类型) 生成存在体。</p>
+<h2 id="类型消除器">类型消除器</h2>
+<p>尽管我们无法为带有 Self 或关联类型约束的协议创建存在体，但我们可以编写一个执行类似功能的函数，叫做：类型消除器 (type erasers)。</p>
+<p>例如，考虑下面这个表达式：</p>
+<pre><code class="language-swift">let seq = [1, 2, 3].lazy.filter { $0 &gt; 1 }.map { $0 * 2 }
+</code></pre>
+<p>它的类型是 LazyMapSequence&lt;LazyFilterSequence&lt;[Int]&gt;, Int&gt;。随着串联更多的操作，这个声明就会更加复杂。有时，我们会想要消除掉结果中类型的细节，只得到一个包含 Int 元素的序列就好了。虽然我们不能通过存在体表达这个想法，但可以用 AnySequence 隐藏掉原始的类型:</p>
+<pre><code class="language-swift">let anySeq = AnySequence(seq)
+</code></pre>
+<p>anySeq 的类型就是 AnySequence<Int>。尽管这看上去简单多了，并且用起来也和一个序列一样，但这样做也是有代价的：<strong>AnySequence引入了额外的一层间接性，它比直接使用被隐藏的原始类型慢一些</strong>。</p>
+<p>标准库为很多协议都提供了类型消除器，例如：AnyCollection 和 AnyHashable。这一节接下来的内容里，我们给之前定义的 Restorable 协议实现一个简单的类型消除器。</p>
+<p>作为第一次尝试，我们可能会写一个像下面这样的 AnyRestorable。但它并不能完成任务。因为泛型参数 R 直接就暴露了要隐藏的协议，这个版本的 AnyRestorable就跟形同虚设的一样：</p>
+<pre><code class="language-swift">struct AnyRestorable&lt;R: Restorable&gt; {
+    var restorable: R
+}
+</code></pre>
+<p>实际上，我们希望 AnyRestorable 的泛型参数反映的应该是 State (译注：就像 AnyCollection 的泛型参数是集合中元素的类型，而不是 Collection 协议一样)。为了让 AnyRestorable 实现 Restorable，我们还需要提供 state 属性。为此，我们将使用和标准库同样的实现方法：它使用了三个类来实现一个类型消除器。首先，我们创建一个实现了 Restorable 的类：AnyRestorableBoxBase。访问它的 state 属性，会直接导致 fatalError。因为这个类是实现细节的一部分，永远都不应该直接创建这个类型的对象：</p>
+<pre><code class="language-swift">class AnyRestorableBoxBase&lt;State: Codable&gt;: Restorable {
+    internal init() { }
+    public var state: State {
+        get { fatalError() }
+        set { fatalError() }
+    }
+}
+</code></pre>
+<p>其次，创建一个 AnyRestorableBoxBase 的派生类，让它带有一个实现了 Restorable 的泛型参数 R。这里，让类型消除器得以工作的伎俩，就是限制了 AnyRestorableBoxBase 的泛型参数和 R.State 是同一个类型</p>
+<pre><code class="language-swift">class AnyRestorableBox&lt;R: Restorable&gt;: AnyRestorableBoxBase&lt;R.State&gt; {
+    var r: R
+    init(_ r: R) {
+        self.r = r
+    }
+    override var state: R.State {
+        get { return r.state }
+        set { r.state = newValue }
+    }
+}
+</code></pre>
+<p>这种派生关系意味着，我们可以创建一个 AnyRestorableBox 实例，但把它当成一个 AnyRestorableBoxBase 来用。由于 AnyRestorableBoxBase 实现了 Restorable，进而，它又可以直接当成 Restorable 来用。最后，我们创建一个包装类，AnyRestorable，把 AnyRestorableBox 藏起来：</p>
+<pre><code class="language-swift">class AnyRestorable&lt;State: Codable&gt;: Restorable {
+    let box: AnyRestorableBoxBase&lt;State&gt;
+    init&lt;R&gt;(_ r: R) where R: Restorable, R.State == State {
+        self.box = AnyRestorableBox(r)
+    }
+    var state: State {
+        get { return box.state }
+        set { box.state = newValue }
+    }
+}
+</code></pre>
+<p>这里有一个使用闭包实现类型擦除的post,<a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/type-erasure-using-closures-in-swift/">Type erasure using closures in Swift</a></p>
+<p>总体来说，<strong>当编写一个类型消除器的时候，我们要确保它包含了协议约束的所有方法。尽管编译器可以在这件事情上帮我们一把，但它会放过那些带有默认实现的协议方法。在类型消除器里，我们不能依赖这些默认实现，而是要始终把方法调用转发到被隐藏的原始类型上，因为它们都是有可能被定制的</strong>。</p>
+<h2 id="一些补充">一些补充</h2>
+<h3 id="协议中的初始化方法">协议中的初始化方法</h3>
+<ol>
+<li>协议中也可以定义初始化方法，当实现初始化器时，必须使用required关键字( OC 不需要)👇</li>
+</ol>
+<pre><code class="language-swift">protocol MyProtocol {
+    init(age: Int)
+}
+class LGTeacher: MyProtocol {
+    var age: Int
+    required init(age: Int) {
+        self.age = age
+    }
+}
+</code></pre>
+<ol start="2">
+<li>如果一个协议只能被类实现，需要协议继承AnyObject。如果此时结构体遵守该协议，会报错！👇</li>
+</ol>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqse2fb9e2j30u004idh1.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="声明在protocol中的方法和在protocol扩展中声明的方法的不同">声明在Protocol中的方法和在Protocol扩展中声明的方法的不同</h3>
+<pre><code class="language-swift">protocol MyProtocol {
+    func teach()
+}
+extension MyProtocol{
+    func teach(){ print(&quot;MyProtocol&quot;) }
+}
+class MyClass: MyProtocol{
+    func teach(){ print(&quot;MyClass&quot;) }
+}
+let object: MyProtocol = MyClass()
+object.teach()
+let object1: MyClass = MyClass()
+object1.teach()
+
+//打印输出
+MyClass
+MyClass
+
+/*
+1. 对象 object 👉 方法 teach 的调用是通过witness_method调用
+2. 而对象 object1 👉 方法 teach 的调用是通过class_method调用
+*/
+
+//如果去掉协议中的声明呢？打印结果是什么
+protocol MyProtocol {
+}
+extension MyProtocol{
+    func teach(){ print(&quot;MyProtocol&quot;) }
+}
+class MyClass: MyProtocol{
+    func teach(){ print(&quot;MyClass&quot;) }
+}
+let object: MyProtocol = MyClass()
+object.teach() 
+
+let object1: MyClass = MyClass()
+object1.teach()
+
+//打印输出
+MyProtocol
+MyClass
+/*
+第一个打印 MyProtocol，是因为调用的是协议扩展中的 teach 方法，这个方法的地址是在编译时期就已经确定的，即通过静态函数地址调度
+第二个打印 MyClass，同上个例子一样，是类的函数表调用
+*/
+</code></pre>
+<p>不同点</p>
+<ol>
+<li>声明在Protocol中的方法，在底层会存储在PWT，PWT中的方法<strong>也是</strong>通过class_method，去<strong>类的V-Table</strong>中找到对应的方法的调度。</li>
+<li>如果没有声明在Protocol中的函数，只是通过Extension提供了一个默认实现，其函数地址在编译过程中就已经确定了，对于遵守协议的类来说，这种方法是<strong>无法重写</strong>的。</li>
+</ol>
+<h3 id="协议的pwt存储位置">协议的PWT存储位置</h3>
+<p>我们在分析函数调度时，已经知道了<strong>V-Table是存储在metadata</strong>中的，而且根据上面的分析，协议中的方法存储在PWT，那PWT存储在哪里呢？</p>
+<p>当我们把协议当作具体类型使用的时候，编译器会为协议创建一个包装类型，叫做存在体 (existential)。let context: DrawingContext 这种写法本质上就是类似 let context: Any<DrawingContext> 这种写法的语法糖。<strong>尽管这种语法并不存在，编译器会创建一个 (32 字节的) Any 盒子，并在其中为类型实现的每个协议添加一个 8 字节的协议目击者</strong>。</p>
+<p>为协议创建的这个盒子也叫做 存在体容器 (existential container)。这是编译器必须要做的事情，因为它需要在编译期确认类型的大小。不同的类型自身大小有差异 (例如：所有的类都是一个指针的大小，而结构体和枚举的大小则依赖它们的实际内容)，这些类型实现了一个协议的时候，把协议包装在存在体容器中可以让类型的尺寸保持固定，编译器也就能确定对象的内存布局了。</p>
+<p>我们可以看到存在体容器的大小会随着类型实现协议的增多而增长。例如，Codable 是 Encodable 和 Decodable 的组合，所以，我们可以预期 Codable 存在体的大小是 32 字节的 Any 容器，加上 2 个 8 字节的协议目击者</p>
+<p>所以Protocol协议在底层的存储结构👇</p>
+<ol>
+<li>前24个字节，主要用于存储遵循了协议的class/struct的属性值，如果24字节不够存储，会在堆区开辟一个内存空间，然后在24字节中的前8个字节存储该堆区地址（超出24字节是直接分配堆区空间，然后存储值，并不是先存储值，然后发现不够再分配堆区空间）</li>
+<li>后16个字节分别用于存储vwt（值目录表）、pwt（协议目录表）</li>
+</ol>
+<h3 id="value-buffer">Value Buffer</h3>
+<ul>
+<li>struct结构体中24字节官方叫法是Value Buffer。</li>
+<li>Value Buffer用来存储当前的值，如果超过存储的最大容量的话会开辟一块堆空间。</li>
+<li>针对值类型来说在赋值时会先拷贝 heapobject 地址（Copy on write）。在修改时会先检测引用计数，如果引用计数大于1，此时开辟新的堆空间把要修改的内容拷贝到新的堆空间（这么做为了提升性能）。</li>
+</ul>
+<p>Value Buffer在容器existential container中的位置👇</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqsem75u84j30u00hw43w.jpg" alt="avatar" loading="lazy"></figure>
+<h2 id="相关资源">相关资源</h2>
+<ol>
+<li>文章:<a href="https://mp.weixin.qq.com/s/aq_yDwfcPVA41mNQmGNqAA">Swift 进阶：协议 Protocol</a></li>
+<li>书籍:Swift 进阶</li>
+<li>国外网站: <a href="https://medium.com/@pofattseng/%E9%87%8D%E6%96%B0%E6%AA%A2%E8%A6%96-swift-%E7%9A%84-protocol-%E4%BA%8C-2bca0d58cb9">Medium</a></li>
+<li>博客：<a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/type-erasure-using-closures-in-swift/">Type erasure using closures in Swift</a></li>
+</ol>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/TDh4b4Zil/" class="tag">
+                    advanced
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EsLtslOpr/" class="tag">
+                    pwt
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Kvxtc31eQB/" class="tag">
+                    pat
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-jin-jie-protocoyi/">
+                  <h3 class="post-title">
+                    Swift 进阶: Protocol 初探
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

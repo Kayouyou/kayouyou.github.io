@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Delegation in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="委托模式在苹果平台上一直非常突出。委托被用于使用UITableViewDelegate处理表视图事件，使用NSCacheDelegate修改缓存行为。委托模式的核心目的是允许对象以一种解耦的方式与它的所有者通信。 通过不要求对象知道其所有者..." />
+    <meta name="keywords" content="design pattern,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Delegation in Swift</h2>
+            <div class="post-date">2018-04-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>委托模式在苹果平台上一直非常突出。委托被用于使用UITableViewDelegate处理表视图事件，使用NSCacheDelegate修改缓存行为。委托模式的核心目的是允许对象以一种解耦的方式与它的所有者通信。 通过不要求对象知道其所有者的具体类型，我们可以编写更容易重用和维护的代码。</p>
+<p>就像我们在过去的两篇文章中看到的观察者模式一样，委托模式可以通过许多不同的方式实现。本周，让我们来看看其中的一些方法，以及它们的优缺点。</p>
+<h2 id="when-to-delegate">When to delegate</h2>
+<p>将特定的决策和行为委托给类型的所有者的主要好处是，它变得更容易支持多个用例，而不必创建大量的类型，它们自己需要考虑所有这些用例。</p>
+<p>以UITableView或UICollectionView为例。 两者都是非常多才多艺的方面，如何和他们的渲染。使用委托，我们可以很容易地处理事件，决定如何创建单元格和调整布局属性-所有这些都不需要任何一个类了解我们的特定逻辑。</p>
+<p>当一个类型需要在许多不同的上下文中可用，并且在所有这些上下文中都有明确的所有者时，委托通常是一个很好的选择-就像UITableView通常被父容器视图或它的视图控制器所拥有一样。与可观察类型相比，使用委托的类型只与单个所有者通信——在它们之间建立1:1的关系。</p>
+<h2 id="protocols">Protocols</h2>
+<p>在苹果自己的api中最常见的委托方式是使用委托协议。就像UITableView有一个UITableViewDelegate协议一样，我们也可以用类似的方式设置我们自己的类型-就像我们在这里为FileImporter类定义FileImporterDelegate协议一样:</p>
+<pre><code class="language-swift">protocol FileImporterDelegate: AnyObject {
+    func fileImporter(_ importer: FileImporter,
+                      shouldImportFile file: File) -&gt; Bool
+
+    func fileImporter(_ importer: FileImporter,
+                      didAbortWithError error: Error)
+
+    func fileImporterDidFinish(_ importer: FileImporter)
+}
+
+class FileImporter {
+    weak var delegate: FileImporterDelegate?
+}
+</code></pre>
+<p>在实现我们自己的委托协议时，最好遵循苹果自己使用的这种模式所建立的命名约定。以下是一些需要牢记的快速指南:</p>
+<p>为了清楚地说明一个方法确实是一个委托方法，通常的做法是用被委托的类型的名称作为方法名称的开头——就像上面的每个方法都以fileImporter开头一样。</p>
+<p>委托方法的第一个参数理想情况下应该是委托对象本身。这使得拥有多个实例的对象在处理事件时很容易区分它们。</p>
+<p>在委托时，重要的是不要将任何实现细节泄露给委托。例如，当处理一个按钮点击时，将按钮本身传递给delegate方法似乎很有用-但如果那个按钮是一个私有的子视图，它不真正属于公共API。</p>
+<p>采用基于协议的路由的优点是，它是大多数Swift开发人员都熟悉的既定模式。 它还将一个类型(本例中为FileImporter)可以发出的所有事件分组到一个协议中，编译器会给我们错误，以防某些东西没有正确实现。</p>
+<p>然而，这种方法也有一些缺点。在上面的文件导入器示例中，最明显的一点是，使用委托协议可能是不明确状态的来源。请注意我们是如何委托决定是否将给定文件导入委托的 -  但是因为委派是可选的，所以如果委派缺席，决定该怎么做可能会变得有点棘手:</p>
+<pre><code class="language-swift">class FileImporter {
+    weak var delegate: FileImporterDelegate?
+
+    private func processFileIfNeeded(_ file: File) {
+        guard let delegate = delegate else {
+            // Uhm.... what to do here?
+            return
+        }
+
+        let shouldImport = delegate.fileImporter(self, shouldImportFile: file)
+
+        guard shouldImport else {
+            return
+        }
+
+        process(file)
+    }
+}
+```swift
+
+可以通过多种方式处理上述问题——包括在展开委托时在else子句中添加assertionFailure()，或者使用默认值。但无论如何，这都表明我们在设置中存在一些缺陷，因为我们引入了另一个经典的“这种情况不应该发生”的场景，理想情况下应该避免这种情况。
+
+## Closures
+
+我们可以使上述代码更容易预测的一种方法是重构委托协议的决策部分，以使用闭包代替。 这样，我们的API用户就需要指定用于预先决定哪些文件要导入的逻辑，从而消除了文件导入器逻辑中的模糊性:
+```swift
+class FileImporter {
+    weak var delegate: FileImporterDelegate?
+    private let predicate: (File) -&gt; Bool
+
+    init(predicate: @escaping (File) -&gt; Bool) {
+        self.predicate = predicate
+    }
+
+    private func processFileIfNeeded(_ file: File) {
+        let shouldImport = predicate(file)
+
+        guard shouldImport else {
+            return
+        }
+
+        process(file)
+    }
+}
+</code></pre>
+<p>有了上述的改变，我们现在可以继续从委托协议中移除shouldImportFile方法，只留下与状态变化相关的方法:</p>
+<pre><code class="language-swift">protocol FileImporterDelegate: AnyObject {
+    func fileImporter(_ importer: FileImporter,
+                      didAbortWithError error: Error)
+
+    func fileImporterDidFinish(_ importer: FileImporter)
+}
+</code></pre>
+<p>上面的主要优点是现在用错误的方式使用FileImporter类变得更加困难了，因为它现在完全有效的使用它，甚至不分配一个委托(在这种情况下，可能有用的情况下，一些文件应该在后台导入，我们并不真正感兴趣的操作的结果)。</p>
+<h2 id="configuration-types">Configuration types</h2>
+<p>假设我们还想继续将其余的委托方法转换为闭包。 一种方法是继续添加闭包作为初始化器参数或可变属性。然而，当这样做时，我们的API可能开始变得有点混乱-很难区分配置选项和其他类型的属性。</p>
+<p>解决这个难题的一种方法是使用专用的配置类型。通过这样做，我们可以实现同样好的事件分组，就像我们最初的委托协议一样， 同时，在实现各种事件时仍然有很大的自由度。我们将使用一个结构体作为配置类型，并为每个事件添加属性，如下所示:</p>
+<pre><code class="language-swift">struct FileImporterConfiguration {
+    var predicate: (File) -&gt; Bool
+    var errorHandler: (Error) -&gt; Void
+    var completionHandler: () -&gt; Void
+}
+</code></pre>
+<p>我们现在可以更新FileImporter，使其在初始化时接受单个参数——它的配置， 并通过将配置保存在属性中轻松访问每个闭包:</p>
+<pre><code class="language-swift">class FileImporter {
+    private let configuration: FileImporterConfiguration
+
+    init(configuration: FileImporterConfiguration) {
+        self.configuration = configuration
+    }
+
+    private func processFileIfNeeded(_ file: File) {
+        let shouldImport = configuration.predicate(file)
+
+        guard shouldImport else {
+            return
+        }
+
+        process(file)
+    }
+
+    private func handle(_ error: Error) {
+        configuration.errorHandler(error)
+    }
+
+    private func importDidFinish() {
+        configuration.completionHandler()
+    }
+}
+</code></pre>
+<p>使用上述委派方法还有一个额外的好处——它变得非常容易为各种常见的文件导入器配置定义方便的api。例如，我们可以在FileImportConfiguration上添加一个方便的初始化器，它只接受一个谓词——这样就可以简单地创建一个“触发并忘记”类型导入器:</p>
+<pre><code class="language-swift">extension FileImporterConfiguration {
+    init(predicate: @escaping (File) -&gt; Bool) {
+        self.predicate = predicate
+        errorHandler = { _ in }
+        completionHandler = {}
+    }
+}
+</code></pre>
+<p>顺便说一句;通过在扩展中而不是在类型本身上定义方便的结构初始化式，我们仍然可以保留默认的编译器生成的初始化式。</p>
+<p>我们甚至可以为不需要任何参数的公共配置创建静态的方便api，例如，可以简单地导入所有文件的变体:</p>
+<pre><code class="language-swift">extension FileImporterConfiguration {
+    static var importAll: FileImporterConfiguration {
+        return .init { _ in true }
+    }
+}
+</code></pre>
+<p>我们可以使用Swift非常优雅的点语法，这使得API非常容易使用，仍然提供了很多定制和灵活性:</p>
+<pre><code class="language-swift">let importer = FileImporter(configuration: .importAll)
+</code></pre>
+<p>Pretty sweet! 😀</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>委托模式仍然是苹果框架和我们自己的代码库的重要组成部分。但是，尽管这是一个古老而又相当简单的概念，但它可以通过许多不同的方式实现——每种方式都有自己的优缺点。</p>
+<p>使用委托协议提供了一种熟悉且可靠的模式，对于许多用例来说，这是一种很好的默认模式。闭包增加了更多的灵活性，但也可能导致更复杂的代码(更不用说当委托对象最终在其闭包之一中捕获其所有者时意外的保留循环)。配置类型可以提供一个良好的中间环境，但也需要更多的代码(尽管，正如我们所看到的，有了合适的便利api，我们的代码实际上可以变得简单得多)。</p>
+<p><a href="https://www.swiftbysundell.com/articles/delegation-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4g5XtbTAR/" class="tag">
+                    design pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/observers-in-swift-part-2/">
+                  <h3 class="post-title">
+                    Observers in Swift - Part 2
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Inline types and functions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在编写经得起时间考验的代码时，分离关注点和解耦都是非常重要的事情——但是过多地分离代码往往会产生相反的效果。即使应用程序或系统在技术上可能有一个坚如磐石的架构，遵循所有优秀系统设计的规则，我们的代码仍然会让人觉得很难导航。
+一种缓解这种情况..." />
+    <meta name="keywords" content="code structure,functions" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Inline types and functions in Swift</h2>
+            <div class="post-date">2019-02-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>在编写经得起时间考验的代码时，分离关注点和解耦都是非常重要的事情——但是过多地分离代码往往会产生相反的效果。即使应用程序或系统在技术上可能有一个坚如磐石的架构，遵循所有优秀系统设计的规则，我们的代码仍然会让人觉得很难导航。</p>
+<p>一种缓解这种情况的方法是，在我们的代码库中保持一个稳定的整体结构，当两段代码非常相关时，就使用内联功能。本周，让我们看看如何使用内联类型和函数来实现这一点，以及如何在正确的情况下使用内联类型和函数使我们的代码更容易理解。</p>
+<h2 id="container-types">Container types</h2>
+<p>让我们从一个例子开始。当使用某种web API时——无论是我们自己控制的东西，还是我们依赖的外部服务 -  API返回的数据格式和Swift代码的结构不匹配是很常见的。</p>
+<p>在处理数据列表(如搜索结果)时，一种特别常见的模式是web API用JSON对象而不是数组来回复，看起来像这样:</p>
+<pre><code class="language-swift">{
+    &quot;results&quot;: [
+        ...
+    ]
+}
+</code></pre>
+<p>假设我们想使用Codable来解码上述数据，但是我们只对结果的实际数组感兴趣，而不是根对象。这需要我们创建某种形式的容器类型，我们解码我们的web API响应，然后我们可以提取我们的结果从该实例:</p>
+<pre><code class="language-swift">struct Container: Codable {
+    var results: [SearchResult]
+}
+</code></pre>
+<p>但问题是——上面的类型该放在哪里?虽然我们可以将其作为顶级类型，并将其放入自己的Swift文件中，因为它只用于促进JSON解码我们的搜索结果-简单地把它放在代码旁边不是更容易吗?</p>
+<p>这正是内联类型允许我们做的 - 由于Swift不仅在程序的顶层支持类型定义，但也可以在其他类型内部，甚至在单个函数内部——像这样:</p>
+<pre><code class="language-swift">private extension SearchResultsLoader {
+    func decodeResults(from data: Data) throws -&gt; [SearchResult] {
+        struct Container: Decodable {
+            let results: [SearchResult]
+        }
+
+        let decoder = JSONDecoder()
+        let container = try decoder.decode(Container.self, from: data)
+        return container.results
+    }
+}
+</code></pre>
+<p>有了上面的方法，不管是谁最终维护我们的代码(可能会变成我们自己的未来版本)，都不必搜索整个项目来查找正在使用的容器类型——它就在使用它的代码旁边!👍</p>
+<h2 id="simple-mocks">Simple mocks</h2>
+<p>在编写单元测试时，内联类型可以派上用场的另一种情况。特别是在测试一些更复杂的代码时，我们通常不得不做一些模拟 - 当这样做的时候，让这些模拟尽可能简单通常是一个好主意。</p>
+<p>假设我们的应用程序使用了一个动作隐喻，允许多个独立的动作定期更新，通过如下协议:</p>
+<pre><code class="language-swift">protocol Action: AnyObject {
+    func update(at timestamp: TimeInterval) -&gt; UpdateOutcome
+}
+</code></pre>
+<p>当调用上面的update方法时，每个操作都会返回一个UpdateOutcome——这是一个包含完成、取消等情况的枚举。然后，ActionController使用该结果来确定一个动作是否应该继续接收更新，或者是否应该删除。</p>
+<p>现在，假设我们想要编写一个单元测试，验证ActionController是否正确地删除了一个更新时返回取消结果的操作。为了做到这一点，我们将模拟我们的动作协议，创建一个在第一次更新时硬连接到取消自身的动作，像这样:</p>
+<pre><code class="language-swift">class CancelingActionMock: Action {
+    func update(at timestamp: TimeInterval) -&gt; UpdateOutcome {
+        return .cancelled
+    }
+}
+</code></pre>
+<p>与前面的搜索结果容器示例类似，由于上面的模拟非常特定于我们将要编写的单元测试(假定它是硬连接的，总是取消自身)，也许放置它的最合适位置实际上是内联在我们的测试中。这样，我们可以简单地将其称为Mock，并将所有测试代码包含在一个方法中:</p>
+<pre><code class="language-swift">class ActionControllerTests: XCTestCase {
+    func testCancelledActionRemoved() {
+        class Mock: Action {
+            func update(at timestamp: TimeInterval) -&gt; UpdateOutcome {
+                return .cancelled
+            }
+        }
+        let controller = ActionController()
+        let action = Mock()
+
+        controller.enqueue(action)
+        XCTAssertTrue(controller.contains(action))
+
+        controller.update(at: 0)
+        XCTAssertFalse(controller.contains(action))
+    }
+}
+</code></pre>
+<p>替代上述方法的一种方法是使我们的模拟更通用，更容易重用 - 例如，通过命名它为ActionMock，并使它能够初始化任何给定的UpdateOutcome返回，这将让我们使它成为一个顶级的，共享类型。</p>
+<p>虽然这也是一种完全有效的方法(而且在需要多次模拟同一协议的情况下可以说更合适)，通过引入额外的类型，我们在读取和编写测试时需要注意这些类型，它确实略微增加了复杂性。保持事物内联在某种程度上“迫使”我们保持模拟的硬连接和简单，这通常对于可维护性和清晰性是一件好事。</p>
+<h2 id="self-executing-closures">Self-executing closures</h2>
+<p>不仅类型有时可以从内联到使用它们的上下文中获益，计算程序数据或状态的逻辑也可以从中受益。</p>
+<p>例如，假设我们正在编写一个Swift脚本，以便能够快速检查给定GitHub用户拥有多少公共存储库。 我们的脚本将通过命令行参数获取我们想要查找的用户名，然后使用该名称构造一个GitHub web API URL，最后执行网络请求并解析结果。</p>
+<p>目前，我们使用单独的函数来构建脚本，每个函数执行上述操作之一，如下所示:</p>
+<pre><code class="language-swift">let name = try extractNameFromArguments()
+let url = try constructURL(for: name)
+let user = try loadUser(from: url)
+
+print(&quot;User named \(name) has \(user.repoCount) public repos&quot;)
+</code></pre>
+<p>上面的代码看起来非常简洁，但是如果我们开始研究底层函数，就会发现每个步骤并不需要太多逻辑。因此，在导航代码时，不必不断地插入和退出函数，我们可以将这些函数转换为自动执行的闭包。</p>
+<p>就像我们在“使用Swift中的惰性属性”中看到的那样，一个自执行的闭包只是一个普通的闭包，它在定义时立即调用自己 -并且可以提供一个很好的方式来封装一个对象或值的设置-像这样:</p>
+<pre><code class="language-swift">let redButton: UIButton = {
+    let button = UIButton()
+    button.backgroundColor = .red
+    return button
+}()
+</code></pre>
+<p>在我们的GitHub脚本中使用上述技术将允许我们实现与之前相同级别的封装，但是现在所有的逻辑都按照脚本的主要流程内联了 - 给了我们一个非常好的概述，我们所有的操作和他们的实现:</p>
+<pre><code class="language-swift">let name: String = try {
+    let arguments = CommandLine.arguments
+
+    guard arguments.count &gt; 1 else {
+        throw Error.noName
+    }
+
+    return arguments[1]
+}()
+
+let url: URL = try {
+    let urlString = &quot;https://api.github.com/users/&quot; + name
+
+    guard let url = URL(string: urlString) else {
+        throw Error.invalidName
+    }
+
+    return url
+}()
+
+let user: GitHubUser = try {
+    let data = try Data(contentsOf: url)
+    let decoder = JSONDecoder()
+    return try decoder.decode(GitHubUser.self, from: data)
+}()
+
+print(&quot;User named \(name) has \(user.repoCount) public repos&quot;)
+</code></pre>
+<p>除了脚本和计算惰性属性，自动执行闭包也是封装一些更复杂的局部变量计算的好方法-在读取我们的代码时，同样不需要额外的函数或上下文切换。</p>
+<h2 id="inline-function-definitions">Inline function definitions</h2>
+<p>最后，让我们看看如何内联正确的函数声明——以及如何内联真正有用，尤其是在处理递归代码时。</p>
+<p>假设我们正在构建一个笔记应用程序，我们最欣赏的便利功能之一是，我们的应用程序允许用户快速打开匹配给定搜索查询的第一个笔记。 这个特性是通过一个NoteFinder类实现的，目前看起来是这样的:</p>
+<pre><code class="language-swift">class NoteFinder {
+    private var files: [File]
+    private var findIndex = 0
+
+    func findFirstNote(matching query: String,
+                       then handler: @escaping (Note?) -&gt; Void) {
+        findIndex = 0
+        performFind(withQuery: query, handler: handler)
+    }
+
+    private func performFind(withQuery query: String,
+                             handler: @escaping (Note?) -&gt; Void) {
+        guard findIndex &lt; files.count else {
+            return handler(nil)
+        }
+
+        let file = files[findIndex]
+        findIndex += 1
+
+        file.read { [weak self] content in
+            guard content.contains(query) else {
+                self?.performFind(withQuery: query, handler: handler)
+                return
+            }
+
+            handler(Note(content: content))
+        }
+    }
+}
+</code></pre>
+<p>上述实现存在两个主要问题。 首先，我们必须将查询和完成处理程序都传递给第二个函数，这似乎有点多余，因为初始的findFirstNote函数实际上并没有做太多工作。第二，可能更重要的是，我们的查找注释功能当前是有状态的。</p>
+<p>因为每次调用findFirstNote时，我们都将findIndex重置为0，所以如果要同时执行两个find会话，很容易就会出现一些非常糟糕的bug。解决这个问题的一种方法是将当前索引传递给performFind，但这只会增加第一个问题，即必须将大量数据传递给第二个函数。</p>
+<p>相反，让我们再次使用内联——这一次将整个performFind函数内联放置在findFirstNote中。这样我们就可以给它一个更简单的名字和签名(我们现在简单地称它为matchNext)，而且由于内联函数都可以捕获状态-就像闭包一样-递归地调用自己，我们最终会得到一个更简单的实现，不会泄露任何状态:</p>
+<pre><code class="language-swift">class NoteFinder {
+    private var files: [File]
+
+    func findFirstNote(matching query: String,
+                       then handler: @escaping (Note?) -&gt; Void) {
+        // These local variables can be captured by our inline
+        // function, removing the need for the class itself to
+        // to manage any state local to this function.
+        var index = 0
+        let files = self.files
+
+        func matchNext() {
+            guard index &lt; files.count else {
+                return handler(nil)
+            }
+
+            let file = files[index]
+            index += 1
+
+            file.read { content in
+                guard content.contains(query) else {
+                    return matchNext()
+                }
+
+                handler(Note(content: content))
+            }
+        }
+
+        matchNext()
+    }
+}
+</code></pre>
+<p>如果上面的技术看起来很熟悉——可能是因为它非常类似于“Swift中基于任务的并发性”中任务序列的实现方式。</p>
+<p>然而递归有时可能是一把双刃剑(特别是因为Swift不保证“尾部调用优化”，这可能导致我们的调用堆栈在大型数据集中变得非常深)-它可以让我们将算法需要的所有状态封装到算法本身中，这既可以让代码更容易遵循，也可以让它更健壮。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>当我们需要额外的类型或函数时，内联是一个很好的工具，但我们不想在使用它的范围之外公开它。通过将这种更简单、范围更窄的类型和函数放在使用它们的代码旁边-我们还可以通过减少上下文切换，使我们的代码更容易导航和使用。</p>
+<p>我们不仅可以选择在程序的顶层定义类型和函数，还可以选择在其他类型或函数中内联定义类型和函数，这是Swift在结构和语法方面多么灵活的另一个例子。然而，就像对待其他相同性质的特征一样，重要的是不要做得太过火。</p>
+<p>就像过多的分离和解耦会使代码库难以导航一样，过多的内联类型和函数会使我们的代码库或多或少成为一团逻辑。 我的建议是——避免极端情况，在最合适的时候使用每种工具，并在它们超出最初设计时进行重构。</p>
+<p><a href="https://www.swiftbysundell.com/articles/inline-types-and-functions-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L76CX3exv/" class="tag">
+                    functions
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/reflection-in-swift/">
+                  <h3 class="post-title">
+                    Reflection in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

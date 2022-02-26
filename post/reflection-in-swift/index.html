@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Reflection in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="反射是一种常见的编程语言特性，它使我们能够在运行时动态地检查和使用类型的成员。这似乎与Swift着重于编译时验证的做法不一致，虽然Swift对反射的实现肯定比其他语言更有限，但它从第一天起就存在了。
+Swift版本的反射使我们能够遍历并读取..." />
+    <meta name="keywords" content="dynamic programming" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Reflection in Swift</h2>
+            <div class="post-date">2019-02-10</div>
+            
+            <div class="post-content" v-pre>
+              <p>反射是一种常见的编程语言特性，它使我们能够在运行时动态地检查和使用类型的成员。这似乎与Swift着重于编译时验证的做法不一致，虽然Swift对反射的实现肯定比其他语言更有限，但它从第一天起就存在了。</p>
+<p>Swift版本的反射使我们能够遍历并读取类型所存储的所有属性的值——无论是结构、类还是任何其他类型-启用一种元编程，使我们能够编写真正与代码本身交互的代码。</p>
+<p>本周，让我们看看什么时候反射可以派上用场，以及它如何让我们以更动态的方式处理代码，从而自动化任务。</p>
+<h2 id="the-use-case">The use case</h2>
+<p>虽然有许多编程语言的特性看起来“在纸上”很有趣，或者可以作为理论练习，但最大的问题是——实际的用例是什么? 遍历一个类型的属性似乎是一件有趣的事情，但是它在实践中如何有用呢?让我们从看一个例子开始。</p>
+<p>假设我们正在开发的应用程序使用UserSession类型来跟踪用户的会话记录。它使我们能够读和写用户特定的数据，如用户的凭据，喜爱的项目，和设置-通过一系列的存储类，像这样:</p>
+<pre><code class="language-swift">class UserSession {
+    let credentials: CredentialsStorage
+    let favorites: FavoritesStorage
+    let settings: SettingsStorage
+}
+</code></pre>
+<p>由于我们想要持久化上述所有数据，以便用户在退出应用程序时不会丢失任何信息，棘手的部分是，一旦用户退出，如何重置所有的持久化? 初始实现可能是在会话中有一个注销方法，该方法在每个存储对象上调用reset():</p>
+<pre><code class="language-swift">extension UserSession {
+    func logOut() {
+        credentials.reset()
+        favorites.reset()
+        settings.reset()
+    }
+}
+</code></pre>
+<p>虽然上面的方法可以工作，但是它有点脆弱——因为当引入一个新的存储对象时，我们不会得到任何编译时的指示，表明我们是否记得重置它的状态。 而我们可以尝试确保所有特定于用户的设置都存储在磁盘上的相同文件夹中-然后编写一个单元测试，验证用户登出后是否清空  -  还不能保证我们的重置会彻底和完整。</p>
+<p>特别是在这种情况下，这也是我们真正需要确保正确的事情——否则我们可能会在账户之间泄漏用户特定的数据，这可能会有相当严重的影响。我们来看看能不能用反射来解决这个问题，用一种自动可靠的方式。</p>
+<p>我们要做的第一件事是确保可以通过一个API引用所有存储对象。 在本例中，我们只对reset()方法感兴趣——所以让我们首先将其提取到一个可重置的协议中，然后使所有存储类型都符合这个协议:</p>
+<pre><code class="language-swift">protocol Resettable {
+    func reset()
+}
+
+extension CredentialsStorage: Resettable {}
+extension FavoritesStorage: Resettable {}
+extension SettingsStorage: Resettable {}
+</code></pre>
+<p>现在我们有了一个标准的，统一的方式来与我们所有的可重置对象交互-是时候开始反射了!</p>
+<h2 id="mirror-mirror-on-the-wall">Mirror, mirror, on the wall</h2>
+<p>Swift中的反射是通过作为标准库的一部分发布的Mirror API提供的。 使用它其实很简单——我们唯一需要做的就是创建一个我们想要反射的目标的镜子，然后使用该镜像的子属性来遍历该目标的所有存储属性。每个子元素将包含一个标签(属性的名称)和一个值(它的值-类型为Any)，如下所示:</p>
+<pre><code class="language-swift">let mirror = Mirror(reflecting: self)
+
+for child in mirror.children {
+    print(&quot;Property name:&quot;, child.label)
+    print(&quot;Property value:&quot;, child.value)
+}
+</code></pre>
+<p>使用上面的方法，我们可以替换以前的注销代码，在所有存储对象上手动调用reset()，而是简单地遍历所有用户会话的属性-一旦我们找到一个可重置的值，我们将重置它:</p>
+<pre><code class="language-swift">extension UserSession {
+    func logOut() {
+        let mirror = Mirror(reflecting: self)
+        for child in mirror.children {
+            if let resettable = child.value as? Resettable {
+                resettable.reset()
+            }
+        }
+    }
+}
+</code></pre>
+<p>现在，如果我们向UserSession添加一个新的Resettable属性，它将在用户注销后自动重置。很酷!😎</p>
+<p>上面的技术不仅对重置持久性有用，而且可以在我们需要迭代所有共享相同API的未知数量的属性时使用，并对它们执行相同的操作。为了让它更容易实现，我们可以在Mirror上做一个小小的扩展，这让我们可以使用特定的类型来限定每个子对象，然后以类型安全的方式访问它的值——像这样:</p>
+<pre><code class="language-swift">extension Mirror {
+    static func reflectProperties&lt;T&gt;(
+        of target: Any,
+        matchingType type: T.Type = T.self,
+        using closure: (T) -&gt; Void
+    ) {
+        let mirror = Mirror(reflecting: target)
+
+        for child in mirror.children {
+            (child.value as? T).map(closure)
+        }
+    }
+}
+</code></pre>
+<p>上面我们使用了matchingType的默认实参，因为在很多情况下Swift的类型推断将能够自动推断出我们正在寻找的类型。 然而，如果这是不可能的，我们也给API用户一个选项，通过这个参数显式地指定类型。</p>
+<p>使用上面的扩展，我们现在可以清理以前的代码，并让它使用一个漂亮的基于闭包的语法来迭代和重置它的所有子对象-然后我们也可以在其他用例中使用相同的扩展，例如从数据库预加载对象，或预热一系列缓存:</p>
+<pre><code class="language-swift">extension UserSession {
+    func logOut() {
+        Mirror.reflectProperties(of: self) {
+            (child: Resettable) in
+            child.reset()
+        }
+    }
+}
+extension DataController {
+    func preload() {
+        Mirror.reflectProperties(of: self) {
+            (child: Preloadable) in
+            child.preload()
+        }
+    }
+}
+
+extension CacheController {
+    func warmUp() {
+        Mirror.reflectProperties(of: self) {
+            (child: Cache) in
+            child.warmUp()
+        }
+    }
+}
+</code></pre>
+<p>用这种方式使用反射的好处是它不需要修改我们正在反射的类型。我们不需要存储属性数组，不需要遵守特定的协议，也不需要使代码更难处理。虽然上面我们确实选择在目标本身上使用扩展来实现反射，但这绝对不是一个要求。例如，我们可以简单地将注销代码写成一个完全独立的函数:</p>
+<pre><code class="language-swift">func tearDown(_ session: UserSession) {
+    Mirror.reflectProperties(of: session) {
+        (child: Resettable) in
+        child.reset()
+    }
+}
+</code></pre>
+<p>这给了我们很大的灵活性，同时仍然以一种非常好的方式自动化我们的操作👍。</p>
+<h2 id="recursive-reflections">Recursive reflections</h2>
+<p>到目前为止，我们只反射了一个层次——但有时我们想在一个对象层次上执行一系列操作。例如，假设上面的SettingsStorage类型包含了一个自己的存储对象——可能用来存储用户喜欢的语言:</p>
+<pre><code class="language-swift">class SettingsStorage {
+    let preferredLanguages: PreferredLanguagesStorage
+}
+</code></pre>
+<p>在我们当前的反射实现中，上面嵌套的PreferredLanguagesStorage对象不会作为自动用户会话销毁过程的一部分被重置 - 但好消息是，我们可以通过让反射代码递归来轻松解决这个问题。 我们将它设为可选特性，因为我们可能不总是想递归地遍历所有属性，但启用后(通过传递recursively:true给Mirror扩展API)，我们将确保在所有找到的子函数上递归地调用我们的函数——像这样:</p>
+<pre><code class="language-swift">extension Mirror {
+    static func reflectProperties&lt;T&gt;(
+        of target: Any,
+        matchingType type: T.Type = T.self,
+        recursively: Bool = false,
+        using closure: (T) -&gt; Void
+    ) {
+        let mirror = Mirror(reflecting: target)
+
+        for child in mirror.children {
+            (child.value as? T).map(closure)
+
+            if recursively {
+                // To enable recursive reflection, all we have to do
+                // is to call our own method again, using the value
+                // of each child, and using the same closure.
+                Mirror.reflectProperties(
+                    of: child.value,
+                    recursively: true,
+                    using: closure
+                )
+            }
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就可以从以前更新注销方法，递归地重置所有会话的子对象 - 包括新添加的PreferredLanguagesStorage:</p>
+<pre><code class="language-swift">extension UserSession {
+    func logOut() {
+        Mirror.reflectProperties(of: self, recursively: true) {
+            (child: Resettable) in
+            child.reset()
+        }
+    }
+}
+</code></pre>
+<p>根据用例的不同，我们可以选择让递归反射选择退出而不是选择进入，但由于这些操作可能具有潜在的破坏性(比如重置持久性)-就像我们上面所做的那样，让事情自由选择可能是个好主意。</p>
+<h2 id="limitations-and-alternatives">Limitations and alternatives</h2>
+<p>虽然reflection在Swift中非常有用，但它目前的实现仍然有一定的局限性。在上面的例子中，我们只处理了只读访问和引用类型 - 有很好的理由，因为Mirror目前不支持写值，只支持读值。</p>
+<p>当改变对象和其他引用类型时，这不是一个问题，但它确实阻止了我们做一些事情，比如为一个结构的所有属性指定一个默认值，或者从一段数据动态地构造一个对象。尽管有一些方法可以绕过这些限制，例如使用Objective-C运行时或直接操作不安全的指针 -  Swift的顶级api并不支持这种功能。</p>
+<p>对于反射尚未涵盖的那些用例，一个常见的替代方案是使用编译时代码生成  -检查代码的属性，然后根据这些属性生成新代码。 这就是Swift标准库代码库所使用的东西，我们将在以后的文章中对此进行更详细的研究。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>为了以更动态的方式处理代码，反射可以是一个强大的工具  -例如，能够对一个对象的所有属性自动执行相同的操作，生成描述和字符串表示，甚至自动执行JSON编码。</p>
+<p>虽然我们很可能会在未来看到对当前镜像API的扩展，以支持更多的用例 - 特别是以类型安全的方式支持突变 -现在已经有几个任务可以使用反射API来执行了。</p>
+<p>然而，就像任何动态或元编程一样，仔细考虑什么时候使用它总是很重要的——也许更重要的是——什么时候不使用它。虽然自动化很好——特别是对于像本文中提到的那些用例，当我们能够得到更好的保证，确保我们的代码能够长期保持正确时，通过引入过多的反射和其他动态语言特性，很容易使事情变得难以理解或调试。</p>
+<p><a href="https://www.swiftbysundell.com/articles/reflection-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/9lckLyokR/" class="tag">
+                    dynamic programming
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/task-based-concurrency-in-swift/">
+                  <h3 class="post-title">
+                    Task-based concurrency in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

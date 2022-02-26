@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The power of Result types in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift类型系统的一个很大的好处是，它让我们在处理各种操作的值和结果时消除了很多不确定性。有了泛型和关联枚举值等特性，我们可以轻松地创建类型，利用编译器来确保以正确的方式处理值和结果。
+这种类型的一个例子是Result类型，它作为Swif..." />
+    <meta name="keywords" content="result" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The power of Result types in Swift</h2>
+            <div class="post-date">2018-06-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift类型系统的一个很大的好处是，它让我们在处理各种操作的值和结果时消除了很多不确定性。有了泛型和关联枚举值等特性，我们可以轻松地创建类型，利用编译器来确保以正确的方式处理值和结果。</p>
+<p>这种类型的一个例子是Result类型，它作为Swift 5的一部分被引入到标准库中，但也在社区中使用了多年——通过自定义实现。本周，让我们来探索一下不同版本的Result，以及它与Swift的一些语言特性相结合的一些很酷的功能。</p>
+<h2 id="the-problem">The problem</h2>
+<p>在进行多种手术时，通常会有两种截然不同的结果——成功和失败。 在Objective-C中，这两种结果通常都包括一个值和一个错误，例如，当操作完成时调用一个完成处理程序。 然而，当转换为Swift时，这种方法的问题变得非常明显——因为值和错误都必须是可选的:</p>
+<pre><code class="language-swift">func load(then handler: @escaping (Data?, Error?) -&gt; Void) {
+    ...
+}
+</code></pre>
+<p>问题是，处理上述load函数的结果变得相当棘手。即使error参数是nil，编译时也不能保证我们要找的数据确实在那里 -它也可能是nil，这将使我们的代码处于一种奇怪的状态。</p>
+<h2 id="separate-states">Separate states</h2>
+<p>使用结果类型可以通过将每个结果转换成两种不同的状态来解决这个问题，通过使用一个包含每种状态一个成功和一个失败案例的枚举:</p>
+<pre><code class="language-swift">enum Result&lt;Value&gt; {
+    case success(Value)
+    case failure(Error)
+}
+</code></pre>
+<p>通过使结果类型泛型，它可以很容易地在许多不同的上下文中重用，同时仍然保持完整的类型安全。如果我们现在更新load函数，使用上面的结果类型，我们可以看到事情变得更清楚了:</p>
+<pre><code class="language-swift">func load(then handler: @escaping (Result&lt;Data&gt;) -&gt; Void) {
+    ...
+}
+</code></pre>
+<p>使用结果类型不仅提高了代码的编译时安全性，它还鼓励我们在调用产生结果值的API时总是添加适当的错误处理——像这样:</p>
+<pre><code class="language-swift">load { [weak self] result in
+    switch result {
+    case .success(let data):
+        self?.render(data)
+    case .failure(let error):
+        self?.handle(error)
+    }
+}
+</code></pre>
+<p>现在，我们既使我们的代码更加清晰，也消除了一个歧义的来源，从而产生了一个更健壮、更易于使用的API。👍</p>
+<h2 id="typed-errors">Typed errors</h2>
+<p>在类型安全方面，我们仍然可以更进一步。 在我们之前的迭代中，结果枚举的失败案例包含一个错误值，这个错误值可以是符合Swift错误协议的任何类型。虽然这给了我们很大的灵活性，但它确实使我们很难确切地知道在调用给定API时可能会遇到哪些错误。</p>
+<p>解决这个问题的一种方法是将相关的错误值也设置为泛型类型:</p>
+<pre><code class="language-swift">enum Result&lt;Value, Error: Swift.Error&gt; {
+    case success(Value)
+    case failure(Error)
+}
+</code></pre>
+<p>这样，我们现在就需要指定API用户可以预期的错误类型。让我们再次更新之前的load函数，现在使用Result类型的新版本——带有强类型错误:</p>
+<pre><code class="language-swift">typealias Handler = (Result&lt;Data, LoadingError&gt;) -&gt; Void
+
+func load(then handler: @escaping Handler) {
+    ...
+}
+</code></pre>
+<p>可以认为，使用这种强类型错误与Swift当前的错误处理模型相违背-它不包括类型错误(我们只能声明函数抛出错误，而不是它可能抛出的错误类型)。然而，为每个结果添加额外的类型信息确实有一些好处——例如，它让我们专门处理调用站点上所有可能的错误，就像这样:</p>
+<pre><code class="language-swift">load { [weak self] result in
+    switch result {
+    case .success(let data):
+        self?.render(data)
+    case .failure(let error):
+        // Since we now know the type of 'error', we can easily
+        // switch on it to perform much better error handling
+        // for each possible type of error.
+        switch error {
+        case .networkUnavailable:
+            self?.showErrorView(withMessage: .offline)
+        case .timedOut:
+            self?.showErrorView(withMessage: .timedOut)
+        case .invalidStatusCode(let code):
+            self?.showErrorView(withMessage: .statusCode(code))
+        }
+    }
+}
+</code></pre>
+<p>像上面那样进行错误处理似乎有些小题大做，但是“强迫”我们自己养成以这种细粒度的方式处理错误的习惯，通常可以产生更好的用户体验 - 因为用户将会被告知哪里出了问题，而不仅仅是看到一个通用的错误屏幕，我们甚至可以为每个错误添加适当的操作。</p>
+<h2 id="anonymizing-errors">Anonymizing errors</h2>
+<p>然而，考虑到Swift当前的错误系统，从每次操作中获得强类型的、可预测的错误并不总是实际的(甚至可能的)。 有时我们需要使用可能产生任何错误的底层api和系统，因此我们需要某种方式来告诉类型系统，我们的结果类型也可以包含任何错误。</p>
+<p>值得庆幸的是，Swift提供了一种非常简单的方法——使用我们在Objective-C中的老朋友NSError。 任何Swift错误都可以自动转换为NSError，而不需要可选的类型转换。更棒的是，我们甚至可以告诉Swift将任何在do子句中抛出的错误转换为NSError，这样就可以简单地将其传递给completion handler:</p>
+<pre><code class="language-swift">class ImageProcessor {
+    typealias Handler = (Result&lt;UIImage, NSError&gt;) -&gt; Void
+
+    func process(_ image: UIImage, then handler: @escaping Handler) {
+        do {
+            // Any error can be thrown here
+            var image = try transformer.transform(image)
+            image = try filter.apply(to: image)
+            handler(.success(image))
+        } catch let error as NSError {
+            // When using 'as NSError', Swift will automatically
+            // convert any thrown error into an NSError instance
+            handler(.failure(error))
+        }
+    }
+}
+</code></pre>
+<p>上面我们总是会在catch块中得到一个NSError，不管它实际上抛出了什么错误。虽然在框架或模块的顶层提供统一的错误API通常是个好主意，但当我们处理任何特定错误并不是很重要时，上述做法可以帮助我们减少样板文件。</p>
+<h2 id="into-the-standard-library">Into the standard library</h2>
+<p>作为Swift 5的一部分，这个标准库也得到了自己的Result实现——它遵循了与我们上一个迭代相同的设计(对值和错误都支持强类型)。将Result包含在标准库中的一个优点是，单独的框架和应用程序不再需要定义它们自己的-更重要的是，不再需要在同一种类型的不同口味之间转换。</p>
+<p>Swift 5还带来了另一个与Result密切相关的有趣变化(事实上，它是作为Swift evolution提案的一部分被执行的)-错误协议现在是自洽的。 这意味着Error现在可以作为一种通用类型使用，但必须遵守相同的协议，这意味着上述基于nserror的技术在Swift 5中不再必要-我们可以简单地使用错误协议本身来匿名错误:</p>
+<pre><code class="language-swift">class ImageProcessor {
+    typealias Handler = (Result&lt;UIImage, Error&gt;) -&gt; Void
+
+    func process(_ image: UIImage, then handler: @escaping Handler) {
+        do {
+            var image = try transformer.transform(image)
+            image = try filter.apply(to: image)
+            handler(.success(image))
+        } catch {
+            handler(.failure(error))
+        }
+    }
+}
+</code></pre>
+<p>上述方法既适用于标准库的结果类型，也适用于自定义的结果类型——只要它受到错误协议的约束(因为其他协议还不能自适应)。很酷!😎</p>
+<h2 id="throwing">Throwing</h2>
+<p>有时候我们并不是真的想要打开一个结果，而是直接将它挂钩到Swift的do, try, catch错误处理模型中。好消息是，由于我们现在有了一个专门的结果类型，我们可以很容易地扩展它以添加方便的api。例如，Swift 5的Result的实现包括一个get()方法，它要么返回结果的值，要么抛出一个错误——我们也可以像这样实现自定义的结果类型:</p>
+<pre><code class="language-swift">extension Result {
+    func get() throws -&gt; Value {
+        switch self {
+        case .success(let value):
+            return value
+        case .failure(let error):
+            throw error
+        }
+    }
+}
+</code></pre>
+<p>当我们真的不想添加任何代码分支或条件时，上面的API对于编写测试之类的任务非常有用。下面是一个例子，在这个例子中，我们使用一个模拟的同步网络引擎来测试一个searchresultloader-并且通过使用上面的get方法，我们可以将所有的断言和验证保持在我们测试的最高级别，像这样:</p>
+<pre><code class="language-swift">class SearchResultsLoaderTests: XCTestCase {
+    func testLoadingSingleResult() throws {
+        let engine = NetworkEngineMock.makeForSearchResults(named: [&quot;Query&quot;])
+        let loader = SearchResultsLoader(networkEngine: engine)
+        var result: Result&lt;[SearchResult], SearchResultsLoader.Error&gt;?
+
+        loader.loadResults(matching: &quot;query&quot;) {
+            result = $0
+        }
+
+        let searchResults = try result?.get()
+        XCTAssertEqual(searchResults?.count, 1)
+        XCTAssertEqual(searchResults?.first?.name, &quot;Query&quot;)
+    }
+}
+</code></pre>
+<p>要了解更多关于上述模拟的内容，请查看“异步Swift代码单元测试”。</p>
+<h2 id="decoding">Decoding</h2>
+<p>我们还可以继续为其他常见操作添加更多的扩展。例如，如果我们的应用程序处理大量的JSON解码，我们可以使用相同的类型约束来允许任何携带数据的结果值直接解码-通过添加以下扩展:</p>
+<pre><code class="language-swift">// Here we're using 'Success' as the name for the generic type
+// for our result's value (rather than 'Value', like we did
+// before). This is to match Swift 5's naming convention.
+extension Result where Success == Data {
+    func decoded&lt;T: Decodable&gt;(
+        using decoder: JSONDecoder = .init()
+    ) throws -&gt; T {
+        let data = try get()
+        return try decoder.decode(T.self, from: data)
+    }
+}
+</code></pre>
+<p>有了上面的代码，我们现在可以很容易地解码任何加载的数据，或者抛出任何遇到的错误——无论是加载操作本身，还是解码时:</p>
+<pre><code class="language-swift">load { [weak self] result in
+    do {
+        let user = try result.decoded() as User
+        self?.userDidLoad(user)
+    } catch {
+        self?.handle(error)
+    }
+}
+</code></pre>
+<p>很整洁!👍Swift 5标准库的Result实现还包括map、mapError和flatMap等方法，这使我们能够使用内联闭包和函数来完成许多其他类型的转换。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在处理异步操作的值和结果时，使用结果类型是减少模糊性的好方法。通过使用扩展添加方便的api，我们还可以减少样板，并在处理结果时更容易执行常见操作，同时保持完整的类型安全。</p>
+<p>是否要求错误也必须是强类型的仍然是社区中的一个争论，这也是我个人反复讨论的问题。一方面，我喜欢它使添加更彻底的错误处理变得更简单的方式，但另一方面，它感觉有点像与系统对抗 -因为Swift还不支持作为一级公民的强类型错误。</p>
+<p><a href="https://www.swiftbysundell.com/articles/the-power-of-result-types-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/dCOibP2pD/" class="tag">
+                    result
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/getting-started-with-signposts/">
+                  <h3 class="post-title">
+                    Getting started with signposts
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A guide to the SwiftUI layout system - Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="除了声明性DSL和强大的数据绑定之外，SwiftUI还提供了一个全新的布局系统，它在很多方面结合了手动帧计算的显式性和自动布局的适应性。 其结果是，这个系统乍一看可能很简单，但一旦我们开始将它的各种构建块组合成越来越复杂的布局，它就提供了巨..." />
+    <meta name="keywords" content="layout,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A guide to the SwiftUI layout system - Part 1</h2>
+            <div class="post-date">2020-03-22</div>
+            
+            <div class="post-content" v-pre>
+              <p>除了声明性DSL和强大的数据绑定之外，SwiftUI还提供了一个全新的布局系统，它在很多方面结合了手动帧计算的显式性和自动布局的适应性。 其结果是，这个系统乍一看可能很简单，但一旦我们开始将它的各种构建块组合成越来越复杂的布局，它就提供了巨大的灵活性和强大的功能。</p>
+<p>本周，让我们从头开始构建一个全屏视图来探索SwiftUI布局系统。在此过程中，我们将使用许多不同类型的布局技术和api——它们将一起演示SwiftUI布局系统的底层规则，以及这些规则之间的相互关系。</p>
+<h2 id="setting-a-views-frame">Setting a view’s frame</h2>
+<p>让我们从一个简单的ContentView开始，通过引用苹果内置的SF符号来渲染日历图像作为其主体:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+    }
+}
+</code></pre>
+<p>默认情况下，SwiftUI允许每个视图根据它所渲染的容器选择自己的大小，然后将其居中置于父视图中。因此，上述代码的结果是在屏幕中央呈现一个小图标——而不是我们根据UIKit和AppKit的工作方式所预期的在左上角或左下角。</p>
+<p>接下来，让我们把图标放大一点，假设是50x50个点。如何实现这一点的一个初步想法可能是使用.frame()视图修饰符来告诉我们的视图采用这个大小，像这样:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .frame(width: 50, height: 50)
+    }
+}
+</code></pre>
+<p>然而，虽然上面的代码将导致一个50x50点的视图，但我们的图标的大小将保持与之前完全相同——乍一看可能有点奇怪。为了探究原因，让我们给我们的视图一个背景颜色，这样我们就可以很容易地看到它在屏幕上的框架:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .frame(width: 50, height: 50)
+            .background(Color.red)
+    }
+}
+</code></pre>
+<p>在上面的位置，我们可以看到我们的视图确实是正确的大小-只是我们的图标似乎完全不受。frame()修饰符的影响，这实际上是正确的。当对视图应用一个修饰符时，我们通常根本不修改视图，而是把它封装在一个新的、透明的视图中。当调用上面的background()时，我们实际上是把那个背景修饰符应用到包装图像的新视图，而不是图像本身。</p>
+<p>所以，从布局的角度来看，我们的图像仍然是完全一样的-它仍然在它的父视图中居中-只是这次它的父视图是一个新的50x50透明包装视图，而不是主托管视图，但渲染的结果仍然是相同的。</p>
+<p>因为SwiftUI视图负责决定它们自己的大小，所以我们需要告诉我们的图像调整自己的大小以占用所有可用的空间，而不是坚持其默认大小。为了实现这一点，我们只需要对它应用.resizable()修饰符——像这样:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .resizable()
+            .frame(width: 50, height: 50)
+            .background(Color.red)
+    }
+}
+</code></pre>
+<p>我们现在有一个50x50的日历图标渲染在屏幕中心-完美!</p>
+<h2 id="applying-padding">Applying padding</h2>
+<p>接下来，让我们看看在SwiftUI中填充是如何工作的。就像在其他布局系统中，比如CSS，填充使我们能够在自己的帧中偏移视图的内容。 然而，根据我们在视图修饰符链中应用填充的位置，我们可以得到不同的结果。例如，让我们通过在链的末端附加.padding()修饰符来应用一组默认填充:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .resizable()
+            .frame(width: 50, height: 50)
+            .background(Color.red)
+            .padding()
+    }
+}
+</code></pre>
+<p>同样，上面的结果可能不是我们所期望的，因为我们实际上已经给了日历图标外填充——不包括其背景颜色的额外空白。如果我们仔细想想，这与我们之前在应用.frame()修饰符时遇到的行为完全相同—调用.padding()实际上不会改变我们之前的视图和修饰符，它只是在前面的表达式的结果周围添加空白。<br>
+事实上，如果我们在调用.padding()之后添加第二个.background()修饰符，这个行为就会变得清晰得多——因为第二种背景颜色将在填充本身中呈现:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .resizable()
+            .frame(width: 50, height: 50)
+            .background(Color.red)
+            .padding()
+            .background(Color.blue)
+    }
+}
+</code></pre>
+<p>所以如果我们想要添加内填充，考虑到视图的背景，我们需要在添加背景之前应用填充——像这样:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .resizable()
+            .frame(width: 50, height: 50)
+            .padding()
+            .background(Color.red)
+    }
+}
+</code></pre>
+<p>为了进一步说明，每个修饰符本质上都将被调用的视图包装在另一个视图中——如果我们在应用修饰符.frame()之前调用.padding()的话， 我们的图标会缩小，因为填充将应用在我们固定的50x50容器内——迫使我们的可调整大小的图像采用更小的尺寸:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .resizable()
+            .padding()
+            .frame(width: 50, height: 50)
+            .background(Color.red)
+    }
+}
+</code></pre>
+<p>为了完成我们的日历图标视图，我们还要对它应用一点角半径，并将其前景色设置为白色——最后将所有代码提取到一个名为CalendarView的新视图中，如下所示</p>
+<pre><code class="language-swift">struct CalendarView: View {
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .resizable()
+            .frame(width: 50, height: 50)
+            .padding()
+            .background(Color.red)
+            .cornerRadius(10)
+            .foregroundColor(.white)
+    }
+}
+</code></pre>
+<p>一般来说，当我们定义完一个UI块，它可以作为自己的自包含的构建块时，提取代码到一个新的视图实现通常是一个好主意——为了避免构建大量的视图。</p>
+<h2 id="stacks-and-spacers">Stacks and spacers</h2>
+<p>就像我们在Swift Clips的第三集中看到的那样，SwiftUI的各种堆栈和间隔可能一开始看起来非常简单和有限，但实际上可以用来表达几乎无限的布局组合。为了开始探索它们是如何工作的，让我们用包装在垂直堆栈中的新的CalendarView替换ContentView的主体:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            CalendarView()
+        }
+    }
+}
+</code></pre>
+<p>有趣的是，上面的VStack实际上根本没有影响我们的布局，因为SwiftUI栈不会拉伸自己来占用它们的父栈 — 相反，它们只是根据其子节点的总大小来调整自己的大小，在本例中就是以前的CalendarView。</p>
+<p>要移动我们的CalendarView，我们还需要在堆栈中添加一个Spacer。当放置在HStack或VStack中时，间隔器总是会占用尽可能多的空间，在这种情况下会导致我们的CalendarView被推到屏幕的顶部:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            CalendarView()
+            Spacer()
+        }
+    }
+}
+</code></pre>
+<p>栈很酷的一点是，它们可以嵌套来表达日益复杂的布局，而不需要任何形式的手动帧计算。例如，下面是我们如何将我们的CalendarView推送到屏幕的顶部，通过在HStack中嵌套上面的VStack(我们也会在视图层次结构中应用一些外填充，以插入我们的内容):</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        HStack {
+            VStack {
+                CalendarView()
+                Spacer()
+            }
+            Spacer()
+        }.padding()
+    }
+}
+</code></pre>
+<p>接下来，让我们向视图添加一个文本，以便开始将其转换为一个屏幕，该屏幕可用于查看关于一个日历事件的一组细节。由于我们将在本文中坚持只探索SwiftUI的布局系统，我们现在将硬编码我们的文本内容:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        HStack {
+            VStack {
+                CalendarView()
+                Spacer()
+            }
+            Text(&quot;Event title&quot;).font(.title)
+            Spacer()
+        }.padding()
+    }
+}
+</code></pre>
+<p>看看上面的代码，我们可能希望新文本在我们的CalendarView旁边呈现——虽然在水平轴上是这样的，但在垂直轴上，它将根据屏幕的全部高度居中。原因是我们的间隔器只影响放置我们的CalendarView的VStack，所以为了为我们的文本获得相同的布局行为，我们也必须将它封装在一个包含间隔器的VStack中——或者我们可以简单地告诉我们的根HStack将它的所有子对象对齐到顶部，像这样:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        HStack(alignment: .top) {
+            VStack {
+                CalendarView()
+                Spacer()
+            }
+            Text(&quot;Event title&quot;).font(.title)
+            Spacer()
+        }.padding()
+    }
+}
+</code></pre>
+<p>类似地，我们也可以调整VStack如何水平地定位它的子节点，例如为了渲染一个显示我们想象中的日历事件在事件标题下面的位置的文本—  同时让这两个标签按照根视图的前沿对齐:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        HStack(alignment: .top) {
+            VStack {
+                CalendarView()
+                Spacer()
+            }
+            VStack(alignment: .leading) {
+                Text(&quot;Event title&quot;).font(.title)
+                Text(&quot;Location&quot;)
+            }
+            Spacer()
+        }.padding()
+    }
+}
+</code></pre>
+<p>然而，虽然上面的布局是可行的，但它可以被简化，以便更容易在头脑中想象。这不是很直观的，我们所有的视图的内容被一个嵌套在两个堆栈的间隔器推到顶部，为了保持在我们的视图垂直迭代，我们也理想地希望我们的根堆栈是VStack。</p>
+<p>因此，让我们在重构时再次将ContentView的主体提取到一个专门的组件中。这一次，让我们将我们的新视图命名为EventHeader，并将其设置为一个垂直居中的HStack，在其子视图之间增加一点间距 — 这将让我们实现先前布局的改进版本，同时简化我们的代码:</p>
+<pre><code class="language-swift">struct EventHeader: View {
+    var body: some View {
+        HStack(spacing: 15) {
+            CalendarView()
+            VStack(alignment: .leading) {
+                Text(&quot;Event title&quot;).font(.title)
+                Text(&quot;Location&quot;)
+            }
+            Spacer()
+        }
+    }
+}
+</code></pre>
+<p>回到我们的ContentView，我们现在可以把它的主体变成一个单独的VStack，包含我们新的EventHeader组件，以及之前的垂直间隔器  — 为了让我们的布局代码更容易理解，它现在被放在了一个更好的位置:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            Spacer()
+        }.padding()
+    }
+}
+</code></pre>
+<p>同样，我们遵循相同的原则，只要可能，就不断地将ContentView主体提取为专用组件。通过这种方式，我们可以很自然地将UI划分为各个原子部分，而无需预先做大量的架构设计工作。</p>
+<h2 id="zstacks-and-offset">ZStacks and offset</h2>
+<p>最后，让我们快速看看SwiftUI的ZStack类型，它使我们能够使用前后顺序，从深度的角度堆栈一系列视图。</p>
+<p>举个例子，假设我们想要增加对在我们的日历视图顶部显示一个小的“验证徽章”的支持——通过在它的右上角放置一个复选标记图标。 为了用一种更通用的方式实现它，让我们用一个API来扩展视图，让我们把任何视图包装在ZStack中(它本身不会影响视图的布局)，也可选包含我们的复选标记图标-像这样:</p>
+<pre><code class="language-swift">extension View {
+    func addVerifiedBadge(_ isVerified: Bool) -&gt; some View {
+        ZStack(alignment: .topTrailing) {
+            self
+
+            if isVerified {
+                Image(systemName: &quot;checkmark.circle.fill&quot;)
+                    .offset(x: 3, y: -3)
+            }
+        }
+    }
+}
+</code></pre>
+<p>请注意ZStack是如何让我们完全控制二维对齐的，我们可以用它来在父视图的左上角定位我们的图标。然后，我们还将.offset()修饰符应用到我们的badge上，它将把它稍稍移动到父视图的边界之外。</p>
+<p>有了上面的内容，我们现在可以有条件地将我们的新badge添加到我们的CalendarView中，以防eventsverified属性被设置为true(为了简单起见，我们目前默认为true):</p>
+<pre><code class="language-swift">struct CalendarView: View {
+    var eventIsVerified = true
+
+    var body: some View {
+        Image(systemName: &quot;calendar&quot;)
+            .resizable()
+            .frame(width: 50, height: 50)
+            .padding()
+            .background(Color.red)
+            .cornerRadius(10)
+            .foregroundColor(.white)
+            .addVerifiedBadge(eventIsVerified)
+    }
+}
+</code></pre>
+<p>使用ZStack和.offset()修饰符可以很好地为视图添加各种覆盖，而不会影响视图自己的布局。我们可以使用该技术来实现加载微调器、应用程序内通知和许多其他类型的视图，我们希望在现有的视图层次结构上呈现这些视图。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>这就是SwiftUI布局系统指南的第一部分。在第二部分中，我们将继续看一看更强大的方法来构建完全自定义布局，但现在——让我们总结一下到目前为止所涵盖的内容:</p>
+<p>SwiftUI的核心布局引擎是这样工作的:要求每个子视图根据其父视图的边界来确定自己的大小，然后要求每个父视图在自己的边界内定位其子视图。<br>
+视图修饰符经常在另一个视图中包装当前视图，这就是为什么我们可以得到完全不同的布局结果取决于我们调用修饰符的顺序。<br>
+使用.frame()和.padding()修饰符，我们可以调整视图的大小和内部边距，只要该视图被配置为相应地调整自身大小。<br>
+使用HStack, VStack和ZStack，我们可以在水平、垂直或深度上叠加视图。<br>
+使用offset()我们可以移动一个视图而不影响它的周围环境，这在实现overlay和其他类型的重叠视图时非常有用。</p>
+<p><a href="https://www.swiftbysundell.com/articles/swiftui-layout-system-guide-part-1/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ql06Ez80-/" class="tag">
+                    layout
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/when-can-a-structs-memberwise-initializer-be-used/">
+                  <h3 class="post-title">
+                    When can a structs memberwise initializer be used ?
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 15: Setters: Ergonomics &amp; Performance | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Refining things
+
+
+
+
+Overloading prop
+
+
+
+
+Double-overloading prop
+
+
+
+
+Over and set
+
+
+
+
+Generalizing ..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 15: Setters: Ergonomics &amp; Performance</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Refiningthings">Refining things</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Overloadingprop">Overloading prop</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Double-overloadingprop">Double-overloading prop</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Overandset">Over and set</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Generalizingoverandset">Generalizing over and set</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Setterasatype">Setter as a type</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#Refactoringanearlierexample">Refactoring an earlier example</a></li>
+</ol>
+</li>
+<li>
+<ol start="9">
+<li><a href="#Settersandperformance">Setters and performance</a></li>
+</ol>
+</li>
+<li>
+<ol start="10">
+<li><a href="#Onemoremutablerefactor">One more mutable refactor</a></li>
+</ol>
+</li>
+<li>
+<ol start="11">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 15: Setters: Ergonomics & Performance -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>我们现在已经花了几集时间来探索“<strong>functional setters</strong>”:允许我们从小单位构建具有表现力的、不可变的数据转换的函数。我们已经探索了它们如何以令人惊讶的方式组合在一起，从而使我们能够对深度嵌套的值进行更改:通常进行这些更改是很麻烦的。 我们还利用了一个美妙而独特的Swift特性，<strong>关键路径(key paths</strong>)，为我们的类和结构的属性从稀薄的空气中提取setters。</p>
+<p><strong>Setters</strong>是一个非常强大和广泛有用的工具，但当使用它们时，我们目前编写的函数有些粗糙。它们也不是世界上性能最好的东西:因为setters是不可变的，所以它们在每一步中都会创建它们的值的副本。今天，我们将消除这些粗糙的边缘，并探索如何使用Swift的值变异语义来提高性能。</p>
+<h2 id="2-a-namerefiningthingsarefining-things">2. <a name='Refiningthings'></a>Refining things</h2>
+<p>让我们从上节课的一个例子开始。我们有<strong>Food, Location, User</strong>结构体以及<strong>user</strong>值。</p>
+<pre><code class="language-swift">struct Food {
+  var name: String
+}
+
+struct Location {
+  var name: String
+}
+
+struct User {
+  var favoriteFoods: [Food]
+  var location: Location
+  var name: String
+}
+
+var user = User(
+  favoriteFoods: [Food(name: &quot;Tacos&quot;), Food(name: &quot;Nachos&quot;)],
+  location: Location(name: &quot;Brooklyn&quot;),
+  name: &quot;Blob&quot;
+)
+</code></pre>
+<p>为了转换这些属性，我们编写了<strong>prop</strong>，这是一个函数，给定一个可写的键路径，它会生成一个setter函数。如果没有关键路径，我们需要手动为每个想要修改的属性编写或生成setter，这可能会阻止我们在一开始使用它们!</p>
+<pre><code class="language-swift">func prop&lt;Root, Value&gt;(_ kp: WritableKeyPath&lt;Root, Value&gt;)
+  -&gt; (@escaping (Value) -&gt; Value)
+  -&gt; (Root) -&gt; Root {
+
+    return { update in
+      { root in
+        var copy = root
+        copy[keyPath: kp] = update(copy[keyPath: kp])
+        return copy
+      }
+    }
+}
+</code></pre>
+<p>让我们看看一些正在使用的<strong>setters</strong>。在这里，我们通过一对<strong>prop</strong> setters将<strong>user</strong>管道化:一个把他们的名字大写，另一个把他们搬到洛杉矶。</p>
+<pre><code class="language-swift">user
+  |&gt; (prop(\.name)) { $0.uppercased() }
+  &lt;&gt; (prop(\.location.name)) { _ in &quot;Los Angeles&quot; }
+</code></pre>
+<p>使用prop在实践中看起来有点奇怪，因为它是curry过的:使用key-path调用prop将返回另一个函数。 我们将第一个应用程序包装在括号中，作为一种聚会技巧来恢复尾随闭包语法，但像这样的技巧比其他任何技巧都更令人困惑。 我们可能会遇到这些额外的括号，并想知道:它们为什么在那里? 我们试图删除它们，然后通过一个令人困惑的编译错误。</p>
+<pre><code class="language-swift">prop(\.name) { $0.uppercased() }
+</code></pre>
+<blockquote>
+<p>🛑 Extra argument in call</p>
+</blockquote>
+<p>这样写这些行比较容易理解:</p>
+<pre><code class="language-swift">user
+  |&gt; prop(\.name)({ $0.uppercased() })
+  &lt;&gt; prop(\.location.name)({ _ in &quot;Los Angeles&quot; })
+</code></pre>
+<p>但这感觉有点恶心。为什么这些函数要<strong>curry</strong> ? <strong>Setter</strong>函数需要经过curry处理以实现复合，而我们需要复合来对数据结构进行深度修改。不过，使用setter应该和编写它们一样好，所以我们可以做些什么来消除调用这些curry过的函数的尴尬方式呢?</p>
+<p>考虑一下如何使用这些setter的两种常见情况可能会有所帮助: 我们要么采用现有的值并转换它们，就像我们将用户名大写时所做的那样，要么完全替换这些值，就像我们使用它们的位置名所做的那样。我们看看能不能把这两种情况专门化一下。</p>
+<h2 id="3-a-nameoverloadingpropaoverloading-prop">3. <a name='Overloadingprop'></a>Overloading prop</h2>
+<p>应用一个没有额外括号的转换应该像编写一个未curry的prop版本一样简单。我们可以编写一个重载来实现这一点。</p>
+<pre><code class="language-swift">func prop&lt;Root, Value&gt;(
+  _ kp: WritableKeyPath&lt;Root, Value&gt;,
+  _ f: @escaping (Value) -&gt; Value
+  )
+  -&gt; (Root) -&gt; Root {
+
+    return prop(kp)(f)
+}
+</code></pre>
+<p>这允许我们更新之前的代码，使其看起来更合理。</p>
+<pre><code class="language-swift">user
+  |&gt; prop(\.name) { $0.uppercased() }
+  &lt;&gt; prop(\.location.name) { _ in &quot;Los Angeles&quot; }
+</code></pre>
+<p>改变是微妙的，但值得! 如果我们传递一个命名函数，这种情况就会更加明显。</p>
+<pre><code class="language-swift">let addCourtesyTitle = { $0 + &quot;, Esq.&quot; }
+
+user
+  |&gt; prop(\.name, addCourtesyTitle)
+  |&gt; prop(\.name) { $0.uppercased() }
+  &lt;&gt; prop(\.location.name) { _ in &quot;Los Angeles&quot; }
+</code></pre>
+<p>没有括号使得代码更容易阅读和理解。</p>
+<h2 id="4-a-namedouble-overloadingpropadouble-overloading-prop">4. <a name='Double-overloadingprop'></a>Double-overloading prop</h2>
+<p>如果我们想要完全替换我们的值，比如用户的位置名，那该怎么办呢? 现在我们使用一个<strong>transform</strong>函数，忽略当前值并返回一个常量字符串。花括号、下划线和<strong>in</strong>关键字给一个非常简单的操作添加了很多杂音。我们写一个函数来消除这些干扰。我们可以再次重载道具，为什么不呢? 它会取一个键路径，一个值，然后产生另一个<strong>Root</strong>转换函数。</p>
+<pre><code class="language-swift">func prop&lt;Root, Value&gt;(
+  _ kp: WritableKeyPath&lt;Root, Value&gt;,
+  _ value: Value
+  )
+  -&gt; (Root) -&gt; Root {
+    return prop(kp) { _ in value }
+}
+</code></pre>
+<p>这个函数只是调用<strong>uncurried prop</strong>，并隐藏了一些噪音。</p>
+<p>这将如何改变我们的管道?</p>
+<pre><code class="language-swift">user
+  |&gt; prop(\.name, addCourtesyTitle)
+  &lt;&gt; prop(\.name) { $0.uppercased() }
+//  &lt;&gt; prop(\.location.name) { _ in &quot;Los Angeles&quot; }
+  &lt;&gt; prop(\.location.name, &quot;Los Angeles&quot;)
+</code></pre>
+<p>我们把很多噪音都藏起来了!</p>
+<h2 id="5-a-nameoverandsetaover-and-set">5. <a name='Overandset'></a>Over and set</h2>
+<p>我们可能认为这里已经完成了，但我们忽略了<strong>setter</strong>机制的一个关键部分，即将<strong>setter</strong>函数组合在一起，以更改数据结构中深深嵌套的值。</p>
+<p>例如，我们可以将<strong>prop</strong>组合到Array上的free <strong>map</strong>中，并再次组合到<strong>prop</strong>中，以更改用户最喜欢的食物的名称。</p>
+<pre><code class="language-swift">user
+  |&gt; prop(\.name, addCourtesyTitle)
+  &lt;&gt; prop(\.name) { $0.uppercased() }
+  &lt;&gt; prop(\.location.name, &quot;Los Angeles&quot;)
+  &lt;&gt; (prop(\.favoriteFoods) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.name)) { $0 + &quot; &amp; Salad&quot; }
+</code></pre>
+<p>这就是<strong>setter</strong>如此强大的原因:我们可以将它们组合在一起，创建全新的<strong>setter</strong>，改变位于数据结构深处的值。</p>
+<p>不幸的是，我们又要用括号来包装了。 为了包含构图，这里的parens感觉是必要的，但与我们其他重载的道具相比，它感觉我们生活在两个不同的世界: 一个世界高度适应于改变或设定价值，另一个世界高度适应于创作。</p>
+<p>但是当我们提取这个变换函数并命名它的时候事情就开始走下坡路了。</p>
+<pre><code class="language-swift">let healthierOption = { $0 + &quot; &amp; Salad&quot; }
+
+user
+  |&gt; prop(\.name, addCourtesyTitle)
+  &lt;&gt; prop(\.name) { $0.uppercased() }
+  &lt;&gt; prop(\.location.name, &quot;Los Angeles&quot;)
+  &lt;&gt; (prop(\.favoriteFoods) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.name))(healthierOption)
+</code></pre>
+<p>我们又回到了之前的双括号。</p>
+<p>也许重载道具不是最好的办法。也许<strong>prop</strong>应该稳稳地存在于合成和<strong>setters</strong>的创建世界中，而我们将推出专门用于使用<strong>setters</strong>的新命名的<strong>helpers</strong>。让我们将第一个助手称为<strong>over</strong>，这是Haskell社区中用于类似转换的艺术术语，我们可以将其视为带有转换的<strong>setter</strong>函数的映射。</p>
+<pre><code class="language-swift">func over&lt;Root, Value&gt;(
+  _ setter: (@escaping (Value) -&gt; Value) -&gt; (Root) -&gt; Root,
+  _ f: @escaping (Value) -&gt; Value
+  )
+  -&gt; (Root) -&gt; Root {
+
+    return setter(f)
+}
+</code></pre>
+<p>这个函数的主体最终是普通的ole函数应用程序，这是有意义的给定curry和调用，但当关键路径也在运行时就会隐藏起来。</p>
+<p>让我们也一般化替换值的prop重载。 我们将其重命名为<strong>set</strong>，这是另一个没有道具包袱的艺术术语。</p>
+<pre><code class="language-swift">func set&lt;Root, Value&gt;(
+  _ setter: (@escaping (Value) -&gt; Value) -&gt; (Root) -&gt; Root,
+  _ value: Value
+  )
+  -&gt; (Root) -&gt; Root {
+
+    return over(setter) { _ value }
+}
+</code></pre>
+<p>这些函数如何影响我们的管道?</p>
+<pre><code class="language-swift">user
+  |&gt; prop(\.name, addCourtesyTitle)
+  &lt;&gt; prop(\.name) { $0.uppercased() }
+  &lt;&gt; prop(\.location.name, &quot;Los Angeles&quot;)
+  &lt;&gt; over(prop(\.favoriteFoods) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.name), healthierOption)
+</code></pre>
+<p>这确实更好，但我们有点困在两个世界之间: 我们的<strong>prop</strong>重载helpers以及更通用的over和set helpers。让我们把东西完全转换成使用<strong>over和set</strong>。</p>
+<pre><code class="language-swift">user
+  |&gt; over(prop(\.name), addCourtesyTitle)
+  &lt;&gt; over(prop(\.name)) { $0.uppercased() }
+  &lt;&gt; set(prop(\.location.name), &quot;Los Angeles&quot;)
+  &lt;&gt; over(prop(\.favoriteFoods) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.name), healthierOption)
+</code></pre>
+<p>这行得通，我们避免了<strong>prop</strong>重载并保持一致，但到处都重载了<strong>prop</strong>。</p>
+<p>在关于<strong>getter</strong>的那一集中，我们编写了一个get函数，它从任意键路径生成一个(<strong>Root) -&gt; Value</strong>函数。 这打开了一个全新的合成世界，让我们可以更有表现力地调用映射、过滤和其他高阶函数。 在本集的最后，我们定义了一个前缀操作符^，作为get的缩写，这帮助我们减少了很多干扰。</p>
+<pre><code class="language-swift">^\User.name
+// (User) -&gt; String
+</code></pre>
+<p>似乎prop也能从类似的处理方式中受益! 让我们使用与get相同的操作符来别名它。</p>
+<pre><code class="language-swift">prefix func ^ &lt;Root, Value&gt;(kp: WritableKeyPath&lt;Root, Value&gt;)
+  -&gt; (@escaping (Value) -&gt; Value)
+  -&gt; (Root) -&gt; Root {
+
+    return prop(kp)
+}
+</code></pre>
+<p>这如何清理我们的组合setters呢?</p>
+<pre><code class="language-swift">user
+  |&gt; over(^\.name, addCourtesyTitle)
+  &lt;&gt; over(^\.name) { $0.uppercased() }
+  &lt;&gt; set(^\.location.name, &quot;Los Angeles&quot;)
+  &lt;&gt; over(^\.favoriteFoods &lt;&lt;&lt; map &lt;&lt;&lt; ^\.name, healthierOption)
+</code></pre>
+<p>哇!这很有用!如果没有无处不在的道具，就更容易理解这两条线的实质内容。</p>
+<p>那些多载集合并没有尽到他们的责任! 我们剩下的是更加一致的: 关键路径通常以^作为前缀，我们只需要处理两个根运算<strong>over和set</strong>。</p>
+<p>我们写了一个新的运算符函数。我们需要打勾吗? 当我们选择^ on get时，我们发现它可能只选择了我们的一半:我们认为它很好，但不像其他一些操作符那么通用。这个操作符是一种“接受或离开”操作符:如果你不想使用操作符，你仍然可以使用prop，因为^实际上就是prop， 但是如果你不介意使用一个操作符，^是一个很好的操作符，用来将一个键路径提升到setter世界。</p>
+<h2 id="6-a-namegeneralizingoverandsetageneralizing-over-and-set">6. <a name='Generalizingoverandset'></a>Generalizing over and set</h2>
+<p>关于<strong>over和set</strong>还有一个问题。</p>
+<p>在关于<strong>setters</strong>的第一集中，我们使用了一对转换元组元素的函数:<strong>first和second</strong>。</p>
+<pre><code class="language-swift">(&quot;Hello, world!&quot;, 42)
+  |&gt; first { _ in [1, 2, 3] }
+  |&gt; second(String.init)
+// ([1, 2, 3], &quot;42&quot;)
+</code></pre>
+<p>这非常简洁，但我们应该能够使用<strong>set</strong>来清理花括号和下划线干扰，<strong>over</strong>将使事情与我们的其他setter一致。</p>
+<pre><code class="language-swift">(&quot;Hello, world!&quot;, 42)
+  |&gt; set(first, [1, 2, 3])
+  |&gt; over(second, String.init)
+</code></pre>
+<blockquote>
+<p>🛑 Generic parameter ‘Value’ could not be inferred</p>
+</blockquote>
+<p>看来我们还不够一般化! 我们的<strong>over和set</strong>函数被限制为根和值泛型参数，这阻止了它们更改为不同的类型!  我们可以通过添加更多的泛型来放松这些约束。</p>
+<pre><code class="language-swift">func over&lt;S, T, A, B&gt;(
+  _ setter: (@escaping (A) -&gt; B) -&gt; (S) -&gt; T,
+  _ set: @escaping (A) -&gt; B
+  )
+  -&gt; (S) -&gt; T {
+    return setter(set)
+}
+</code></pre>
+<p>这样我们就完全泛化了可以用任何setter了。我们的元组转换可以编译，读起来也很好!</p>
+<pre><code class="language-swift">(&quot;Hello, world!&quot;, 42)
+  |&gt; set(first, [1, 2, 3])
+  |&gt; over(second, String.init)
+// ([1, 2, 3], &quot;42&quot;)
+</code></pre>
+<h2 id="7-a-namesetterasatypeasetter-as-a-type">7. <a name='Setterasatype'></a>Setter as a type</h2>
+<p>让我们仔细看看setter的形状。 虽然我们已经看到了很多setters，但我们并没有真正统一它们。将setter本身看作一种类型可能会有所帮助。</p>
+<pre><code class="language-swift">typealias Setter&lt;S, T, A, B&gt; = (@escaping (A) -&gt; B) -&gt; (S) -&gt; T
+</code></pre>
+<p>我们已经见过这个形状很多次了。它说，如果你给我一种把A转换成B的方法，它可以被认为是一个更大结构的一部分， 然后我会给你们一种把S变换成T的方法，它可以被认为是整个结构。</p>
+<p>我们在数组上的<strong>map</strong>中看到了这一点:</p>
+<pre><code class="language-swift">// ((A) -&gt; B) -&gt; ([A]) -&gt; [B]
+</code></pre>
+<p>这是前面定义的<strong>Setter</strong>类型别名的一个更具体的版本，[A]和[B]代替S和T作为“<strong>whole</strong>”结构。</p>
+<p>我们在可选值的<strong>map</strong>中也看到了这一点:</p>
+<pre><code class="language-swift">// ((A) -&gt; B) -&gt; (A?) -&gt; B?
+</code></pre>
+<p>在这里,A?和B?是S和T。</p>
+<p>我们甚至在<strong>first和second</strong>函数中看到过。</p>
+<pre><code class="language-swift">// ((A) -&gt; B) -&gt; ((A, C)) -&gt; (B, C)
+</code></pre>
+<p>这里，我们看到较大的元组结构是<strong>S和T</strong>，而第一个(<strong>A) -&gt; B</strong>转换函数负责转换该元组的一部分。</p>
+<p>所有这些setters结果都是相同的，大致形状。现在我们可以考虑<strong>over和set</strong>这个类型别名!</p>
+<pre><code class="language-swift">func over&lt;S, T, A, B&gt;(
+  _ setter: Setter&lt;S, T, A, B&gt;,
+  _ set: @escaping (A) -&gt; B
+  )
+  -&gt; (S) -&gt; T {
+    return setter(set)
+}
+
+func set&lt;S, T, A, B&gt;(
+  _ setter: Setter&lt;S, T, A, B&gt;,
+  _ value: B
+  )
+  -&gt; (S) -&gt; T {
+    return over(setter) { _ in value }
+}
+</code></pre>
+<p>我们在这里进行了进一步的抽象，这很好，因为这两个<strong>helper</strong>主要使用<strong>setters</strong>作为值。</p>
+<h2 id="8-a-namerefactoringanearlierexamplearefactoring-an-earlier-example">8. <a name='Refactoringanearlierexample'></a>Refactoring an earlier example</h2>
+<p>现在我们已经有了这些万能的，人体工程学的工具，让我们使用它们吧! 我们可以回顾上节课实际的<strong>URLRequest</strong>代码。</p>
+<pre><code class="language-swift">let guaranteeHeaders = (prop(\URLRequest.allHTTPHeaderFields)) { $0 ?? [:] }
+
+let postJson =
+  guaranteeHeaders
+    &lt;&gt; (prop(\.httpMethod)) { _ in &quot;POST&quot; }
+    &lt;&gt; (prop(\.allHTTPHeaderFields) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.[&quot;Content-Type&quot;])) { _ in
+      &quot;application/json; charset=utf-8&quot;
+}
+
+let gitHubAccept =
+  guaranteeHeaders
+    &lt;&gt; (prop(\.allHTTPHeaderFields) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.[&quot;Accept&quot;])) { _ in
+      &quot;application/vnd.github.v3+json&quot;
+}
+
+let attachAuthorization = { token in
+  guaranteeHeaders
+    &lt;&gt; (prop(\.allHTTPHeaderFields) &lt;&lt;&lt; map &lt;&lt;&lt; prop(\.[&quot;Authorization&quot;])) { _ in
+      &quot;Token &quot; + token
+  }
+}
+
+URLRequest(url: URL(string: &quot;https://www.pointfree.co/hello&quot;)!)
+  |&gt; attachAuthorization(&quot;deadbeef&quot;)
+  &lt;&gt; gitHubAccept
+  &lt;&gt; postJson
+</code></pre>
+<p>这些是我们用<strong>prop</strong>构建的一堆辅助函数。他们确保我们设置头文件，即使类型系统使它变得困难，他们允许我们在非常少的代码中组合一堆转换!</p>
+<p>让我们看看当我们使用新的助手时会发生什么。</p>
+<pre><code class="language-swift">let guaranteeHeaders = over(^\URLRequest.allHTTPHeaderFields) { $0 ?? [:] }
+
+let postJson =
+  guaranteeHeaders
+    &lt;&gt; set(^\.httpMethod, &quot;POST&quot;)
+    &lt;&gt; set(
+      ^\.allHTTPHeaderFields) &lt;&lt;&lt; map &lt;&lt;&lt; ^\.[&quot;Content-Type&quot;],
+      &quot;application/json; charset=utf-8&quot;
+)
+
+let gitHubAccept =
+  guaranteeHeaders
+    &lt;&gt; set(
+      ^\.allHTTPHeaderFields &lt;&lt;&lt; map &lt;&lt;&lt; ^\.[&quot;Accept&quot;],
+     &quot;application/vnd.github.v3+json&quot;
+)
+
+let attachAuthorization = { token in
+  guaranteeHeaders
+    &lt;&gt; over(^\.allHTTPHeaderFields &lt;&lt;&lt; map &lt;&lt;&lt; ^\.[&quot;Authorization&quot;]) { _ in
+      &quot;Token &quot; + token
+  }
+}
+</code></pre>
+<p>这个看起来已经好多了。我们能够隔离映射值的转换，以及将值设置为新值的转换。</p>
+<p>重构可能会有一点滚雪球效应。清理代码可以揭示之前被掩盖的模式，从而导致进一步的清理! 现在很容易看到我们如何设置头文件的复制!  我们使用了一个强大的遍历到可选值的可选字典中，我们可以放心地使用低级组合子设置新值! 导航这些类型需要很多复杂的重复，所以为什么不用一个更简单的接口将这个逻辑包装在函数中呢?</p>
+<pre><code class="language-swift">let setHeader = { name, value in
+  guaranteeHeaders
+    &lt;&gt; set(^\.allHTTPHeaderFields &lt;&lt;&lt; map &lt;&lt;&lt; ^\.[name], value)
+}
+</code></pre>
+<p>这很容易!让我们试试吧!</p>
+<pre><code class="language-swift">let postJson =
+  set(^\.httpMethod, &quot;POST&quot;)
+    &lt;&gt; setHeader(&quot;Content-Type&quot;, &quot;application/json; charset=utf-8&quot;)
+
+let gitHubAccept =
+  setHeader(&quot;Accept&quot;, &quot;application/vnd.github.v3+json&quot;)
+
+let attachAuthorization = { token in
+  setHeader(&quot;Authorization&quot;, &quot;Token &quot; + token)
+}
+</code></pre>
+<p>现在这个超短了! 我们用很少的代码为<strong>URLRequest</strong>构建了高度可重用和可读的<strong>setter</strong>。我们能够做到这一点，只需要几个小函数。不需要外部库!</p>
+<h2 id="9-a-namesettersandperformanceasetters-and-performance">9. <a name='Settersandperformance'></a>Setters and performance</h2>
+<p>到目前为止，我们定义的<strong>setters</strong>对于保证结构的不变性和修改结构的深层部分非常重要，否则这些部分会很麻烦。不幸的是，它们不是世界上性能最好的东西。当前，每个<strong>setter</strong>操作都会创建根结构的一个全新副本。每次我们调用或设置时，都会产生性能成本。这就好像我们连续多次调用结构上的<strong>map</strong>，而不是以某种方式一次将这个突变组合在一起。</p>
+<p>幸运的是，我们看到Swift有一个精彩的故事:<strong>inout</strong>。 <strong>inout setter</strong>是什么样的呢?让我们再看看我们的不可变<strong>setter</strong>函数。</p>
+<pre><code class="language-swift">typealias Setter&lt;S, T, A, B&gt; = (@escaping (A) -&gt; B) -&gt; (S) -&gt; T
+
+func over&lt;S, T, A, B&gt;(
+  _ setter: Setter&lt;S, T, A, B&gt;,
+  _ set: @escaping (A) -&gt; B
+  )
+  -&gt; (S) -&gt; T {
+    return setter(set)
+}
+
+func set&lt;S, T, A, B&gt;(
+  _ setter: Setter&lt;S, T, A, B&gt;,
+  _ value: B
+  )
+  -&gt; (S) -&gt; T {
+    return over(setter) { _ in value }
+}
+</code></pre>
+<p>我们尝试将其重构到<strong>inout</strong>世界。我们可以从创建<strong>Setter</strong>类型别名的可变变体开始。</p>
+<pre><code class="language-swift">typealias MutableSetter&lt;S, A&gt; = (@escaping (inout A) -&gt; Void) -&gt; (inout S) -&gt; Void
+</code></pre>
+<p>因为函数从单一类型变成了<strong>Void</strong>，我们失去了一些泛型参数和改变类型形状的能力。</p>
+<p>现在我们可以在<strong>over和set</strong>中交换<strong>Setter</strong>。</p>
+<pre><code class="language-swift">func over&lt;S, A&gt;(
+  _ setter: MutableSetter&lt;S, A&gt;,
+  _ set: @escaping (inout A) -&gt; Void
+  )
+  -&gt; (inout S) -&gt; Void {
+    return setter(set)
+}
+
+func set&lt;S, A&gt;(
+  _ setter: MutableSetter&lt;S, A&gt;,
+  _ value: A
+  )
+  -&gt; (S) -&gt; T {
+    return over(setter) { $0 = value }
+}
+</code></pre>
+<p>我们现在有<strong>over和set</strong>的不可变和可变版本，这可能是过度的重载。 调用这些函数<strong>mver和mut</strong>可能更合适，以避免潜在的歧义。</p>
+<pre><code class="language-swift">func mver&lt;S, A&gt;(
+  _ setter: MutableSetter&lt;S, A&gt;,
+  _ set: @escaping (inout A) -&gt; Void
+  )
+  -&gt; (inout S) -&gt; Void {
+    return setter(set)
+}
+
+func mut&lt;S, A&gt;(
+  _ setter: MutableSetter&lt;S, A&gt;,
+  _ value: A
+  )
+  -&gt; (S) -&gt; T {
+    return over(setter) { $0 = value }
+}
+</code></pre>
+<p>现在让我们再看一下原来的例子。</p>
+<pre><code class="language-swift">user
+  |&gt; over(^\.name) { $0.uppercased() }
+  &lt;&gt; set(^\.location.name, &quot;Los Angeles&quot;)
+</code></pre>
+<p>使用我们变异的变种会是什么样子?</p>
+<pre><code class="language-swift">user
+  |&gt; mver(^\.name) { $0 = $0.uppercased() }
+  &lt;&gt; mut(^\.location.name, &quot;Los Angeles&quot;)
+</code></pre>
+<p>我们只需要交换名字并更改大写，就可以使用赋值了!但事情仍然没有进展。</p>
+<blockquote>
+<p>🛑 Type of expression is ambiguou</p>
+</blockquote>
+<p>我们的<strong>prop</strong>操作符仅为不可变的<strong>setter</strong>世界定义。让我们写一个使用可变的版本。</p>
+<pre><code class="language-swift">prefix func ^ &lt;Root, Value&gt;(
+  _ kp: WritableKeyPath&lt;Root, Value&gt;
+  )
+  -&gt; (@escaping (inout Value) -&gt; Void)
+  -&gt; (inout Root) -&gt; Void {
+
+    return { update in
+      { root in
+        update(&amp;root[keyPath: kp])
+      }
+    }
+}
+</code></pre>
+<p>好了，我们讲得更远了，但我们还有另一个问题。我们的<strong>user</strong>是let，我们的|&gt;版本在inout上工作需要一个inout输入。<br>
+我们可以复制一份。</p>
+<pre><code class="language-swift">var newUser = user
+newUser
+  |&gt; mver(^\.name) { $0 = $0.uppercased() }
+  &lt;&gt; mut(^\.location.name, &quot;Los Angeles&quot;)
+</code></pre>
+<p>这在适当的地方更新了<strong>newUser</strong>，但它增加了噪音，这删除了很多我们在使用|&gt;时所期望的表现力。我认为我们应该重新考虑我们最初对|&gt;的定义。</p>
+<p>当我们第一次用<strong>inout</strong>定义|&gt;时，我们平衡了签名，使它也返回<strong>Void</strong>。</p>
+<pre><code class="language-swift">func |&gt; &lt;A&gt;(_ a: inout A, _ f: (inout A) -&gt; Void) -&gt; Void {
+  f(&amp;a)
+}
+</code></pre>
+<p>这感觉很有原则，但不实际。我们定义|&gt;是富于表现力的，但在这里不成立。我们应该能够在一个表达式中使用|&gt;并配置一些数据。我们肯定搞错了。我们真正想要的是一个函数，它接受一个<strong>A</strong>，复制它，然后在返回它之前对这个副本应用一个可变变换。</p>
+<pre><code class="language-swift">func |&gt; &lt;A&gt;(_ a: A, _ f: (inout A) -&gt; Void) -&gt; A {
+  var a = a
+  f(&amp;a)
+  return a
+}
+</code></pre>
+<p>现在我们有了一个新的、经过转换的用户，而我们以前的用法没有发生变化。</p>
+<pre><code class="language-swift">var newUser = user
+newUser
+  |&gt; mver(^\.name) { $0 = $0.uppercased() }
+  &lt;&gt; mut(^\.location.name, &quot;Los Angeles&quot;)
+</code></pre>
+<p>管道转发现在生成副本，而不是就地更改值，这意味着<strong>newUser</strong>不会得到更新。不过，我们需要做的只是删除一行。</p>
+<pre><code class="language-swift">var newUser = user
+  |&gt; mver(^\.name) { $0 = $0.uppercased() }
+  &lt;&gt; mut(^\.location.name, &quot;Los Angeles&quot;)
+</code></pre>
+<p>我们甚至可以将var改为let!</p>
+<pre><code class="language-swift">let newUser = user
+  |&gt; mver(^\.name) { $0 = $0.uppercased() }
+  &lt;&gt; mut(^\.location.name, &quot;Los Angeles&quot;)
+</code></pre>
+<p>这太酷了! 我们已经能够将两个可变<strong>setters</strong>压缩到一个副本中，并最终将值重新赋给一个不能被突变的常量!</p>
+<p>那操纵数组值的setter呢?</p>
+<pre><code class="language-swift">let newUser = user
+  |&gt; mver(^\.name) { $0 = $0.uppercased() }
+  &lt;&gt; mut(^\.location.name, &quot;Los Angeles&quot;)
+  &lt;&gt; mver(^\.favoriteFoods &lt;&lt;&lt; map &lt;&lt;&lt; ^\.name) { $0 += &quot; &amp; Salad&quot; }
+</code></pre>
+<blockquote>
+<p>🛑 Type of expression is ambiguous</p>
+</blockquote>
+<p>我们有一个问题:免费map无法与inout世界联合起来。</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { $0.map(f) }
+}
+</code></pre>
+<p>我们可以去掉第二个泛型参数B，直接在inout A世界中工作。</p>
+<pre><code class="language-swift">func map&lt;A&gt;(_ f: @escaping (inout A) -&gt; Void) -&gt; (inout [A]) -&gt; Void {
+  return {
+    for i in $0.indices {
+      f(&amp;$0[i])
+    }
+  }
+}
+</code></pre>
+<p>由于我们被困在单一类型中，<strong>map</strong>可能不是一个合适的名称。我们可以将其称为<strong>mutEach</strong>。</p>
+<pre><code class="language-swift">func mutEach&lt;A&gt;(_ f: @escaping (inout A) -&gt; Void) -&gt; (inout [A]) -&gt; Void {
+  return {
+    for i in $0.indices {
+      f(&amp;$0[i])
+    }
+  }
+}
+</code></pre>
+<p>让我们代入:</p>
+<pre><code class="language-swift">let newUser = user
+  |&gt; mver(^\.name) { $0 = $0.uppercased() }
+  &lt;&gt; mut(^\.location.name, &quot;Los Angeles&quot;)
+  &lt;&gt; mver(^\.favoriteFoods &lt;&lt;&lt; mutEach &lt;&lt;&lt; ^\.name) { $0 += &quot; &amp; Salad&quot; }
+</code></pre>
+<h2 id="10-a-nameonemoremutablerefactoraone-more-mutable-refactor">10. <a name='Onemoremutablerefactor'></a>One more mutable refactor</h2>
+<p><strong>URLRequest</strong>的<strong>setters</strong>呢?  它们创建了相当数量的副本，因为每次调用<strong>setHeaders</strong>也会调用<strong>guaranteeHeaders</strong>，所以我们看到每个头文件有两个副本! 让我们尝试再次重构它们以使用<strong>inout setters</strong>。</p>
+<p>我们将从<strong>guaranteeHeaders</strong>开始。</p>
+<pre><code class="language-swift">let guaranteeHeaders = mver(^\URLRequest.allHTTPHeaderFields) { $0 = $0 ?? [:] }
+</code></pre>
+<p>这个非常简单:<strong>over</strong>变成了<strong>mver</strong>，我们的block现在包含了一个显式的赋值。 让我们看一些更复杂的东西:</p>
+<pre><code class="language-swift">let setHeader = { name, value in
+  guaranteeHeaders
+    &lt;&gt; mut(^\.allHTTPHeaderFields &lt;&lt;&lt; map &lt;&lt;&lt; ^\.[name], value)
+}
+</code></pre>
+<p>用<strong>mut</strong>替换<strong>set</strong>不会切断它，我们有另一个<strong>map</strong>要处理。我们可以为可选值定义一个<strong>mutEach</strong>等价项，但我们可以通过使用可选链接来利用Swift人机工程学!</p>
+<pre><code class="language-swift">let setHeader = { name, value in
+  guaranteeHeaders
+    &lt;&gt; { $0.allHTTPHeaderFields?[name] = value }
+}
+</code></pre>
+<p>每个可变<strong>setter</strong>都提炼为一个(<strong>inout Root) -&gt; Void</strong>函数，这意味着我们可以在任何时候潜入这个世界!</p>
+<p>The other helpers are a cinch.</p>
+<pre><code class="language-swift">let postJson =
+  mut(^\.httpMethod, &quot;POST&quot;)
+    &lt;&gt; setHeader(&quot;Content-Type&quot;, &quot;application/json; charset=utf-8&quot;)
+</code></pre>
+<p>我们只需要再多一个 <strong>mut</strong>，其他一切就都顺利了。我们来测试一下。</p>
+<pre><code class="language-swift">URLRequest(url: URL(string: &quot;https://www.pointfree.co/hello&quot;)!)
+  |&gt; postJson,
+  &lt;&gt; gitHubAccept
+  &lt;&gt; attachAuthorization(&quot;deadbeef&quot;)
+</code></pre>
+<p>我们只是创建了一个新的<strong>URLRequest</strong>，以一种有效的方式对它应用了许多可组合的突变，甚至为作用域的其余部分将它分配给一个不可变的let !</p>
+<pre><code class="language-swift">let request = URLRequest(url: URL(string: &quot;https://www.pointfree.co/hello&quot;)!)
+  |&gt; postJson,
+  &lt;&gt; gitHubAccept
+  &lt;&gt; attachAuthorization(&quot;deadbeef&quot;)
+</code></pre>
+<h2 id="11-a-namewhatsthepointawhats-the-point">11. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>好吧，也许是时候问问“这有什么意义?”在前面的章节中，我们看到了如何对<strong>setter</strong>进行严格的研究，从而导致数据类型的一些令人印象深刻的转换。今天的课程完全是关于加强人类工程学和我们以前工作的价值主张。从某种意义上说，这整件事就是重点。</p>
+<p>我们希望人们不仅能看到函数式setter的强大功能，还能消除所有可能阻止他们在代码库中采用它们的障碍。这意味着为最常见的用例提供比<strong>prop</strong>更友好的API，以便在调用站点更清楚地了解我们正在执行的转换类型。它还意味着允许<strong>setters</strong>很好地处理Swift值突变语义，这样对性能敏感的用例就不必担心创建太多副本。</p>
+<p>现在，对于应该使用不可变值还是可变值没有正确的选择。每个人都有权衡。在关于副作用的那一集中，我们对这一点做了一些研究，其中我们将一些处理引用和函数的代码转换为使用不可变值的代码和返回所有新值而不是修改它们的函数。这个更改修复了我们的一个微小错误，但代价是创建值的副本。然后，我们将该代码转换为具有可变值的inout样式，这允许我们避免复制，但又重新引入了bug。 新版本的语法记录了允许发生突变的地方，这至少可以帮助我们定位错误。</p>
+<p>很有可能您甚至不会注意到防止这些额外副本所带来的性能提升，因此不可变是一个很好的切入点。不过，很高兴我们有工具，可以快速地从一个不可变的世界转换到一个可变的世界，而不需要做很多工作。甚至有可能有一天Swift会变得足够聪明，优化掉不可变版本中的所有中间副本。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-14-contravariance/">
+                  <h3 class="post-title">
+                    PointFree Episode 14: Contravariance
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

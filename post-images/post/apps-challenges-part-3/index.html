@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>App&#39;s challenges - Part Three | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+CHALLENGES DUE TO LARGE ENGINEERING TEAMS
+
+
+1.1. PLANNING AND DECISION MAKING
+1.2. ARCHITECTING WAYS TO AVOID STEPPI..." />
+    <meta name="keywords" content="app-challenge-3" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">App&#39;s challenges - Part Three</h2>
+            <div class="post-date">2021-05-04</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.pexels.com/photos/3077882/pexels-photo-3077882.jpeg?auto=compress&amp;cs=tinysrgb&amp;dpr=2&amp;w=500')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#CHALLENGESDUETOLARGEENGINEERINGTEAMS">CHALLENGES DUE TO LARGE ENGINEERING TEAMS</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#PLANNINGANDDECISIONMAKING">PLANNING AND DECISION MAKING</a></li>
+<li>1.2. <a href="#ARCHITECTINGWAYSTOAVOIDSTEPPINGONEACHOTHERSTOES">ARCHITECTING WAYS TO AVOID STEPPING ON EACH OTHER’S TOES</a></li>
+<li>1.3. <a href="#SHAREDARCHITECTUREACROSSSEVERALAPPS">SHARED ARCHITECTURE ACROSS SEVERAL APPS</a></li>
+<li>1.4. <a href="#TOOLINGMATURITYFORLARGEENGINEERINGTEAMS"> TOOLING MATURITY FOR LARGE ENGINEERING TEAMS</a></li>
+<li>1.5. <a href="#SCALINGBUILDMERGETIMES"> SCALING BUILD &amp; MERGE TIMES</a></li>
+<li>1.6. <a href="#MOBILEPLATFORMLIBRARIESANDTEAMS">MOBILE PLATFORM LIBRARIES AND TEAMS</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namechallengesduetolargeengineeringteamsachallenges-due-to-large-engineering-teams">1. <a name='CHALLENGESDUETOLARGEENGINEERINGTEAMS'></a>CHALLENGES DUE TO LARGE ENGINEERING TEAMS</h2>
+<p>用一个小团队开发一款应用与用10个、20个甚至更多的移动工程师开发应用是截然不同的。许多问题在小团队中看起来微不足道，但却会变得更大。</p>
+<p>确保架构的一致性变得更具挑战性。如果你的公司开发了多个应用程序，你如何平衡不从头重写所有内容，同时快速移动，而等待“集中的”团队?</p>
+<p>移动团队越大，构建的问题就越多。更大的团队通常意味着更多的代码和更慢的构建时间。对于大型团队，缓慢构建的成本可能意味着数月或数年的工程成本-无所事事。寻找支持大型移动工程团队的工具变得越来越困难，一些团队在找不到支持其用例规模的供应商时，将求助于构建自定义解决方案。</p>
+<p>随着你的移动工程团队规模的扩大，这些挑战将变得更加紧迫。</p>
+<h3 id="11-a-nameplanninganddecisionmakingaplanning-and-decision-making">1.1. <a name='PLANNINGANDDECISIONMAKING'></a>PLANNING AND DECISION MAKING</h3>
+<p>当你在一个只有几名工程师的小型移动团队中工作时，你只需去创造新功能。您可能会互相讨论决策，并对代码评审进行评论，但仅此而已。在更大的团队中，这个过程将不得不改变，既要避免相互冲突，也要保持代码和架构选择的一致性。</p>
+<p>将计划过程正式化是一种值得在一定团队规模之上引入的实践。我看到一些公司在只有少数流动工程师的情况下就这么做了，而其他公司则推迟到他们拥有多达30名本地工程师的时候。优步很早就开始了<a href="https://blog.pragmaticengineer.com/scaling-engineering-teams-via-writing-things-down-rfcs/">RFC</a>规划过程，当时移动工程师还不到几个。</p>
+<p>您可能想在工程计划阶段之前或同时将规格说明阶段正式化。项目延迟的很大一部分来自于不明确的需求和范围渐变，以及不清楚业务想要构建什么。这通常是由产品经理启动一个<a href="https://www.rocketblocks.me/blog/what-is-a-prd.php">PRD</a>(产品需求文档)过程来完成的，这个文档是一个正式的，“您现在可以开始工作”的步骤。See this list of examples of <a href="https://www.vindhyac.com/posts/best-prd-templates-from-companies-we-adore/">how various companies approach PRDs</a>。</p>
+<p><strong>iOS和Android团队合作制定计划</strong>对于提高效率来说是一个巨大的胜利，但在许多公司中，这些团队都是各自工作。通过共同规划功能，你可以确保两个团队构建相同的功能，iOS和Android工程师了解平台之间的差异。您可以标准化特性标志、分析事件命名，甚至类结构。工程师可以互相检查对方的代码，iOS工程师可以指出Android代码中错误实现的业务案例。对每个人来说都是一场胜利!</p>
+<p>在优步，使用<a href="https://github.com/uber/RIBs/wiki">RIB</a>作为我们的架构的一个主要优势是，应用程序的结构和组件在iOS和Android上非常相似。这使得共享计划成为一个给定的东西，我们只是做了一些事情，甚至没有想它。你为什么不这样做呢?</p>
+<p>当团队开始在计划上做得很好、很彻底时，就会出现<strong>决策瘫痪</strong>的情况。我曾观察到一些团队对问题空间和备选方案进行了彻底的分析，然后推迟做出决定。</p>
+<p>我建议进行时间限制计划，最后，根据你收集到的信息，采用最合理的方法。我注意到在计划上花费更多时间，而不是在短迭代中构建并获得关于你的计划是否有效的反馈的回报在减少。这在手机上尤其如此——你可能会遇到工具和框架问题——把时间花在原型制作上通常比在白板上写下进一步的方法更有用。</p>
+<p>**正确的“信噪比”**是许多团队和公司在规划时所担心的问题。团队通常在开发新功能时犹豫不决，因为他们不想制造太多噪音。高管们有时会担心，在团队开始更公开地公布计划后，他们的团队是否还能专注于发布功能。</p>
+<p>我个人只看到了竖井工作的缺点。在微软，这是2014年的情况。在优步，我惊讶地发现“向所有人广播”的模式运作得非常好。每当一个移动团队要构建一个新特性时，他们都会向一个只针对移动设备的RFC邮件列表发送一个“RFC意图”摘要。优步的300多名移动工程师几乎都在这份名单上。然后，当RFC准备好审查时，他们也通过电子邮件发送了这个列表。这个过程有助于及早发现问题。它还能迅速传播知识，甚至帮助人们决定将团队转移到哪些地区。</p>
+<p>从那以后，我就开始为初创和中型公司提供设计文档或RFC流程方面的建议，简而言之，我的建议是这样的:</p>
+<ul>
+<li>为给定的栈定义一个设计文档模板(例如移动，后端，或web)。</li>
+<li>让大多数工程师同意这个想法。</li>
+<li>开始编写简短的文档并将其发送给所有人，同时明确哪些人是必需的审批者。</li>
+<li>过度沟通而不是缺乏沟通。比起重量级流程和工具，更喜欢轻量级流程和工具。</li>
+<li>观察发生了什么，并根据反应进行迭代。</li>
+</ul>
+<p>如果你的手机团队尚未计划使用轻量级设计文档或<a href="https://blog.pragmaticengineer.com/scaling-engineering-teams-via-writing-things-down-rfcs/">rfc</a>，那就考虑采用这种方法。</p>
+<h3 id="12-a-namearchitectingwaystoavoidsteppingoneachotherstoesaarchitecting-ways-to-avoid-stepping-on-each-others-toes">1.2. <a name='ARCHITECTINGWAYSTOAVOIDSTEPPINGONEACHOTHERSTOES'></a>ARCHITECTING WAYS TO AVOID STEPPING ON EACH OTHER’S TOES</h3>
+<p>到目前为止，我还没有提到移动架构。即使应用程序很小，这难道不是一个重要的考虑因素吗?根据我的经验，虽然团队很小，但架构真的没有那么重要。只要你选择了一个足够可测试的结构，你就可以使用MVP、MVVM、MVC、VIPER或类似的方法。</p>
+<p>过去，旧的Uber应用在iOS上遵循“苹果MVC”方法，在Android上遵循MVP方法。尽管工程师的数量不断增加，但在进行更大的架构更改、迁移到肋骨之前，应用程序的本地工程师数量已经增长到近100名。</p>
+<p><strong>当太多的工程师最终修改相同的文件时，问题就开始了</strong>。在早期的Uber应用中，这个文件是出行页面的表示/视图逻辑。这是一个多达50名工程师进行更改的屏幕，并意外地破坏了彼此的功能。我们试图将页面分解成更小的组件，但组件通信和导航冲突不断出现。</p>
+<p>构建一个支持数百名移动工程师在相同代码库上协作的架构并非易事。优步的团队花了半年的时间，用不同的方法进行原型设计和实验，从常见的方法，一直到(B) viper。最后，我们构建了自己的开源架构，称为<a href="https://github.com/uber/RIBs/wiki">RIBS</a>。我们对架构进行了优化，以便为大量工程师和许多嵌套状态工作。该架构使用不可变的模型，只要可能，就在整个应用程序中重新发出值。架构不仅仅是图。我们创建工具来处理从<a href="https://github.com/uber/RIBs/wiki#rib-tooling">代码生成工具</a>到<a href="https://github.com/uber/RIBs/wiki">新手教程</a>不断增加的复杂性。</p>
+<p><strong>对于大型团队，架构是一种控制团队和组件之间隔离级别的手段</strong>，限制重叠和偶然冲突，同时增加复杂性和代码行数。也许MVP, MVVP， (B)VIPER，肋骨，或其他更知名的方法对你的团队来说足够好。如果不行，就开始正式化哪种解决方案会起作用，为什么会起作用，以及需要做出哪些权衡。</p>
+<p>你可以通过多种方式将你的方法正式化:</p>
+<ul>
+<li>
+<p><strong>口头协议</strong>:最快的方法。它也为大多数解释留下了空间，新参与者可能不知道过去的讨论。</p>
+</li>
+<li>
+<p><strong>记录方法</strong>:一种适用于小型团队的通用方法。每个工程师都应该遵循建议，而当工程师偏离此协议时，代码审查人员应该注意到。</p>
+</li>
+<li>
+<p><strong>助形式化的工具</strong>:您可以构建有助于一致性的框架。您可以使用<a href="https://blogs.halodoc.io/customised-mvvm-xcode-templates-at-halodoc/">模板</a>或代码生成工具，以便您的组件在单击按钮时“正确连接”。您还可以将lint规则放置到位，以自动捕获“架构违规”。团队规模越大，除了记录方法之外，投资的回报就越大。在Uber，我们<a href="https://github.com/uber/RIBs/wiki#rib-tooling">围绕组件生成构建工具</a>，并让linter“强制”某些架构规则，比如不允许presenter知道，或者调用路由器。</p>
+</li>
+</ul>
+<p>为了支持成百上千的移动工程师，你可能需要遵循的原则包括:</p>
+<ul>
+<li>Feature isolation</li>
+<li>Monorepo-like code structure. Here is how we did it at Uber <a href="https://eng.uber.com/ios-monorepo/">on iOS</a> and <a href="https://eng.uber.com/android-engineering-code-monorepo/">on Android</a></li>
+<li>Strong code and feature ownership</li>
+<li>Automated tests guarding the app's features</li>
+</ul>
+<p>对于一个支持大规模工作的移动架构——有几十个工程师——在合并到主要分支之前，需要澄清错误。自动化测试应该作为预合并步骤的一部分捕获功能问题。您需要对支持这种可测试性并保持高水平测试覆盖率的体系结构进行投资。工程师们应该对合并变化有信心，因为他们知道这些变化不会破坏应用的其他部分。</p>
+<h3 id="13-a-namesharedarchitectureacrossseveralappsashared-architecture-across-several-apps">1.3. <a name='SHAREDARCHITECTUREACROSSSEVERALAPPS'></a>SHARED ARCHITECTURE ACROSS SEVERAL APPS</h3>
+<p>如果你的公司开发了多个应用程序，它们都将从不同的架构开始。每个应用程序都将由不同的团队开发，初期进展很快。然而，随着时间的推移，拥有一个更“统一”的体系结构的想法将会出现。移动平台团队越早拥有诸如实验、功能标志、性能等共享组件，这个想法就可能越早浮出台面。</p>
+<p>虽然一个统一的架构无疑具有明显的益处,它将意味着大量的工作,如可能重写一个好的应用程序的一部分。这是一个经典的悖论:为了证明一个共享架构带来的好处,我们需要在一个共享架构。</p>
+<p><strong>一个明智的中间立场是开始朝着统一的架构迈进，但不要重写</strong>。以下是统一iOS和Android应用架构的好处:</p>
+<ul>
+<li>
+<p><strong>共同的语言</strong>。作为第一步，我们能否开始“统一”iOS和Android所谈论的架构?我们是否能就如何命名屏幕、导航、情态动词、流等概念达成一致?</p>
+</li>
+<li>
+<p><strong>共享计划</strong>。我们可以开始使用设计文档进行正式的、轻量级的规划吗?我们能否在同一个文档中为iOS和Android设计相同的功能?</p>
+</li>
+<li>
+<p><strong>打破竖井</strong>。组织中的移动团队是否相互沟通，即使是在开发不同的应用程序时?如果没有，他们如何开始对话?例如，我们是否可以开始跨团队计划审查或其他协作?</p>
+</li>
+<li>
+<p><strong>一次一个共享组件</strong>。从功能或库的角度来说，什么是可以跨应用程序共享的优秀候选?如果这是内部开发，它是否可以在iOS和Android之间使用更“统一”的架构方法?</p>
+</li>
+<li>
+<p><strong>在应用的新部分引入新的架构概念</strong>。谁说你需要为新的架构重写应用? 你能不能开始用一种新的方法来构建新的屏幕? 这类似于对移动语言采取实用主义的方法。例如，当在Objective C代码库中引入Swift时，无需重写现有代码。</p>
+</li>
+</ul>
+<p>迁移到一个新的移动架构是昂贵的。在权衡了成本和优势之后，大多数团队将决定不去全力投入一个新的架构，而且他们这样做通常是正确的。我唯一建议重写的时候是应用需要做出重大改变的时候，也就是需要修改大量代码库的时候。即便如此，重写内容通常也需要花费更长的时间，并且会比你最初的预算更痛苦。</p>
+<p>优步用Swift重写的幕后故事以及这一过程中的痛点，在网上引发了不少讨论。这是我在优步的第一个项目，也是我参与过的最大的一次改写。重写是有意义的，因为UX的改变是横切并影响了几乎所有的工作流程和应用程序部分。不过，如果不是因为设计和用户体验的重大改变，我不相信Uber会重写和改变架构。</p>
+<p>虽然优步在2016年用<a href="https://eng.uber.com/new-rider-app-architecture/">肋骨重写了Rider应用程序</a>，后来又在2018年用<a href="https://eng.uber.com/rewrite-uber-carbon-app/">Driver应用程序</a>进行了全面重写，但Eats应用程序仍然保持“现有”架构。在我的工作期间，没有一个足够强大的商业案例可以证明停止工作并进行不影响用户体验的幕后改变，我同意这个评估。遵循一种实用的方法，许多新组件都是用肋骨构建的。我们还构建了一个肋骨适配器，因此使用肋骨的组件可以在多个优步应用程序之间共享，无论它们是在什么架构上。</p>
+<h3 id="14-a-nametoolingmaturityforlargeengineeringteamsa-tooling-maturity-for-large-engineering-teams">1.4. <a name='TOOLINGMATURITYFORLARGEENGINEERINGTEAMS'></a> TOOLING MATURITY FOR LARGE ENGINEERING TEAMS</h3>
+<p>那些使用数百万行代码编写应用程序的公司通常也会成立一个移动平台团队。在这个规模下，该公司将有数十名本土工程师开发应用程序。他们会遇到本地开发工具的问题，在这个规模上开始出现性能或流程问题，没有现成的解决方案。Uber就是这样，我听说Facebook、Spotify等公司也面临着同样的问题。</p>
+<p>这种规模的构建时间是最大的问题之一。所谓“规模化”，我指的是建设一个有几百万条线路的项目，每个工程师要做十几次，再乘以100或更多的工程师。再加上运行一个完整的自动化测试套件，雇佣一些人来构建比大多数服务提供的更好的东西并不难。</p>
+<p>你应该使用Bazel, Buck, Gradle还是xcodebuild?您可以对构建进行哪些优化? 这个问题会让工程师很忙，尤其是构建工具领域是一个不断发展的领域。</p>
+<p>当你有50个移动工程师在代码库中工作时，将构建时间缩短30秒可能意味着每年“增加”几个“工程师月”。计算一下:假设工程师每天开发应用5次，再乘以工程师的数量，整个团队每天“空闲”2个小时，或者每年3个月。让工程师花几周的时间来减少成本是非常合理的，让工程师经常重新审视构建性能也是如此。</p>
+<p>发行多个应用程序的工作流程也很有挑战性。每个应用都需要从构建开始，通过本土化测试，手动和烟雾测试，性能测试，beta用户等测试阶段设置检查点。为一个应用程序安排这个过程并不困难。然而，在iOS和Android上追踪数十个构建列车，内部工具比你可以随时购买的任何工具都做得更好。您会发现自己需要根据自己的需要制作一个构建或发布系列。</p>
+<p>iOS和Android工具的成熟度都在不断提高，我个人预计未来几年将出现更多现成的解决方案。不过，将移动工具生态系统与后端进行比较;比起大型后端系统，大型移动应用的工具开发似乎不是一个很好的问题。</p>
+<h3 id="15-a-namescalingbuildmergetimesa-scaling-build-merge-times">1.5. <a name='SCALINGBUILDMERGETIMES'></a> SCALING BUILD &amp; MERGE TIMES</h3>
+<p>原生手机应用的构建时间很快就会成为大多数项目的问题所在。不幸的是，iOS工程师很熟悉Xcode构建项目时的缓慢速度，而Android工程师如果有一个项目超过了‘Hello, World’，也会开始计算构建的时间。</p>
+<p>苹果和谷歌都没有优先考虑大型项目的构建时间改进。对于那些有数十万甚至数百万行代码和几十个依赖项的项目来说，情况尤其如此。</p>
+<p>幸运的是，有一些工具可以使构建时间更快，但是它们需要时间来集成、调整和适应“一键构建”工作流。Bazel是在大规模开发手机应用的公司中最受欢迎的工具。许多公司正在从Buck或Gradle转向Bazel: Grab、Uber、Pinterest和Android AOSP平台都是转移公司和项目的例子。即使是Bazel，也有很多工作要做来加速构建。公司中工程师的流动性越大，让他们从事兼职或全职工作就越有意义。</p>
+<p>随着移动开发者团队的壮大，专注于构建改进成为每个平台层面的必要条件。像这样的团队可以解决一些容易解决的问题，还有一些更复杂的问题。一个比较容易实现的例子是，在iOS上，动态框架在构建时间、应用大小和冷发布时间方面都很昂贵。当更短的构建时间和更小的应用规模是优先考虑的时候，转向静态库是值得的。实现变革的一种更昂贵的方式是转向‘monorepo’。</p>
+<p>是继续使用分布式源代码，还是转向单一代码，这是20到40名工程师组成的团队开始问的问题。大多数团队都是从不同的存储库中引入依赖项和库，这是在编译前完成的。通过网络下载依赖关系非常耗时，所以缓存被用来优化这种方法。</p>
+<p>随着代码库和工程师数量的增长，获取依赖的时间也在不断增加。突然间，让所有依赖都生活在同一个“单核”里的想法似乎不那么疯狂了。到2021年为止，还没有适合移动平台的monorepo工具，所以你必须自己开发这些工具。</p>
+<p>在优步，当每个平台的本地工程师数量达到100名左右时，我们转向了Android和iOS的monorepo。你应该做同样的事情吗?不幸的是，没有明确的答案，只有权衡才能考虑。什么对你的团队更重要?缩短构建时间，标准化版本，还是降低自定义工具或移动平台团队的投资?</p>
+<p>Keeping master green。缩短合并变更的时间，并保持主分支始终是绿色的，这有多难?如果你有快速执行的构建——比如15分钟运行所有测试——每天很少合并——比如10或20——这不是挑战。</p>
+<p>如果您的构建需要30分钟完成单元、集成和UI测试，该怎么办?”如果每小时有10个拉请求呢?有没有办法既能让主枝保持绿色，又能让合并的时间很短，至少30分钟?</p>
+<p>为了实现这一点，您需要并行化这两个构建。但是，当一个可能影响另一个时，并行运行两个PRs是否安全?这个问题导致了一个复杂但同样令人兴奋的问题。在Uber，我们最终构建了一个提交队列，它将构建分解为并行部分。然后它会对构建队列进行概率建模，确定可能通过的更改并对这些更改进行优先级排序。</p>
+<p>你想了解更多的东西，你可以在<a href="https://eng.uber.com/research/keeping-master-green-at-scale/">白皮书中阅读这种方法</a>的细节。</p>
+<p>虽然可能很少有公司像优步那样每天都有大量的移动PRs，但如果你是其中之一，你就必须投资降低合并变更的平均时间，并保持低的工程反馈循环。</p>
+<p>延伸阅读:</p>
+<ul>
+<li><a href="https://eng.uber.com/research/keeping-master-green-at-scale/">Keeping master green at scale</a> from Uber</li>
+<li><a href="https://medium.com/pinterest-engineering/developing-fast-reliable-ios-builds-at-pinterest-part-one-cb1810407b92">Developing fast &amp; reliable iOS builds</a> from Pinterest</li>
+<li><a href="https://engineering.grab.com/how-grab-is-blazing-through-the-super-app-bazel-migration">Blazing through the super app Bazel migration</a> from Grab</li>
+<li><a href="https://dropbox.tech/mobile/modernizing-our-android-build-system-part-i-the-planning">Modernizing our Android build system</a> from Dropbox</li>
+<li><a href="https://medium.com/@acecilia/static-vs-dynamic-frameworks-in-swift-an-in-depth-analysis-ff61a77eec65">Static vs dynamic frameworks in Swift</a> from Revolut engineer Andres - Cecilia Luque</li>
+</ul>
+<h3 id="16-a-namemobileplatformlibrariesandteamsamobile-platform-libraries-and-teams">1.6. <a name='MOBILEPLATFORMLIBRARIESANDTEAMS'></a>MOBILE PLATFORM LIBRARIES AND TEAMS</h3>
+<p>随着开发应用程序或在公司工作的移动工程师数量的增长，“重新发明轮子”的趋势趋于出现。TeamA将需要一项功能，如日志记录、分析、数据存储等，他们将做出自己的选择并选择自己的实现。然后团队b面临同样的挑战。假设他们与TeamA交谈，他们可能会决定重用TeamA所做的是有意义的，不仅是为他们，而且为其他团队。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gq67em11anj30gy0bhgnq.jpg" alt="AVATAR" loading="lazy"></figure>
+<p><strong>内部移动库</strong>通常会在应用开发过程中尽早创建。在许多情况下，内部库可能只是供应商解决方案的轻量级包装器，编写它的目的是在需要时方便地迁移到另一个解决方案。 内部库中可以包含什么是没有限制的，但是常见的内部库可以包括:</p>
+<ul>
+<li>Logging</li>
+<li>Analytics</li>
+<li>Data persistence</li>
+<li>Feature flags, A/B testing &amp; experimentation</li>
+<li>Networking &amp; authentication</li>
+<li>Testing: UI testing, unit testing, mock generation</li>
+<li>Brand UI elements, colors, themes</li>
+<li>UI elements, frameworks &amp; layouts.</li>
+<li>Message display</li>
+<li>Animations</li>
+<li>Image management</li>
+<li>Navigation frameworks</li>
+<li>Architecture frameworks</li>
+<li>Performance monitoring / profiling tools</li>
+<li>Push notifications</li>
+<li>Shared functionality specific to app domains: calling, PDFs, scanning, location, maps, and others</li>
+</ul>
+<p>随着团队和内部构建的库数量的增长，维护这些库通常会变得很困难。作为工程师，我们经常认为主要的挑战是构建库本身，并将现有的用例迁移到其中。然而，大多数团队发现维护是多么痛苦，但这只是在编写了库之后的几年。</p>
+<p>维修方面的主要问题通常是:</p>
+<ol>
+<li>
+<p><strong>最初的工程师已经不在团队中了</strong>。这可能在几个方面成为一个问题。可能缺少关于如何修改代码的知识。尽管如此，其他工程师通常能够理解编写给其他人使用的代码，所以这很少是问题。更大的问题是，当最初的工程师已经离开的情况下，变化往往会未经检查而出现。这将导致下一个问题的出现。</p>
+</li>
+<li>
+<p><strong>经过一系列短期修复后，库的质量下降了</strong>。当团队遇到可以通过更改共享库来修复的问题时，他们通常会选择短期修复。只要有一个库的所有者，这个所有者可以决定不允许低质量或短期修复。</p>
+</li>
+<li>
+<p><strong>所属团队没有用于维护或迁移的带宽</strong>。另一个常见问题是产品团队构建了几个这样的组件。然而，他们的盘子里装满了产品工作，工程师几乎没有时间做小的维护工作。如果需要做出重大改变，没有人来承担。</p>
+</li>
+</ol>
+<p>当移动工程师的数量足够多时，创建移动平台团队是解决所有权和维护问题的通用解决方案。对于移动工程师的规模，并没有“黄金法则”，但大多数公司都是在拥有(或预计拥有)20至30名移动工程师时迈出这一步。</p>
+<p>移动平台团队的所有权可能会根据公司内部的“共性”发生很大的变化。以下是专门的移动平台所拥有的常见领域。请注意，平台团队通常拥有几个这样的平台。</p>
+<ul>
+<li>
+<p><strong>移动构建基础设施</strong>，特别是当决定将构建保留在内部时。即使使用第三方供应商，移动基础架构团队也可能拥有供应商关系和构建的设置。</p>
+</li>
+<li>
+<p><strong>App Store发布管理</strong>。在拥有成熟发布流程的公司中，这一领域通常包括在构建切割后拥有手动测试流程，dogfooding/beta流程，以及最后的热修复流程。</p>
+</li>
+<li>
+<p><strong>开发人员的工具和经验</strong>。在规模上，15名或更多的工程师使用数十万行代码开发应用程序，“默认”工具的局限性开始变得更加令人痛苦。无论是在本地还是在CI上，构建应用程序或运行测试都会变慢。加速这些步骤不再仅仅是“快速更改”，而是需要更复杂的工具更改、代码结构更改或两者都需要更改。</p>
+</li>
+<li>
+<p><strong>建筑和建筑维护</strong>。第一个非基础平台团队倾向于获得应用程序架构的所有权，确保它以可维护的方式构建。这个团队通常既是帮助缺乏经验的工程师做出可持续设计决策的向导，也是确保体系结构保持干净并与更广泛的视野保持一致的“监管力量”。依赖关系管理、代码质量治理、可测试性——以及测试——通常都属于这一范畴。</p>
+</li>
+<li>
+<p><strong>公司内外使用的sdk</strong>。sdk通常是特定于业务和团队需求的。</p>
+</li>
+<li>
+<p><strong>手机应用的可靠性和性能</strong>，包括崩溃率、网络可靠性、日志记录和性能监控。</p>
+</li>
+<li>
+<p><strong>构建功能使开发人员更有效率</strong>。随着移动框架——甚至是语言——的快速发展，生态系统中的很多地方都存在差距。团队越大，这些差距就越明显。一些移动平台团队认为，当他们可以购买的工具不够好时，构建一个解决方案是值得的。这方面的例子可以包括构建定制UI测试框架，建立设备实验室，或实现与全公司定制工具集成的构建训练。</p>
+</li>
+<li>
+<p><strong>共享内部库所有权</strong>。一旦移动平台团队就位，他们往往会接管或构建一些内部移动库。</p>
+</li>
+</ul>
+<p>以下是运行一个健康的移动平台团队的一些指导方针:</p>
+<ul>
+<li>
+<p><strong>明确任务</strong>。确保平台团队拥有比“拥有所有共享内容”更明确的使命。任务的例子可以是“让移动工程师能够更有效地工作，月复一月”或“发布我们行业中最可靠的应用程序”。</p>
+</li>
+<li>
+<p><strong>明确目标</strong>。平台团队应该对他们想要包含的领域有可衡量的目标。可能的目标包括范围可靠性目标、使用共享组件的团队百分比、集成某些特性的代码行数、开源项目的数量，等等。一个没有目标的平台团队将难以决定重点在哪里，而且会比一个知道方向和如何实现目标的团队效率更低。</p>
+</li>
+<li>
+<p><strong>足够的人员</strong>。团队应该足够大，以便他们有带宽在平台上做“产品”工作，同时为组织的其他部分提供支持。</p>
+</li>
+<li>
+<p><strong>明确平台和非平台团队之间的合同</strong>。平台团队应该清楚他们做什么，他们不拥有什么，这应该是一个共享的，并达成一致的理解。</p>
+</li>
+<li>
+<p><strong>明确支持渠道</strong>。工程师应该知道他们在哪里以及如何从平台团队获得支持。这可以是共享的聊天群，办公时间，专注于ping的人，最有可能的是，所有这些的组合。</p>
+</li>
+<li>
+<p><strong>明确参与过程</strong>。平台团队应该明确产品团队如何与他们一起处理功能需求;如何发出请求，谁以及如何对这项工作进行优先级排序，以及他们如何跟踪状态。</p>
+</li>
+</ul>
+<p>以下是一些公司如何接触移动平台团队的例子。请注意，其中一些示例是轶事，而其他示例可能已经改变了它们的运行方式。不要忘记，每个公司解决自己的问题，考虑到它的人员和其他制约因素。不要盲目地模仿其他公司的做法，要遵循能带来你所需的适当杠杆水平的模式。</p>
+<ul>
+<li>
+<p><strong>优步</strong>拥有一个拥有移动开发者经验的平台团队，包括开发工具和构建系统。另一个名为Mobile Platform的团队拥有架构和共享服务(肋骨和内部添加，如实验框架)。移动平台后来分裂为应用平台(拥有应用指标/可靠性/性能，架构和核心模块治理)和移动基础(拥有可重用组件和框架)。</p>
+</li>
+<li>
+<p><strong>UberEats</strong>是优步内部的一家“初创公司”，早年几乎完全独立于优步的其他部门运营。UberEats成立于2015年，第一个“官方”移动平台团队于4年后的2019年成立。甚至在第一个平台团队出现之前，UberEats团队都“投入”构建其他团队将以可重用的方式使用的组件。</p>
+</li>
+<li>
+<p><strong>Twitter</strong>过去有一个iOS和Android的基金团队，每个团队都有一些工作流。随着规模的增加，这些团队在每个基础上分成更小的团队，比如UI、性能、架构、构建和开发人员体验。</p>
+</li>
+<li>
+<p><strong>亚马逊</strong>的平台团队拥有应用架构、日志、指标和共享的“类似基础设施”功能。主要功能通常由经验团队拥有。这些经验团队与平台签订了合同，以明确代码所有权，以及如何进行设计和代码审查。</p>
+</li>
+<li>
+<p><strong>Just Eat</strong>拥有一个iOS和Android平台团队。这些团队拥有所有“典型的”平台作品，以及iOS或Android的发行流程。</p>
+</li>
+<li>
+<p><strong>Skyscanner</strong>拥有一个Mobile Infra团队(拥有CI/CD，构建和发布管理)和一个Mobile Core团队(拥有可重用库，帮助解决影响多个团队的问题)。</p>
+</li>
+<li>
+<p><strong>VMware</strong>有一个小型团队负责构建移动UI组件，另一个团队拥有内部使用的sdk，以及由第三方使用的sdk。</p>
+</li>
+<li>
+<p><strong>Zenly</strong> (Snap公司)拥有一支由移动和后端工程师组成的移动平台团队。他们发现手机平台工作的本质从应用层面延伸到后端。这方面的例子包括改变网络层以不同于TCP的传输机制，跨应用和后端度量，自定义崩溃报告，远程调试和其他高级功能。</p>
+</li>
+<li>
+<p><strong>沃尔玛</strong>拥有一个iOS和Android移动平台团队，拥有所有针对平台的工作。这意味着从移动CI/CD管道，到测试、调试和性能工具、崩溃报告、安全实践和依赖管理，一直到UI导航元素或分析。平台团队拥有一长串的功能列表。</p>
+</li>
+<li>
+<p><strong>N26</strong>有一个“Core”iOS和一个“Core”Android，这些团队拥有所有共享的功能。他们后来尝试将这个团队分成更小的跨职能团队，从设计系统团队开始。</p>
+</li>
+<li>
+<p><strong>Sixt</strong>拥有面向iOS、Android和网页的平台团队。这个团队负责所有常见的任务，如单回购、CI/CD、可观察性、架构、库等。他们选择将移动和网络结合起来，因为有许多相似的部分，如CI/CD或库。这有助于知识共享和减少重复。</p>
+</li>
+<li>
+<p><strong>Booking.com</strong>有几个团队在共同开发他们所谓的“应用程序核心平台”。一个团队拥有核心组件和服务，另一个团队拥有构建和发布过程，包括测试和应用程序稳定性。第三个团队只关注应用的性能，如启动时间和交互时间，以获取重要的屏幕，而第四个团队则关注产品团队使用的内部开发框架。所有团队都有iOS和Android工程师。最后，这个组织还有一个后台开发团队，他们从整体治理的角度来管理应用程序的后台，确保Booking.com应用程序调用的所有后台都是健康和可靠的。</p>
+</li>
+</ul>
+<p><strong>何时剥离第一支手机平台团队总是一个挑战</strong>。大型移动团队显然需要一个或多个这样的团队。但是对于小团队来说呢?当你只有15名工程师时，你会想要剥离一个平台团队吗?</p>
+<p>创建一个平台团队太迟可能意味着代码中存在大量冗余、较差的抽象以及相同功能之间很少的可重用性。如果一个平台团队更早就位，这个团队就会成为几个共享特性的自然所有者，也会获得整个应用体系结构的所有权。</p>
+<p>过早创建一个平台团队有一个缺点，那就是很难让它成为一个商业案例。为什么要雇佣一个不提供产品工作的工程师呢?此外，第一个平台团队通常会吸引最有经验的工程师。这些工程师通常也是生产效率最高的产品工程师。即使公司雇佣了新的工程师，这些原来的工程师经常会在产品团队中留下几个月的空白。</p>
+<p>在《<a href="https://www.mobileatscale.com/#growing-as-a-mobile-engieer">成长为移动工程师</a>》这本书中，我以工程经理的身份写了更多关于创建和管理移动平台团队的建议。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rOyFIbV4v/" class="tag">
+                    app-challenge-3
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/app-challenges/">
+                  <h3 class="post-title">
+                    App&#39;s challenges - Part Two
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Lightweight presenters in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="关注点分离——理想情况下，每种类型都应该有一个非常明确的职责范围-是最普遍公认的编程原则之一，但在实践中，说起来容易做起来难。
+特别是当涉及到UI开发时，要将每一种类型与其他类型区分开来是非常棘手的，像视图和视图控制器这样的类最终会有大量的..." />
+    <meta name="keywords" content="design pattern,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Lightweight presenters in Swift</h2>
+            <div class="post-date">2018-09-09</div>
+            
+            <div class="post-content" v-pre>
+              <p>关注点分离——理想情况下，每种类型都应该有一个非常明确的职责范围-是最普遍公认的编程原则之一，但在实践中，说起来容易做起来难。</p>
+<p>特别是当涉及到UI开发时，要将每一种类型与其他类型区分开来是非常棘手的，像视图和视图控制器这样的类最终会有大量的特性和任务，这很常见-因为他们通常必须处理许多不同的事情，从布局、样式到响应用户输入。</p>
+<p>本周，让我们来看看如何使用presenter模式将这些任务——特别是与额外ui的表示相关的任务——从我们的视图控制器转移到独立的、专门的类型中。</p>
+<h2 id="presentation-logic">Presentation logic</h2>
+<p>有些UI类是非常独立的，不需要花费很多精力来呈现， 例如在这个例子中——我们把一个简单的ProfileViewController推到导航堆栈上:</p>
+<pre><code class="language-swift">let vc = ProfileViewController(user: user)
+navigationController?.pushViewController(vc, animated: true)
+</code></pre>
+<p>然而，有些类型在使用之前需要更多的设置——这并不一定是件坏事——它可以表明一个类型是多么强大和可定制。</p>
+<p>其中一种类型是UIAlertController，它在iOS 8中引入，功能更强大-也有一点复杂-替代更简单，更有限的，UIAlertView。 现在，使用UIAlertController，显示系统警报需要为每个警报按钮添加一个UIAlertAction，并配置闭包来处理选择。</p>
+<p>让我们看看如何使用表示模式来封装这样的表示逻辑和设置。而在一些设计模式中，演示者扮演着更核心的角色 - 比如MVP(模型视图演示者)模式-在这种情况下，我们将以一种更轻量级的方式使用演示者，并简单地将它们定义为负责表示UI的特定部分的类型。</p>
+<p>假设我们想要显示一个警报视图来让用户确认一个操作——例如删除一个项目。而不是让呈现视图控制器自己配置警报视图，让我们将所有这些代码封装到一个ConfirmationPresenter中，像这样:</p>
+<pre><code class="language-swift">struct ConfirmationPresenter {
+    /// The question we want the user to confirm
+    let question: String
+    /// The title of the button to accept the confirmation
+    let acceptTitle: String
+    /// The title of the button to reject the confirmation
+    let rejectTitle: String
+    /// A closure to be run when the user taps one of the
+    /// alert's buttons. Outcome is an enum with two cases:
+    /// .accepted and .rejected.
+    let handler: (Outcome) -&gt; Void
+
+    func present(in viewController: UIViewController) {
+        let alert = UIAlertController(
+            title: nil,
+            message: question,
+            preferredStyle: .alert
+        )
+
+        let rejectAction = UIAlertAction(title: rejectTitle, style: .cancel) { _ in
+            self.handler(.rejected)
+        }
+
+        let acceptAction = UIAlertAction(title: acceptTitle, style: .default) { _ in
+            self.handler(.accepted)
+        }
+
+        alert.addAction(rejectAction)
+        alert.addAction(acceptAction)
+
+        viewController.present(alert, animated: true)
+    }
+}
+</code></pre>
+<p>在本例中，我们使用一个结构来定义演示者——主要是因为它不需要管理任何状态，而且它还使我们能够利用Swift的自动生成的结构初始化器。 有了以上这些，我们现在可以非常容易地在任何视图控制器中呈现确认警报，像这样:</p>
+<pre><code class="language-swift">class NoteViewController: UIViewController {
+    func handleDeleteButtonTap() {
+        let presenter = ConfirmationPresenter(
+            question: &quot;Are you sure you want to delete this note?&quot;,
+            acceptTitle: &quot;Yes, delete it!&quot;,
+            rejectTitle: &quot;Cancel&quot;,
+            handler: { [unowned self] outcome in
+                switch outcome {
+                case .accepted:
+                    self.noteCollection.delete(self.note)
+                case .rejected:
+                    break
+                }
+            }
+        )
+
+        presenter.present(in: self)
+    }
+}
+</code></pre>
+<p>上述方法的美妙之处在于，它让我们可以轻松地重用我们的表示代码，而无需子类化UIAlertController，或使用类似UIViewController的扩展 - 这将增加向所有视图控制器显示确认警报的能力，即使那些真的不需要它。</p>
+<p>现在，我们可以简单地创建一个演示者，并在需要显示确认警报时调用present()。👍</p>
+<h2 id="wrapping-things-up">Wrapping things up</h2>
+<p>演示者也可以提供一种很好的方式来确保特定的视图控制器以正确的方式被呈现。当进行模态显示时，一些视图控制器需要被包装在UINavigationController中，为了支持在新模态堆栈中的进一步导航，这很容易忘记如果相同的视图控制器在多个地方被呈现。</p>
+<p>让我们看另一个例子，在这个例子中，我们使用MovieListViewController来显示用户最喜欢的电影列表。我们的应用程序在许多不同的地方显示电影列表，所以我们让MovieListViewController非常灵活，以支持所有这些用例 - 通过根据上下文注入UITableViewDataSource。</p>
+<p>为了包含所有的设置代码，以及确保我们的MovieListViewController被正确地包装在导航控制器中，让我们再次使用一个presenter——这次我们叫它FavoritesPresenter:</p>
+<pre><code class="language-swift">struct FavoritesPresenter {
+    let manager: FavoritesManager
+
+    func present(in viewController: UIViewController) {
+        let dataSource = FavoritesDataSource(manager: manager)
+        let list = MovieListViewController(dataSource: dataSource)
+        let navigationController = UINavigationController(rootViewController: list)
+
+        list.navigationItem.leftBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .done,
+            target: navigationController,
+            action: #selector(UIViewController.dismissWithAnimation)
+        )
+
+        viewController.present(navigationController, animated: true)
+    }
+}
+</code></pre>
+<p>上面的ui。为了能够使用它作为Objective-C选择器，dismissWithAnimation方法是对dismissWithAnimation (animated:completion:)的简单包装。</p>
+<p>就像我们的确认主持人之前，我们的最爱主持人使呼叫站点非常漂亮和干净-并让我们减少在任何视图控制器中放置这种表示逻辑的需要:</p>
+<pre><code class="language-swift">class HomeViewController: UIViewController {
+    func presentFavorites() {
+        let presenter = FavoritesPresenter(manager: favoritesManager)
+        presenter.present(in: self)
+    }
+}
+</code></pre>
+<p>在这种情况下，这个方法的另一个好处是，HomeViewController(以及所有其他呈现收藏夹的视图控制器)不需要知道被呈现的视图控制器会被包装在UINavigationController中-这给了我们更大的灵活性，以备将来我们想要转向另一种导航模式。</p>
+<h2 id="enqueued-presentation">Enqueued presentation</h2>
+<p>让我们来看最后一个例子，看看轻量级的表示者是如何真正有用的。在这种情况下，我们想呈现多个小教程，每个都教用户关于我们应用程序的不同方面。为了让我们的代码库的多个部分能够呈现教程，而不必担心教程是否已经呈现，我们创建一个表示器来管理所有的状态和逻辑。</p>
+<p>下面是这样一个presenter的样子。 在这种情况下，我们将使用一个类，因为我们需要跟踪当前呈现的视图控制器，以及即将到来的教程项目的队列:</p>
+<pre><code class="language-swift">class TutorialPresenter {
+    private let presentingViewController: UIViewController
+    private weak var currentViewController: UIViewController?
+    private var queue = [TutorialItem]()
+
+    init(viewController: UIViewController) {
+        presentingViewController = viewController
+    }
+
+    func present(_ item: TutorialItem) {
+        // If we're already presenting a tutorial item, we'll
+        // add the next item to the queue and return.
+        guard currentViewController == nil else {
+            queue.append(item)
+            return
+        }
+
+        let viewController = TutorialViewController(item: item)
+
+        viewController.completionHandler = { [weak self] in
+            self?.currentViewController = nil
+            self?.presentNextItemIfNeeded()
+        }
+
+        presentingViewController.present(viewController, animated: true)
+        currentViewController = viewController
+    }
+
+    private func presentNextItemIfNeeded() {
+        guard !queue.isEmpty else {
+            return
+        }
+
+        present(queue.removeFirst())
+    }
+}
+</code></pre>
+<p>现在，我们可以在任何想要呈现教程的地方简单地调用tutorialPresenter.present()，剩下的工作由我们的演示者来完成!👍</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>演示者模式非常强大，即使它是以一种非常轻量级的方式使用。 通过将所有的表示逻辑封装到专门的类型中，我们最终可以得到更容易重用的代码，而且由于我们的表示程序的范围如此狭窄 -它们只管理视图或视图控制器的表示-它们通常也很容易维护。</p>
+<p>当然有许多其他方式在迅速使用主持人,包括完全采用设计模式如模型视图的主持人,但这样的一个轻量级的方法,我们可以利用主持人,而无需将所有的代码到一个新的设计模式。另一方面，我们在应用程序中引入了新的抽象或架构概念 -所以为了避免混淆，明确定义我们想要的角色是很重要的，比如演讲者在我们的应用程序中扮演什么角色。</p>
+<p><a href="https://www.swiftbysundell.com/articles/lightweight-presenters-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4g5XtbTAR/" class="tag">
+                    design pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/early-returning-functions-in-swift/">
+                  <h3 class="post-title">
+                    Early returning functions in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

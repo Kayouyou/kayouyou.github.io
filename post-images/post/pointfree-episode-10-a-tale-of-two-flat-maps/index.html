@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 10: A Tale of Two Flat‑Maps | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+A tale of two flatMaps
+
+
+
+
+Optional promotion
+
+
+
+
+compactMap and filterMap
+
+
+
+
+Generalizations of f..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 10: A Tale of Two Flat‑Maps</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#AtaleoftwoflatMaps">A tale of two flatMaps</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Optionalpromotion">Optional promotion</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#compactMapandfilterMap">compactMap and filterMap</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#GeneralizationsoffilterMap">Generalizations of filterMap</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 10: A Tale of Two Flat‑Maps -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>在Swift 4.1中提出了一个更改，该更改将作废<strong>flatMap</strong>的重载，这与其他<strong>flatMap</strong>略有不同，并为该方法提供了一个新名称。 这一改变得到了褒贬不一的回应，但最终还是被接受了，尽管由于社区的反馈，名称又作了进一步的更改。</p>
+<p>我们想要研究的是为什么这个改变会在一开始被提出，以及为什么第一个被提出的名字可能会让我们对进一步的概念开放。我们希望表明，有时命名真的很重要，可以帮助我们以新的、意想不到的方式利用以前的直觉。</p>
+<h2 id="2-a-nameataleoftwoflatmapsaa-tale-of-two-flatmaps">2. <a name='AtaleoftwoflatMaps'></a>A tale of two flatMaps</h2>
+<p>在早期，Swift通过在标准库中提供<strong>map、filter、reduce和flatMap</strong>等函数来拥抱函数编程模式。</p>
+<p>Swift 1.0附带的<strong>flatMap</strong>定义在Array上，其签名我们都很熟悉:</p>
+<pre><code class="language-swift">// extension Array {
+//   func flatMap&lt;B&gt;(_ f: @escaping (Element) -&gt; [B]) -&gt; [B] {
+//   }
+// }
+</code></pre>
+<p>这对于将返回数组的操作链接在一起非常有用。</p>
+<p>例如，给定一个包含逗号和换行符分隔的值列表的字符串:</p>
+<pre><code class="language-swift">let csv = &quot;&quot;&quot;
+1,2,3,4
+3,5,2
+8,9,4
+&quot;&quot;&quot;
+</code></pre>
+<p>如果我们想处理这个字符串并提取逗号之间的所有值，该怎么办?</p>
+<p>我们可以从换行开始。</p>
+<pre><code class="language-swift">csv
+  .split(separator: &quot;\n&quot;)
+// [&quot;1,2,3,4&quot;, &quot;3,5,2&quot;, &quot;8,9,4&quot;]
+</code></pre>
+<p>现在我们要深入这个数组，用逗号进一步分割每个字符串。</p>
+<p>我们很熟悉使用map来修改数组。</p>
+<pre><code class="language-swift">csv
+  .split(separator: &quot;\n&quot;)
+  .map { $0.split(separator: &quot;,&quot;) }
+// [[&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;], [&quot;3&quot;, &quot;5&quot;, &quot;2&quot;], [&quot;8&quot;, &quot;9&quot;, &quot;4&quot;]]
+</code></pre>
+<p>这将返回嵌套的值数组，但我们想要一个平面的值数组。</p>
+<p>这正是flatMap让我们做的。它对数组的每个元素应用一个函数，然后将其展开。</p>
+<pre><code class="language-swift">csv
+  .split(separator: &quot;\n&quot;)
+  .flatMap { $0.split(separator: &quot;,&quot;) }
+// [&quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;3&quot;, &quot;5&quot;, &quot;2&quot;, &quot;8&quot;, &quot;9&quot;, &quot;4&quot;]
+</code></pre>
+<p>此后不久，Swift在<strong>Optional</strong>上引入了flatMap，其签名如下:</p>
+<pre><code class="language-swift">// extension Optional {
+//   func flatMap&lt;B&gt;(_ f: @escaping (Element) -&gt; B?) -&gt; B? {
+//   }
+// }
+</code></pre>
+<p>这对于将操作链接在一起比返回可选项更有用。</p>
+<p>例如，String有一个可失败的初始化式，它接受数据并返回一个可选字符串:</p>
+<pre><code class="language-swift">String(data: Data(), encoding: .utf8)
+// Optional(&quot;&quot;)
+</code></pre>
+<p>与数组一样，我们可以在可选项上<strong>map</strong>以转换包装的值。假设我们想要将可选字符串转换为整数。</p>
+<pre><code class="language-swift">String(data: Data(), encoding: .utf8)
+  .map(Int.init)
+// Optional(nil)
+</code></pre>
+<p>我们得到nil，因为我们用空字符串调用<strong>Int</strong>初始化式，但这里有些奇怪。 Optional<Int>类似是?</p>
+<pre><code class="language-swift">_: Int? =  String(data: Data(), encoding: .utf8)
+  .map(Int.init)
+// Value of optional type 'Int??' not unwrapped
+</code></pre>
+<p>它不是! 使用map会得到一个双可选的<strong>Int??</strong>。我们在一个可选对象上使用<strong>map</strong>，初始化式返回一个可选对象，结果是一组可选对象!我们真正想使用的是<strong>flatMap</strong>。</p>
+<pre><code class="language-swift">_: Int? =  String(data: Data(), encoding: .utf8)
+  .flatMap(Int.init)
+// nil
+</code></pre>
+<p>现在编译，这意味着我们的值被平铺了。它仍然返回nil，让我们提供一些数据。</p>
+<pre><code class="language-swift">String(data: Data([55]), encoding: .utf8)
+  .flatMap(Int.init)
+// Optional(7)
+</code></pre>
+<p>通过<strong>flatMap</strong>，我们可以获取可选字符串，将函数应用到其未包装的值上，然后获取可选结果并将其扁平化为单个可选整数。</p>
+<p>还有第三个在Array上的<strong>flatMap</strong>将这些世界模糊在一起:它接受数组元素并通过返回可选参数的转换发送它们。让我们看一个字符串数组。</p>
+<pre><code class="language-swift">[&quot;1&quot;, &quot;2&quot;, &quot;buckle&quot;, &quot;my&quot;, &quot;shoe&quot;]
+</code></pre>
+<p>如果我们想把每个字符串转换成整数呢? 使用<strong>map</strong>，我们得到以下结果:</p>
+<pre><code class="language-swift">[&quot;1&quot;, &quot;2&quot;, &quot;buckle&quot;, &quot;my&quot;, &quot;shoe&quot;]
+  .map(Int.init)
+// [{some 1}, {some 2}, nil, nil, nil]
+</code></pre>
+<p>我们将返回一个数组，成功的转换被包装在一个可选的数组中，而失败的转换则为nil。</p>
+<p>如果我们使用<strong>flatMap</strong>代替，我们可以丢弃那些nil并安全地展开整数。</p>
+<pre><code class="language-swift">[&quot;1&quot;, &quot;2&quot;, &quot;buckle&quot;, &quot;my&quot;, &quot;shoe&quot;]
+  .flatMap(Int.init)
+// [1, 2]
+</code></pre>
+<p>这是非常有用的!我们经常做这种事。但是这个版本的<strong>flatMap</strong>感觉有点不同于其他版本，因为它混合了数组的一些特性和可选特性。</p>
+<p>当同时使用这两种方法时，事情变得更加混乱。 让我们以前面的CSV为例，进一步将每个值转换为整数，然后再相加。</p>
+<pre><code class="language-swift">csv.split(separator: &quot;\n&quot;)
+  .flatMap { $0.split(separator: &quot;,&quot;) }
+  .flatMap { Int($0) }
+  .reduce(0, +)
+// 41
+</code></pre>
+<p>在这里，第一个<strong>flatMap</strong>负责获取所有用逗号分隔的值，并将它们平铺到一个数组中，然后下一个<strong>flatMap</strong>尝试从字符串创建一个<strong>Int</strong>，并丢弃任何失败的值。这是两种非常不同的操作，但我们用的是相同的名称，所以很难一眼就把它们区分开来。</p>
+<p>我们花了很多时间思考类型，尤其是函数的形状。 有时，在方法的定义中可能会忽略这一点:容器类型会淡出声明，而函数和参数名称会让事情变得更模糊。 让我们将这些函数签名隔离到类型本身。我们将使用(<strong>Configuration) -&gt; (Data) -&gt; ReturnValue</strong>的自由函数语法:</p>
+<pre><code class="language-swift">// flatMap : ((A) -&gt; [B]) -&gt; ([A]) -&gt; [B]
+// flatMap : ((A) -&gt;  B?) -&gt; ( A?) -&gt;  B?
+
+// flatMap : ((A) -&gt;  B?) -&gt; ([A]) -&gt; [B]
+</code></pre>
+<p>其中一个形状和其他形状不一样。 最上面的两个<strong>flatMaps</strong>使用单一的容器类型:<strong>Array and Optional</strong>，但第三个<strong>flatMap</strong>同时操作两个容器。</p>
+<p>如果我们脱糖，泛型是这样的:</p>
+<pre><code class="language-swift">// flatMap : ((A) -&gt;    Array&lt;B&gt;) -&gt; (   Array&lt;A&gt;) -&gt;    Array&lt;B&gt;
+// flatMap : ((A) -&gt; Optional&lt;B&gt;) -&gt; (Optional&lt;A&gt;) -&gt; Optional&lt;B&gt;
+
+// flatMap : ((A) -&gt; Optional&lt;B&gt;) -&gt; (   Array&lt;A&gt;) -&gt;    Array&lt;B&gt;
+
+</code></pre>
+<p>如果我们可以把容器<strong>Array and Optional</strong>类型看作它们自己的泛型类型会怎么样呢? 我们可以这样写东西，我们可以扔掉他们的名字，得出这样的东西:</p>
+<pre><code class="language-swift">// flatMap : ((A) -&gt; M&lt;B&gt;) -&gt; (M&lt;A&gt;) -&gt; M&lt;B&gt;
+// flatMap : ((A) -&gt; M&lt;B&gt;) -&gt; (M&lt;A&gt;) -&gt; M&lt;B&gt;
+
+// flatMap : ((A) -&gt; N&lt;B&gt;) -&gt; (M&lt;A&gt;) -&gt; M&lt;B&gt;
+</code></pre>
+<p>哇，前两个签名最后变成了一模一样的东西! 但是对于第三个签名，我们正在处理两种不同的泛型容器类型，语义变得更加混乱。N是怎么产生M的? 在其他版本中，我们可以理解<strong>transform</strong>函数与重新组合到容器类型有关。 在这个版本中，N并没有给我们太多线索。</p>
+<p>为了理解它，我们必须回到具体类型。</p>
+<pre><code class="language-swift">// flatMap : ((A) -&gt; B?) -&gt; (M&lt;A&gt;) -&gt; M&lt;B&gt;
+</code></pre>
+<p>这还是有点让人困惑。任何M可以这样与<strong>Optional</strong>一起工作吗? 也许这第三个<strong>flatMap</strong>不像其他的那么通用。</p>
+<h2 id="3-a-nameoptionalpromotionaoptional-promotion">3. <a name='Optionalpromotion'></a>Optional promotion</h2>
+<p>对于返回<strong>Optionals</strong>的操作，在<strong>Array</strong>上重载<strong>flatMap</strong>还有另一个问题:可选升级(optional promotion)。出于人机工程学的考虑，当可选参数需要时，Swift会自动将值包装在可选类型中。 这可能导致更简洁的代码,它可以减少一些样板工程师的负担,否则需要显式地将值用.<strong>some</strong>包装,但类型推断是一把双刃剑,在闭包返回可选结果的情况下，任何事情都是公平的游戏。</p>
+<p>考虑以下代码片段:</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .flatMap { $0 + 1 }
+// [2, 3, 4]
+</code></pre>
+<p>这将编译、运行并生成一个结果，但语义很奇怪:我们不会从提供的闭包返回可选值。编译器会自动为我们包装这个值，像这样:</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .flatMap { .some($0 + 1) }
+// [2, 3, 4]
+</code></pre>
+<p>手动包装我们的值表明我们这里的逻辑有点奇怪。 我们总是返回.<strong>some</strong>，从不返回到nil。因为这个操作永远不会失败，我们可以直接使用<strong>map</strong>。</p>
+<pre><code class="language-swift">[1, 2, 3]
+  .map { $0 + 1 }
+// [2, 3, 4]
+</code></pre>
+<p>由于可选升级，任何适用于<strong>map</strong>的操作也适用于<strong>flatMap</strong>。 通常情况下，我们很容易避免使用<strong>map</strong>，因为<strong>flatMap</strong>似乎总是有效，但<strong>map</strong>有时并不有效。这有点不幸，因为如果我们到处使用<strong>flatMap</strong>，就会失去一些语义意义。如果同时使用<strong>flatMap和map</strong>，就会显式记录哪些操作可以失败，哪些操作不能失败。</p>
+<p>更糟糕的是，我们可以对类型进行预期会出现编译时错误的更改，但由于重载的<strong>flatMap</strong>和可选的提升，它编译良好，但有意外的运行时行为。 例如，给定一个具有可选名称的<strong>User</strong>结构体和一个用户数组:</p>
+<pre><code class="language-swift">struct User {
+  let name: String?
+}
+
+let users = [User(name: &quot;Blob&quot;), User(name: &quot;Math&quot;)]
+</code></pre>
+<p>给定一组用户，我们可能会试图对它们进行<strong>map</strong>并提取出它们的名称。</p>
+<pre><code class="language-swift">users
+  .map { $0.name }
+// [{some &quot;Blob&quot;}, {some &quot;Math&quot;}]
+</code></pre>
+<p>但现在我们有了这个可选值数组。我们真正想使用的是<strong>flatMap</strong>。</p>
+<pre><code class="language-swift">users
+  .flatMap { $0.name }
+// [&quot;Blob&quot;, &quot;Math&quot;]
+</code></pre>
+<p>我们可能会围绕这样的类型构建许多代码，并且有一天我们可能会更改<strong>User</strong>类型(name 是必须的)。我们逐渐认识到，每当我们改变类型的外观时，一个强大的类型系统可以帮助指导我们重构代码。</p>
+<pre><code class="language-swift">struct User {
+  let name: String
+}
+</code></pre>
+<p>当代码重新编译时，运行时行为会发生什么变化?</p>
+<pre><code class="language-swift">users
+  .flatMap { $0.name }
+// [&quot;B&quot;, &quot;l&quot;, &quot;o&quot;, &quot;b&quot;, &quot;M&quot;, &quot;a&quot;, &quot;t&quot;, &quot;h&quot;]
+</code></pre>
+<p>这是意想不到的! 也许这个异常值被重新命名是件好事。</p>
+<h2 id="4-a-namecompactmapandfiltermapacompactmap-and-filtermap">4. <a name='compactMapandfilterMap'></a>compactMap and filterMap</h2>
+<p>因此，考虑到重载的<strong>flatMap与其他flatMap</strong>不太一样的复杂性，决定弃用它并引入一个新名称。非常重要的是要记住，带有返回数组的转换的数组上的<strong>flatMap</strong>，以及返回可选项的可选项上的<strong>flatMap</strong>不弃用。这只是一个离群值方法。</p>
+<p>最初建议的名称是<strong>filterMap</strong>，因为您正在对数组进行映射，然后丢弃nil值。它可以这样定义:</p>
+<pre><code class="language-swift">extension Array {
+  func filterMap&lt;B&gt;(_ transform: (Element) -&gt; B?) -&gt; [B] {
+    var result = [B]()
+    for x in self {
+      switch transform(x) {
+      case let .some(x):
+        result.append(x)
+      case let .none:
+        continue
+      }
+    }
+    return result
+  }
+}
+</code></pre>
+<p>在进化邮件列表上进行了一些调整之后，它最终被更改为<strong>compactMap</strong>，这很好，因为它共享了<strong>Ruby</strong>中的一些现有技术，其中<strong>compact</strong>是数组上的一个方法，它丢弃了nil值。让我们来定义<strong>compactMap</strong>:</p>
+<pre><code class="language-swift">extension Array {
+  func compactMap&lt;B&gt;(_ transform: (Element) -&gt; B?) -&gt; [B] {
+    var result = [B]()
+    for x in self {
+      switch transform(x) {
+      case let .some(x):
+        result.append(x)
+      case let .none:
+        continue
+      }
+    }
+    return result
+  }
+}
+</code></pre>
+<p>它只是一个重命名，所以我们不需要更改函数体。</p>
+<h2 id="5-a-namegeneralizationsoffiltermapageneralizations-of-filtermap">5. <a name='GeneralizationsoffilterMap'></a>Generalizations of filterMap</h2>
+<p><strong>compactMap</strong>名称的一个缺点是，它与我们对数组所做的操作有很强的联系:我们通过删除nil来“压缩”它，使它更小。这使我们无法看到<strong>compactMap</strong>在哪些方面有更广泛的应用。</p>
+<p>但是，<strong>filterMap</strong>这个名字的一个奇妙之处在于它可以引出一些很好的概括。</p>
+<p>让我们从观察一个断言 <strong>(A) -&gt; Bool</strong>在A上自然诱导一个函数(<strong>A) -&gt; A?</strong>：</p>
+<pre><code class="language-swift">func filterSome&lt;A&gt;(_ p: @escaping (A) -&gt; Bool) -&gt; (A) -&gt; A? {
+  return { p($0) ? .some($0) : .none }
+}
+</code></pre>
+<p>它只是在断言计算为true时返回.<strong>some</strong>值，否则返回.<strong>none</strong></p>
+<p>有了这个函数，我们现在可以在数组上定期重新实现ole filter:</p>
+<pre><code class="language-swift">func filter&lt;A&gt;(_ p: @escaping (A) -&gt; Bool) -&gt; ([A]) -&gt; [A] {
+  return { $0.filterMap(filterSome(p)) }
+}
+</code></pre>
+<p>让我们试一下。我们可以为偶数创建一个过滤器。</p>
+<pre><code class="language-swift">filter { $0 % 2 == 0 }
+// ([Int]) -&gt; [Int]
+</code></pre>
+<p>And pipe an array through.</p>
+<pre><code class="language-swift">Array(0..&lt;10)
+  |&gt; filter { $0 % 2 == 0 }
+// [2, 4, 6, 8, 10]
+</code></pre>
+<p>这很简洁，但不是立即有用。我们可以自己定义过滤器，或者直接使用标准库中的过滤器。但是，我们想要以这种方式研究过滤器的原因是，也许它会引导我们进一步一般化。</p>
+<p>一种方法是记住**Either&lt;A, B&gt;是Optional<A>**的泛化。</p>
+<pre><code class="language-swift">enum Either&lt;A, B&gt; {
+  case left(A)
+  case right(B)
+}
+</code></pre>
+<p>我们可以提供一个不同的B类型的值来代替A的空值。</p>
+<p>类似于<strong>filterSome</strong>的函数是这样的:</p>
+<pre><code class="language-swift">func partitionEither&lt;A&gt;(_ p: @escaping (A) -&gt; Bool) -&gt; (A) -&gt; Either&lt;A, A&gt; {
+  return { p($0) ? .right($0) : .left($0) }
+}
+</code></pre>
+<p>给出谓语(<strong>A) -&gt; Bool</strong>，它返回一个函数，该函数可以将类型(A)的值划分为Either&lt; AA &gt;中的两种情况之一。</p>
+<p>现在让我们使用这个与partition和Either的连接来泛化<strong>filterMap</strong>:</p>
+<pre><code class="language-swift">extension Array {
+  func partitionMap&lt;A, B&gt;(_ transform: (Element) -&gt; Either&lt;A, B&gt;) -&gt; (lefts: [A], rights: [B]) {
+    var result = (lefts: [A](), rights: [B]())
+    for x in self {
+      switch transform(x) {
+      case let .left(a):
+        result.lefts.append(a)
+      case let .right(b):
+        result.rights.append(b)
+      }
+    }
+    return result
+  }
+}
+</code></pre>
+<p>我们可以从<strong>filterMap</strong>推导出<strong>filter</strong>。我们能从<strong>partitionMap</strong>推导出partition吗?</p>
+<pre><code class="language-swift">func partition&lt;A&gt;(_ p: @escaping (A) -&gt; Bool) -&gt; ([A]) -&gt; (`false`: [A], `true`: [A]) {
+  return { $0.partitionMap(partitionEither(p)) } // error
+}
+</code></pre>
+<p>类型系统在这里的元组名称上有点麻烦，但我们可以通过解构和重组来编译:</p>
+<pre><code class="language-swift">func partition&lt;A&gt;(_ p: @escaping (A) -&gt; Bool) -&gt; ([A]) -&gt; (`false`: [A], `true`: [A]) {
+  return {
+    let (lefts, rights) = $0.partitionMap(partitionEither(p))
+    return (lefts, rights)
+  }
+}
+</code></pre>
+<p>这很好，因为<strong>partition</strong>甚至不在标准库中，但是我们通过探索<strong>filter和filterMap</strong>之间的链接，以及从Optional到Either的泛化，自动地进入了这个目录。</p>
+<p>现在我们看到两个平行的故事在这里形成:</p>
+<ul>
+<li>将一个函数的谓词(A) -&gt; Bool提升为可选的(A) -&gt; A? 自然而然地引出了<strong>filterMap</strong>函数，它又引出了我们已经熟悉的<strong>filter</strong>函数。</li>
+<li>将一个函数的谓词(A) -&gt; Bool提升为either (A) -&gt; either &lt; A, A &gt;会自然地引导我们得到<strong>partitionMap</strong>函数，该函数反过来又派生出分区函数。</li>
+</ul>
+<p>我们还可以将其与之前章节中创建的其他机制结合起来，比如<strong>functional setters</strong>。我们可以定义非常小的泛型setter，它们以非常复杂的方式拼接在一起。我们看到这在自由函数中工作得最好，所以让我们定义一个免费版本的<strong>partitionMap</strong>:</p>
+<pre><code class="language-swift">func partitionMap&lt;A, B, C&gt;(_ p: @escaping (A) -&gt; Either&lt;B, C&gt;) -&gt; ([A]) -&gt; (lefts: [B], rights: [C]) {
+  return { $0.partitionMap(p) }
+}
+</code></pre>
+<p>让我们定义一个可以与它一起使用的函数。</p>
+<pre><code class="language-swift">let evenOdds = { $0 % 2 == 0 ? Either.left($0) : .right($0) }
+// (Int) -&gt; Either&lt;Int, Int&gt;
+</code></pre>
+<p>我们可以把这个函数交给 <strong>partitionMap</strong>.</p>
+<pre><code class="language-swift">partitionMap(evenOdds)
+// ([Int]) -&gt; (lefts: [Int], rights: [Int])
+</code></pre>
+<p>现在我们有了一个全新的函数，给定一个整数数组，返回一个元组分区，左边是偶数，右边是奇数。</p>
+<p>Let’s try it out.</p>
+<pre><code class="language-swift">Array(1...10)
+  |&gt; partitionMap(evenOdds)
+// ([2, 4, 6, 8, 10], [1, 3, 5, 7, 9])
+</code></pre>
+<p>按预期工作。我们甚至可以使用元组可组合setter来组合它。让我们把偶数都平方。</p>
+<pre><code class="language-swift">Array(1...10)
+  |&gt; partitionMap(evenOdds)
+  |&gt; (first &lt;&lt;&lt; map)(square)
+// ([4, 16, 36, 64, 100], [1, 3, 5, 7, 9])
+</code></pre>
+<p>在短短几行和一个表达式中，我们就能够在修改其中一个集合之前，应用一个复杂的谓词将数组分割成两个，同时保持分区的完整性。</p>
+<h2 id="6-a-namewhatsthepointawhats-the-point">6. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>我们花了整整一集的时间来讨论命名问题，命名是一个很快就会像bikeshed一样的话题，就像<strong>flatMap</strong>的重命名一样。 最重要的是，这个名字一开始就值得吗? 弃用它会导致大量代码基础的变动。人们大部分时间都在使用现有的<strong>flatMap</strong>进行日常代码编写，所以他们可能会在Swift 4.1中加载项目并问:“有什么意义?”这些重命名的练习值得吗?</p>
+<p>有趣的是，我们可以退一步，更抽象地看待事物，并以有趣的方式将事物联系在一起。通过观察<strong>flatMap</strong>的形状，我们能够弄清楚为什么其中一个是异常值，以及另外两个如何为未来更多的<strong>flatMap</strong>提供共同的直觉。</p>
+<p>与此同时，在将异常值重命名为<strong>filterMap</strong>时，我们有机会以其他方式一般化它。</p>
+<p>命名是有争议的! 根据名称，我们可以在相关概念之间创建牢固的联系，这可以引导我们发现有趣的东西，正如我们看到的<strong>filter和filterMap</strong>引导我们到<strong>partition和partitionMap</strong>!</p>
+<p>现在<strong>flatMap</strong>的异常值已经被重命名为<strong>compactMap</strong>，我们将在未来在更多类型上自由地探索它。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-09-algebraic-data-types-exponents/">
+                  <h3 class="post-title">
+                    PointFree Episode 09: Algebraic Data Types: Exponents
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

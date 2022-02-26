@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>First class functions in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="支持第一类函数的语言使您能够像使用任何其他对象或值一样使用函数和方法。您可以将它们作为参数传递，保存在属性中，或者从另一个函数返回它们。换句话说，该语言将函数视为“一级公民”
+虽然Swift并不是第一种支持这种函数处理方式的语言，但在Jav..." />
+    <meta name="keywords" content="functional programming,functions" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">First class functions in Swift</h2>
+            <div class="post-date">2018-01-07</div>
+            
+            <div class="post-content" v-pre>
+              <p>支持第一类函数的语言使您能够像使用任何其他对象或值一样使用函数和方法。您可以将它们作为参数传递，保存在属性中，或者从另一个函数返回它们。换句话说，该语言将函数视为“一级公民”</p>
+<p>虽然Swift并不是第一种支持这种函数处理方式的语言，但在JavaScript或Lua等更动态的语言中，你通常会看到这种特性。因此，将Swift健壮的静态类型系统与一流的函数相结合，将成为一个非常有趣的组合，可以让我们做一些非常有创意的事情😀。</p>
+<p>本周，让我们来看看在Swift中使用一级函数的几种不同方式!</p>
+<h2 id="passing-functions-as-arguments">Passing functions as arguments</h2>
+<p>让我们从基础开始。由于函数可以作为值使用，这意味着我们可以将它们作为参数传递。 例如，我们想要向一个视图添加一个子视图数组。通常，我们会这样做:</p>
+<pre><code class="language-swift">let subviews = [button, label, imageView]
+
+subviews.forEach { subview in
+    view.addSubview(subview)
+}
+</code></pre>
+<p>上面的代码可以工作，没有任何问题。但是如果我们利用第一类函数，我们可以大大减少它的冗长。</p>
+<p>我们能做的是将addSubview方法作为一个闭包类型(UIView) -&gt; Void(因为它接受一个视图添加，并且不返回任何东西)。这完全匹配forEach接受的参数类型(一个(Element) -&gt; Void类型(元素)的闭包，在本例中元素类型是UIView)。 结果是我们可以通过视图。将addSubview直接作为forEach调用的参数，像这样:</p>
+<pre><code class="language-swift">subviews.forEach(view.addSubview)
+</code></pre>
+<p>这很酷!😎然而，有一件事要记住，当使用实例方法作为这样的闭包时，只要保留闭包，就会自动保留实例。当像上面那样传递一个函数作为非逃逸的闭包参数时，这根本不是一个问题，但是对于逃逸闭包，为了避免循环引用，需要注意这一点。</p>
+<h2 id="passing-initializers-as-arguments">Passing initializers as arguments</h2>
+<p>很酷的是，在Swift中，不仅函数和方法可以用作第一类函数——你也可以用这种方式使用初始化器。</p>
+<p>例如，我们说我们有一个图像数组，我们想要为它创建图像视图，我们想要添加每个这些图像视图到堆栈视图。使用第一类函数，我们可以通过map和forEach的简单链实现上述所有功能:</p>
+<pre><code class="language-swift">images.map(UIImageView.init)
+      .forEach(stackView.addArrangedSubview)
+</code></pre>
+<p>我喜欢用这种方式构造代码的地方在于，它变得非常具有声明性。我们只是声明我们想要的结果，而不是嵌套的for循环。当然，在声明性、紧凑的代码和可读性之间需要找到一个平衡点，但是对于像上面这样的简单操作，我认为利用第一类函数是非常好的。</p>
+<h2 id="creating-instance-method-references">Creating instance method references</h2>
+<p>让我们更深入地研究一下一流函数的奇妙世界。😉有一件事让我困惑了很长一段时间，那就是当我想调用静态方法时，我得到了实例方法自动补全建议。试着打字UIView。在Xcode中，每个实例方法都是建议🤔。</p>
+<p>一开始我以为这是Xcode漏洞，但后来我决定调查一下。结果是，对于类型拥有的每个实例方法，都有一个对应的静态方法，通过将实例作为参数传递，该静态方法允许您以闭包的形式检索该实例方法。</p>
+<p>例如，我们可以使用以下方法来获取给定UIView实例的removeFromSuperview方法的引用:</p>
+<pre><code class="language-swift">let closure = UIView.removeFromSuperview(view)
+</code></pre>
+<p>调用上述闭包与调用view.removeFromSuperview()完全相同，这很有趣，但它真的有用吗? 让我们来看看几个使用该特性可以产生一些非常酷的结果的场景。</p>
+<h2 id="xctest-on-linux">XCTest on Linux</h2>
+<p>Apple框架使用该特性的一种方式是在Linux上使用XCTest运行测试。在Apple自己的平台上，XCTest通过使用Objective-C运行时查找给定测试用例的所有测试方法，然后自动运行它们。然而，在Linux上并没有Objective-C运行时，所以我们需要编写一些样板文件来运行测试。</p>
+<p>首先，我们必须声明一个静态的allTests字典，它包含我们的测试名和要运行的实际方法之间的映射:</p>
+<pre><code class="language-swift">extension UserManagerTests {
+    static var allTests = [
+        (&quot;testLoggingIn&quot;, testLoggingIn),
+        (&quot;testLoggingOut&quot;, testLoggingOut),
+        (&quot;testUserPermissions&quot;, testUserPermissions)
+    ]
+}
+</code></pre>
+<p>然后将上面的字典传递给XCTMain函数来运行我们的测试:</p>
+<pre><code class="language-swift">XCTMain([
+    testCase(UserManagerTests.allTests),
+])
+</code></pre>
+<p>在底层，它使用了能够使用其静态等效物提取实例方法的特性，这使我们能够在静态上下文中简单地通过名称引用函数，同时仍然允许框架生成运行的实例方法。很聪明!👍</p>
+<p>如果没有这个特性，我们将不得不写这样的东西:</p>
+<pre><code class="language-swift">extension UserManagerTests {
+    static var allTests = [
+        (&quot;testLoggingIn&quot;, { $0.testLoggingIn() }),
+        (&quot;testLoggingOut&quot;, { $0.testLoggingOut() }),
+        (&quot;testUserPermissions&quot;, { $0.testUserPermissions() })
+    ]
+}
+</code></pre>
+<h2 id="calling-an-instance-method-on-each-element-in-a-sequence">Calling an instance method on each element in a sequence</h2>
+<p>让我们来看看这个功能。 就像我们可以将另一个对象的实例方法作为参数传递给forEach一样，如果我们也可以传递一个实例方法，希望序列中的每个元素都能执行，这不是很酷吗?</p>
+<p>例如，我们有一个子视图数组，我们想要从它们的父视图中移除它们。而不是这样做:</p>
+<pre><code class="language-swift">for view in views {
+    view.removeFromSuperview()
+}
+</code></pre>
+<p>如果我们能这样做不是很酷吗:</p>
+<pre><code class="language-swift">views.forEach(UIView.removeFromSuperview)
+</code></pre>
+<p>好消息是我们可以，我们所要做的就是在Sequence上创建一个小扩展，它接受这些静态引用的实例方法之一。因为它们是生成函数的函数(Functionception!😂)它们的类型总是(type) -&gt; (Input) -&gt;Output，因此，对于我们的扩展，我们可以创建一个forEach重载，接受这样的闭包类型:</p>
+<pre><code class="language-swift">extension Sequence {
+    func forEach(_ closure: (Element) -&gt; () -&gt; Void) {
+        for element in self {
+            // Get an instance method for the element by calling 'closure'
+            // and then run it directly using ().
+            closure(element)()
+        }
+    }
+}
+</code></pre>
+<p>我们现在可以很容易地在任何序列的每个成员上调用实例方法!🎉</p>
+<h2 id="implementing-targetaction-without-objective-c">Implementing target/action without Objective-C</h2>
+<p>让我们再看一个例子。 在UIKit中，目标/动作模式非常常见，从观察按钮点击到响应手势。我个人非常喜欢这种模式，因为它让我们可以轻松地使用实例方法作为回调，而不必担心前面讨论过的循环引用问题(当以闭包的形式引用实例方法时)。</p>
+<p>然而，在UIKit中实现目标/动作的方式依赖于Objective-C选择器(这就是为什么你必须用@objc注释私有动作方法)。假设我们想要添加目标/动作模式到我们的一个自定义视图，假设我们想要在不依赖于Objective-C选择器的情况下完成它。这听起来可能需要做很多工作，而且会使事情变得非常复杂，但是由于有了一流的函数——它非常简单!😀</p>
+<p>让我们先定义一个Action typealias，它是一个静态函数，为给定类型和输入返回一个实例方法:</p>
+<pre><code class="language-swift">typealias Action&lt;Type, Input&gt; = (Type) -&gt; (Input) -&gt; Void
+
+</code></pre>
+<p>接下来，让我们创建视图。我们将创建一个ColorPicker，让用户在绘图应用程序中选择一种颜色，并添加一个方法来为它添加目标和动作。我们将把所有的观察记录为闭包，每次闭包运行时，我们都会为给定的目标生成一个实例方法并运行它，就像这样:</p>
+<pre><code class="language-swift">class ColorPicker: UIView {
+    private(set) var selectedColor = UIColor.black
+    private var observations = [(ColorPicker) -&gt; Void]()
+
+    func addTarget&lt;T: AnyObject&gt;(_ target: T,
+                                 action: @escaping Action&lt;T, ColorPicker&gt;) {
+        // We take care of the weak/strong dance for the target, making the API
+        // much easier to use and removes the danger of causing retain cycles
+        observations.append { [weak target] view in
+            guard let target = target else {
+                return
+            }
+
+            // Generate an instance method using the action closure and call it
+            action(target)(view)
+        }
+    }
+}
+</code></pre>
+<p>很酷的是，我们实际上可以在上面更多地使用第一类函数。通过在Optional上使用map API，我们可以生成实例方法并一次性调用它，如下所示:</p>
+<pre><code class="language-swift">observations.append { [weak target] view in
+    target.map(action)?(view)
+}
+</code></pre>
+<p>最后，让我们在CanvasViewController中使用新的目标/动作API，它将显示我们的ColorPicker。就像我们将添加一个目标和动作到UIButton或UIGestureRecognizer，我们可以简单地传递视图控制器本身和一个实例方法来运行，像这样:</p>
+<pre><code class="language-swift">class CanvasViewController: UIViewController {
+    private var drawingColor = UIColor.black
+
+    func presentColorPicker() {
+        let picker = ColorPicker()
+        picker.addTarget(self, action: CanvasViewController.colorPicked)
+        view.addSubview(picker)
+    }
+
+    private func colorPicked(using picker: ColorPicker) {
+        drawingColor = picker.selectedColor
+    }
+}
+</code></pre>
+<p>不需要任何Objective-C选择器，也不需要冒内存泄漏的风险，只需要几行代码——非常酷!👍</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>第一类函数是一个非常强大的特性。 通过以一种更加动态的方式使用函数和方法，我们可以得到一些非常有趣的结果，在实现某些类型的api时，这非常有用。</p>
+<p>然而，在本叔叔的名言中;能力越大，责任越大。然我认为了解这些特性及其工作原理非常有用，但在使用它们时保持一定的克制也是很重要的。我们的目标应该始终是创建漂亮易用的api，编写易读易维护的代码。第一类函数当然可以帮助我们实现这个目标，但如果使用得太过，也会导致相反的结果。和往常一样，我的建议是进行试验，尝试这些特性，看看它们是否可以以及如何在您自己的代码中使用。</p>
+<p><a href="https://www.swiftbysundell.com/articles/first-class-functions-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Jn075RYwWt/" class="tag">
+                    functional programming
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L76CX3exv/" class="tag">
+                    functions
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/separation-of-concerns-using-protocols-in-swift/">
+                  <h3 class="post-title">
+                    Separation of concerns using protocols in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

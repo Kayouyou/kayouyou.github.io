@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A brief summary of Property Wrappers | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="@propertyWrapper属性的四个潜在用例:
+
+Constraining Values
+Transforming Values on Property Assignment
+Changing Synthesized Equality..." />
+    <meta name="keywords" content="summary,a brief summary,property-wrappers" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A brief summary of Property Wrappers</h2>
+            <div class="post-date">2021-04-21</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <h2 id="propertywrapper属性的四个潜在用例">@propertyWrapper属性的四个潜在用例:</h2>
+<ul>
+<li>Constraining Values</li>
+<li>Transforming Values on Property Assignment</li>
+<li>Changing Synthesized Equality and Comparison Semantics :</li>
+<li>Auditing Property Access</li>
+</ul>
+<h2 id="constraining-values">Constraining Values</h2>
+<h3 id="implementing-a-value-clamping-property-wrapper">Implementing a value clamping property wrapper</h3>
+<pre><code class="language-swift">@propertyWrapper
+struct Clamping&lt;Value: Comparable&gt; {
+    var value: Value
+    let range: ClosedRange&lt;Value&gt;
+
+    init(initialValue value: Value, _ range: ClosedRange&lt;Value&gt;) {
+        precondition(range.contains(value))
+        self.value = value
+        self.range = range
+    }
+
+    var wrappedValue: Value {
+        get { value }
+        set { value = min(max(range.lowerBound, newValue), range.upperBound) }
+    }
+}
+
+
+</code></pre>
+<blockquote>
+<p>您可以使用@ clamp来保证在化学溶液中模拟酸度的性质在传统的0 - 14范围内。</p>
+</blockquote>
+<pre><code class="language-swift">struct Solution {
+    @Clamping(0...14) var pH: Double = 7.0
+}
+</code></pre>
+<blockquote>
+<p>试图将pH值设置在该范围之外，会导致使用最近的边界值(最小值或最大值)。</p>
+</blockquote>
+<pre><code class="language-swift">let carbonicAcid = Solution(pH: 4.68) // at 1 mM under standard conditions
+
+let superDuperAcid = Solution(pH: -1)
+superDuperAcid.pH // 0
+</code></pre>
+<blockquote>
+<p>您可以在其他属性包装器的实现中使用属性包装器。</p>
+</blockquote>
+<pre><code class="language-swift">
+@propertyWrapper
+struct UnitInterval&lt;Value: FloatingPoint&gt; {
+    @Clamping(0...1)
+    var wrappedValue: Value = .zero
+
+    init(initialValue value: Value) {
+        self.wrappedValue = value
+    }
+}
+</code></pre>
+<blockquote>
+<p>例如，您可以使用@UnitInterval属性包装器来定义一个RGB类型，以百分比表示红、绿、蓝的强度。</p>
+</blockquote>
+<pre><code class="language-swift">struct RGB {
+    @UnitInterval var red: Double
+    @UnitInterval var green: Double
+    @UnitInterval var blue: Double
+}
+
+let cornflowerBlue = RGB(red: 0.392, green: 0.584, blue: 0.929)
+</code></pre>
+<hr>
+<h2 id="transforming-values-on-property-assignment">Transforming Values on Property Assignment</h2>
+<blockquote>
+<p>接受用户的文本输入一直是应用开发者头疼的问题。要跟踪的东西太多了，从普通的字符串编码到通过文本字段注入代码的恶意尝试。</p>
+</blockquote>
+<pre><code class="language-swift">import Foundation
+
+URL(string: &quot; https://nshipster.com&quot;) // nil (!)
+
+ISO8601DateFormatter().date(from: &quot; 2019-06-24&quot;) // nil (!)
+
+let words = &quot; Hello, world!&quot;.components(separatedBy: .whitespaces)
+words.count // 3 (!)
+</code></pre>
+<blockquote>
+<p>尝试改进，你不能用它来改变已经在运行的事件。😓</p>
+</blockquote>
+<pre><code class="language-swift">struct Post {
+    var title: String {
+        willSet {
+            title = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            /* ⚠️ Attempting to store to property 'title' within its own willSet,which is about to be overwritten by the new value   */
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>再次改进,didSet在初始属性分配期间没有被调用。😓</p>
+</blockquote>
+<pre><code class="language-swift">struct Post {
+    var title: String {
+        // 😓 Not called during initialization
+        didSet {
+            self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>好在在它自己的didSet回调中设置属性不会导致回调再次触发，所以您不必担心无限自递归。</p>
+</blockquote>
+<h3 id="implementing-a-property-wrapper-that-trims-whitespace-from-string-values">Implementing a Property Wrapper that Trims Whitespace from String Values</h3>
+<blockquote>
+<p>使用属性包装器改进</p>
+</blockquote>
+<pre><code class="language-swift">import Foundation
+
+@propertyWrapper
+struct Trimmed {
+    private(set) var value: String = &quot;&quot;
+
+    var wrappedValue: String {
+        get { value }
+        set { value = newValue.trimmingCharacters(in: .whitespacesAndNewlines) }
+    }
+
+    init(initialValue: String) {
+        self.wrappedValue = initialValue
+    }
+}
+</code></pre>
+<blockquote>
+<p>无论是在初始化过程中，还是之后通过属性访问-自动删除其开头或结尾的空格。</p>
+</blockquote>
+<pre><code class="language-swift">struct Post {
+    @Trimmed var title: String
+    @Trimmed var body: String
+}
+
+let quine = Post(title: &quot;  Swift Property Wrappers  &quot;, body: &quot;…&quot;)
+quine.title // &quot;Swift Property Wrappers&quot; (no leading or trailing spaces!)
+
+quine.title = &quot;      @propertyWrapper     &quot;
+quine.title // &quot;@propertyWrapper&quot; (still no leading or trailing spaces!)
+</code></pre>
+<hr>
+<h2 id="changing-synthesized-equality-and-comparison-semantics">Changing Synthesized Equality and Comparison Semantics</h2>
+<blockquote>
+<p>如果您的特定用例需要不同的相等语义呢?假设你想要一个不区分大小写的字符串相等的概念?</p>
+</blockquote>
+<h3 id="implementing-a-case-insensitive-property-wrapper">Implementing a case-insensitive property wrapper</h3>
+<pre><code class="language-swift">import Foundation
+
+@propertyWrapper
+struct CaseInsensitive&lt;Value: StringProtocol&gt; {
+    var wrappedValue: Value
+}
+
+extension CaseInsensitive: Comparable {
+    private func compare(_ other: CaseInsensitive) -&gt; ComparisonResult {
+        wrappedValue.caseInsensitiveCompare(other.wrappedValue)
+    }
+
+    static func == (lhs: CaseInsensitive, rhs: CaseInsensitive) -&gt; Bool {
+        lhs.compare(rhs) == .orderedSame
+    }
+
+    static func &lt; (lhs: CaseInsensitive, rhs: CaseInsensitive) -&gt; Bool {
+        lhs.compare(rhs) == .orderedAscending
+    }
+
+    static func &gt; (lhs: CaseInsensitive, rhs: CaseInsensitive) -&gt; Bool {
+        lhs.compare(rhs) == .orderedDescending
+    }
+}
+</code></pre>
+<blockquote>
+<p>构造两个仅因大小写不同的字符串值，它们将在标准的相等性检查中返回false，但在不区分大小写的对象中包装时返回true。</p>
+</blockquote>
+<pre><code class="language-swift">let hello: String = &quot;hello&quot;
+let HELLO: String = &quot;HELLO&quot;
+
+hello == HELLO // false
+CaseInsensitive(wrappedValue: hello) == CaseInsensitive(wrappedValue: HELLO) // true
+</code></pre>
+<blockquote>
+<p>属性包装器允许我们完全放弃所有这些繁忙的工作:</p>
+</blockquote>
+<pre><code class="language-swift">struct Account: Equatable {
+   @CaseInsensitive var name: String
+
+   init(name: String) {
+       $name = CaseInsensitive(wrappedValue: name)
+   }
+}
+
+var johnny = Account(name: &quot;johnny&quot;)
+let JOHNNY = Account(name: &quot;JOHNNY&quot;)
+let Jane = Account(name: &quot;Jane&quot;)
+
+johnny == JOHNNY // true
+johnny == Jane // false
+
+johnny.name == JOHNNY.name // false
+
+johnny.name = &quot;Johnny&quot;
+johnny.name // &quot;Johnny&quot;
+</code></pre>
+<blockquote>
+<p>Since Swift 4, the compiler automatically synthesizes Equatable conformance to types that adopt it in their declaration and whose stored properties are all themselves Equatable.</p>
+</blockquote>
+<blockquote>
+<p>Synthesized by Swift Compiler</p>
+</blockquote>
+<pre><code class="language-swift">extension Account: Equatable {
+    static func == (lhs: Account, rhs: Account) -&gt; Bool {
+        lhs.$name == rhs.$name
+    }
+}
+</code></pre>
+<h2 id="auditing-property-access">Auditing Property Access</h2>
+<h3 id="implementing-a-property-value-versioning">Implementing a Property Value Versioning</h3>
+<pre><code class="language-swift">import Foundation
+
+@propertyWrapper
+struct Versioned&lt;Value&gt; {
+    private var value: Value
+    private(set) var timestampedValues: [(Date, Value)] = []
+
+    var wrappedValue: Value {
+        get { value }
+
+        set {
+            defer { timestampedValues.append((Date(), value)) }
+            value = newValue
+        }
+    }
+
+    init(initialValue value: Value) {
+        self.wrappedValue = value
+    }
+}
+</code></pre>
+<blockquote>
+<p>假设的ExpenseReport类可以用@Versioned注释包装其state属性，以便在处理过程中为每个操作保留书面记录。</p>
+</blockquote>
+<pre><code class="language-swift">class ExpenseReport {
+    enum State { case submitted, received, approved, denied }
+
+    @Versioned var state: State = .submitted
+}
+</code></pre>
+<p><em>Properties can’t be marked as throws.</em></p>
+<blockquote>
+<p>如果不能参与错误处理，属性包装器就不能提供一种合理的方式来执行和传递策略。 例如，如果我们想扩展之前的@Versioned属性包装器，以防止在.denied之后将状态设置为.approved，我们最好的选择是fatalError()，它并不适合真正的应用:</p>
+</blockquote>
+<pre><code class="language-swift">class ExpenseReport {
+    @Versioned var state: State = .submitted {
+        willSet {
+            if newValue == .approved,
+                $state.timestampedValues.map { $0.1 }.contains(.denied)
+            {
+                fatalError(&quot;J'Accuse!&quot;)
+            }
+        }
+    }
+}
+
+var tripExpenses = ExpenseReport()
+tripExpenses.state = .denied
+tripExpenses.state = .approved // Fatal error: &quot;J'Accuse!&quot;
+</code></pre>
+<blockquote>
+<p>这只是到目前为止我们在使用属性包装时遇到的几个限制之一。</p>
+</blockquote>
+<h2 id="limitations">Limitations</h2>
+<h3 id="properties-cant-participate-in-error-handling-属性不能参与错误处理">Properties Can’t Participate in Error Handling - 属性不能参与错误处理</h3>
+<blockquote>
+<p>属性包装器只有两种方法来处理无效值:</p>
+</blockquote>
+<ul>
+<li>Ignoring them (silently)</li>
+<li>Crashing with fatalError()</li>
+</ul>
+<h3 id="wrapped-properties-cant-be-aliased-包装的属性不能起别名">Wrapped Properties Can’t Be Aliased - 包装的属性不能起别名</h3>
+<blockquote>
+<p>不能使用属性包装器的实例作为属性包装器。</p>
+</blockquote>
+<pre><code class="language-swift">typealias UnitInterval = Clamping(0...1) // ❌
+
+let UnitInterval = Clamping(0...1)
+struct Solution { @UnitInterval var pH: Double } // ❌
+</code></pre>
+<h3 id="property-wrappers-are-difficult-to-compose-属性包装器组合困难">Property Wrappers Are Difficult To Compose - 属性包装器组合困难</h3>
+<blockquote>
+<p>属性包装器的组合不是一个交换操作;声明它们的顺序会影响它们的行为。最外层的包装器作用于最内层包装器类型的值。</p>
+</blockquote>
+<pre><code class="language-swift">@propertyWrapper
+struct Dasherized {
+    private(set) var value: String = &quot;&quot;
+
+    var wrappedValue: String {
+        get { value }
+        set { value = newValue.replacingOccurrences(of: &quot; &quot;, with: &quot;-&quot;) }
+    }
+
+    init(initialValue: String) {
+        self.wrappedValue = initialValue
+    }
+}
+
+struct Post {
+    …
+    @Dasherized @Trimmed var slug: String // ⚠️ An internal error occurred.
+}
+</code></pre>
+<h3 id="property-wrappers-arent-first-class-dependent-types-属性包装器不是一等依赖类型">Property Wrappers Aren’t First-Class Dependent Types -  属性包装器不是一等依赖类型</h3>
+<blockquote>
+<p>依赖类型是由其值定义的类型。例如，“一对整数，其中后者大于前者”和“具有素数元素的数组”都是依赖类型，因为它们的类型定义取决于其值。<br>
+Swift在其类型系统中缺乏对依赖类型的支持，这意味着任何此类保证都必须在运行时强制执行。</p>
+</blockquote>
+<p>您不能使用属性包装来定义一个带有约束的新类型</p>
+<pre><code class="language-swift">typealias pH = @Clamping(0...14) Double // ❌
+func acidity(of: Chemical) -&gt; pH {}
+</code></pre>
+<p>也不能使用属性包装器来注释集合中的键或值类型。</p>
+<pre><code class="language-swift">enum HTTP {
+    struct Request {
+        var headers: [@CaseInsensitive String: String] // ❌
+    }
+}
+</code></pre>
+<h3 id="property-wrappers-are-difficult-to-document-属性包装很难记录">Property Wrappers Are Difficult to Document -  属性包装很难记录</h3>
+<h3 id="property-wrappers-further-complicate-swift-属性包装使swift更加复杂">Property Wrappers Further Complicate Swift - 属性包装使Swift更加复杂</h3>
+<p>更多文章：</p>
+<p><a href="https://nshipster.com/propertywrapper/#constraining-values">Swift Property Wrappers</a></p>
+<p><a href="https://www.swiftbysundell.com/articles/property-wrappers-in-swift/#transparently-wrapping-a-value">Property wrappers in Swift</a></p>
+<p><a href="https://onevcat.com/2020/11/codable-default/">使用 Property Wrapper 为 Codable 解码设定默认值</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/mQbhOOb5q/" class="tag">
+                    summary
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/weKNSn_LT/" class="tag">
+                    a brief summary
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/e6qModfHfX/" class="tag">
+                    property-wrappers
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/a-deep-dive-into-swifts-result-builders/">
+                  <h3 class="post-title">
+                    A deep dive into Swift’s result builders
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

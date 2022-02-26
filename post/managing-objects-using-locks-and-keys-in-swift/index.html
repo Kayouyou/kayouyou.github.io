@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Managing objects using Locks and Keys in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="任何软件体系结构最重要的角色之一是使应用程序中各种对象和值之间的关系尽可能清晰和定义良好。然而，维持这些关系——无论设计得多么周到——可能真的很有挑战性，尤其是随着时间的推移。
+随着代码库的增长和新对象的引入，应用程序很容易意外地陷入未定义..." />
+    <meta name="keywords" content="dependency injection,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Managing objects using Locks and Keys in Swift</h2>
+            <div class="post-date">2018-11-25</div>
+            
+            <div class="post-content" v-pre>
+              <p>任何软件体系结构最重要的角色之一是使应用程序中各种对象和值之间的关系尽可能清晰和定义良好。然而，维持这些关系——无论设计得多么周到——可能真的很有挑战性，尤其是随着时间的推移。</p>
+<p>随着代码库的增长和新对象的引入，应用程序很容易意外地陷入未定义的状态——比如当所需的值或对象丢失时。虽然Swift提供了许多语言特性来帮助我们避免这种情况——例如它的严格的静态类型系统，以及可选的概念——但充分利用这些特性说起来容易做起来难。</p>
+<p>本周，让我们来看看我们如何做到这一点——以及我们如何使用Swift强大的type系统来设置锁和密钥，以帮助我们避免未定义的状态，并获得更强的编译时保证： 我们的应用程序的预期流在运行时将保持不变。</p>
+<h2 id="awkwardly-missing-objects">Awkwardly missing objects</h2>
+<p>让我们先看一个我们想要解决的问题的例子。无论组织得多么好，大多数应用程序都需要处理某种形式的全局(或至少是半全局)状态——我们的大多数应用程序以某种方式依赖的某些值或对象。</p>
+<p>例如，我们的应用程序可能要求用户登录以访问某些界面，并使用某种形式的UserManager单例来跟踪用户当前是否登录-看起来像这样:</p>
+<pre><code class="language-swift">class UserManager {
+    static let shared = UserManager()
+
+    private(set) var user: User?
+
+    func logIn(with credentials: LoginCredentials,
+               then handler: @escaping (Result&lt;User&gt;) -&gt; Void) {
+        ...
+    }
+}
+</code></pre>
+<p>上面的代码可能看起来很简单，但是当我们在代码库中需要登录用户才能工作的部分中开始使用它时，问题就开始出现了。</p>
+<p>例如，我们说我们正在构建一个视图控制器来显示当前登录的用户的信息。 即使这个视图控制器只在用户登录后才会被使用，我们也只能访问UserManager.shared.user，它作为一个可选值，需要解包以便实际使用它的值。<br>
+因为如果解包失败了，没有合理的后备方案，所以我们真正能做的就是触发一个assert，像这样:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private lazy var nameLabel = UILabel()
+    private lazy var imageView = UIImageView()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // This guard statement is kind of awkward, since we're
+        // ideally never going to enter the else clause.
+        guard let user = UserManager.shared.user else {
+            assertionFailure(&quot;Uhm...no user exists? 🤔&quot;)
+            return
+        }
+
+        nameLabel.text = user.name
+        imageView.image = user.photo
+    }
+}
+</code></pre>
+<p>这里我们本质上处理的是一个非可选的可选值——这个值在技术上是可选的，但实际上是程序逻辑所必需的。这意味着，如果它没有值，我们将面临以未定义状态结束的风险，而编译器无法帮助我们避免这种情况。</p>
+<p>其中一个难题是，我们是通过单例访问当前登录的用户，而不是使用依赖注入。如果我们把用户作为视图控制器初始化器的一部分适当地注入进来，我们至少可以在本地解决这个问题:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let user: User
+
+    init(user: User) {
+        self.user = user
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // We can now simply access our local user copy, rather
+        // than having to unwrap a singleton's optional.
+        nameLabel.text = user.name
+        imageView.image = user.photo
+    }
+}
+</code></pre>
+<p>上述改变无疑是朝着正确的方向迈出的一大步——尤其是我们已经减少了单例和全局共享状态的使用。然而，没有任何额外的更改，我们只是简单地将这个笨拙的断言失败转移到其他地方——最有可能是在创建ProfileViewController的代码片段中</p>
+<pre><code class="language-swift">func makeProfileViewController() -&gt; UIViewController {
+    // Still no compile-time guarantee that a user exists whenever
+    // we're displaying the profile screen :(
+    guard let user = UserManager.shared.user else {
+        assertionFailure(&quot;Whoops, no user 🤷‍♂️&quot;)
+        return UIViewController()
+    }
+
+    return ProfileViewController(user: user)
+}
+</code></pre>
+<p>我们当然可以继续把我们的let声明转移到其他地方，但这似乎没有意义。相反，让我们看看我们是否能解决核心问题——那就是我们依靠一个全局可选的值来做出局部的决策。</p>
+<h2 id="locks-and-keys">Locks and keys</h2>
+<p>如果我们能够隐藏应用程序中需要用户登录的部分——用户模型最终成为解锁该锁的钥匙——会怎么样呢? 例如，为了能够在第一个地方创建ProfileViewController，调用者需要提供一个非可选的用户——使上面的方法看起来像这样:</p>
+<pre><code class="language-swift">func makeProfileViewController(for user: User) -&gt; UIViewController {
+    return ProfileViewController(user: user)
+}
+</code></pre>
+<p>如果我们能够对所有其他需要特定数据或状态才能工作的类做同样的事情，这样我们的代码就不会模棱两可了，这样我们就能摆脱那些笨拙的let守卫语句，这些语句是我们为了满足编译器的要求才放入的。</p>
+<p>这在理论上听起来可能很棒，但在实践中可能很难实现——所以让我们看看一种实现的方法。</p>
+<h2 id="multiple-levels-of-factories">Multiple levels of factories</h2>
+<p>工厂模式可以很好地隔离创建更大的对象——比如视图控制器和我们在整个应用程序中使用的一些核心对象。但更好的是，如果我们创建多个工厂，每个工厂处理我们应用程序的某个级别或范围。</p>
+<p>例如，我们可以从创建一个RootFactory开始，它能够创建所有不需要任何特定模型或状态的对象来工作。 在这个工厂中，我们可以注入各种我们依赖的单例对象——比如我们自己的UserManager，以及系统提供的ursession .shared:</p>
+<pre><code class="language-swift">class RootFactory {
+    private let urlSession: URLSession
+    private let userManager: UserManager
+
+    init(urlSession: URLSession = .shared,
+         userManager: UserManager = .shared) {
+        self.urlSession = urlSession
+        self.userManager = userManager
+    }
+}
+</code></pre>
+<p>有了以上这些，我们现在可以开始在RootFactory上定义方法了，每个方法都为我们提供了一种简单的方法来创建一些我们在整个应用程序中需要的对象，比如ImageLoader和用来登录应用程序的视图控制器</p>
+<p>由于我们的工厂已经拥有所有必需的系统依赖，调用者只需要调用一个不带任何参数的方法，我们的工厂可以确保注入对象所需的所有依赖——可能包括工厂本身:</p>
+<pre><code class="language-swift">extension RootFactory {
+    func makeImageLoader() -&gt; ImageLoader {
+        return ImageLoader(urlSession: urlSession)
+    }
+
+    func makeLoginViewController() -&gt; UIViewController {
+        return LoginViewController(
+            userManager: userManager,
+            factory: self
+        )
+    }
+}
+</code></pre>
+<p>这里有一个技巧——不必依赖于非可选的可选选项和全局状态——我们将创建附加的工厂，每个工厂都绑定到特定的模型。例如，在一个电子邮件应用程序中，我们可能有一个MessageBoundFactory，它可以创建所有依赖于一个电子邮件消息实例的对象——或者在我们的例子中，我们创建一个UserBoundFactory，它绑定到当前登录的用户——像这样</p>
+<pre><code class="language-swift">class UserBoundFactory {
+    private let user: User
+    private let rootFactory: RootFactory
+
+    init(user: User, rootFactory: RootFactory) {
+        self.user = user
+        self.rootFactory = rootFactory
+    }
+
+    func makeProfileViewController() -&gt; UIViewController {
+        let imageLoader = rootFactory.makeImageLoader()
+
+        return ProfileViewController(
+            user: user,
+            imageLoader: imageLoader
+        )
+    }
+}
+</code></pre>
+<p>正如您在上面看到的，我们的UserBoundFactory还使用它的父RootFactory来创建不需要当前用户的对象，这是可行的，因为工厂从不保留它们创建的对象——所以所有的“子工厂”都可以自由地保留它们的父工厂，而不必担心会导致任何保留周期。</p>
+<p>述方法的美妙之处在于，一旦我们访问了UserBoundFactory，我们就可以简单地创建我们需要的任何用户绑定对象，而不必不断地传递用户，所有这些都不需要任何断言失败或冒未定义状态的风险。 在ProfileViewController的情况下，我们只是像以前一样调用makeProfileViewController，但是我们现在有了一个编译时的保证，即所需的数据实际上是可用的。</p>
+<p>最后，让我们创建我们的锁，它采用RootFactory上的方法的形状，使它能够检索用户绑定的工厂，假定所需的键(用户模型)对调用者可用</p>
+<pre><code class="language-swift">extension RootFactory {
+    func makeUserBoundFactory(for user: User) -&gt; UserBoundFactory {
+        return UserBoundFactory(user: user, rootFactory: self)
+    }
+}
+</code></pre>
+<p>我们不仅通过删除所有非可选的可选选项和断言失败，使我们的代码更加可预测，我们还改进了代码库中的关注点分离 - 因为每个工厂只负责在其自己的范围中创建对象👍。</p>
+<h2 id="putting-things-into-practice">Putting things into practice</h2>
+<p>许多架构结构“在纸上”看起来很好，但问题总是它们在实践中工作得如何——所以让我们来看看我们的新锁和钥匙实现吧!</p>
+<p>正如我们前面看到的，我们的LoginViewController现在是由我们的RootFactory创建的，它也将自己作为初始化器的一部分传递到视图控制器。这样做的好处是，一旦用户成功登录，我们就可以使用注入的RootFactory打开我们的锁，并访问UserBoundFactory，然后我们可以用它来创建一个ProfileViewController，并把它推到导航堆栈上——像这样:</p>
+<pre><code class="language-swift">private extension LoginViewController {
+    func handleLoginResult(_ result: Result&lt;User&gt;) {
+        switch result {
+        case .success(let user):
+            let userBoundFactory = factory.makeUserBoundFactory(for: user)
+            let profileVC = userBoundFactory.makeProfileViewController()
+            navigationController?.pushViewController(profileVC, animated: true)
+        case .failure(let error):
+            show(error)
+        }
+    }
+}
+</code></pre>
+<p>因为每个工厂都可以将自己注入到它创建的对象中，所以我们不需要在任何特定的地方保留任何工厂，每个工厂的所有权只是在当前使用它的所有对象之间共享，一旦不再需要它(在UserBoundFactory的情况下——每当用户注销时)，它就会自动释放。</p>
+<p>工厂的一个主要好处是，特别是当它与锁和钥匙一起使用时，我们可以很容易地隐藏与创建给定对象的方式和原因相关的实现细节。我们甚至可以让我们的RootFactory决定我们应用的根视图控制器应该是什么 - 通过使用存储在钥匙链中的用户信息来解锁自己的锁，或者以其他方式返回一个LoginViewController</p>
+<pre><code class="language-swift">extension RootFactory {
+    func makeRootViewController() -&gt; UIViewController {
+        if let user = userManager.restoreFromKeychain() {
+            let factory = makeUserBoundFactory(for: user)
+            return factory.makeProfileViewController()
+        }
+
+        return makeLoginViewController()
+    }
+}
+</code></pre>
+<p>这样，当我们在AppDelegate中设置应用程序时，我们可以简单地创建我们的根工厂，并让它给我们正确的根视图控制器来使用，像这样:</p>
+<pre><code class="language-swift">let factory = RootFactory()
+let rootVC = factory.makeRootViewController()
+
+window.rootViewController = UINavigationController(
+    rootViewController: rootVC
+)
+</code></pre>
+<p>有了上面的这些，我们的应用程序的状态即使对我们的应用程序委托也是隐藏的，否则它往往会变成一个需要持有大量全局状态的对象——最有可能是以(偶尔是非可选的)可选的形式。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用锁和键原则，只允许在某些对象所需的依赖项可用时访问它们，是一种使我们的代码库更可预测的好方法，并减少对非可选可选语句和笨拙的保护语句的需要。 通过使用多级工厂，每个工厂都隐藏在一个明确定义的锁后面，我们可以在我们的应用程序中创建多个作用域——每个作用域越来越专门地用于给定的任务或数据块。</p>
+<p>然而，使用工厂并不是实现锁和钥匙的唯一方法。使用其他技术也可以实现大部分相同的原则——比如使用函数方法，其中每个函数解锁一组新的api，或者设置多个级别的依赖容器。就像大多数事情一样，有多种途径可以选择，每一条都能让我们实现相同的目标。</p>
+<p><a href="https://www.swiftbysundell.com/articles/managing-objects-using-locks-and-keys-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SI7Eu5Vqu/" class="tag">
+                    dependency injection
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/extending-optionals-in-swift/">
+                  <h3 class="post-title">
+                    Extending optionals in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

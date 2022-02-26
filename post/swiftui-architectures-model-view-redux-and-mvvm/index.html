@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>SwiftUI Architectures: Model-View, Redux &amp; MVVM | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+What we will build
+
+
+
+
+SwiftUI App Architectures
+
+
+
+
+Model-View
+
+
+3.1. Overview / Idea
+3.2. Implementation
+3.3. Disc..." />
+    <meta name="keywords" content="swiftui-architecture,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">SwiftUI Architectures: Model-View, Redux &amp; MVVM</h2>
+            <div class="post-date">2021-09-30</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1guz29yrez9j612q0iwgo702.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Whatwewillbuild">What we will build</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#SwiftUIAppArchitectures">SwiftUI App Architectures</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Model-View">Model-View</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#OverviewIdea">Overview / Idea</a></li>
+<li>3.2. <a href="#Implementation">Implementation</a></li>
+<li>3.3. <a href="#Discussion">Discussion</a></li>
+<li>3.4. <a href="#Advantages:">Advantages*:</a></li>
+<li>3.5. <a href="#Disadvantages:">Disadvantages:</a></li>
+</ul>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Redux">Redux</a></li>
+</ol>
+<ul>
+<li>4.1. <a href="#OverviewIdea-1">Overview / Idea</a></li>
+<li>4.2. <a href="#GenericImplementation">Generic Implementation</a></li>
+<li>4.3. <a href="#App-specificImplementation">App-specific Implementation</a></li>
+<li>4.4. <a href="#View-specificImplementation">View-specific Implementation</a></li>
+<li>4.5. <a href="#Discussion-1">Discussion</a></li>
+<li>4.6. <a href="#Advantages:-1">Advantages:</a></li>
+<li>4.7. <a href="#Disadvantages:-1">Disadvantages:</a></li>
+</ul>
+</li>
+<li>
+<ol start="5">
+<li><a href="#ViewStateMVVM">ViewState MVVM</a></li>
+</ol>
+<ul>
+<li>5.1. <a href="#OverviewIdea-1">Overview / Idea</a></li>
+<li>5.2. <a href="#GenericImplementation-1"> Generic Implementation</a></li>
+<li>5.3. <a href="#View-specificImplementation-1">View-specific Implementation</a></li>
+<li>5.4. <a href="#Discussion-1">Discussion</a></li>
+</ul>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Evaluation">Evaluation</a></li>
+</ol>
+<ul>
+<li>6.1. <a href="#Whatarethedifferences">What are the differences?</a></li>
+<li>6.2. <a href="#HowcanweevaluateAppArchitectures">How can we evaluate App Architectures?</a></li>
+</ul>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>随着最近发布的swifttui和Xcode 11，我们决定研究可以在swiftUI上使用的不同应用架构。我们将研究一个相当简单的<em>Model-View</em>架构、<em>Redux</em>架构模式和<em>ViewState MVVM</em>。</p>
+<p>由于SwiftUI使用声明式UI方法，编写UI代码发生了巨大的变化。在UIKit中，对象只被实例化一次，直到它们被释放，而SwiftUI则在每次状态改变时重新创建一个视图的子视图。因此，我们检查当前的MVVM架构(更多信息请参阅我们之前的博客文章)是否可以简单地移植到SwiftUI，并尝试新的架构方法，这可能会更适合。</p>
+<h2 id="1-a-namewhatwewillbuildawhat-we-will-build">1. <a name='Whatwewillbuild'></a>What we will build</h2>
+<p>在开始讨论SwiftUI的不同应用程序架构之前，让我先介绍一下本文的示例应用程序:<a href="https://github.com/quickbirdstudios/SwiftUI-Architectures">QBChat</a>。QBChat是一个简单的聊天应用程序，我们想使用不同的应用程序架构来实现，让您了解这些架构在代码中的外观。QBChat有一个ChatListView和一个ChatDetailView，其中ChatListView包含不同的聊天列表，ChatDetailView只包含来自单个聊天的消息。</p>
+<p>由于这个应用程序应该只作为一个小示例使用，我们使用以下模型来表示我们所拥有的关于聊天和消息的信息。</p>
+<p>我们进一步定义一个<em>ChatService</em>来处理所有与聊天相关的模型操作，接口如下:</p>
+<p>除此之外，我们还预定义了视图<em>ChatCell</em>和<em>MessageView</em>来显示聊天/消息信息。由于这两个视图都只显示静态信息，所以我们只是使用它们，而不进一步使它们适应每个体系结构。</p>
+<hr>
+<h2 id="2-a-nameswiftuiapparchitecturesaswiftui-app-architectures">2. <a name='SwiftUIAppArchitectures'></a>SwiftUI App Architectures</h2>
+<p>我们首先通过展示一个示例实现(你也可以在这个Github仓库中找到)来描述和讨论应用架构<em>Model-View, Redux和ViewState MVVM</em>。然后我们对它们进行比较。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guxa4ld8n4j60iq05n0t402.jpg" alt="avatar" loading="lazy"></figure>
+<hr>
+<h2 id="3-a-namemodel-viewamodel-view">3. <a name='Model-View'></a>Model-View</h2>
+<p>我们从一个简单易懂的架构开始，来说明一旦应用开始变大，会出现哪些问题，以及为什么在视图和模型代码之间可能需要一个中间层。</p>
+<h3 id="31-a-nameoverviewideaaoverview-idea">3.1. <a name='OverviewIdea'></a>Overview / Idea</h3>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guxa5vey8uj60ji089t9102.jpg" alt="avatar" loading="lazy"></figure>
+<p>在<em>Model-View</em>应用程序架构中，<em>view layer</em>可以完全访问<em>model layer</em>，并将用户输入本身转换为操作model的动作。视图还访问模型层以显示应用程序的当前状态。</p>
+<h3 id="32-a-nameimplementationaimplementation">3.2. <a name='Implementation'></a>Implementation</h3>
+<p>对于Model-View<em>应用架构，我们直接在视图中添加必要的服务和模型状态，就像你在ChatListView和ChatDetailView中看到的那样。在这个例子中，我们简单地将</em>ChatService*添加到视图本身，并直接访问它们的方法来创建不同的视图。我们还将ChatService转发给ChatDetailView，以便它被相应地使用。</p>
+<p>正如我们在ChatDetailView中看到的，我们需要在视图本身中存储状态，包括当前聊天和聊天中的消息。</p>
+<h3 id="33-a-namediscussionadiscussion">3.3. <a name='Discussion'></a>Discussion</h3>
+<p>如果我们认为这些视图总是屏幕填充，它们似乎非常类似于UIViewControllers在UIKit-MVC应用程序架构中的工作方式。 与使用MVC应用程序架构遇到的问题类似，我们也可以识别使用<em>Model-View</em>应用程序架构的以下优点和缺点:</p>
+<h3 id="34-a-nameadvantagesaadvantages">3.4. <a name='Advantages:'></a>Advantages*:</h3>
+<ul>
+<li><em>低代码开销（Low code overhead）</em>:不需要为业务逻辑编写中间层，甚至不用处理不同文件中的代码。这允许快速和简单的开发。</li>
+<li><em>低更新率（Low update rate）</em>:只有当视图的重要状态实际发生变化时，视图才会更新。视图之间只有有限数量的共享状态。</li>
+</ul>
+<h3 id="35-a-namedisadvantagesadisadvantages">3.5. <a name='Disadvantages:'></a>Disadvantages:</h3>
+<ul>
+<li><em>“海量视图”</em>:一旦需要更复杂的业务逻辑，视图的复杂性很容易随时间增长。</li>
+<li><em>可重用性低</em>:视图不容易重用，因为业务逻辑与UI代码是强耦合的。</li>
+<li><em>可测试性低</em>:视图不容易用模拟数据测试。不同UI控件之间的依赖关系也只能在接近生产环境的环境中进行测试。</li>
+</ul>
+<hr>
+<h2 id="4-a-namereduxaredux">4. <a name='Redux'></a>Redux</h2>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guxage7w3qj60j908tdg902.jpg" alt="avatar" loading="lazy"></figure>
+<p>在类似redux的架构中，<em>View</em>组件访问<em>Store</em>对象的状态并发送Action对象来触发某些操作。一个<em>Action</em>将由一个<em>Reducer</em>执行，它是<em>Store</em>的一部分，导致状态改变。与以场景为中心的架构相比，Redux通常被认为具有全局状态。</p>
+<h3 id="41-a-nameoverviewidea-1aoverview-idea">4.1. <a name='OverviewIdea-1'></a>Overview / Idea</h3>
+<p>Redux应用程序架构基于全局应用程序状态的思想，所有视图都可以访问这个全局应用程序状态，并且只有特定视图结构中的特定视图信息(如模型标识符或视图状态)。对于类似redux架构的UIKit实现，可以看看ReSwift。</p>
+<p>有多种实现Redux体系结构模式的方法。您可以为所有可能被触发的不同操作使用多个Reducers。 您还可以有一个全局状态或定义该全局状态的某些子状态。下面将详细解释这是如何工作的</p>
+<h3 id="42-a-namegenericimplementationageneric-implementation">4.2. <a name='GenericImplementation'></a>Generic Implementation</h3>
+<p>我们首先定义通用Store和Reducer的工作方式，然后决定全局<em>global app state、available actions和Reducer</em>。</p>
+<p>这个实现是基于Majid Jabrayilov提供的实现。与Majid区分同步和异步操作的方法不同，我们只是简单地将它们组合到同一个界面中。 因此，Reducer总是返回一个publisher，它描述了如何在处理来自publisher的事件后更改状态。只要有同步状态更改，您就可以使用<strong>Reducer.sync</strong> 方法。</p>
+<p>Reducer接受当前的应用状态和一个触发的动作来计算如何适应应用的状态。 因此，reducer只需要一个闭包返回一个Publisher，告诉它如何根据当前应用状态的输入和触发的动作来改变应用的状态。</p>
+<p>Store有一个全局的<strong>app state</strong>。该Store的用户可以向它发送Actions，而Reducer会将其归纳为状态更改。 因此，我们将一个<em>initial state</em>和一个<em>reducer</em>注入到Store对象中。</p>
+<h3 id="43-a-nameapp-specificimplementationaapp-specific-implementation">4.3. <a name='App-specificImplementation'></a>App-specific Implementation</h3>
+<p>记住这个通用实现，我们现在继续定义QBChat的应用状态和可用操作。我们定义一个全局的应用程序状态，其中包含所有聊天记录和所有消息，以及关于当前用户的信息。</p>
+<p>为了能够区分不同的动作以及它们来自哪个场景，我们定义了以下枚举。 <em>AppAction</em>是应用范围内的操作类型，而它的case处理每个子场景。因为我们以空状态启动应用程序，所以我们引入了重载情况，当视图出现时触发。</p>
+<p>为了处理这些操作，我们定义一个reducer来处理这些操作。如您所见，我们正在捕获内部的chatService，因此我们能够处理触发的动作。</p>
+<h3 id="44-a-nameview-specificimplementationaview-specific-implementation">4.4. <a name='View-specificImplementation'></a>View-specific Implementation</h3>
+<p>现在我们将**Store&lt;AppState, AppAction&gt;**集成到ChatListView和ChatDetailView中。与 <strong>Model-View</strong> 体系结构相反，我们现在只在必要时从Store访问状态并触发Actions。也不需要将Store转发给任何ChatListView的子视图，因为我们将把商店注入到环境中。我们只需要转发选定的聊天。</p>
+<p>现在要将我们的Store初始化到ChatListView中，我们只需使用**environmentobject(..)**视图修饰符将它注入到SceneDelegate中。 因此，它将通过环境对所有ChatListView及其所有子视图可用。</p>
+<h3 id="45-a-namediscussion-1adiscussion">4.5. <a name='Discussion-1'></a>Discussion</h3>
+<p>考虑到所有这些，我们现在研究类似redux架构的一些优缺点。</p>
+<h3 id="46-a-nameadvantages-1aadvantages">4.6. <a name='Advantages:-1'></a>Advantages:</h3>
+<ul>
+<li><strong>全局状态一致性(Consistent, global state)</strong>:因为我们现在有一个存储来包含应用程序的<strong>State</strong>，对该状态的更改将自动更新所有视图。</li>
+<li><strong>App的高可测试性(High App-Wide Testability)</strong>:用模拟状态一次测试整个应用相当简单，因为它只需要在View层次结构的根注入一个不同的<strong>Store</strong>。</li>
+</ul>
+<h3 id="47-a-namedisadvantages-1adisadvantages">4.7. <a name='Disadvantages:-1'></a>Disadvantages:</h3>
+<ul>
+<li>
+<p><strong>高更新频率(High update rate)</strong>: 使SwiftUI视图失效的代价并不高，但是经常触发它仍然是不必要的负载。由于更新Store的状态会使所有视图失效，因此在某些边缘情况下可能会导致性能问题。</p>
+</li>
+<li>
+<p><strong>特定场景的低可测试性(Low Scene-Specific Testability)</strong>:由于整个应用只有一个Store，只包含一个state和reducer，所以用模拟状态测试各个屏幕相当困难。</p>
+</li>
+<li>
+<p><strong>内存占用高（High memory usage）</strong>:由于整个应用程序应该可以同时访问该state，因此可用的状态可能比实际显示的或需要的更多。可以通过为应用的特定部分提供不同的<strong>Store</strong>来阻止这种情况，但这将需要更高的开发努力。</p>
+</li>
+<li>
+<p><strong>模块化程度低(Low modularity)</strong>:我们最初定义了一个reducer来将状态变化映射到应用的动作。这使得我们在隐藏state(对UI组件不可见，但在业务逻辑中使用)或重用不符合这种相当严格的体系结构模式的现有组件时灵活性很低。架构本身并不需要进一步的模块化，但需要进一步的调整，比如为应用的不同部分创建不同的store(如果想在不同的上下文中重用)。</p>
+</li>
+</ul>
+<hr>
+<h2 id="5-a-nameviewstatemvvmaviewstate-mvvm">5. <a name='ViewStateMVVM'></a>ViewState MVVM</h2>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guxch7fjkyj60jr0atmxm02.jpg" alt="avatar" loading="lazy"></figure>
+<p>在ViewState MVVM架构中，每个视图组件都有一个ViewModel，它为视图提供了一个场景特定的状态。视图模型可以通过Input对象触发。虽然Redux架构中的Store通常完全公开其状态，但ViewModels可能还包含隐藏的内部状态，这些状态对视图本身并不重要，但由于状态属性之间的依赖关系，可能需要它。在我们的示例中，ChatDetailView不需要知道所有的Chat属性，而只需要知道要显示给用户的标题，因为ViewModel以后可能需要显示完全不同的信息作为标题。</p>
+<h3 id="51-a-nameoverviewidea-1aoverview-idea">5.1. <a name='OverviewIdea-1'></a>Overview / Idea</h3>
+<p>在这个例子中，我们正在基于ViewState架构模式构建一个MVVM架构，该模式受到<a href="https://github.com/sellmair/quantum">Sebastian sellair's Quantum</a>方法的启发。它可以被看作MVVM体系结构模式的一个更形式化的版本。我们现在不是指定应用程序的全局状态，而是指定一个特定于视图的状态。</p>
+<p><strong>ViewState MVVM</strong> 基于特定于视图的只读状态和由指定输入触发的操作的概念。由于ViewModel也有对其状态的写权限，这些输入可以在ViewModel中转换为状态更改。</p>
+<h3 id="52-a-namegenericimplementation-1a-generic-implementation">5.2. <a name='GenericImplementation-1'></a> Generic Implementation</h3>
+<p>因为我们想要能够改变ViewModel的业务逻辑(即ViewModel的actions)而不需要改变View组件，所以我们定义了一个ViewModel协议，以及作为类型擦除的AnyViewModel包装器。</p>
+<p>ViewModel协议有两种关联类型。关联的类型State是指某个场景的状态类型，而Input可以用来指定一个可以使用<em>trigger</em>方法触发的输入。 可以实现这个<em>trigger</em>方法来基于给定的输入执行特定的状态操作。</p>
+<p>您可以简单地将AnyViewModel类型视为符合ViewModel协议的包装器，关联的类型是指定的泛型类型State和Input。</p>
+<h3 id="53-a-nameview-specificimplementation-1aview-specific-implementation">5.3. <a name='View-specificImplementation-1'></a>View-specific Implementation</h3>
+<p>对于每个视图，我们定义一个单独的state和input。从ChatListView开始，我们的状态包含所有不同的聊天，以及将其转发到ChatDetailView的chatService。因为没有用户输入导致state改变，所以我们可以使用Never作为ChatListViewModel的输入类型。</p>
+<p>ChatListViewModel的实现相当简单，因为它只提供一个静态状态。</p>
+<p>对于ChatDetailView，我们定义一个ChatDetailState，其中包含标题、当前用户(以区分来自用户本身的消息和来自其他用户的消息)以及所选聊天中的所有消息。 作为输入，我们定义了一个只有一种情况的简单枚举。https://gist.github.com/LizzieStudeneer/408b6c5e2f89204326f6748e116a18da 在ChatDetailViewModel中，我们现在将动作枚举映射到状态更改。</p>
+<h3 id="54-a-namediscussion-1adiscussion">5.4. <a name='Discussion-1'></a>Discussion</h3>
+<p>考虑<strong>ViewState MVVM</strong>架构，我们发现了以下优点和缺点</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>
+<p><strong>高度模块化(High modularity)</strong>:由于视图不依赖于应用范围内的状态或特定的视图模型实现，我们可以在多个地方甚至不同的应用程序中重用该视图，而无需更改视图本身的代码。</p>
+</li>
+<li>
+<p><strong>视图间没有依赖关系(No inter-view dependencies)</strong>:因为我们只有特定于视图的state，所以不可预见的视图间状态依赖是不可能的。</p>
+</li>
+<li>
+<p><strong>高维护性（High maintainability）</strong>: 由于单个视图的state是立即可见的，不熟悉某个项目的开发人员可以很容易地识别错误，而无需深入了解所有组件的工作方式。</p>
+</li>
+<li>
+<p><strong>高可重用性(High reusability)</strong>: 我们可以很容易地为一个现有的视图使用一个不同的视图模型，并在不改变视图外观的情况下完全改变它的行为。</p>
+</li>
+<li>
+<p><strong>隐藏状态的可能性（Possibility for hidden state）</strong>:缓存特定数据或限制用户访问的状态是很容易实现的，不需要在闭包中捕获服务(比较:Redux)。</p>
+</li>
+</ul>
+<p><strong>Disadvantages:</strong></p>
+<ul>
+<li>
+<p><strong>没有单一的真相来源（No single source of truth）</strong>: 由于不同的ViewModels是相当独立的对象，并不一定共享一个状态，因此默认情况下不存在单一的truth源。</p>
+</li>
+<li>
+<p><strong>高代码量开销（High code overhead）</strong>: 应用程序模块化的增加增加了代码开销，因为我们不是为多个视图(可能甚至是整个应用程序)使用Store，而是为每个视图单独定义一个类似复杂的ViewModel类。</p>
+</li>
+</ul>
+<h2 id="6-a-nameevaluationaevaluation">6. <a name='Evaluation'></a>Evaluation</h2>
+<p>在我们深入评估之前，让我们先看看架构有何不同，然后再看看如何评估应用架构，以及它们在这些指标中的表现。</p>
+<h3 id="61-a-namewhatarethedifferencesawhat-are-the-differences">6.1. <a name='Whatarethedifferences'></a>What are the differences?</h3>
+<p><em>Model-View、Redux和ViewState MVVM</em>本质上是为不同需求设计的完全不同的架构。下表说明了它们在全局状态、从视图组件中抽象业务逻辑以及能够为应用程序的整体和不同部分交换业务逻辑方面的区别。</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guxhweie4uj60fo0b7dgc02.jpg" alt="avatar" loading="lazy"></figure>
+<p>虽然只有Redux架构强制全局状态，但ViewState MVVM并不完全强制在不同场景中不具有状态。</p>
+<h3 id="62-a-namehowcanweevaluateapparchitecturesahow-can-we-evaluate-app-architectures">6.2. <a name='HowcanweevaluateAppArchitectures'></a>How can we evaluate App Architectures?</h3>
+<p>我们选择根据以下指标来评估上述应用架构:</p>
+<ul>
+<li>
+<p><strong>可维护性(Maintainability)</strong>:  开发人员应该能够很容易地理解代码，而不需要原始作者的干预。</p>
+</li>
+<li>
+<p><strong>可测试性(Testability)</strong>: 模拟模型应该可以在一个或多个场景中轻松实现，而不需要更改生产代码，也就是说，我们希望能够注入类似于Bridge模式的模拟状态。</p>
+</li>
+<li>
+<p><strong>代码开销(Code overhead)</strong>:让应用程序符合架构不应该导致过多的代码开销。我们假设不打算过度重用视图，因为这种情况经常发生。</p>
+</li>
+<li>
+<p><strong>视图与模型之间的低耦合(Low coupling between View &amp; Model)</strong>:重用场景应该不需要改变视图的代码，如果可能的话甚至不需要改变父视图。</p>
+</li>
+</ul>
+<p>当我们根据这些指标比较给定的架构时，我们确定了以下排名(当然，这个评估部分是主观的和可讨论的):</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guxi1vjk63j60fy0bj3yy02.jpg" alt="avatar" loading="lazy"></figure>
+<h2 id="7-a-nameconclusionaconclusion">7. <a name='Conclusion'></a>Conclusion</h2>
+<p>虽然<strong>Model-View</strong>架构在一开始看起来很棒，并且可能是许多swiftUI初学者的选择，但在可重用性和可维护性方面，它有巨大的缺点。当然，这是相当简单和快速的编写，在创造新想法的原型时使用。</p>
+<p>由于类似<strong>redux</strong>的架构确保不同视图的状态是一致的，所以它在较小的应用程序中是有意义的，可以使用一个相当小的状态对象来表示。然而，它也允许轻松地切换整个应用程序的行为，这在某些情况下可能是有用的。</p>
+<p>当涉及到资源密集型和高度模块化的应用程序时，<strong>ViewState MVVM</strong>为每个场景分别抽象了业务逻辑，因此提供了一个很好的方法来重用单个视图或viewmodel，甚至跨不同的应用程序。</p>
+<p>我希望这篇文章能帮助您区分不同的架构，并帮助您在您的SwiftUI应用程序中选择应用程序架构。如果您对如何在SwiftUI中使用MVVM实现著名的协调器模式感兴趣，我们将为您提供另一篇深入的文章和一些实用代码示例:<a href="https://quickbirdstudios.com/blog/coordinator-pattern-in-swiftui/">How to Use the Coordinator Pattern in SwiftUI.</a></p>
+<p><a href="https://quickbirdstudios.com/blog/swiftui-architecture-redux-mvvm/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8LciZnozv/" class="tag">
+                    swiftui-architecture
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/navigation-and-deep-links-in-swiftui/">
+                  <h3 class="post-title">
+                    Navigation and Deep-Links in SwiftUI
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

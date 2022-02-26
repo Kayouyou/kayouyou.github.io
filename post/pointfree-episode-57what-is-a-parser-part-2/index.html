@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 57:What Is a Parser?: Part 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+PointFree Episode 57:What Is a Parser?: Part 2
+
+
+
+
+What is a parser?
+
+
+
+
+Parsing as a multi-step process
+
+
+
+
+Optimiz..." />
+    <meta name="keywords" content="parser,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 57:What Is a Parser?: Part 2</h2>
+            <div class="post-date">2022-01-15</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#PointFreeEpisode57:WhatIsaParser:Part2">PointFree Episode 57:What Is a Parser?: Part 2</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Whatisaparser">What is a parser?</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Parsingasamulti-stepprocess">Parsing as a multi-step process</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Optimizedparsingwithinout">Optimized parsing with inout</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Optimizedparsingwithsubstring">Optimized parsing with substring</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Tillnexttime">Till next time</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- ##  1. <a name='PointFreeEpisode57:WhatIsaParser:Part2'></a>PointFree Episode 57:What Is a Parser?: Part 2 -->
+<h2 id="2-a-namewhatisaparserawhat-is-a-parser">2. <a name='Whatisaparser'></a>What is a parser?</h2>
+<p>根据我们刚才所做的工作，我们可以将解析器定义为从字符串到其他类型的函数。我们甚至可以将其定义为一个简单的类型别名：</p>
+<pre><code class="language-swift">typealias Parser&lt;A&gt; = (String) -&gt; A
+</code></pre>
+<p>给它一个合适的类型会很方便，这样我们就可以用方法来扩展它，所以让我们将函数包装在一个结构中：</p>
+<pre><code class="language-swift">struct Parser&lt;A&gt; {
+  let run: (String) -&gt; A
+}
+</code></pre>
+<p>然而，目前解析器的形状并不十分正确，因为解析并不总是保证成功并产生值。总会有一些格式不正确的数据块，我们就是无法解析它。那么，让我们来介绍一些故障性：</p>
+<pre><code class="language-swift">struct Parser&lt;A&gt; {
+  let run: (String) -&gt; A?
+}
+</code></pre>
+<p>这种简单的类型在应用程序开发中经常出现。我们通常拥有非结构化数据，比如一个裸字符串，并希望将其转换为结构化数据。例如，iOS应用程序中的深度链接路由可以被视为解析器：</p>
+<pre><code class="language-swift">let router = Parser&lt;Route&gt; { str in
+  fatalError()
+}
+</code></pre>
+<p><strong>Route</strong>表示应用程序中支持的路由树，例如：</p>
+<pre><code class="language-swift">enum Route {
+  case home
+  case profile
+  case episodes
+  case episode(id: Int)
+}
+</code></pre>
+<p>如果我们可以构造该<strong>router</strong>值，那么每当深度链接请求通过我们的应用程序委托时，我们只需在其上运行解析器，从中获取一级<strong>Router</strong>值，<strong>switch</strong>该值，然后执行一些基本逻辑以在我们的应用程序中显示正确的屏幕：</p>
+<pre><code class="language-swift">router.run(&quot;/&quot;)
+// .home
+
+router.run(&quot;/episodes/42&quot;)
+// .episode(42)
+</code></pre>
+<p>一旦你有了这个设备，你就可以使用<strong>switch</strong>语句来路由传入的深度链接。</p>
+<pre><code class="language-swift">switch router.run(&quot;/&quot;) {
+case .none:
+case .some(.home):
+case .some(.profile):
+case .some(.episodes):
+case let .some(.episode(id)):
+}
+</code></pre>
+<p>我们还可以将命令行工具视为解析器：</p>
+<pre><code class="language-swift">let cli = Parser&lt;EnumPropertyGenerator&gt; { _ in
+  fatalError()
+}
+</code></pre>
+<p><strong>EnumPropertyGenerator</strong>表示可以使用该工具的所有方式。</p>
+<pre><code class="language-swift">enum EnumPropertyGenerator {
+  case help
+  case version
+  case invoke(urls: [URL], dryRun: Bool)
+}
+</code></pre>
+<p>就像我们的路由器一样，如果我们构造其中一个值，我们可以<strong>switch</strong>它来处理输入。</p>
+<pre><code class="language-swift">cli.run(&quot;generate-enum-properties --version&quot;)
+// .version
+
+cli.run(&quot;generate-enum-properties --help&quot;)
+// .help
+
+cli.run(&quot;generate-enum-properties --dry-run path/to/file&quot;)
+// .invoke(urls: [&quot;path/to/file&quot;], dryRun: true)
+
+switch cli.run(&quot;generate-enum-properties --dry-run path/to/file&quot;) {
+case .none:
+case .some(.help):
+case .some(.version):
+case let .some(.invoke(urls, dryRun)):
+}
+</code></pre>
+<hr>
+<h2 id="3-a-nameparsingasamulti-stepprocessaparsing-as-a-multi-step-process">3. <a name='Parsingasamulti-stepprocess'></a>Parsing as a multi-step process</h2>
+<p>因此，尽管我们可以看到拥有这些解析器是多么有用，但到目前为止我们定义的类型仍然不太正确。创建这样一个解析器意味着我们必须明确回答如何将字符串转换为A值的问题，因此这不利于创建能够进行少量解析的小型解析器，并将它们拼接到能够解析大型事物的解析器中。</p>
+<p>一种方法是将解析视为一个多步骤的过程，并且解析器类型应该只描述该过程中的一个步骤。这意味着更改函数签名以返回与要解析的字符串其余部分一起的结果。</p>
+<p>我们希望为<strong>Parser</strong>类型提供此功能。解析的一个步骤是使用输入字符串的一些子集，然后返回要解析的字符串的剩余部分以及解析结果。</p>
+<pre><code class="language-swift">struct Parser&lt;A&gt; {
+  let run: (String) -&gt; (match: A?, rest: String)
+}
+</code></pre>
+<p>作为一个非常简单的示例，让我们构建一个整数解析器。如果可能的话，它将解析字符串开头的整数，并将其与字符串的其余部分一起返回。让我们从解析器的基本设置开始：</p>
+<pre><code class="language-swift">let int = Parser&lt;Int&gt; { str in
+  // (Int?, String)
+}
+</code></pre>
+<p>不知何故，在这里，我们必须返回一个新字符串，该字符串表示在我们从开头消耗了一个整数之后的输入字符串，以及将消耗的前缀转换为字符串的结果。让我们从获取给定字符串的所有数字字符的前缀开始：</p>
+<pre><code class="language-swift">let int = Parser&lt;Int&gt; { str in
+  let prefix = str.prefix(while: { $0.isNumber })
+</code></pre>
+<p>然后，我们可以尝试使用Int初始化器将此前缀转换为整数。</p>
+<pre><code class="language-swift">let int = Parser&lt;Int&gt; { str in
+  let prefix = str.prefix(while: { $0.isNumber })
+  let int = Int(prefix)
+</code></pre>
+<p>但是，这是一个失败的操作，如果字符串的前缀不是数字，int将是nil，因此我们希望防止这种情况，并通过返回nil和原始字符串来避免，因为如果解析失败，我们不希望使用任何字符串。</p>
+<pre><code class="language-swift">let int = Parser&lt;Int&gt; { str in
+  let prefix = str.prefix(while: { $0.isNumber })
+  guard let int = Int(prefix) else { return (nil, str) }
+</code></pre>
+<p>我们越来越接近了，我们有了想要返回的整数，但是我们没有使用的字符串的“rest”。如果执行此操作，我们可以使用其结束索引返回未使用的字符：</p>
+<pre><code class="language-swift">let int = Parser&lt;Int&gt; { str in
+  let prefix = str.prefix(while: { $0.isNumber })
+  guard let int = Int(prefix) else { return (nil, str) }
+  let rest = String(str[prefix.endIndex...])
+  return (int, rest)
+}
+</code></pre>
+<p>这是我们的第一个解析器！这有点复杂，我们正在使用字符串索引，这可能很棘手，但它应该封装从字符串开头解析整数的所有含义。</p>
+<p>让我们来试一试：</p>
+<pre><code class="language-swift">int.run(&quot;42&quot;)
+// (match 42, rest &quot;&quot;)
+
+int.run(&quot;42 Hello World&quot;)
+// (match 42, rest &quot; Hello World&quot;
+
+int.run(&quot;Hello World&quot;)
+// (match nil, rest &quot;Hello World&quot;
+</code></pre>
+<p>就像这样，我们已经创建了一个解析器。它可能看起来不多，但这个小单元将成为许多令人惊奇的事情的基础。</p>
+<hr>
+<h2 id="4-a-nameoptimizedparsingwithinoutaoptimized-parsing-with-inout">4. <a name='Optimizedparsingwithinout'></a>Optimized parsing with inout</h2>
+<p>但是在我们继续开发解析器类型之前，让我们先讨论一些快速优化的机会。现在，解析器的<strong>run</strong>函数接受一个字符串，并返回一个全新的字符串，该字符串表示在解析过程中使用了输入的某个子集后剩下的内容。我们可以通过改变输入来表示消耗来提高效率。</p>
+<p>我们以前在可组合架构中证明了在A中获取值并在A中返回值的函数与仅获取inout A并返回Void的函数之间存在等价性：</p>
+<pre><code class="language-swift">// (A)       -&gt; A
+// (inout A) -&gt; Void
+</code></pre>
+<p>您可以轻松构建在这两种类型的函数之间通用转换。通常来说，如果函数签名中的某个类型在函数箭头的每一侧出现一次，则可以将其转换为接受inout输入且不再返回该类型的函数。</p>
+<pre><code class="language-swift">struct Parser&lt;A&gt; {
+//  let run: (String) -&gt; (match: A?, rest: String)
+  let run: (inout String) -&gt; A?
+}
+</code></pre>
+<p>现在我们必须修复<strong>int</strong>解析器。我们将对字符串进行适当的变异以使用前缀，而不是返回新字符串和结果。</p>
+<pre><code class="language-swift">let int = Parser&lt;Int&gt; { str in
+  let prefix = str.prefix(while: { $0.isNumber })
+  guard let match = Int(prefix) else { return nil }
+  str.removeFirst(prefix.count)
+  return match
+}
+</code></pre>
+<p>现在我们的构建不起作用，因为它们需要一个<strong>inout</strong>参数，所以现在让我们重新创建<strong>run</strong>的非变异版本，以便我们可以继续以这种方式使用它：</p>
+<pre><code class="language-swift">extension Parser {
+  func run(_ str: String) -&gt; (match: A?, rest: String) {
+    var str = str
+    let match = self.run(&amp;str)
+    return (match, str)
+  }
+}
+</code></pre>
+<p>一切都像以前一样继续工作。</p>
+<hr>
+<h2 id="5-a-nameoptimizedparsingwithsubstringaoptimized-parsing-with-substring">5. <a name='Optimizedparsingwithsubstring'></a>Optimized parsing with substring</h2>
+<p>我们还可以做一个优化，这是一个很大的优化。现在我们正在对字符串进行操作，每次从字符串的前面消耗一点，我们就从<strong>run</strong>函数返回创建的一个全新的字符串。如果我们试图解析大的输入字符串，这可能会非常低效。但不一定要这样。由于我们通常从字符串的前面开始消费，如果我们可以做一些非常轻量级的事情，比如更改字符串的<strong>startIndex</strong>以指向字符串中的字符，该怎么办。</p>
+<p>事实证明，这正是Swift中<strong>Substring</strong>类型的工作方式。因此，如果我们使用字符串的子字符串，也许我们可以移动索引，使事情真正有效果。</p>
+<p>子字符串是一些字符串存储的包装器，它旨在与其他<strong>Substring</strong>实例共享该存储。然后，子字符串的某些突变可以非常有效地完成，因为在内部它所做的只是在指示字符串开始和结束位置的索引之间移动。</p>
+<p>每个Swift集合都有一个底层<strong>SubSequence</strong>类型，它们都旨在提高集合的使用效率。</p>
+<p>让我们尝试更新解析器来处理<strong>Substring</strong>，看看哪些是正确的，哪些是错误的。我们将首先更改它的<strong>mutating run</strong>函数以使用<strong>inout Substring</strong>而不是<strong>String</strong>。</p>
+<pre><code class="language-swift">struct Parser&lt;A&gt; {
+  let run: (inout Substring) -&gt; A?
+}
+</code></pre>
+<p>这破坏了我们的<strong>run</strong>的非变异版本，该版本仍在使用普通ole字符串：</p>
+<pre><code class="language-swift">func run(_ str: String) -&gt; (match: A?, rest: String) {
+  var str = str
+  let match = self.run(&amp;str)
+</code></pre>
+<blockquote>
+<p>🛑 Cannot invoke ‘run’ with an argument list of type ‘(inout String)’</p>
+</blockquote>
+<p>现在，我们可以通过使用其<strong>substring</strong>表示来避免字符串复制，我们可以通过使用Swift所称的“无界范围表达式”进行订阅来获得该表示：</p>
+<pre><code class="language-swift">var str = str[...]
+</code></pre>
+<p>这看起来有点时髦，但它实际上给了我们对字符串的看法，而不是创建一个全新的。</p>
+<p>最后，我们应该更新返回值以返回该子字符串。</p>
+<pre><code class="language-swift">func run(_ str: String) -&gt; (match: A?, rest: Substring) {
+  var str = str[...]
+  let match = self.run(&amp;str)
+  return (match, str)
+}
+</code></pre>
+<p>这就是需要改变的一切！用于突变子字符串的接口与用于突变字符串的接口相同，但我们将通过在字符串中使用视图而不是副本来提高性能。</p>
+<p>我们仍然有整个字符串必须在内存中的限制，这意味着解析一个非常大的字符串是没有效率的，但是到目前为止我们所做的优化非常简单，已经给我们带来了很多好处，所以让我们继续努力吧。</p>
+<hr>
+<h2 id="6-a-nametillnexttimeatill-next-time">6. <a name='Tillnexttime'></a>Till next time</h2>
+<p>现在我们有了解析器的“<strong>final form</strong>”：它是一个函数，它获取一个in-out子字符串并生成一个可选的匹配项。因此，让我们再创建几个解析器，这样我们就可以了解这是如何进行的。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/IQVuijH5g/" class="tag">
+                    parser
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-56what-is-a-parser-part-1/">
+                  <h3 class="post-title">
+                    PointFree Episode 56:What Is a Parser?: Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

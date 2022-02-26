@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Getting the most out of Xcode Previews for SwiftUI | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="根据你问的人的不同，Xcode 11中引入的基于swift的预览功能要么提供了一种革命性的构建ui的新方式，或者更倾向于使用噱头。
+然而，与大多数开发工具一样，Xcode预览所能提供的实用功能在很大程度上取决于它们的使用方式，以及我们的代码..." />
+    <meta name="keywords" content="xcode,developer tools,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Getting the most out of Xcode Previews for SwiftUI</h2>
+            <div class="post-date">2020-05-24</div>
+            
+            <div class="post-content" v-pre>
+              <p>根据你问的人的不同，Xcode 11中引入的基于swift的预览功能要么提供了一种革命性的构建ui的新方式，或者更倾向于使用噱头。</p>
+<p>然而，与大多数开发工具一样，Xcode预览所能提供的实用功能在很大程度上取决于它们的使用方式，以及我们的代码设置是否与之兼容。因此，本周，让我们来看看一些技术、模式和构建UI代码的方法，它们可以帮助我们充分利用新的预览系统。</p>
+<h2 id="screens-components-and-interactivity">Screens, components, and interactivity</h2>
+<p>不管使用什么框架来构建一个给定的UI，将我们的各种视图分为两大类通常都是有用的——屏幕和组件。虽然每一个都可以有任意数量的子类别，但我们通常要么是在一个给定的应用屏幕上工作，要么是在一个(或多或少可重用的)子集。</p>
+<p>举个例子，假设我们使用SwiftUI来构建这样一个可重用的组件——在这个例子中，我们用一行代码来呈现待办事项或提醒列表中的提醒:</p>
+<pre><code class="language-swift">struct ReminderRow: View {
+    var title: String
+    var description: String
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(title)
+            Text(description)
+                .foregroundColor(.secondary)
+                .font(.footnote)
+        }
+    }
+}
+</code></pre>
+<p>现在，当我们在上面的组件上迭代时，我们当然可以不断地构建和运行应用程序，导航到它正在使用的屏幕，并验证一切都是正确的 - 但这是无聊、重复和容易出错的(这恰好是我对于应该自动化的任务的三个主要标准)。</p>
+<p>这种类型的自动化正是Xcode的预览功能的全部内容 -因为它让我们设置我们的屏幕和组件的特定的实例，它们将自动得到更新当我们的代码迭代时。</p>
+<p>要创建预览，我们所要做的就是定义一个符合PreviewProvider协议的类型， 并把它放在Swift文件中，我们希望预览出现在旁边-像这样:</p>
+<pre><code class="language-swift">#if DEBUG
+struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        ReminderRow(
+            title: &quot;Write weekly article&quot;,
+            description: &quot;Think it'll be about Xcode Previews&quot;
+        )
+    }
+}
+#endif
+</code></pre>
+<p>注意我们是如何使用DEBUG编译器指令封装上述预览的。这是为了防止我们在产品代码中意外地使用该类型，因为一旦我们在发布模式下构建应用，编译器就会抛出一个错误。您可以假定本文中所有特定于预览的代码都将被该编译器指令所包围，即使为了简洁起见不会键入该指令。</p>
+<p>很酷的一点是，Xcode的预览系统使用的是SwiftUI使用的类似dsl的API，当我们在整个代码库中设置各种预览时，这为我们提供了强大的功能和灵活性。</p>
+<p>然而，上述ReminderRow实现目前相当简单，仅依赖于可以轻松传递到其初始化器的只读数据 - 但如果它需要更多的互动性呢? 例如，假设我们想要在行中添加一个切换项，以便用户能够轻松地将给定的提醒标记为已完成</p>
+<pre><code class="language-swift">struct ReminderRow: View {
+    var title: String
+    var description: String
+    @Binding var isCompleted: Bool
+
+    var body: some View {
+        Toggle(isOn: $isCompleted) {
+            VStack(alignment: .leading) {
+                Text(title)
+                Text(description)
+                    .foregroundColor(.secondary)
+                    .font(.footnote)
+            }
+        }.padding()
+    }
+}
+</code></pre>
+<p>由于我们现在使用Binding属性包装器在提醒行和任何包含它的父行之间设置一个双向绑定，所以在创建预览时也需要传递这样的绑定。一种简单(但有局限性)的方法是使用.constant API，正如其名称所暗示的那样，它允许我们传递一个常量值，作为适当绑定的预览替身:</p>
+<pre><code class="language-swift">struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        ReminderRow(
+            title: &quot;Write weekly article&quot;,
+            description: &quot;Think it'll be about Xcode Previews&quot;,
+            isCompleted: .constant(false)
+        )
+    }
+}
+</code></pre>
+<p>然而，正如上面提到的，常量绑定确实有相当严格的限制，当我们预览UI时，它们经常会阻止我们与UI交互。 例如，即使我们点击上面的切换，它的isCompleted值将始终保持不变，这使得我们的视图看起来是破碎的。</p>
+<p>解决这个问题的一种方法是引入定制绑定API来创建完全动态的模拟-例如，通过在一对getter和setter闭包中捕获一个给定的值，像这样:</p>
+<pre><code class="language-swift">extension Binding {
+    static func mock(_ value: Value) -&gt; Self {
+        var value = value
+        return Binding(get: { value }, set: { value = $0 })
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以回到我们的ReminderRowPreview实现，并使其完全交互式-只需将.constant替换为.mock:</p>
+<pre><code class="language-swift">struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        ReminderRow(
+            title: &quot;Write weekly article&quot;,
+            description: &quot;Think it'll be about Xcode Previews&quot;,
+            isCompleted: .mock(false)
+        )
+    }
+}
+</code></pre>
+<p>Xcode预览使用普通Swift代码声明的好处在于，它让我们可以编写自己的实用程序和抽象，这反过来又能让我们以更强大的方式使用预览。但这仅仅是个开始。</p>
+<h2 id="specific-environments">Specific environments</h2>
+<p>接下来，让我们看看如何通过修改组件周围的环境来预览它在各种模拟条件下的行为。</p>
+<p>首先，让我们使用内置的。colorscheme视图修改器来预览我们的ReminderRow在黑暗模式下运行的设备上呈现时的样子——像这样:</p>
+<pre><code class="language-swift">struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        ReminderRow(
+            title: &quot;Write weekly article&quot;,
+            description: &quot;Think it'll be about Xcode Previews&quot;,
+            isCompleted: .mock(false)
+        )
+        .colorScheme(.dark)
+    }
+}
+</code></pre>
+<p>虽然上面的预览设置会将我们的组件本身渲染成dark模式，但它的周围环境仍然会保持light模式，它(假设我们的视图没有背景颜色)为我们提供了在白色背景上呈现的白色文本。不是很好。</p>
+<p>提示:您可以使用上面的预览按钮来查看代码块的结果。预览版的预览版，如果你愿意的话。Very meta。</p>
+<p>现在，有两种主要的方法来解决上述问题。 一种方法是在预览前将ReminderRow组件嵌入到平台提供的容器中，比如NavigationView。如果我们这样做，同时隐藏容器视图的导航栏，那么我们的组件仍然会使用相同的布局，但现在是完全黑暗模式:</p>
+<pre><code class="language-swift">struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            ReminderRow(
+                title: &quot;Write weekly article&quot;,
+                description: &quot;Think it'll be about Xcode Previews&quot;,
+                isCompleted: .mock(false)
+            )
+            .navigationBarTitle(&quot;&quot;)
+            .navigationBarHidden(true)
+        }
+        .colorScheme(.dark)
+    }
+}
+</code></pre>
+<p>上述方法的另一种变体是使用TabView，然后以类似的方式隐藏它的标签栏。</p>
+<p>另一种方式不需要添加任何形式的导航堆栈，那就是给我们的组件一个显式的背景颜色-如果我们在UIColor上使用systemBackground API，那么我们就可以模仿我们的组件在黑暗模式下显示的样子(即使它的环境仍然是light模式):</p>
+<pre><code class="language-swift">struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        ReminderRow(
+            title: &quot;Write weekly article&quot;,
+            description: &quot;Think it'll be about Xcode Previews&quot;,
+            isCompleted: .mock(false)
+        )
+        .background(Color(UIColor.systemBackground))
+        .colorScheme(.dark)
+    }
+}
+</code></pre>
+<p>然而，我们的预览将使用的颜色方案只是许多不同的环境参数之一，我们可以调整。例如，我们也可以告诉SwiftUI使用给定的尺寸类别来预览我们的组件(这是系统的动态类型设置转换成的)，甚至可以控制预览将在什么设备上呈现:</p>
+<pre><code class="language-swift">struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        ReminderRow(
+            title: &quot;Write weekly article&quot;,
+            description: &quot;Think it'll be about Xcode Previews&quot;,
+            isCompleted: .mock(false)
+        )
+        .previewDevice(&quot;iPhone 11&quot;)
+        .environment(\.sizeCategory, .accessibilityExtraExtraExtraLarge)
+    }
+}
+</code></pre>
+<p>不，上面的ExtraExtraExtra名称不是一个拼写错误，这实际上是真正的API的名称，信不信由你。</p>
+<p>所以Xcode的预览系统可以通过很多不同的方式进行调整——可以让我们为每个组件设置特定的环境，也可以同时创建多个组件。</p>
+<h2 id="group-iterations-and-convenience-apis">Group, iterations, and convenience APIs</h2>
+<p>就像标准的SwiftUI视图一样，多个预览视图可以使用Group API分组到一个容器中。 然而，在Xcode的预览功能中，这些组会以一种特殊的方式处理，因为系统会为每个组成员创建一个单独的预览-这反过来使我们可以在同一时间方便地预览多个视图配置。</p>
+<p>例如，下面是我们如何快速预览在明暗模式下渲染的ReminderRow的样子，使用单一的预览提供程序:</p>
+<pre><code class="language-swift">struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        let row = ReminderRow(
+            title: &quot;Write weekly article&quot;,
+            description: &quot;Think it'll be about Xcode Previews&quot;,
+            isCompleted: .mock(false)
+        )
+        .previewLayout(.sizeThatFits)
+
+        return Group {
+            row
+
+            row.background(Color(UIColor.systemBackground))
+               .colorScheme(.dark)
+        }
+    }
+}
+</code></pre>
+<p>注意，我们是如何使用上面的. previewlayout修饰符来告诉Xcode在没有任何“设备chrome”的情况下渲染我们的预览，而只是将每个组件配置显示为一个独立的视图。</p>
+<p>当我们只想预览少量的排列时，上面的方法真的很方便-如果我们想要结合多个环境修改器来预览更多的布局变量，那么每次编写上述代码可能会变得有点乏味。</p>
+<p>但是，我们在这里使用的是普通的Swift代码，就像我们在产品代码中发现重复的样板代码一样，我们可以在预览系统之上构建自己的自定义抽象——帮助我们用很少的努力生成大量的预览。</p>
+<p>但是在我们开始之前，我们将需要一些小的扩展来帮助我们标记我们将要生成的每个预览。在本例中，我们将使用最小和最大的ContentSizeCategory值组合每个可能的ColorScheme(即当前的light and dark mode)-因此，让我们编写以下两个扩展来为这些类型生成特定于预览的名称，像这样:</p>
+<pre><code class="language-swift">extension ColorScheme {
+    var previewName: String {
+        String(describing: self).capitalized
+    }
+}
+
+extension ContentSizeCategory {
+    static let smallestAndLargest = [allCases.first!, allCases.last!]
+
+    var previewName: String {
+        self == Self.smallestAndLargest.first ? &quot;Small&quot; : &quot;Large&quot;
+    }
+}
+</code></pre>
+<p>接下来，让我们借用&quot; Using SwiftUI 's ForEach with raw values &quot;中的ForEach扩展，这样我们就可以更容易地循环使用SwiftUI代码中的值数组:</p>
+<pre><code class="language-swift">extension ForEach where Data.Element: Hashable, ID == Data.Element, Content: View {
+    init(values: Data, content: @escaping (Data.Element) -&gt; Content) {
+        self.init(values, id: \.self, content: content)
+    }
+}
+</code></pre>
+<p>有了上面的部分，我们现在可以开始构建定制的抽象来生成多个预览。首先，让我们创建一个用于预览单个组件的视图——通过实现一个包装器视图来迭代每个可能的配色方案，以及上面定义的ContentSizeCategory数组，并相应地设置每个预览:</p>
+<pre><code class="language-swift">struct ComponentPreview&lt;Component: View&gt;: View {
+    var component: Component
+
+    var body: some View {
+        ForEach(values: ColorScheme.allCases) { scheme in
+            ForEach(values: ContentSizeCategory.smallestAndLargest) { category in
+                self.component
+                    .previewLayout(.sizeThatFits)
+                    .background(Color(UIColor.systemBackground))
+                    .colorScheme(scheme)
+                    .environment(\.sizeCategory, category)
+                    .previewDisplayName(
+                        &quot;\(scheme.previewName) + \(category.previewName)&quot;
+                    )
+            }
+        }
+    }
+}
+</code></pre>
+<p>注意，ForEach在预览中与Group具有相同的效果，因为使用它会为正在迭代的每个值生成一个单独的预览。虽然上面的类型已经可以按原样使用了，让我们再创建一个方便的API，让我们可以轻松地为代码库中的任何视图生成组件预览:</p>
+<pre><code class="language-swift">extension View {
+    func previewAsComponent() -&gt; some View {
+        ComponentPreview(component: self)
+    }
+}
+</code></pre>
+<p>完成这些之后，我们就可以回到之前的ReminderRowPreview，通过调用新的previewAsComponent API，轻松地让它生成四个不同的预览了:</p>
+<pre><code class="language-swift">struct ReminderRowPreview: PreviewProvider {
+    static var previews: some View {
+        ReminderRow(
+            title: &quot;Write weekly article&quot;,
+            description: &quot;Think it'll be about Xcode Previews&quot;,
+            isCompleted: .mock(false)
+        )
+        .previewAsComponent()
+    }
+}
+</code></pre>
+<p>接下来，让我们实现一个类似的抽象来预览完整的屏幕，而不是单独的组件。虽然我们主要感兴趣的是看到一个给定的组件在使用不同的配色方案和内容大小类别呈现时的行为——但在预览整个屏幕时，我们可能想要看到它是如何在多个设备上呈现的。这样，我们将能够得到一个更完整的UI视图，特别是如果我们也结合所有可能的配色方案的设备列表-像这样:</p>
+<pre><code class="language-swift">struct ScreenPreview&lt;Screen: View&gt;: View {
+    var screen: Screen
+
+    var body: some View {
+        ForEach(values: deviceNames) { device in
+            ForEach(values: ColorScheme.allCases) { scheme in
+                NavigationView {
+                    self.screen
+                        .navigationBarTitle(&quot;&quot;)
+                        .navigationBarHidden(true)
+                }
+                .previewDevice(PreviewDevice(rawValue: device))
+                .colorScheme(scheme)
+                .previewDisplayName(&quot;\(scheme.previewName): \(device)&quot;)
+                .navigationViewStyle(StackNavigationViewStyle())
+            }
+        }
+    }
+
+    private var deviceNames: [String] {
+        [
+            &quot;iPhone 8&quot;,
+            &quot;iPhone 11&quot;,
+            &quot;iPhone 11 Pro Max&quot;,
+            &quot;iPad (7th generation)&quot;,
+            &quot;iPad Pro (12.9-inch) (4th generation)&quot;
+        ]
+    }
+}
+
+extension View {
+    func previewAsScreen() -&gt; some View {
+        ScreenPreview(screen: self)
+    }
+}
+</code></pre>
+<p>注意，上面的设备名称列表需要与Xcode的设备选择器中的名称完全匹配，否则预览系统将抛出一个错误。</p>
+<p>有了上面的抽象，我们现在可以很容易地为任何视图生成一个紧凑的或全屏的预览，只需要一个方法调用 - 反过来让我们迭代我们的UI代码，同时立即看到它将如何在多种环境中呈现。很酷的!</p>
+<h2 id="previews-are-not-just-for-swiftui-views">Previews are not just for SwiftUI views</h2>
+<p>最后，让我们看看如何使用Xcode的预览功能来迭代视图，这些视图不是使用SwiftUI构建的，而是使用苹果的旧UI框架，如UIKit、Core Animation或AppKit。</p>
+<p>因为每个预览都被定义为一个SwiftUI视图，而且有一个内置的向后兼容api，可以让我们把任何UIView或UIViewController(或它们的AppKit等量物)带入到SwiftUI的世界 - 我们可以把这两件事联系起来，使预览系统更加灵活。</p>
+<p>一种方法是为单独的视图或视图控制器创建特定的桥接类型，例如:</p>
+<pre><code class="language-swift">@available(iOS 13, *)
+struct SchedulingView: UIViewControllerRepresentable {
+    var schedule: Schedule
+
+    func makeUIViewController(context: Context) -&gt; SchedulingViewController {
+        SchedulingViewController(schedule: schedule)
+    }
+
+    func updateUIViewController(_ uiViewController: SchedulingViewController,
+                                context: Context) {
+        // We don’t need to write any update code in this case.
+    }
+}
+
+@available(iOS 13, *)
+struct SchedulingViewPreview: PreviewProvider {
+    static var previews: some View {
+        SchedulingView(schedule: Schedule())
+    }
+}
+</code></pre>
+<p>注意上面的两种类型都被标记为仅iOS 13，使用Swift的@available属性。虽然对于那些以iOS 13为最小部署目标的应用程序来说，这并不是必需的，但许多使用UIKit或AppKit编写的应用程序仍然需要支持旧版本的苹果操作系统。</p>
+<p>虽然上面的方法可以很好地预览单个视图控制器，但每次我们想要创建一个新的预览时，都必须编写一个专用的包装类型，这可能会再次成为样板和摩擦的来源。所以让我们再来创建一个抽象——这一次让任何UIViewController都能很容易地转换成SwiftUI预览，像这样:</p>
+<pre><code class="language-swift">extension UIViewController {
+    @available(iOS 13, *)
+    private struct Preview: UIViewControllerRepresentable {
+        var viewController: UIViewController
+
+        func makeUIViewController(context: Context) -&gt; UIViewController {
+            viewController
+        }
+
+        func updateUIViewController(_ uiViewController: UIViewController,
+                                    context: Context) {
+            // No-op
+        }
+    }
+
+    @available(iOS 13, *)
+    func asPreview() -&gt; some View {
+        Preview(viewController: self)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以很容易地让任何视图控制器与Xcode预览兼容。我们所要做的就是创建一个thin PreviewProvider，它调用我们希望预览的视图控制器上的新asPreview方法:</p>
+<pre><code class="language-swift">@available(iOS 13, *)
+struct SchedulingViewPreview: PreviewProvider {
+    static var previews: some View {
+        SchedulingViewController(schedule: Schedule()).asPreview()
+    }
+}
+</code></pre>
+<p>一般来说，通过小型包装器和扩展定义轻量级抽象通常是提高团队整体生产力的好方法。 特别是当涉及到UI预览和其他类型的工具时，我们希望能够将摩擦和设置最小化-这样我们就可以花更少的时间配置我们的工具，更多的时间构建出色的ui。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>无论你是在Xcode 11的第一个测试版后就开始使用Xcode预览，还是对你来说完全陌生，我希望这篇文章至少向你展示了一种新的使用方法。当然，还有其他几种方式可以使用这些预览，而且我确信苹果会在WWDC20上引入更多的预览功能，而WWDC20(在撰写本文时)将在几周后启动。</p>
+<p>减少迭代周期确实可以大大提高生产率，而Xcode预览绝对可以帮助我们实现这一点——通过将耗时的“构建和运行”周期转化为几乎即时的更新。它们并不完美，而且(就像Xcode本身一样)有时会有点不稳定，但是——至少如果你问我的话——它们对于基于UIKit、AppKit和swiftui的开发来说是一个巨大的飞跃。</p>
+<p><a href="https://www.swiftbysundell.com/articles/getting-the-most-out-of-xcode-previews/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/kqXgdK2Xd/" class="tag">
+                    xcode
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EwwtnDOTL/" class="tag">
+                    developer tools
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/properties/">
+                  <h3 class="post-title">
+                    Properties
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

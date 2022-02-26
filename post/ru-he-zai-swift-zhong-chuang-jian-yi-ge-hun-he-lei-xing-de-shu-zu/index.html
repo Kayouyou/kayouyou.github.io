@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>如何在Swift中创建一个混合类型的数组? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+如何在Swift中创建一个混合类型的数组?
+
+使用Any
+使用Protocol
+
+Protocol 继承
+Protocol 组合
+
+
+使用Enum
+组合使用Struct和Enum
+
+
+
+
+如何在Swift中创建一个混合类型的数组?
+包含..." />
+    <meta name="keywords" content="array,Q&A" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">如何在Swift中创建一个混合类型的数组?</h2>
+            <div class="post-date">2021-05-25</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#%E5%A6%82%E4%BD%95%E5%9C%A8swift%E4%B8%AD%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E6%B7%B7%E5%90%88%E7%B1%BB%E5%9E%8B%E7%9A%84%E6%95%B0%E7%BB%84">如何在Swift中创建一个混合类型的数组?</a>
+<ul>
+<li><a href="#%E4%BD%BF%E7%94%A8any">使用Any</a></li>
+<li><a href="#%E4%BD%BF%E7%94%A8protocol">使用Protocol</a>
+<ul>
+<li><a href="#protocol-%E7%BB%A7%E6%89%BF">Protocol 继承</a></li>
+<li><a href="#protocol-%E7%BB%84%E5%90%88">Protocol 组合</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BD%BF%E7%94%A8enum">使用Enum</a></li>
+<li><a href="#%E7%BB%84%E5%90%88%E4%BD%BF%E7%94%A8struct%E5%92%8Cenum">组合使用Struct和Enum</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="如何在swift中创建一个混合类型的数组">如何在Swift中创建一个混合类型的数组?</h2>
+<p>包含多种类型实例的数组通常被称为<strong>异构数组</strong>，在动态类型语言中非常常用——比如PHP、JavaScript和Ruby。然而，在静态类型语言(如Swift)中，以一种整洁的方式建模这样的数组有时是相当具有挑战性的。</p>
+<p>例如，假设我们正在开发一个应用程序，显示两种主要类型的内容-<strong>视频和照片</strong>-我们已经实现了这些变体作为两个独立的模型类型，都包含共享的属性，以及数据，每个变体的独特:</p>
+<pre><code class="language-swift">struct Video {
+    let id: UUID
+    var title: String
+    var description: String
+    var url: URL
+    var length: TimeInterval
+}
+
+struct Photo {
+    let id: UUID
+    var title: String
+    var description: String
+    var url: URL
+    var size: CGSize
+}
+</code></pre>
+<p>创建一个只包含上述两种类型之一的实例的数组是非常简单的——我们只使用[Video]或[Photo]——如果我们想在同一个数组中混合这两种类型的实例，事情马上就会变得复杂得多。</p>
+<h3 id="使用any">使用Any</h3>
+<p>在这种情况下，一个选择是完全绕过Swift的强类型系统，使用Any(字面意思是任何类型)作为我们想要创建的数组的元素类型-像这样:</p>
+<pre><code class="language-swift">func loadItems() -&gt; [Any] {
+    var items = [Any]()
+    ...
+    return items
+}
+</code></pre>
+<p>这并不是很好，因为我们总是需要执行类型转换来实际使用返回数组包含的任何实例-这两者都使事情更笨拙，更脆弱，因为我们没有得到任何编译时保证，我们的数组将实际包含什么样的实例。</p>
+<h3 id="使用protocol">使用Protocol</h3>
+<p>另一种选择是使用一些面向协议的编程，并将视频和照片之间的共同部分抽象到一个协议中，使这两种类型都符合:</p>
+<pre><code class="language-swift">protocol Item {
+    var id: UUID { get }
+    var title: String { get }
+    var description: String { get }
+    var url: URL { get }
+}
+
+extension Video: Item {}
+extension Photo: Item {}
+</code></pre>
+<p>这就好多了，因为我们现在可以给loadItems函数一个强返回类型，方法是用上面的Item协议替换Any -这反过来让我们在访问数组元素时使用该协议中定义的任何属性:</p>
+<pre><code class="language-swift">func loadItems() -&gt; [Item] {
+    ...
+}
+</code></pre>
+<h4 id="protocol-继承">Protocol 继承</h4>
+<p>然而，如果我们在某个时候需要向Item添加一个要求，使其成为泛型(generic)，那么上述方法可能会出现一些问题——例如，让它继承标准库的可识别协议(Identifiable)(包含一个相关类型)的要求:</p>
+<pre><code class="language-swift">protocol Item: Identifiable {
+    ...
+}
+</code></pre>
+<p>尽管Video和Photo都已经满足了我们新添加的需求(因为它们都定义了id属性)，但是当我们尝试直接引用Item协议时，我们现在会得到以下错误，就像我们在loadItems函数中所做的那样:</p>
+<blockquote>
+<p>协议“Item”只能作为通用约束使用 因为它有Self或相关的类型需求。</p>
+</blockquote>
+<h4 id="protocol-组合">Protocol 组合</h4>
+<p>在这种情况下，解决这个问题的一种方法是将符合Identifiable的要求与我们自己的属性要求分开 -例如，通过移动这些属性到一个AnyItem协议，然后组成一个新的协议与Identifiable，以形成一个Item type alias:</p>
+<pre><code class="language-swift">protocol AnyItem {
+    var id: UUID { get }
+    var title: String { get }
+    var description: String { get }
+    var url: URL { get }
+}
+
+typealias Item = AnyItem &amp; Identifiable
+</code></pre>
+<p>上述方法的美妙之处在于，我们的Video和Photo类型仍然可以符合Item，就像以前一样，这使它们与所有需要Identifiable实例的代码兼容(如swifitui的ForEach和List)</p>
+<pre><code class="language-swift">func loadItems() -&gt; [AnyItem] {
+    ...
+}
+</code></pre>
+<h3 id="使用enum">使用Enum</h3>
+<p>上面的另一种方法是使用枚举来建模两个独立的变量，如下所示:</p>
+<pre><code class="language-swift">enum Item {
+    case video(Video)
+    case photo(Photo)
+}
+</code></pre>
+<p>因为Video和Photo的id属性都使用了相同的类型(内置的UUID类型)，我们甚至可以让上面的枚举也符合Identifiable-通过让它作为当前包装的底层模型实例的代理:</p>
+<pre><code class="language-swift">extension Item: Identifiable {
+    var id: UUID {
+        switch self {
+        case .video(let video):
+            return video.id
+        case .photo(let photo):
+            return photo.id
+        }
+    }
+}
+</code></pre>
+<h3 id="组合使用struct和enum">组合使用Struct和Enum</h3>
+<p>上述模式的另一个变体是将Item实现为一个结构体，将两个变体之间的所有共同属性移动到该结构体中，然后只对这两个变体中唯一的属性使用枚举——像这样:</p>
+<pre><code class="language-swift">struct Item: Identifiable {
+    let id: UUID
+    var title: String
+    var description: String
+    var url: URL
+    var metadata: Metadata
+}
+
+extension Item {
+    enum Metadata {
+        case video(length: TimeInterval)
+        case photo(size: CGSize)
+    }
+}
+</code></pre>
+<p>最后两种方法的优点是，它们实际上让我们将异构数组转换为同构数组，因为Item现在被实现为独立的类型，这意味着我们现在可以将这些数组传递到要求所有元素都是相同类型的函数中——就像《基础》中关于泛型的文章中的这个:</p>
+<pre><code class="language-swift">extension String {
+    mutating func appendIDs&lt;T: Identifiable&gt;(of values: [T]) {
+        for value in values {
+            append(&quot; \(value.id)&quot;)
+        }
+    }
+}
+</code></pre>
+<p>就是在Swift中实现混合类型数组的几种不同方式。我希望您觉得这个答案有用，如果您想了解更多关于这个主题的知识，那么我建议您阅读“<a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/handling-model-variants-in-swift/">Handling model variants in Swift</a>”，它详细介绍了上面的一些技术。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/6JOqOvl47/" class="tag">
+                    array
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Ei6A0dFu0G/" class="tag">
+                    Q&amp;A
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/he-shi-ke-yi-sheng-lue-swift-de-return-guan-jian-zi/">
+                  <h3 class="post-title">
+                    何时可以省略Swift的return关键字?
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

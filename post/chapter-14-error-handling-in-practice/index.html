@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Chapter 14: Error Handling in Practice | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Chapter 14: Error Handling in Practice
+
+
+1.1. Getting started
+1.2. Managing errors
+
+1.2.1. Throwing errors
+
+
+1.3. 使用..." />
+    <meta name="keywords" content="error handling,rxswift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Chapter 14: Error Handling in Practice</h2>
+            <div class="post-date">2021-05-19</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Chapter14:ErrorHandlinginPractice">Chapter 14: Error Handling in Practice</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Gettingstarted">Getting started</a></li>
+<li>1.2. <a href="#Managingerrors">Managing errors</a>
+<ul>
+<li>1.2.1. <a href="#Throwingerrors">Throwing errors</a></li>
+</ul>
+</li>
+<li>1.3. <a href="#catch">使用catch处理错误</a>
+<ul>
+<li>1.3.1. <a href="#">一个常见的陷阱</a></li>
+</ul>
+</li>
+<li>1.4. <a href="#Catchingerrors">Catching errors</a></li>
+<li>1.5. <a href="#-1">错误重试</a>
+<ul>
+<li>1.5.1. <a href="#Retryoperators">Retry operators</a></li>
+<li>1.5.2. <a href="#Advancedretries">Advanced retries</a></li>
+</ul>
+</li>
+<li>1.6. <a href="#Customerrors">Custom errors</a>
+<ul>
+<li>1.6.1. <a href="#Creatingcustomerrors">Creating custom errors</a></li>
+<li>1.6.2. <a href="#Usingcustomerrors">Using custom errors</a></li>
+</ul>
+</li>
+<li>1.7. <a href="#Advancederrorhandling">Advanced error handling</a></li>
+<li>1.8. <a href="#Materializeanddematerialize">Materialize and dematerialize</a></li>
+<li>1.9. <a href="#Wheretogofromhere">Where to go from here?</a></li>
+<li>1.10. <a href="#Challenge">Challenge</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namechapter14errorhandlinginpracticeachapter-14-error-handling-in-practice">1. <a name='Chapter14:ErrorHandlinginPractice'></a>Chapter 14: Error Handling in Practice</h2>
+<p>“如果生活在一个完美的世界里，生活会很美好，但不幸的是，事情往往不像我们期望的那样发展。”即使是最好的RxSwift开发人员也无法避免遇到错误，因此他们需要知道如何优雅而有效地处理这些错误。在本章中，你将学习如何处理错误，如何通过重试来管理错误恢复，或者干脆让自己臣服于宇宙，让错误顺其自然。</p>
+<h3 id="11-a-namegettingstartedagetting-started">1.1. <a name='Gettingstarted'></a>Getting started</h3>
+<p>这个应用程序是第十二章“Beginning RxCocoa”的延续。在该应用程序的这个版本中，您可以检索用户的当前位置并查找该位置的天气，还可以请求城市名称并查看该位置的天气。这款应用还有一个活动指示器，可以给用户一些视觉反馈。</p>
+<p>在继续之前，确保你有一个有效的OpenWeatherMap API密钥。如果你还没有钥匙，你可以在以下地方注册:(<strong>可能需要科学上网</strong>)</p>
+<ul>
+<li>https://home.openweathermap.org/users/sign_up</li>
+</ul>
+<p>一旦你完成了注册程序，请访问API密钥专用页面，并在以下网址生成一个新的密钥:</p>
+<ul>
+<li>https://home.openweathermap.org/api_keys</li>
+</ul>
+<p>一旦完成，使用终端导航到项目的根，执行必要的 <em>pod install</em>。</p>
+<p>一旦安装好pod，打开ApiController.swift，使用上面生成的密钥，将占位符替换到以下位置:</p>
+<pre><code class="language-swift">let apiKey = BehaviorSubject(value: &quot;Your Key&quot;)
+</code></pre>
+<p>运行应用程序，确保应用程序能够编译，并且在搜索城市时能够检索到天气。</p>
+<p>如果这些看起来都不错，那么你就可以进入下一部分了!</p>
+<h3 id="12-a-namemanagingerrorsamanaging-errors">1.2. <a name='Managingerrors'></a>Managing errors</h3>
+<p>错误是任何应用中不可避免的一部分。不幸的是，没有人能保证应用程序永远不会出错，所以你总是需要某种类型的错误处理机制。</p>
+<p>应用程序中最常见的一些错误是:</p>
+<ul>
+<li>
+<p><strong>没有网络连接</strong>:这很常见。如果应用程序需要网络连接来检索和处理数据，但设备处于离线状态，你需要能够检测到这一点并做出适当的响应。</p>
+</li>
+<li>
+<p><strong>无效输入</strong>:有时你需要某种形式的输入，但用户可能输入完全不同的内容。也许你的应用中有一个电话号码字段，但用户忽略了这个要求，输入字母而不是数字。</p>
+</li>
+<li>
+<p><strong>API错误或HTTP错误</strong>:来自API的错误可以有很大的不同。它们可以作为标准的HTTP错误(响应代码在400到500之间)到达，也可以作为response中的错误，比如在JSON响应中使用status字段。</p>
+</li>
+</ul>
+<p>在RxSwift中，错误处理是框架的一部分。<strong>对于所有接受闭包的operator，RxSwift会将闭包内抛出的任何错误转换为一个终止可观察对象的error event</strong>。您可以捕捉这个错误事件并据此采取行动。这可以通过两种方式来处理:</p>
+<ul>
+<li>Catch: 使用默认值从错误中恢复。</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnitc4lq9j30wc05cjs5.jpg" alt="avatar" loading="lazy"></figure>
+<ul>
+<li>Retry: 重试有限(或无限!)次。</li>
+</ul>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqniufz6kzj30wu08gdgv.jpg" alt="avatar" loading="lazy"></figure>
+<p>本章项目的初始版本没有任何真正的错误处理。所有错误都通过一个catchErrorJustReturn来捕获，它返回一个虚拟版本。这听起来像是一个方便的解决方案，但在RxSwift中有更好的方法来处理这个问题。在任何一流的应用程序中，都需要一种一致的、信息丰富的错误处理方法。</p>
+<h4 id="121-a-namethrowingerrorsathrowing-errors">1.2.1. <a name='Throwingerrors'></a>Throwing errors</h4>
+<p>一个很好的开始是处理RxCocoa错误，它封装了底层Apple框架返回的系统错误。RxCocoa错误提供了你遇到的错误类型的更多细节，也使你的错误处理代码更容易编写。</p>
+<p>要了解RxCocoa包装器是如何工作的，深入到Pods项目中的Project Navigator，然后进入Pods/RxCocoa/URLSession+Rx.swift。可通过以下方法查询:</p>
+<pre><code class="language-swift">public func data(request: URLRequest) -&gt; Observable&lt;Data&gt; {
+        return self.response(request: request).map { pair -&gt; Data in
+            if 200 ..&lt; 300 ~= pair.0.statusCode {
+                return pair.1
+            }
+            else {
+                throw RxCocoaURLError.httpRequestFailed(response: pair.0, data: pair.1)
+            }
+        }
+    }
+</code></pre>
+<p>这个方法返回一个Data类型的可观察对象，由给定的URLRequest创建。要看的重要部分是返回错误的代码:</p>
+<pre><code class="language-swift">return self.response(request: request).map { pair -&gt; Data in
+    if 200 ..&lt; 300 ~= pair.0.statusCode {
+        return pair.1
+    }
+    else {
+        throw RxCocoaURLError.httpRequestFailed(response: pair.0, data: pair.1)
+    }
+}
+</code></pre>
+<p>这六行是一个可观察对象如何发出错误的完美例子——具体来说，一个定制的错误，你将在本章后面讨论。</p>
+<p>注意，在这个闭包中没有返回错误。当你想在flatMap操作符中出错时，你应该像在常规Swift代码中一样使用throw。这是一个很好的例子，说明了RxSwift如何让你在必要的时候编写惯用的Swift代码，以及在适当的时候编写RxSwift风格的错误处理。</p>
+<h3 id="13-a-namecatcha使用catch处理错误">1.3. <a name='catch'></a>使用catch处理错误</h3>
+<p>在解释了如何抛出错误之后，是时候看看如何处理错误了。最基本的方法是使用catch。catch操作符的工作原理很像Swift中的do-try-catch流程。一个observable被执行，如果出现了错误，就返回一个封装错误的事件。</p>
+<p>在RxSwift中有两个主要的操作符来捕获错误。第一个:</p>
+<pre><code class="language-swift">func catchError(_ handler:) -&gt; RxSwift.Observable&lt;Self.E&gt;
+</code></pre>
+<p>这是一个通用operator; 它以一个闭包作为参数，并提供了返回一个完全不同的observable对象的机会。如果你不知道该在哪里使用这个选项，可以考虑这样一种缓存策略:当可观察到的错误出现时，返回先前缓存的值。 通过这个操作符，你可以实现以下流程:</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnjkxmxqpj30vm07sdh6.jpg" alt="avatar" loading="lazy"></figure>
+<p>在这种情况下，catchError返回先前可用的值，由于某种原因，这些值不再可用。</p>
+<p>第二个操作符是:</p>
+<pre><code class="language-swift">func catchErrorJustReturn(_ element:) -&gt; RxSwift.Observable&lt;Self.E&gt;
+</code></pre>
+<p>你可能还记得在RxCocoa前面的两章中使用过这个函数——它忽略错误，只返回一个预定义的值。这个操作符比前一个操作符的限制要大得多，<strong>因为它不可能为给定类型的错误返回值——任何错误都会返回相同的值，无论错误是什么</strong>。</p>
+<h4 id="131-a-namea一个常见的陷阱">1.3.1. <a name=''></a>一个常见的陷阱</h4>
+<p>错误通过可观察对象链传播，所以如果没有任何处理操作符，发生在可观察对象链开头的错误将被转发到最终订阅。</p>
+<p>这到底是什么意思? <strong>当一个可观察的错误输出时，错误订阅会被通知，所有的订阅都会被释放。</strong></p>
+<p>因此，当一个可观察对象出错时，该可观察对象本质上被终止，而错误之后的任何事件都将被忽略。这是可观察契约的规则。</p>
+<p>你可以在下面的时间轴上看到这一点。一旦网络产生了一个错误，并且observable序列输出错误，更新UI的订阅将停止工作，有效地阻止未来的更新。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnjqxqytrj30wq0h6gn8.jpg" alt="avatar" loading="lazy"></figure>
+<p>要在实际的应用程序中看到这种区别，转到ViewController.swift并删除textSearch可观察对象中的.catcherrorjuststreturn(.empty)行，启动应用程序并在城市搜索字段中输入随机字符，直到API回复一个404错误代码。在这种情况下，404意味着你要找的城市没有找到。你应该会在控制台看到类似的内容:</p>
+<pre><code class="language-swift">http://api.openweathermap.org/data/2.5/weather?q=goierjgioerjgioej&amp;appid=[API-KEY]&amp;units=metric&quot; -i -v
+Failure (207ms): Status 404
+</code></pre>
+<p>你还会注意到在404响应后搜索停止工作! 这不是最好的用户体验，不是吗?</p>
+<h3 id="14-a-namecatchingerrorsacatching-errors">1.4. <a name='Catchingerrors'></a>Catching errors</h3>
+<p>现在您已经了解了一些理论，您可以继续编写代码并更新当前项目。一旦完成，应用程序将从错误中恢复通过返回空的Weather类型，这样应用程序流就不会被中断。</p>
+<p>这一次的工作流，包括错误处理，看起来像这样:</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnkbqhd7jj30pk0cy0u9.jpg" alt="avatar" loading="lazy"></figure>
+<p>这已经足够好了，但如果应用程序能够返回可用的缓存数据，那就更好了。</p>
+<p>首先，在主项目中打开ViewController.swift，创建一个简单的字典来缓存天气数据，并将其添加为视图控制器的属性:</p>
+<pre><code class="language-swift">private var cache = [String: Weather]()
+</code></pre>
+<p>这将临时存储缓存的数据。在viewDidLoad()方法中向下滚动，搜索创建textSearch可观察对象的那一行。现在通过在代码链中添加do(onNext:)来改变textSearch可观察对象来填充缓存:</p>
+<pre><code class="language-swift">let textSearch = searchInput.flatMap { text in
+    return ApiController.shared.currentWeather(city: text)
+    .do(
+        onNext: { [weak self] data in
+        self?.cache[text] = data
+        },
+        onError: { error in
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.showError(error: error)
+        }
+        })
+    .retryWhen(retryHandler)
+    //.catcherrorjuststreturn(.empty)
+    .catchError { [weak self] error in
+        return Observable.just(self?.cache[text] ?? .empty)
+    }
+}
+</code></pre>
+<p>有了这个更改，每个有效的天气响应都将存储在字典中。现在，如何重用缓存的结果? 要返回一个缓存值，在发生错误时，将.catcherrorjuststreturn(.empty)替换为:</p>
+<pre><code class="language-swift">.catchError { error in
+  return Observable.just(self?.cache[text] ?? .empty)
+}
+</code></pre>
+<p>要测试这一点，输入三到四个不同的城市，如“伦敦”，“纽约”，“阿姆斯特丹”，并载入这些城市的天气。在那之后，关闭你的互联网连接，然后搜索一个不同的城市，比如“巴塞罗那”;您应该收到一个错误。关闭你的网络连接，然后搜索你刚刚检索到数据的城市，应用程序会返回缓存的版本。</p>
+<p>这是catch的一个非常常见的用法。你可以扩展它，使其成为一个通用的、强大的缓存解决方案。</p>
+<h3 id="15-a-name-1a错误重试">1.5. <a name='-1'></a>错误重试</h3>
+<p>捕获错误只是RxSwift中处理错误的一种方式。您还可以通过重试来处理错误。当一个重试操作符被使用并且一个可观察对象出错时，这个可观察对象将会重复它自己。<strong>重要的是要记住重试意味着在可观察对象中重复整个任务。</strong></p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnkj8luo0j30my0gemya.jpg" alt="avatar" loading="lazy"></figure>
+<p>这是我们建议避免改变可观察对象内用户界面的副作用的主要原因之一，因为你无法控制谁会重试它!</p>
+<h4 id="151-a-nameretryoperatorsaretry-operators">1.5.1. <a name='Retryoperators'></a>Retry operators</h4>
+<p>有三种类型的重试操作符。第一个是最基本的:</p>
+<pre><code class="language-swift">func retry() -&gt; Observable&lt;Element&gt;
+</code></pre>
+<p>这个操作符将无限次地重复这个可观察对象，直到它成功返回为止。例如，如果没有internet连接，则会持续重试，直到连接可用为止。这听起来像是一个强大的想法，但它需要大量的资源，并且如果没有合理的理由，不会建议你无限次地重试。</p>
+<p>要测试这个操作符，请注释完整的catchError块:</p>
+<pre><code class="language-swift">//.catchError { error in
+//  return Observable.just(self?.cache[text] ?? .empty)
+//} 
+</code></pre>
+<p>在其位置上插入一个简单的retry()。</p>
+<p>接下来，运行应用程序，关闭互联网连接，并尝试执行搜索。您将在控制台中看到大量输出，显示应用程序正在尝试发出请求。</p>
+<p>几秒钟后，重新启用internet连接，您将看到应用程序成功处理请求后显示的结果。</p>
+<p>第二个操作符允许您更改重试次数:</p>
+<pre><code class="language-swift">func retry(_ maxAttemptCount:) -&gt; Observable&lt;Element&gt;
+</code></pre>
+<p>有了这种变化，可观测对象被重复一定的次数。要尝试一下，你可以做以下的事情:</p>
+<ul>
+<li>删除您刚刚添加的retry()操作符。</li>
+<li>取消先前注释过的代码块的注释。</li>
+<li>在catchError之前插入重试(3)。</li>
+</ul>
+<p>完整的代码块现在应该像这样:</p>
+<pre><code class="language-swift">let textSearch = searchInput.flatMap { text in
+  return ApiController.shared.currentWeather(city: text)
+    .do(onNext: { [weak self] data in
+      self?.cache[text] = data
+    })
+    .retry(3)
+    .catchError { [weak self] error in
+      return Observable.just(self?.cache[text] ?? .empty)
+    }
+}
+</code></pre>
+<p>如果可观察对象产生错误，它将被连续重试三次，即第一次尝试，以及两次额外的尝试。如果第四次出错，则不会处理该错误，执行将转移到catchError操作符。</p>
+<h4 id="152-a-nameadvancedretriesaadvanced-retries">1.5.2. <a name='Advancedretries'></a>Advanced retries</h4>
+<p>最后一个操作符retryWhen适用于高级重试情况。这个错误处理操作符被认为是最强大的操作符之一:</p>
+<pre><code class="language-swift">func retryWhen(_ notificationHandler:) -&gt; Observable&lt;Element&gt;
+</code></pre>
+<p>重要的是要理解notificationHandler的类型是TriggerObservable。触发可观察对象可以是一个普通的Observable，也可以是一个Subject，它被用来在任意时间触发重试。</p>
+<p>这是你将在当前应用程序中包含的操作符，如果网络连接不可用，或者API出现错误，可以使用一个聪明的技巧重试。我们的目标是在最初的搜索出现错误的情况下，实施一种渐进的退步策略。</p>
+<p>期望结果如下:</p>
+<pre><code class="language-swift">subscription -&gt; error
+delay and retry after 1 second
+
+subscription -&gt; error
+delay and retry after 3 seconds
+
+subscription -&gt; error
+delay and retry after 5 seconds
+
+subscription -&gt; error
+delay and retry after 10 seconds
+</code></pre>
+<p>这是一个聪明而复杂的解决方案。在常规的命令代码中，这可能意味着创建一些抽象，可能将任务包装在一个操作中，或者围绕Grand Central Dispatch创建一个量身定制的包装器——但使用RxSwift，解决方案只是一小块代码。</p>
+<p>在创建最终结果之前，考虑内部可观察对象(触发器)应该返回什么，考虑到类型可以被忽略，触发器可以是任何类型。</p>
+<p>目标是在给定的延迟序列下重试四次。首先，在ViewController.swift内部，就在searchchinput序列之前，定义在retryWhen操作符之前的最大尝试次数:</p>
+<pre><code class="language-swift">let maxAttempts = 4
+</code></pre>
+<p>在多次重试之后，应该继续转发错误。然后将.retry(3)替换为:</p>
+<pre><code class="language-swift">.retryWhen { e in
+  // flatMap source errors
+}
+</code></pre>
+<p>这个可观测对象必须与从原始可观测对象返回错误的对象结合起来。因此，当错误作为事件出现时，这些可观察对象的组合也将收到该事件的当前索引。</p>
+<p>你可以通过在可观察对象上调用枚举()来实现这一点，然后使用flatMap。枚举()方法返回一个新的可观察对象，它会发送原始可观察对象的值及其索引的元组。将注释// flatMap源错误替换为:</p>
+<pre><code class="language-swift">return e.enumerated().flatMap { attempt, error -&gt; Observable&lt;Int&gt; in
+  // attempt few times
+}
+</code></pre>
+<p>现在，可以观察到的原始错误和在重试之前应该延迟多长时间的错误被合并在一起。</p>
+<p>现在将代码与计时器结合起来，只获取第一个延迟的事件。调整上面的代码，如下所示:</p>
+<pre><code class="language-swift">.retryWhen { e in
+  return e.enumerated().flatMap { attempt, error -&gt; Observable&lt;Int&gt; in
+    if attempt &gt;= maxAttempts - 1 {
+      return Observable.error(error)
+    }
+    return Observable&lt;Int&gt;.timer(.seconds(attempt + 1),
+                                 scheduler: MainScheduler.instance)
+                          .take(1)
+  }
+}
+</code></pre>
+<p>要记录何时触发新的重试，请在flatMap操作符的第二次返回之前添加以下代码:</p>
+<pre><code class="language-swift">print(&quot;== retrying after \(attempt + 1) seconds ==&quot;)
+</code></pre>
+<p>现在构建并运行，关闭你的互联网连接并执行搜索。您应该在日志中看到以下结果:</p>
+<pre><code class="language-swift">== retrying after 1 seconds ==
+... network ...
+== retrying after 2 seconds ==
+... network ...
+== retrying after 3 seconds ==
+... network ...
+</code></pre>
+<p>这是一个很好的可视化过程:</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnqovxa6zj30qi0jymz8.jpg" alt="avatar" loading="lazy"></figure>
+<p>触发器可以将可观察到的原始错误考虑进去，以实现相当复杂的后退策略。这展示了如何只用几行RxSwift代码就可以创建复杂的错误处理策略。</p>
+<h3 id="16-a-namecustomerrorsacustom-errors">1.6. <a name='Customerrors'></a>Custom errors</h3>
+<p>创建自定义错误遵循一般的Swift原则，所以这里没有什么是优秀的Swift程序员不知道的， 但是了解如何处理错误和创建定制的操作符仍然很好。</p>
+<h4 id="161-a-namecreatingcustomerrorsacreating-custom-errors">1.6.1. <a name='Creatingcustomerrors'></a>Creating custom errors</h4>
+<p>RxCocoa返回的错误非常普遍，所以HTTP 404错误(页面未找到)就像502错误(坏网关)一样被处理。这是两个完全不同的错误，所以能够以不同的方式处理它们是件好事。</p>
+<p>如果你深入研究ApiController.swift，你会看到已经包含了两种错误情况，你可以用它们来错误处理不同的HTTP响应。</p>
+<pre><code class="language-swift">enum ApiError: Error {
+  case cityNotFound
+  case serverFailure
+}
+</code></pre>
+<p>你将在buildRequest(…)中使用这个错误类型。该方法的最后一行返回一个data的可观察对象。在这里，您必须注入检查并返回您创建的自定义错误。RxCocoa的.data已经在创建自定义错误对象。</p>
+<p>替换buildRequest(…)中最后一个flatMap块中的代码</p>
+<pre><code class="language-swift">return session.rx.response(request: request)
+  .map { response, data in
+  switch response.statusCode {
+  case 200 ..&lt; 300:
+    return data
+  case 400 ..&lt; 500:
+    throw ApiError.cityNotFound
+  default:
+    throw ApiError.serverFailure
+  }
+}
+</code></pre>
+<p>使用此方法，您可以创建自定义错误，甚至添加更高级的逻辑，例如当API在JSON中提供响应消息时。您可以获取JSON数据，处理消息字段并将其封装到要抛出的错误中。错误在Swift中非常强大，而在RxSwift中会变得更加强大。</p>
+<h4 id="162-a-nameusingcustomerrorsausing-custom-errors">1.6.2. <a name='Usingcustomerrors'></a>Using custom errors</h4>
+<p>现在您正在返回您的定制错误，您可以对它做一些有建设性的事情。</p>
+<p>在继续之前，在ViewController.swift中注释掉retryWhen{…}操作符。你希望错误通过整个链，并被可观察对象执行。</p>
+<p>有一个名为InfoView的方便视图，它会在应用程序的底部显示一个带有给定错误消息的小视图。用法非常简单，只需一行代码就可以完成(你现在不需要输入这个):</p>
+<pre><code class="language-swift">InfoView.showIn(viewController: self, message: &quot;An error occurred&quot;)
+</code></pre>
+<p>错误通常使用retry或catch操作符来处理，但如果您想执行一个副作用并在用户界面上显示消息，该怎么办?要做到这一点，需要用到do运算符。在你注释retryWhen的订阅中，你使用了do来实现缓存:</p>
+<pre><code class="language-swift">.do(onNext: { [weak self] data in
+  self?.cache[text] = data  
+})
+</code></pre>
+<p>为该方法调用添加第二个参数，以便在出现错误事件时执行副作用。完整的代码块应该是这样的:</p>
+<pre><code class="language-swift">.do(
+  onNext: { [weak self] data in
+    self?.cache[text] = data
+  },
+  onError: { error in
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
+      InfoView.showIn(viewController: self, message: &quot;An error occurred&quot;)
+    }
+  }
+)
+</code></pre>
+<p>调度是必要的，因为序列是在后台线程中观察的;否则，UIKit会抱怨UI被后台线程修改了。构建并运行，尝试搜索一个随机字符串，错误就会出现。</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnr9tr5rej30ai0homxy.jpg" alt="avatar" loading="lazy"></figure>
+<p>这个错误是很普遍的。但是你可以很容易地注入更多的信息。RxSwift会像Swift那样处理这个问题，所以你可以检查错误情况并显示不同的消息。为了让代码更整洁，把这个新方法添加到视图控制器类中:</p>
+<pre><code class="language-swift">private func showError(error e: Error) {
+  guard let e = e as? ApiController.ApiError else {
+    InfoView.showIn(viewController: self, message: &quot;An error occurred&quot;)
+    return
+  }
+
+  switch e {
+  case .cityNotFound:
+    InfoView.showIn(viewController: self, message: &quot;City Name is invalid&quot;)
+  case .serverFailure:
+    InfoView.showIn(viewController: self, message: &quot;Server error&quot;)
+  }
+}
+</code></pre>
+<p>然后回到do(onNext:onError:)，并将InfoView.showIn(…)替换为:</p>
+<pre><code class="language-swift">self.showError(error: error)
+</code></pre>
+<p>这应该为用户提供更多关于错误的上下文。再次运行应用程序，并尝试输入一个随机的城市名称来查看自定义错误。</p>
+<h3 id="17-a-nameadvancederrorhandlingaadvanced-error-handling">1.7. <a name='Advancederrorhandling'></a>Advanced error handling</h3>
+<p>高级错误情况可能很难实现。当API返回错误时，除了向用户显示一条消息之外，没有什么通用规则可以做什么。</p>
+<p>假设您想要向当前应用程序添加身份验证。用户必须经过身份验证和授权才能请求天气状况。这意味着要创建一个会话，这将确保用户正确登录和授权。但是，如果会话过期了怎么办?返回一个错误，还是在消息字符串旁边返回一个空值?</p>
+<p>在这种情况下，没有灵丹妙药。这两个解都适用，但知道更多关于误差的信息总是有用的，所以你会走那条路。</p>
+<p>在这种情况下，推荐的方法是执行一个副作用，并在正确创建会话之后重新尝试。</p>
+<p>您可以使用包含API密钥的称为apiKey的中继来模拟这种行为。</p>
+<p>此API密钥中继可用于在retryWhen闭包中触发重试。缺少API键肯定是一个错误，所以在ApiError枚举中添加以下额外的错误情况:</p>
+<pre><code class="language-swift">case invalidKey
+</code></pre>
+<p>当服务器返回401代码时，必须抛出此错误。通过在switch语句中添加case，在builderRequest(…)函数中抛出该错误。在大小写400&lt; 500之前添加以下case</p>
+<pre><code class="language-swift">case 401:
+  throw ApiError.invalidKey
+</code></pre>
+<p>这个新的错误还需要一个新的处理程序。在ViewController.swift中更新showError(error:)内部的开关，以包含新的情况:</p>
+<pre><code class="language-swift">case .invalidKey:
+  InfoView.showIn(viewController: self, message: &quot;Key is invalid&quot;)
+</code></pre>
+<p>现在你可以回到viewDidLoad()并重新实现错误处理代码。因为您已经注释掉了当前的retryWhen{…}代码，你就可以重新构建错误处理了。</p>
+<p>在对searchchinput的订阅之上，在观察者链之外创建一个专用闭包，它将作为一个错误处理程序:</p>
+<pre><code class="language-swift">let retryHandler: (Observable&lt;Error&gt;) -&gt; Observable&lt;Int&gt; = { e in
+  return e.enumerated().flatMap { attempt, error -&gt; Observable&lt;Int&gt; in
+      // error handling
+  }
+}
+</code></pre>
+<p>您将在新的错误处理闭包中复制以前的一些代码。将//error handling注释替换为:</p>
+<pre><code class="language-swift">if attempt &gt;= maxAttempts - 1 {
+  return Observable.error(error)
+} else if let casted = error as? ApiController.ApiError, casted == .invalidKey {
+  return ApiController.shared.apiKey
+    .filter { !$0.isEmpty }
+    .map { _ in 1 }
+}
+print(&quot;== retrying after \(attempt + 1) seconds ==&quot;)
+return Observable&lt;Int&gt;.timer(.seconds(attempt + 1),
+                             scheduler: MainScheduler.instance)
+                      .take(1)
+</code></pre>
+<p>在invalidKey情况下，返回类型并不重要，但你必须保持一致。之前，它是一个Observable<Int>，所以你应该坚持使用这个返回类型。因此，您使用了{ _ in 1 }。</p>
+<p>现在滚动到注释的retryWhen{…}，并将其替换为:</p>
+<pre><code class="language-swift">.retryWhen(retryHandler)
+</code></pre>
+<p>最后一步是使用API密钥的中继。在ViewController.swift中已经有一个名为requestKey()的方法，它会打开一个带有文本字段的警告视图。然后用户可以键入(或将其粘贴进去)来模拟登录功能。</p>
+<p>你这样做是为了测试;在现实生活中的应用程序中，用户将输入他们的凭据来从您的服务器获取密钥。</p>
+<p>切换到ApiController.swift。移除apiKey主题中的API密钥，并将其设置为空字符串。你最好把钥匙放在手边的什么地方，一会儿你又会需要它的。</p>
+<pre><code class="language-swift">let apiKey = BehaviorSubject(value: &quot;&quot;)
+</code></pre>
+<p>构建并运行应用程序，尝试执行搜索，你将收到一个错误:</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnrsgd80bj30ji04omxb.jpg" alt="avatar" loading="lazy"></figure>
+<p>点击右下角的按键:</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnrsdlsfnj307607a0su.jpg" alt="avatar" loading="lazy"></figure>
+<p>然后应用程序将打开警报请求API密钥:</p>
+<figure data-type="image" tabindex="11"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqnrsbl4inj30a40hi750.jpg" alt="avatar" loading="lazy"></figure>
+<p>将API键粘贴到字段中，然后点击OK。应用程序将重复整个可观察序列，如果输入有效，返回正确的信息。如果输入无效，你将在一个不同的错误路径上结束。</p>
+<h3 id="18-a-namematerializeanddematerializeamaterialize-and-dematerialize">1.8. <a name='Materializeanddematerialize'></a>Materialize and dematerialize</h3>
+<p>错误处理可能是一项很难实现的任务，有时有必要通过分解它来调试失败的序列，以便更好地理解流。另一个困难的情况可能是由于对序列的控制有限或没有控制，例如由第三方框架生成的序列。RxSwift为这些场景提供了解决方案，有两种操作符可以帮助您:materialize and dematerialize.</p>
+<p>你已经在本书的前面介绍了事件枚举，并且已经意识到它是多么的重要。它是RxSwift的基本元素之一，但很少直接使用它。materialize操作符允许您将任意T元素序列转换为一个Event<T>元素序列。</p>
+<p>这个过程将原始序列转换为一系列通知:</p>
+<figure data-type="image" tabindex="12"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqns50itenj30to0cemz4.jpg" alt="avatar" loading="lazy"></figure>
+<p>使用这个操作符，你可以将隐式序列转换为显式序列，这些隐式序列是通过适当的操作符和多个处理程序来操作的，因此onNext、onError和onCompleted的处理程序可以是一个单独的函数。</p>
+<p>要反转一系列通知，你可以使用dematerialize:</p>
+<figure data-type="image" tabindex="13"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqns6440kwj30u00butar.jpg" alt="avatar" loading="lazy"></figure>
+<p>这将把一系列通知转换成一个常规的可观察对象，并保留所有原始合同。</p>
+<p>您可以结合使用这两个操作符来创建高级和自定义事件记录器:</p>
+<pre><code class="language-swift">observableToLog.materialize()
+  .do(onNext: { (event) in
+    myAdvancedLogEvent(event)
+  })
+  .dematerialize()
+</code></pre>
+<p>通过这种方法，您可以使用materialize和dematerialize创建自定义操作符，并在Event枚举器上执行高级任务。</p>
+<p>注意:materialize和dematerialize通常一起使用，有完全打破最初的Observable合约的能力。小心使用它们，并且只在必要的时候使用，在没有其他办法处理特定情况的时候使用。</p>
+<h3 id="19-a-namewheretogofromhereawhere-to-go-from-here">1.9. <a name='Wheretogofromhere'></a>Where to go from here?</h3>
+<p>在本章中，介绍了使用retry和catch进行错误处理。你在应用中处理错误的方式取决于你要构建的项目类型。当处理错误时，设计和体系结构会起作用，并且创建错误的处理策略可能会危及您的项目，并导致重写部分代码。</p>
+<p>我还建议你花点时间玩玩retryWhen。它是一个不平凡的运算符，所以使用它的次数越多，在应用程序中使用它就会越舒服。</p>
+<h3 id="110-a-namechallengeachallenge">1.10. <a name='Challenge'></a>Challenge</h3>
+<p>Challenge:在已恢复的连接上使用retryWhen 在此挑战中，您需要处理internet连接不可用的情况。</p>
+<p>首先，看看rxreach .swift内部的可达性服务。修改代码，以便在互联网连接返回时正确地发送通知。</p>
+<blockquote>
+<p>Note:  当“我连接到互联网了吗?”这可能是一个简单的问题，但要给出准确的答案，技术上是相当复杂的。模拟起来更加复杂。如果遇到问题，尝试在设备上运行而不是iOS模拟器。</p>
+</blockquote>
+<p>你可以通过添加视图控制器的viewDidLoad()方法来开始监控设备的连通性。</p>
+<pre><code class="language-swift">_ = RxReachability.shared.startMonitor(&quot;openweathermap.org&quot;)
+</code></pre>
+<p>完成后，扩展retryWhen处理程序来处理“没有可用的互联网连接”错误。请记住，当网络连接断开时，您必须启动retry。</p>
+<p>要实现这一点，请在.enumerated().flatMap()操作符中添加另一个if，用于检查返回的错误类型。</p>
+<p>尝试将error转换为NSError，如果它的代码等于-1009，那意味着网络连接断开。在这种情况下，返回RxReachability.shared.status并过滤它，让它只通过.online值，就像你在另一个if语句中做的那样，映射到1</p>
+<p>最终的目标是，如果之前的错误是由于设备离线造成的，一旦恢复网络，系统会自动重试。</p>
+<pre><code class="language-swift">let retryHandler: (Observable&lt;Error&gt;) -&gt; Observable&lt;Int&gt; = { e in
+      return e.enumerated().flatMap { attempt, error -&gt; Observable&lt;Int&gt; in
+        if attempt &gt;= maxAttempts - 1 {
+          return Observable.error(error)
+        } else if let casted = error as? ApiController.ApiError, casted == .invalidKey {
+          return ApiController.shared.apiKey
+            .filter { !$0.isEmpty }
+            .map { _ in 1 }
+        } else if (error as NSError).code == -1009 {
+          return RxReachability.shared.status
+            .filter { $0 == .online }
+            .map { _ in 1 }
+        }
+
+        print(&quot;== retrying after \(attempt + 1) seconds ==&quot;)
+        return Observable&lt;Int&gt;.timer(.seconds(attempt + 1),
+                                     scheduler: MainScheduler.instance)
+                              .take(1)
+      }
+    }
+</code></pre>
+<p><a href="https://e.coding.net/kayouyou/rxswift-books/RxSwift.git">代码地址</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/XdxxvBUbd/" class="tag">
+                    error handling
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-zhong-shu-zu-duo-tiao-jian-pai-xu/">
+                  <h3 class="post-title">
+                    Swift中数组多条件排序
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

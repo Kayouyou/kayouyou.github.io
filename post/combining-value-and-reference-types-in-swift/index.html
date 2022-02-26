@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Combining value and reference types in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="所有Swift开发人员必须在持续的基础上做出的一种非常常见的决策类型是，是否将给定的功能或状态建模为值或引用。虽然值给了我们非常清晰的语义，因为每个值在传递时都会自动复制，但引用使我们能够建立一个单一的真理来源——即使这可能意味着共享状态，..." />
+    <meta name="keywords" content="value types,reference types,state management" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Combining value and reference types in Swift</h2>
+            <div class="post-date">2019-11-10</div>
+            
+            <div class="post-content" v-pre>
+              <p>所有Swift开发人员必须在持续的基础上做出的一种非常常见的决策类型是，是否将给定的功能或状态建模为值或引用。虽然值给了我们非常清晰的语义，因为每个值在传递时都会自动复制，但引用使我们能够建立一个单一的真理来源——即使这可能意味着共享状态，如果我们不小心的话，这也可能成为一种责任。</p>
+<p>然而，并不是所有这些决定都需要产生引用类型或值类型-有时两者的结合可以给我们带来一些真正强大的功能，并打开一些令人难以置信的有趣的代码设计选项。 这正是我们本周要探索的——让我们一探究竟吧!</p>
+<h2 id="collections-of-weak-references">Collections of weak references</h2>
+<p>通常，当在两种对象之间建立关系时，我们希望该关系的一边是弱引用(因为如果双方都是强引用，这将导致一个retain循环)。</p>
+<p>例如，假设我们正在构建一个视频播放器，并且我们希望让另一个对象能够观察到它。为了实现这一点，我们可以定义一个类绑定的观察协议，叫做PlaybackObserver， 然后通过观察者属性使一个符合规则的对象附加到我们的视频播放器上:</p>
+<pre><code class="language-swift">class VideoPlayer {
+    weak var observer: PlaybackObserver?
+    ...
+}
+</code></pre>
+<p>可以说，如果我们的VideoPlayer与它的观察者保持1:1的关系，那么将其改为委托可能更合适。</p>
+<p>虽然上面的方法工作，只要我们只支持一个观察者附加到每个视频播放器，一旦我们添加了对多个对象的支持，事情就开始变得棘手了 -因为我们必须把观察者存储在某种形式的集合中，比如数组:</p>
+<pre><code class="language-swift">class VideoPlayer {
+    private var observers = [PlaybackObserver]()
+    func addObserver(_ observer: PlaybackObserver) {
+        observers.append(observer)
+    }
+    ...
+}
+</code></pre>
+<p>问题是，通过做上述更改，我们的观察者不再是弱存储(因为数组保留它们的元素是强存储的) 谢天谢地，这个问题很容易解决，我们把基于引用类型的PlaybackObserver协议和一个装箱值类型结合起来——它将简单地通过存储一个弱引用来包装一个observer实例，就像这样:</p>
+<pre><code class="language-swift">private extension VideoPlayer {
+    struct Observation {
+        weak var observer: PlaybackObserver?
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以更新我们的视频播放器来存储观察值，而不是直接(强)引用每个观察者 - 这将打破任何可能的循环引用，因为每个观察者现在再次被弱引用:</p>
+<pre><code class="language-swift">class VideoPlayer {
+    private var observations = [Observation]()
+
+    func addObserver(_ observer: PlaybackObserver) {
+        let observation = Observation(observer: observer)
+        observations.append(observation)
+    }
+    ...
+}
+</code></pre>
+<p>要了解更多关于上述管理观测的方式，以及观察者模式的一般情况，请查看由两部分组成的文章“Swift中的观察者”。</p>
+<p>虽然上面的实现解决了以一种弱方式存储特定类型实例的问题， 现在，假设我们想推广这个概念，以便在代码库的不同部分中使用相同的实现。 如何做到这一点的最初想法可能是创建一个通用的弱结构，类似于上面的观察类型——弱存储给定的对象:</p>
+<pre><code class="language-swift">struct Weak&lt;Object: AnyObject&gt; {
+    weak var object: Object?
+}
+</code></pre>
+<p>然而，尽管只要我们知道应该存储的对象的确切类型，上述弱类型就可以很好地工作，但对于协议类型来说，这将是一个相当大的问题。 即使协议可能是类绑定的(即它被约束到任何对象，这仅使类符合它成为可能)，它也不会使协议本身成为类类型。如果我们试图在视频播放器中使用新的弱类型，我们会得到这样的编译错误:</p>
+<pre><code class="language-swift">// Error: 'Weak' requires that 'PlaybackObserver' be a class type
+private var observations = [Weak&lt;PlaybackObserver&gt;]()
+</code></pre>
+<p>在这一点上，似乎所有的希望都失去了，但事实证明，我们有办法实现我们想要的-这涉及到使用一个捕获的闭包，而不是一个弱属性来实现我们的对象引用-像这样:</p>
+<pre><code class="language-swift">struct Weak&lt;Object&gt; {
+    var object: Object? { provider() }
+    private let provider: () -&gt; Object?
+
+    init(_ object: Object) {
+        // Any Swift value can be &quot;promoted&quot; to an AnyObject, however,
+        // that doesn't automatically turn it into a reference.
+        let reference = object as AnyObject
+
+        provider = { [weak reference] in
+            reference as? Object
+        }
+    }
+}
+</code></pre>
+<p>上述方法的缺点是，我们现在可以用任何对象或值初始化弱结构，而不仅仅是用类实例。然而，这可能不是什么大问题，特别是当我们仅将其用作管理观察者等任务的实现细节时。 因为这样做的好处是我们现在可以很容易地弱地存储符合协议的实例集合 -使我们能够更新我们的视频播放器从以前到现在看起来像这样:</p>
+<pre><code class="language-swift">class VideoPlayer {
+    private var observations = [Weak&lt;PlaybackObserver&gt;]()
+
+    func addObserver(_ observer: PlaybackObserver) {
+        observations.append(Weak(observer))
+    }
+    
+    ...
+}
+</code></pre>
+<p>很酷!创建一个通用的弱包装器是否值得，而不仅仅是使用特定的包装器(比如我们开始使用的观察类型)，当然，这在很大程度上取决于有多少用例存储我们拥有的弱引用集合。与往常一样，通常最好从一个非常具体的实现开始，然后在需要时再一般化。</p>
+<h2 id="passing-references-to-value-types">Passing references to value types</h2>
+<p>接下来，让我们掷硬币—看看如何使用引用类型来包装值类型。 假设我们正在构建一个应用程序，它使用如下的值类型来存储各种用户可配置的设置:</p>
+<pre><code class="language-swift">struct Settings {
+    var colorTheme: ColorTheme
+    var rememberLoggedInUser: Bool
+    ...
+}
+</code></pre>
+<p>虽然将core data 型定义为值通常是一个好主意，因为它可以让我们充分利用值语义-  有时，我们可能希望多个对象共享对给定模型的单个实例的引用。</p>
+<p>例如，假设我们希望代码库的多个部分能够读取和修改相同的设置值，而不必实现任何复杂的数据流。实现这一目的的一种方法是创建另一种装箱类型，就像前面提到的弱结构体一样，但这一次是为了让我们能够在引用类型中包装一个值类型——像这样:</p>
+<pre><code class="language-swift">class Reference&lt;Value&gt; {
+    var value: Value
+
+    init(value: Value) {
+        self.value = value
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以轻松地将任何值类型转换为引用，只需将其包装在引用实例中，然后将该实例传递给我们想要共享值的对象或函数:</p>
+<pre><code class="language-swift">let settings = loadSettings()
+let sharedSettings = Reference(value: settings)
+</code></pre>
+<p>例如，以下是ProfileViewModel如何接受一个引用的设置值，而不仅仅是一个设置值的副本</p>
+<pre><code class="language-swift">class ProfileViewModel {
+    private let user: User
+    private let settings: Reference&lt;Settings&gt;
+
+    init(user: User, settings: Reference&lt;Settings&gt;) {
+        self.user = user
+        self.settings = settings
+    }
+    
+    func makeEmailAddressIcon() -&gt; Icon {
+        var icon = Icon.email
+        icon.useLightVersion = settings.value.colorTheme.isDark
+        return icon
+    }
+    
+    ...
+}
+</code></pre>
+<p>虽然上面的方法是在应用程序中共享基于值类型的数据的一种非常方便的方式，它确实有两个主要的缺点。<br>
+第一个是我们必须总是访问所传递的引用的value属性以便访问我们感兴趣的值， 第二，我们现在在代码库的多个部分之间共享可变状态。</p>
+<p>虽然我们不能对第一个缺点做太多(除非我们想在引用类型中复制每个值类型的api，这有点违背它的意义)，我们可以限制状态的可变性 -这通常有助于使系统更容易预测和调试，因为可以修改一段状态的地方减少了</p>
+<p>一种方法是使引用类型不可变，然后创建它的可变子类(我们称它为mutablerreference)。这样，只有引用的创建者才能改变它，因为它可以简单地作为一个不可变的引用在后传递:</p>
+<pre><code class="language-swift">class Reference&lt;Value&gt; {
+    fileprivate(set) var value: Value
+
+    init(value: Value) {
+        self.value = value
+    }
+}
+
+class MutableReference&lt;Value&gt;: Reference&lt;Value&gt; {
+    func update(with value: Value) {
+        self.value = value
+    }
+}
+</code></pre>
+<p>下面是一个例子，说明上面的方法是多么有用，因为它让我们可以在需要的时候更新我们的共享值引用，同时仍然允许我们将其作为不可变对象传递——而不需要做任何类型的转换:</p>
+<pre><code class="language-swift">let settings = loadSettings()
+
+// Since this part of our code base knows that our reference is
+// mutable, it can easily update it whenever needed:
+let sharedSettings = MutableReference(value: settings)
+observeSettingsChange(with: sharedSettings.update)
+
+// Since our view model accepts an immutable reference, it won't
+// be able to mutate our value in any way:
+let viewModel = ProfileViewModel(settings: sharedSettings)
+</code></pre>
+<p>上述类型的装箱非常有用，特别是如果我们把它们的变异能力限制在我们的代码库中，应该能够改变它们的可见范围内，-因为这可以给我们提供参考类型的灵活性和强大的功能，没有过度共享可变状态时通常会出现的问题。</p>
+<p>然而，在部署装箱类型时，总是需要考虑另一种抽象(比如模型控制器、可绑定值或响应式框架，比如Combine)是否更合适。 特别是当我们在应用程序中共享和传递值的方式变得更加复杂时，一个更强大的抽象可能是一条可行的道路 -尽管我们可能会选择类似于上面引用类型的东西，以保持事情在一开始简单。</p>
+<h2 id="using-reference-types-as-underlying-storage">Using reference types as underlying storage</h2>
+<p>最后，让我们超越装箱类型，看看如何真正结合值类型和引用类型，以释放一些真正强大的功能。假设我们已经定义了一种值类型，它让我们能够表达复杂的格式化文本，方法是把它们分解成独立的组件，然后把它们渲染成一个NSAttributedString:</p>
+<pre><code class="language-swift">struct FormattedText {
+    var components: [Component]
+    func render() -&gt; NSAttributedString {
+        let result = NSMutableAttributedString()
+        components.forEach { result.append($0.render()) }
+        return result
+    }
+}
+</code></pre>
+<p>虽然上面提供了一种漂亮的、“快速”的方法来构建带属性字符串，但每次我们想要显示每个文本时，它都需要一个O(n)计算-这将导致在多个地方呈现相同的文本时重复的工作。</p>
+<p>为了解决这个问题，让我们从Swift标准库中获得一些灵感，它使用指针和引用作为某些键值类型的存储-例如字符串和数组-给它们写时复制的语义。 这意味着，多个值可以共享相同的底层存储，直到其中一个发生突变，最小化在传递值时需要进行的复制操作(因为实际上只有“值类型shell”被复制)。</p>
+<p>在本例中，我们将使用类似的方法，但目的略有不同-为上面的FormattedText类型实现一个RenderingCache。这样的话，我们只需要渲染同一文本的每个副本一次，当同一文本在多个地方使用时，(有效地将每个后续呈现过程转换为O(1)操作)，这将显著提高性能。</p>
+<p>我们的缓存将是一个简单的类，它只有一个任务——存储前一个渲染操作的结果:</p>
+<pre><code class="language-swift">private extension FormattedText {
+    class RenderingCache {
+        var result: NSAttributedString?
+    }
+}
+</code></pre>
+<p>然后，当我们完成了NSAttributedString的渲染后，我们将把结果存储在RenderingCache的一个实例中——当组件数组发生变化时，这个实例就会被替换。这样我们就避免了缓存过时数据，而且由于我们的缓存是引用类型，它将一直被指向同一个实例——即使在我们的应用程序中传递FormattedText值时也是如此。</p>
+<p>完整的实现是这样的:</p>
+<pre><code class="language-swift">struct FormattedText {
+    var components: [Component] {
+        didSet { cache = RenderingCache() }
+    }
+
+    private var cache = RenderingCache()
+
+    init(components: [Component] = []) {
+        self.components = components
+    }
+
+    func render() -&gt; NSAttributedString {
+        if let cached = cache.result {
+            return cached
+        }
+
+        let result = NSMutableAttributedString()
+        components.forEach { result.append($0.render()) }
+        cache.result = result
+
+        return result
+    }
+}
+</code></pre>
+<p>通过使用引用类型作为底层存储，同时保持API表面完全基于值类型 - 我们可以将单一真相来源的性能优势结合起来， 同时，通过限制可变性和不公开共享状态，我们的API的用户仍然可以充分利用值语义。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift完全支持值类型和引用类型，这为我们在设计api时提供了极大的灵活性，我们如何构建它们的底层实现，以及如何在应用程序或系统中管理状态。</p>
+<p>虽然大多数类型可能仍然是纯粹的值或类，但有时，通过将两者结合起来，我们可以获得一些真正强大的结果-使我们能够利用引用类型的便利性和性能特点，以及值类型的安全性和有限的可变性。</p>
+<p><a href="https://www.swiftbysundell.com/articles/combining-value-and-reference-types-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/K623Q1U6L/" class="tag">
+                    value types
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Ei0W0K7WF7/" class="tag">
+                    reference types
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EWN51MbzW/" class="tag">
+                    state management
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/implementing-throwing-protocol-functions-as-non-throwing/">
+                  <h3 class="post-title">
+                    Implementing throwing protocol functions as non-throwing
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

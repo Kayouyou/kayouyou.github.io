@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>iOS Interview Questions | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+iOS Interview Questions
+
+1. Difference between a category and extension in objective C?
+2. Fallthrough keyword in swif..." />
+    <meta name="keywords" content="interview" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">iOS Interview Questions</h2>
+            <div class="post-date">2021-05-26</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#ios-interview-questions">iOS Interview Questions</a>
+<ul>
+<li><a href="#1-difference-between-a-category-and-extension-in-objective-c">1. Difference between a category and extension in objective C?</a></li>
+<li><a href="#2-fallthrough-keyword-in-swift">2. Fallthrough keyword in swift?</a></li>
+<li><a href="#3-how-to-make-a-method-inside-a-protocol-optional-in-swift">3. How to make a method inside a protocol optional in swift?</a></li>
+<li><a href="#4-reverse-a-string-without-using-reversed-in-built-function">4. Reverse a string without using “reversed()” in-built function</a></li>
+<li><a href="#5-explain-the-class-hierarchy-of-uibutton">5. Explain the class hierarchy of UIButton.</a></li>
+<li><a href="#6-superclass-of-uiviewcontroller">6. SuperClass of UIViewController?</a></li>
+<li><a href="#7-superclass-of-uiwindow">7. SuperClass of UIWindow?</a></li>
+<li><a href="#8-difference-between-self-and-self-in-swift">8. Difference between Self and self in Swift?</a></li>
+<li><a href="#9-what-is-the-difference-between-static-vs-class-functionsvariables-in-swift-classes">9. What is the difference between static vs class functions/variables in Swift classes?</a></li>
+<li><a href="#10-explain-the-final-keyword-or-how-can-we-prevent-overrides--subclassing-in-a-class">10. Explain the final keyword or… How can we prevent overrides &amp; subclassing in a class?</a></li>
+<li><a href="#11-explain-atomicity-in-both-objective-c-and-swift">11. Explain atomicity in both Objective-C and swift?</a></li>
+<li><a href="#12-what-is-a-singleton-pattern-how-to-create-one-in-swift">12. What is a Singleton pattern? How to create one in swift?</a></li>
+<li><a href="#13-can-enums-have-stored-properties">13. Can enums have stored properties?</a></li>
+<li><a href="#14-can-we-make-a-let-as-weak">14. Can we make a let as weak</a></li>
+<li><a href="#15-can-we-make-a-let-as-unowned">15. Can we make a let as unowned</a></li>
+<li><a href="#16-what-is-optional-chaining">16. What is Optional Chaining?</a></li>
+<li><a href="#17-bounds-vs-nativebounds">17. Bounds vs nativeBounds?</a></li>
+<li><a href="#18-how-to-resolve-strong-reference-cycles-between-class-instances">18. How to resolve Strong Reference Cycles Between Class Instances?</a>
+<ul>
+<li><a href="#weak-references-person--apartment">Weak References (Person &amp; Apartment)</a></li>
+<li><a href="#unowned-references-customer--creditcard">Unowned References (Customer &amp; CreditCard)</a></li>
+<li><a href="#unowned-optional-references-department--course">Unowned Optional References (Department &amp; Course)</a></li>
+<li><a href="#unowned-references-and-implicitly-unwrapped-optional-properties-country--city">Unowned References and Implicitly Unwrapped Optional Properties (Country &amp; City)</a></li>
+</ul>
+</li>
+<li><a href="#19-what-is-existential-in-protocol">19. What is existential in Protocol?</a></li>
+<li><a href="#20-explain-existential-and-associated-type-about-protocol">20. Explain existential and associated type about Protocol</a></li>
+<li><a href="#21-explain-the-difference-between-methods-declared-in-the-protocol-and-those-declared-in-the-protocol-extension">21. Explain the difference between methods declared in the Protocol and those declared in the Protocol extension</a></li>
+<li><a href="#22-how-to-type-erasure-using-closures-replace-using-class-in-swift">22. How to type erasure using closures replace using class in Swift</a>
+<ul>
+<li><a href="#1-%E9%80%9A%E8%BF%87%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%8C%85%E8%A3%85%E7%B1%BB%E6%9D%A5%E5%AE%9E%E7%8E%B0%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4">1. 通过创建一个包装类来实现类型擦除</a></li>
+<li><a href="#2-%E9%80%9A%E8%BF%87%E9%97%AD%E5%8C%85%E5%AE%9E%E7%8E%B0%E7%B1%BB%E5%9E%8B%E6%93%A6%E9%99%A4">2. 通过闭包实现类型擦除</a></li>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+</li>
+<li><a href="#23-how-to-create-a-mixed-type-array-in-swift">23. How to create a mixed-type array in Swift?</a>
+<ul>
+<li><a href="#1-%E4%BD%BF%E7%94%A8any">1. 使用Any</a></li>
+<li><a href="#2-%E4%BD%BF%E7%94%A8protocol">2. 使用Protocol</a>
+<ul>
+<li><a href="#protocol-%E7%BB%A7%E6%89%BF">Protocol 继承</a></li>
+<li><a href="#protocol-%E7%BB%84%E5%90%88">Protocol 组合</a></li>
+</ul>
+</li>
+<li><a href="#3-%E4%BD%BF%E7%94%A8enum">3. 使用Enum</a></li>
+<li><a href="#4-%E7%BB%84%E5%90%88%E4%BD%BF%E7%94%A8enum%E5%92%8Cstruct">4. 组合使用Enum和Struct</a></li>
+</ul>
+</li>
+<li><a href="#%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90">相关资源：</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="ios-interview-questions">iOS Interview Questions</h2>
+<h3 id="1-difference-between-a-category-and-extension-in-objective-c">1. Difference between a category and extension in objective C?</h3>
+<p>即使您没有原始的实现源代码，也可以为任何类声明category。</p>
+<p>类extension与category有一些相似之处，但它只能添加到编译时具有源代码的类中(类与类extension同时编译)。</p>
+<p>category允许您在主接口文件之外添加方法。 而extension必须在主接口文件中实现。 这意味着我们可以有把握地得出结论，你不能使用extension来扩展内置类或没有源代码的类，在那里你应该使用category。要使用extensions，您需要访问所扩展的类的源代码。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqw6ota5c6j30po0bkt96.jpg" alt="avatar" loading="lazy"></figure>
+<h3 id="2-fallthrough-keyword-in-swift">2. Fallthrough keyword in swift?</h3>
+<p>在Swift中，switch语句不会落空到每一种情况的底部并进入下一种情况。也就是说，当第一个匹配的case完成时，整个switch语句就完成了它的执行。</p>
+<p>在swift中，<strong>fallthrough</strong>语句用于switch case执行case语句，根据我们的需求在匹配的case语句旁边执行case语句。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqw6stvbv4j310i0mswg8.jpg" alt="avatar" loading="lazy"></figure>
+<blockquote>
+<p><strong>fallthrough</strong>关键字不会检查它导致执行落入的switch case的case条件。<strong>fallthrough</strong>关键字只会导致代码执行直接移动到下一个case(或默认case)块内的语句，就像C的标准switch语句行为一样。</p>
+</blockquote>
+<h3 id="3-how-to-make-a-method-inside-a-protocol-optional-in-swift">3. How to make a method inside a protocol optional in swift?</h3>
+<p>我们有两种方法。</p>
+<ol>
+<li>
+<p>纯swift方式应该类似于使用协议扩展提供默认实现。</p>
+</li>
+<li>
+<p>Objective-C兼容的方式是使用@objc和optional关键字。</p>
+</li>
+</ol>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqw6xw6w8mj30tq0i6aba.jpg" alt="avatar" loading="lazy"></figure>
+<p><em><strong>Important</strong></em>: Objc兼容方式的缺点是上面例子中的MyProtocolObjc变成了一个类协议。结构体不能符合此协议。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqw6ztxxihj310604udg0.jpg" alt="avatar" loading="lazy"></figure>
+<p>Error: 非类类型' SomeStruct '不能符合类协议' MyProtocolObjc '</p>
+<h3 id="4-reverse-a-string-without-using-reversed-in-built-function">4. Reverse a string without using “reversed()” in-built function</h3>
+<p>如果面试官让你把代码写在纸上，那就当场杀了他🔫💣🔪。对我来说，在没有xcode的情况下编写优化的代码是非常困难的。</p>
+<p>上次有人问这个问题的时候，我首先想到的就是这个。</p>
+<pre><code class="language-swift">extension String {
+    func reverse() -&gt; String {
+        var tempString = “”
+        for char in self {
+            tempString = String(char) + tempString
+        }
+        return tempString
+    }
+}
+</code></pre>
+<p>你可以在字符串上使用高阶函数“Reduce”来实现这个逻辑。🔥🔥🔥🔥🔥</p>
+<pre><code class="language-swift">extension String {
+    func reverse() -&gt; String  { 
+        return self.reduce(&quot;&quot;){ &quot;\($1)&quot; + $0 } 
+    }
+}
+</code></pre>
+<h3 id="5-explain-the-class-hierarchy-of-uibutton">5. Explain the class hierarchy of UIButton.</h3>
+<p><em><strong>NSObject → UIResponder → UIView → UIControl → UIButton.</strong></em></p>
+<blockquote>
+<p>UITextField, UITextView, UISlider, UIDatePicker, UIPageControl, UISegmentedControl, UIStepper, UISwitch etc are all inheriting from UIControl</p>
+</blockquote>
+<p><strong>每个超类的角色和职责是什么?</strong></p>
+<p><strong>UIResponder</strong>: 负责响应和处理事件的抽象类。一个响应器实现了touchesBegan(<em>:with:)， touchesMoved(</em>:with:)，第一个响应处理，键盘，和输入相关的事件等。</p>
+<p><strong>UIView</strong>: 管理屏幕上矩形区域内容的对象。</p>
+<p><strong>UIControl</strong>: 它是控件的基类。</p>
+<ul>
+<li>
+<p>它处理诸如enabled, disabled, focused, highlighted等控件状态。</p>
+</li>
+<li>
+<p>它处理像touchDown, touchupInside, valueChanged, UITextField编辑事件等事件。</p>
+</li>
+<li>
+<p>Adding target, removing the target, handling actions etc.</p>
+</li>
+</ul>
+<h3 id="6-superclass-of-uiviewcontroller">6. SuperClass of UIViewController?</h3>
+<p><strong>UIResponder → UIViewController</strong></p>
+<h3 id="7-superclass-of-uiwindow">7. SuperClass of UIWindow?</h3>
+<p><strong>UIView → UIWindow</strong></p>
+<h3 id="8-difference-between-self-and-self-in-swift">8. Difference between Self and self in Swift?</h3>
+<p>‘<strong>Self</strong>’只在协议中可用，或作为类中的方法的结果。</p>
+<p>Reference: <a href="https://www.hackingwithswift.com/example-code/language/self-vs-self-whats-the-difference">Hacking with swift</a>.</p>
+<p>当您编写协议和协议扩展时，Self(大写S)和Self(小写S)之间存在差异。 当与大写S连用时，Self指的是符合协议的类型，例如: String or Int. 当与小写S一起使用时，self指该类型内的值，例如“hello”或556。</p>
+<p>NB: BinaryInteger是一个协议。</p>
+<pre><code class="language-swift">extension BinaryInteger { 
+    func squared() -&gt; Self { 
+        return self * self 
+    }
+}
+</code></pre>
+<h3 id="9-what-is-the-difference-between-static-vs-class-functionsvariables-in-swift-classes">9. What is the difference between static vs class functions/variables in Swift classes?</h3>
+<p>static和class都将方法/属性与类关联，而不是类的实例。不同之处在于子类可以重写 class methods; 它们不能覆盖 static method。 因此，在Class中，静态函数关键字可以这样写:</p>
+<pre><code class="language-swift">final class someFunction()
+</code></pre>
+<blockquote>
+<p>static在内部是final的。<br>
+静态方法是静态分发，这意味着编译器知道哪个方法将在运行时执行，因为静态方法不能被重写，而类方法可以是动态分发，因为子类可以重写这些方法。</p>
+</blockquote>
+<h3 id="10-explain-the-final-keyword-or-how-can-we-prevent-overrides-subclassing-in-a-class">10. Explain the final keyword or… How can we prevent overrides &amp; subclassing in a class?</h3>
+<p>可以通过将方法、属性或下标标记为final来防止被override。通过在方法、属性或下标的介绍关键字之前编写最后的修饰符来做到这一点(such as final var, final func, final class func, and final subscript).</p>
+<p>通过在类定义中的class关键字之前编写final修饰符(final class)，可以将整个类标记为final。 将最终类子类化的任何尝试都报告为编译时错误。</p>
+<p>如前所述，您还可以使用static关键字来实现final类的功能。</p>
+<p>Reference: <a href="https://stackoverflow.com/questions/29636633/static-vs-class-functions-variables-in-swift-classes/#answer-37770112">StackOverflow</a></p>
+<pre><code class="language-swift">class A{
+    class func classFunction(){
+    }
+    static func staticFunction(){
+    }
+    class func classFunctionToBeMakeFinalInImmediateSubclass(){
+    }
+}
+
+class B: A {
+    override class func classFunction(){
+
+    }
+
+    //Compile Error. Class method overrides a 'final' class method
+    override static func staticFunction(){
+
+    }
+
+    //Lets avoid the function called 'classFunctionToBeMakeFinalInImmediateSubclass' being overriden by subclasses
+    /* First way of doing it
+    override static func classFunctionToBeMakeFinalInImmediateSubclass(){
+    }
+    */
+
+    // Second way of doing the same
+    override final class func classFunctionToBeMakeFinalInImmediateSubclass(){
+    }
+
+    //To use static or final class is choice of style.
+    //As mipadi suggests I would use. static at super class. and final class to cut off further overrides by a subclass
+}
+
+class C: B{
+    //Compile Error. Class method overrides a 'final' class method
+    override static func classFunctionToBeMakeFinalInImmediateSubclass(){
+
+    }
+}
+</code></pre>
+<h3 id="11-explain-atomicity-in-both-objective-c-and-swift">11. Explain atomicity in both Objective-C and swift?</h3>
+<p>Objective - C的默认值:atomic</p>
+<p>Swift默认值:non-atomic</p>
+<p>将属性定义为原子属性将保证返回一个有效值。声明一个原子属性会使编译器生成额外的代码来阻止对该属性的并发访问。 这段附加代码锁定一个信号量(semaphore)，然后获取或设置该属性，然后解锁该信号量。 如果线程A同时调用getter，线程B和线程C使用不同的值调用setter，线程A可以得到三个返回值中的任何一个 — 在任何setter被调用之前的一个，或者在B和C中传递给setter的任何一个值之前的一个。同样地，对象最终可能是来自B或C的值，无法判断。</p>
+<blockquote>
+<p>由于解锁在设置/获取值之前和之后，原子属性会受到较小的性能影响。</p>
+</blockquote>
+<p>non-atomic属性不能保证返回值。它可以是正确的值、部分写入的值，甚至是一些垃圾值。</p>
+<p>Swift中没有原子/非原子关键字。 当多个线程试图访问相同的值时，我们应该使用锁/信号量等使一个属性具有原子性。</p>
+<p>原子性属性(原子性和非原子性)没有反映在相应的Swift属性声明中，但当从Swift访问导入的属性时，Objective-C实现的原子性保证仍然保持不变。</p>
+<h3 id="12-what-is-a-singleton-pattern-how-to-create-one-in-swift">12. What is a Singleton pattern? How to create one in swift?</h3>
+<p>在应用程序的生命周期内，单例对象只能有一个实例。单例的存在给了我们奇异的全局状态。这些例子包括NSNotificationCenter、UIApplication和NSUserDefaults。</p>
+<pre><code class="language-swift">final class Singleton {
+    static let sharedInstance = Singleton() 
+    private init() {} // init should be private
+}
+</code></pre>
+<p>任何用let关键字声明的变量都是常量，因此是只读和线程安全的。</p>
+<p>Static关键字确保它在dispatch_once块中被延迟初始化。默认情况下Static在内部是final。</p>
+<p>dispatch_once:在应用程序的生命周期内，只执行一次块对象。</p>
+<p>将init方法设置为私有，这样就没有人可以直接访问init()方法并创建Singleton类的新实例。</p>
+<h3 id="13-can-enums-have-stored-properties">13. Can enums have stored properties?</h3>
+<p>枚举可以有方法、下标和计算属性。但是它不能存储属性。</p>
+<h3 id="14-can-we-make-a-let-as-weak">14. Can we make a let as weak</h3>
+<p>No, ' weak '必须是一个可变变量，因为它可能在运行时发生变化。 当我们将某项声明为weak时，它就变成了可选的。 它可能有值，也可能没有值。一旦没有对它的引用，它将被改变[set to nil]。</p>
+<pre><code class="language-swift">class SomeClass { }
+class SomeOtherClass {
+    weak let someClassObj: SomeClass? = nil 
+    // error: 'weak' must be a mutable variable, because it may change at runtime
+}
+</code></pre>
+<h3 id="15-can-we-make-a-let-as-unowned">15. Can we make a let as unowned</h3>
+<p>Yes. 无主引用总是有一个值。它不是可选的。</p>
+<blockquote>
+<p>Note: 无主引用可以是let或var。</p>
+</blockquote>
+<h3 id="16-what-is-optional-chaining">16. What is Optional Chaining?</h3>
+<p>可选链接是一个查询和调用当前可能为nil的可选对象的属性、方法和下标的过程。如果可选对象包含值，则属性、方法或下标调用成功;如果可选值为nil，则属性、方法或下标调用返回nil。 多个查询可以被链接在一起，如果链中的任何链接为nil，那么整个链就会优雅地失败。</p>
+<h3 id="17-bounds-vs-nativebounds">17. Bounds vs nativeBounds?</h3>
+<p>nativeBounds: 这个矩形基于直立方向的设备。这个值不会随着设备的旋转而改变。</p>
+<p>bounds: 此矩形是在当前坐标空间中指定的，它考虑到对设备有效的任何界面旋转。因此，当设备在纵向和横向之间旋转时，该属性的值可能会改变。</p>
+<h3 id="18-how-to-resolve-strong-reference-cycles-between-class-instances">18. How to resolve Strong Reference Cycles Between Class Instances?</h3>
+<p><a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/automatic-reference-counting-from-swift-language-guide/#WeakReferences">更多细节</a></p>
+<h4 id="weak-references-person-apartment">Weak References (Person &amp; Apartment)</h4>
+<p>弱引用是指没有对它所引用的实例保持强持有的引用，因此不会阻止ARC处理被引用的实例。此行为防止引用成为强引用循环的一部分。通过在属性或变量声明之前放置var关键字来指示弱引用。</p>
+<p>Person实例仍然具有对公寓实例的强引用，但公寓实例现在具有对Person实例的弱引用。这意味着当你把john变量的强引用设为nil时，就不再有对Person实例的强引用了</p>
+<pre><code class="language-swift">class Person {
+    let name: String
+    init(name: String) { self.name = name }
+    var apartment: Apartment?
+    deinit { print(&quot;\(name) is being deinitialized&quot;) }
+}
+
+class Apartment {
+    let unit: String
+    init(unit: String) { self.unit = unit }
+    weak var tenant: Person?
+    deinit { print(&quot;Apartment \(unit) is being deinitialized&quot;) }
+}
+</code></pre>
+<h4 id="unowned-references-customer-creditcard">Unowned References (Customer &amp; CreditCard)</h4>
+<p>与弱引用一样，无主引用不会对它所引用的实例保持强持有。但是，与弱引用不同的是，当另一个实例具有相同的生存期或更长的生存期时，使用无主引用。通过在属性或变量声明之前放置无主关键字来指示无主引用。</p>
+<p>与弱引用不同，无主引用预期总是有一个值。因此，将一个值标记为无主并不意味着它是可选的，并且ARC从不将一个无主引用的值设置为nil。</p>
+<p>客户可能有也可能没有信用卡，但是信用卡总是与客户相关联的。CreditCard实例的寿命永远不会超过它所引用的客户。为了表示这一点，Customer类有一个可选的card属性，但是CreditCard类有一个无主(且非可选)的Customer属性。</p>
+<p>因为信用卡总是有一个客户，你将其客户属性定义为一个无主引用，以避免强引用循环:</p>
+<pre><code class="language-swift">class Customer {
+    let name: String
+    var card: CreditCard?
+    init(name: String) {
+        self.name = name
+    }
+    deinit { print(&quot;\(name) is being deinitialized&quot;) }
+}
+
+class CreditCard {
+    let number: UInt64
+    unowned let customer: Customer
+    init(number: UInt64, customer: Customer) {
+        self.number = number
+        self.customer = customer
+    }
+    deinit { print(&quot;Card #\(number) is being deinitialized&quot;) }
+}
+</code></pre>
+<h4 id="unowned-optional-references-department-course">Unowned Optional References (Department &amp; Course)</h4>
+<p>可以将对类的可选引用标记为无主。根据ARC的所有权模型，一个无主的可选引用和一个弱引用都可以在相同的上下文中使用。不同之处在于，当你使用一个无主可选引用时，你有责任确保它总是指向一个有效的对象或被设置为nil。</p>
+<p>在ARC所有权模型中，一个部门拥有它的课程。这门课有两个无主参考文献，一个是关于系里的，一个是关于学生应该上的下一门课的;一个课程不拥有这两个对象。每门课程都是某个系的一部分，所以系属性不是可选的。但是，因为有些课程没有推荐的后续课程，所以nextCourse属性是可选的。</p>
+<pre><code class="language-swift">class Department {
+    var name: String
+    var courses: [Course]
+    init(name: String) {
+        self.name = name
+        self.courses = []
+    }
+}
+
+class Course {
+    var name: String
+    unowned var department: Department
+    unowned var nextCourse: Course?
+    init(name: String, in department: Department) {
+        self.name = name
+        self.department = department
+        self.nextCourse = nil
+    }
+}
+</code></pre>
+<h4 id="unowned-references-and-implicitly-unwrapped-optional-properties-country-city">Unowned References and Implicitly Unwrapped Optional Properties (Country &amp; City)</h4>
+<p>City的初始化是从Country的初始化式内部调用的。但是，在新的Country实例完全初始化之前，Country的初始化器不能将self传递给City初始化器，如两阶段初始化中所述。</p>
+<p>为了处理这个需求，您将Country的capitalCity属性声明为一个隐式展开的可选属性，通过其类型注释(City!)末尾的感叹号来指示。这意味着capitalCity属性的默认值为nil，就像任何其他可选属性一样，但可以访问它而不需要像隐式Unwrapped optional中描述的那样打开它的值。</p>
+<p>因为capitalCity有一个默认的nil值，所以当Country实例在其初始化器中设置其name属性时，就会认为一个新的Country实例已完全初始化。这意味着一旦设置了name属性，Country初始化器就可以开始引用并传递隐式的self属性。因此，当Country初始化器设置自己的capitalCity属性时，Country初始化器可以将self作为City初始化器的参数之一传递。</p>
+<pre><code class="language-swift">class Country {
+    let name: String
+    var capitalCity: City!
+    init(name: String, capitalName: String) {
+        self.name = name
+        self.capitalCity = City(name: capitalName, country: self)
+    }
+}
+
+class City {
+    let name: String
+    unowned let country: Country
+    init(name: String, country: Country) {
+        self.name = name
+        self.country = country
+    }
+}
+</code></pre>
+<p>所有这些都意味着你可以在一个语句中创建Country和City实例，而不需要创建强引用循环，并且capitalCity属性可以直接访问，而不需要使用感叹号来打开它的可选值:</p>
+<pre><code class="language-swift">var country = Country(name: &quot;Canada&quot;, capitalName: &quot;Ottawa&quot;)
+print(&quot;\(country.name)'s capital city is called \(country.capitalCity.name)&quot;)
+// Prints &quot;Canada's capital city is called Ottawa&quot;
+</code></pre>
+<p>总结：</p>
+<ol>
+<li>
+<p>Person和Apartment示例显示了一种情况，1.(住户和公寓) 其中允许为nil的两个属性有可能导致强引用循环。这种情况最好使用weak reference 来解决。</p>
+</li>
+<li>
+<p>Customer和CreditCard示例显示了一种情况，2. (用户和信用卡) 其中一个允许为nil的属性和另一个不允许为nil的属性有可能导致强引用循环。这种情况最好使用unowned reference来解决。</p>
+</li>
+<li>
+<p>然而，还有第三种情况，在这种情况下，3. （国家和城市）两个属性都应该始终有一个值，而且一旦初始化完成，两个属性都不应该为nil。在这种情况下，将一个类上的unowned属性与另一个类上的隐式解包装的可选属性结合起来是很有用的。</p>
+</li>
+</ol>
+<h3 id="19-what-is-existential-in-protocol">19. What is existential in Protocol?</h3>
+<p>严格来说，在 Swift 中是不能把协议当作一个具体类型来使用的，它们只能用来约束泛型参数。但让人诧异的是，下面的代码却可以通过编译 (我们使用了上面例子中的 DrawingContext 协议)：</p>
+<pre><code class="language-swift">let context: DrawingContext = SVG()
+</code></pre>
+<p>当我们把协议当作具体类型使用的时候，编译器会为协议创建一个包装类型，叫做存在体 (existential)。let context: DrawingContext 这种写法本质上就是类似 let context: Any 这种写法的语法糖。尽管这种语法并不存在，编译器会创建一个 (32 字节的) Any 盒子，并在其中为类型实现的每个协议添加一个 8 字节的协议目击者。我们可以通过下面的代码来验证这个结果：</p>
+<pre><code class="language-swift">MemoryLayout&lt;Any&gt;.size // 32
+MemoryLayout&lt;DrawingContext&gt;.size // 40
+</code></pre>
+<p>为协议创建的这个盒子也叫做 存在体容器 (existential container)。这是编译器必须要做的事情，因为它需要在编译期确认类型的大小。不同的类型自身大小有差异 (例如：所有的类都是一个指针的大小，而结构体和枚举的大小则依赖它们的实际内容)，这些类型实现了一个协议的时候，把协议包装在存在体容器中可以让类型的尺寸保持固定，编译器也就能确定对象的内存布局了。</p>
+<p>我们可以看到存在体容器的大小会随着类型实现协议的增多而增长。例如，Codable 是 Encodable 和 Decodable 的组合，所以，我们可以预期 Codable 存在体的大小是 32 字节的 Any 容器，加上 2 个 8 字节的协议目击者</p>
+<pre><code class="language-swift">MemoryLayout&lt;Codable&gt;.size // 48
+</code></pre>
+<p>有时，存在体和带有类型约束的泛型参数是可以交换使用的。来看下面这两个函数：</p>
+<pre><code class="language-swift">func encode1(x: Encodable) { }
+func encode2&lt;E: Encodable&gt;(x: E) { }
+</code></pre>
+<p>尽管这两个函数都可以用一个实现了 Encodable 的类型调用，但让人诧异的是，它们并不完全相同。对于 encode1 来说，编译器会把参数包装到 Encodable 的存在体容器里。这个包装不仅会带来一些性能开销，如果要包装的值过大以至于无法直接存放到存在体里，就还需要开辟额外的内存空间。可能更重要的是，这还会阻止编译器的进一步优化，因为对被包装类型的所有方法调用都只能经过存在体中的协议目击者表完成。</p>
+<p>而对于泛型函数，编译器可以为部分或者所有传递给 encode2 的参数类型生成一个特化的版本。这些特化版本的性能，和我们手工去为这些类型重载 encode2 是完全一样的。而相比 encode1，泛型方式实现的缺点，则是更长的编译时间以及更大的二进制程序。</p>
+<h3 id="20-explain-existential-and-associated-type-about-protocol">20. Explain existential and associated type about Protocol</h3>
+<p>在 Swift 5 里，存在体只针对那些没有关联类型和 Self 约束的协议。为了了解为什么，来看下面这个例子：</p>
+<pre><code class="language-swift">let collections: [Collection] = [&quot;foo&quot;, [1]]
+// 错误: 'Collection' 只能用做泛型参数约束
+// 因为它包含了 Self 或关联类型约定。
+</code></pre>
+<p>而对于那些包含 Self 约束的协议，这个限制是类似的。例如，考虑下面这段代码：</p>
+<pre><code class="language-swift">let cmp: Comparable = 15 // 编译错误
+</code></pre>
+<p>定义在 Comparable 中的操作符 (以及从 Equatable 中继承来的操作符) 希望用于比较的两个参数的类型是完全一致的。如果允许定义 Comparable 类型的变量，你就可能会用 Comparable 中的 API 来比较它们，例如：</p>
+<pre><code class="language-swift">(15 as Comparable) &lt; (&quot;16&quot; as Comparable)
+// 错误：二进制操作符 '&lt;' 不能用于两个 'Comparable' 操作数。
+</code></pre>
+<p>但是，这样的写法完全不合理，因为直接比较字符串和整数是不可能的。因此，编译器禁止为包含关联类型约束的协议 (或者使用了 Self 的协议，本质上这也是一种关联类型) 生成存在体。</p>
+<h3 id="21-explain-the-difference-between-methods-declared-in-the-protocol-and-those-declared-in-the-protocol-extension">21. Explain the difference between methods declared in the Protocol and those declared in the Protocol extension</h3>
+<pre><code class="language-swift">protocol MyProtocol {
+    func teach()
+}
+extension MyProtocol{
+    func teach(){ print(&quot;MyProtocol&quot;) }
+}
+class MyClass: MyProtocol{
+    func teach(){ print(&quot;MyClass&quot;) }
+}
+let object: MyProtocol = MyClass()
+object.teach()
+let object1: MyClass = MyClass()
+object1.teach()
+
+//打印输出
+MyClass
+MyClass
+
+/*
+1. 对象 object 👉 方法 teach 的调用是通过witness_method调用
+2. 而对象 object1 👉 方法 teach 的调用是通过class_method调用
+*/
+
+//如果去掉协议中的声明呢？打印结果是什么
+protocol MyProtocol {
+}
+extension MyProtocol{
+    func teach(){ print(&quot;MyProtocol&quot;) }
+}
+class MyClass: MyProtocol{
+    func teach(){ print(&quot;MyClass&quot;) }
+}
+let object: MyProtocol = MyClass()
+object.teach() 
+
+let object1: MyClass = MyClass()
+object1.teach()
+
+//打印输出
+MyProtocol
+MyClass
+/*
+第一个打印 MyProtocol，是因为调用的是协议扩展中的 teach 方法，这个方法的地址是在编译时期就已经确定的，即通过静态函数地址调度
+第二个打印 MyClass，同上个例子一样，是类的函数表调用
+*/
+</code></pre>
+<p>不同点</p>
+<ul>
+<li>声明在Protocol中的方法，在底层会存储在PWT，PWT中的方法也是通过class_method，去类的V-Table中找到对应的方法的调度。</li>
+<li>如果没有声明在Protocol中的函数，只是通过Extension提供了一个默认实现，其函数地址在编译过程中就已经确定了，对于遵守协议的类来说，这种方法是无法重写的。</li>
+</ul>
+<h3 id="22-how-to-type-erasure-using-closures-replace-using-class-in-swift">22. How to type erasure using closures replace using class in Swift</h3>
+<pre><code class="language-swift">protocol ModelLoading {
+    associatedtype Model
+
+    func load(completionHandler: (Result&lt;Model&gt;) -&gt; Void)
+}
+
+class ViewController: UIViewController {
+    init(modelLoader: ModelLoading) {
+        ...
+    }
+}
+</code></pre>
+<blockquote>
+<p>Protocol 'ModelLoading' can only be used as a generic constraint because it as Self or associated type requirements</p>
+</blockquote>
+<h4 id="1-通过创建一个包装类来实现类型擦除">1. 通过创建一个包装类来实现类型擦除</h4>
+<pre><code class="language-swift">class AnyModelLoader&lt;T&gt;: ModelLoading {
+    typealias CompletionHandler = (Result&lt;T&gt;) -&gt; Void
+
+    private let loadingClosure: (CompletionHandler) -&gt; Void
+
+    init&lt;L: ModelLoading&gt;(loader: L) where L.Model == T {
+        loadingClosure = loader.load
+    }
+
+    func load(completionHandler: CompletionHandler) {
+        loadingClosure(completionHandler)
+    }
+}
+
+class ViewController: UIViewController {
+    private let modelLoader: AnyModelLoader&lt;MyModel&gt;
+
+    init&lt;T: ModelLoading&gt;(modelLoader: T) where T.Model == MyModel {
+        self.modelLoader = AnyModelLoader(loader: modelLoader)
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>上面的技术工作得非常好，但是它确实涉及了一个额外的步骤，给我们的代码增加了一些复杂性。但实际上，我们可以直接在视图控制器中做基于闭包的类型擦除 -不必引入AnyModelLoader类。</p>
+<h4 id="2-通过闭包实现类型擦除">2. 通过闭包实现类型擦除</h4>
+<p>然后，我们的视图控制器就会变成这样:</p>
+<pre><code class="language-swift">class ViewController: UIViewController {
+    private let loadModel: ((Result&lt;MyModel&gt;) -&gt; Void) -&gt; Void
+
+    init&lt;T: ModelLoading&gt;(modelLoader: T) where T.Model == MyModel {
+        loadModel = modelLoader.load
+        super.init(nibName: nil, bundle: nil)
+    }
+}
+</code></pre>
+<p>与我们的类型删除类AnyModelLoader一样，我们可以将load函数的实现作为一个闭包引用，然后在视图控制器中保存对它的引用。现在，当我们想要加载一个模型时，我们只需调用loadModel，就像我们对其他任何函数或闭包一样:</p>
+<pre><code class="language-swift">override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+
+    loadModel { result in
+        switch result {
+        case .success(let model):
+            render(model)
+        case .error(let error):
+            render(error)
+        }
+    }
+}
+</code></pre>
+<h4 id="总结">总结</h4>
+<p>总体来说，当编写一个类型消除器的时候，我们要确保它包含了协议约束的所有方法。尽管编译器可以在这件事情上帮我们一把，但它会放过那些带有默认实现的协议方法。在类型消除器里，我们不能依赖这些默认实现，而是要始终把方法调用转发到被隐藏的原始类型上，因为它们都是有可能被定制的。</p>
+<h3 id="23-how-to-create-a-mixed-type-array-in-swift">23. How to create a mixed-type array in Swift?</h3>
+<h4 id="1-使用any">1. 使用Any</h4>
+<p>在这种情况下，一个选择是完全绕过Swift的强类型系统，使用Any(字面意思是任何类型)作为我们想要创建的数组的元素类型-像这样:</p>
+<pre><code class="language-swift">func loadItems() -&gt; [Any] {
+    var items = [Any]()
+    ...
+    return items
+}
+</code></pre>
+<p>这并不是很好，因为我们总是需要执行类型转换来实际使用返回数组包含的任何实例-这两者都使事情更笨拙，更脆弱，因为我们没有得到任何编译时保证，我们的数组将实际包含什么样的实例。</p>
+<h4 id="2-使用protocol">2. 使用Protocol</h4>
+<p>另一种选择是使用一些面向协议的编程，并将视频和照片之间的共同部分抽象到一个协议中，使这两种类型都符合:</p>
+<pre><code class="language-swift">protocol Item {
+    var id: UUID { get }
+    var title: String { get }
+    var description: String { get }
+    var url: URL { get }
+}
+
+extension Video: Item {}
+extension Photo: Item {}
+</code></pre>
+<p>这就好多了，因为我们现在可以给loadItems函数一个强返回类型，方法是用上面的Item协议替换Any -这反过来让我们在访问数组元素时使用该协议中定义的任何属性:</p>
+<pre><code class="language-swift">func loadItems() -&gt; [Item] {
+    ...
+}
+</code></pre>
+<h5 id="protocol-继承">Protocol 继承</h5>
+<p>然而，如果我们在某个时候需要向Item添加一个要求，使其成为泛型(generic)，那么上述方法可能会出现一些问题——例如，让它继承标准库的可识别协议(Identifiable)(包含一个相关类型)的要求:</p>
+<pre><code class="language-swift">protocol Item: Identifiable {
+    ...
+}
+</code></pre>
+<p>尽管Video和Photo都已经满足了我们新添加的需求(因为它们都定义了id属性)，但是当我们尝试直接引用Item协议时，我们现在会得到以下错误，就像我们在loadItems函数中所做的那样:</p>
+<blockquote>
+<p>协议“Item”只能作为通用约束使用 因为它有Self或相关的类型需求。</p>
+</blockquote>
+<h5 id="protocol-组合">Protocol 组合</h5>
+<p>在这种情况下，解决这个问题的一种方法是将符合Identifiable的要求与我们自己的属性要求分开 -例如，通过移动这些属性到一个AnyItem协议，然后组成一个新的协议与Identifiable，以形成一个Item type alias:</p>
+<pre><code class="language-swift">protocol AnyItem {
+    var id: UUID { get }
+    var title: String { get }
+    var description: String { get }
+    var url: URL { get }
+}
+
+typealias Item = AnyItem &amp; Identifiable
+</code></pre>
+<p>上述方法的美妙之处在于，我们的Video和Photo类型仍然可以符合Item，就像以前一样，这使它们与所有需要Identifiable实例的代码兼容(如swifitui的ForEach和List)</p>
+<pre><code class="language-swift">func loadItems() -&gt; [AnyItem] {
+    ...
+}
+</code></pre>
+<h4 id="3-使用enum">3. 使用Enum</h4>
+<p>上面的另一种方法是使用枚举来建模两个独立的变量，如下所示:</p>
+<pre><code class="language-swift">enum Item {
+    case video(Video)
+    case photo(Photo)
+}
+</code></pre>
+<p>因为Video和Photo的id属性都使用了相同的类型(内置的UUID类型)，我们甚至可以让上面的枚举也符合Identifiable-通过让它作为当前包装的底层模型实例的代理:</p>
+<pre><code class="language-swift">extension Item: Identifiable {
+    var id: UUID {
+        switch self {
+        case .video(let video):
+            return video.id
+        case .photo(let photo):
+            return photo.id
+        }
+    }
+}
+</code></pre>
+<h4 id="4-组合使用enum和struct">4. 组合使用Enum和Struct</h4>
+<p>上述模式的另一个变体是将Item实现为一个结构体，将两个变体之间的所有共同属性移动到该结构体中，然后只对这两个变体中唯一的属性使用枚举——像这样:</p>
+<pre><code class="language-swift">struct Item: Identifiable {
+    let id: UUID
+    var title: String
+    var description: String
+    var url: URL
+    var metadata: Metadata
+}
+
+extension Item {
+    enum Metadata {
+        case video(length: TimeInterval)
+        case photo(size: CGSize)
+    }
+}
+</code></pre>
+<p>最后两种方法的优点是，它们实际上让我们将异构数组转换为同构数组，因为Item现在被实现为独立的类型，这意味着我们现在可以将这些数组传递到要求所有元素都是相同类型的函数中——就像《基础》中关于泛型的文章中的这个:</p>
+<pre><code class="language-swift">extension String {
+    mutating func appendIDs&lt;T: Identifiable&gt;(of values: [T]) {
+        for value in values {
+            append(&quot; \(value.id)&quot;)
+        }
+    }
+}
+</code></pre>
+<h3 id="相关资源">相关资源：</h3>
+<ol>
+<li>
+<p>文章：<a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/swift-advanced-protocol-xiang-jie">Swift 进阶: Protocol 详解</a></p>
+</li>
+<li>
+<p>文章：<a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/type-erasure-using-closures-in-swift/">Type erasure using closures in Swift</a></p>
+</li>
+</ol>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1UYNOQrST/" class="tag">
+                    interview
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/50-dao-ios-mian-shi-wen-da-6/">
+                  <h3 class="post-title">
+                    50道iOS面试问答 - 6
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Task-based concurrency in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="就像序列代码一样，并发代码可以有许多不同的形状和形式。取决于我们试图实现的目标——无论是异步获取数据块、从磁盘加载大量文件，还是执行一组相关操作——将被证明是最适合的抽象可能因用例不同而有很大差异。
+这样的并发编程抽象之一就是任务。虽然乍一..." />
+    <meta name="keywords" content="concurrency,GCD" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Task-based concurrency in Swift</h2>
+            <div class="post-date">2019-02-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>就像序列代码一样，并发代码可以有许多不同的形状和形式。取决于我们试图实现的目标——无论是异步获取数据块、从磁盘加载大量文件，还是执行一组相关操作——将被证明是最适合的抽象可能因用例不同而有很大差异。</p>
+<p>这样的并发编程抽象之一就是任务。虽然乍一看，任务可能与Futures &amp; promise和Foundation的操作API非常相似，但在它们的行为方式以及它们给API用户的控制级别上有一些明显的不同。</p>
+<p>本周，让我们看看其中的一些区别，以及一些任务可以变得非常有用的场景。</p>
+<h2 id="the-task-at-hand">The task at hand</h2>
+<p>假设我们正在构建一个社交网络应用程序，并且我们向用户提供了在发布帖子时附加照片和视频的选项。目前，当用户点击“Publish”时，我们调用以下函数，它上传所有附加的媒体，也上传帖子本身的数据，如下所示:</p>
+<pre><code class="language-swift">func publish(_ post: Post) {
+    for photo in post.photos {
+        upload(photo)
+    }
+
+    for video in post.videos {
+        upload(video)
+    }
+
+    upload(post)
+}
+</code></pre>
+<p>虽然上面的代码非常简单，但是有一些问题。 首先，当发布完成时，我们无法得到通知。我们也不做任何错误处理，这意味着如果照片或视频上传失败 -我们将继续上传post数据，这并不理想。</p>
+<p>有相当多的方法，我们可以着手解决上述问题。一种想法可能是使用内置的Operation和OperationQueue类型来顺序执行所有操作 - 但这需要我们要么让我们的网络代码同步，或子类化Operation以创建非常自定义的解决方案。这两种选择都是有效的，但可能感觉有点“严厉”，因为它们需要对原始代码进行很大的修改。</p>
+<p>幸运的是，为了获得我们需要的控制，我们所要做的就是深入堆栈一层， 并使用了Operation和OperationQueue基于的框架——GCD。</p>
+<p>就像我们在“Swift中央调度的深入研究”中看到的，GCD让我们可以很容易地将一系列操作组合在一起， 并在完成所有任务后得到通知。为了实现这一点，我们将对之前的上传功能做一些微调-所以他们现在给我们提供了一种使用闭包来观察他们完成的方法， 并平衡呼叫进入和离开一个调度组，以便在所有媒体上传完成时得到通知:</p>
+<pre><code class="language-swift">func publish(_ post: Post) {
+    let group = DispatchGroup()
+    for photo in post.photos {
+        group.enter()
+        upload(photo) {
+            group.leave()
+        }
+    }
+    for video in post.videos {
+        group.enter()
+        upload(video) {
+            group.leave()
+        }
+    }
+    // Calling ‘notify’ allows us to observe whenever the whole
+    // group was finished using a closure.
+    group.notify(queue: .main) {
+        upload(post)
+    }
+}
+</code></pre>
+<p>上面的代码运行得非常好，给我们留下了非常整洁的代码。但是我们仍然没有解决缺乏错误处理的问题-无论媒体上传成功与否，我们还是会盲目上传帖子。</p>
+<p>为了解决这个问题，让我们添加一个可选的Error变量，我们将使用它来跟踪发生的任何错误。我们将对上传函数做另一个调整，让它们将一个可选的错误参数传递给它们的完成处理器， 并使用它来捕获遇到的第一个错误-像这样:</p>
+<pre><code class="language-swift">func publish(_ post: Post) {
+    let group = DispatchGroup()
+    var anyError: Error?
+    for photo in post.photos {
+        group.enter()
+        upload(photo) { error in
+            anyError = anyError ?? error
+            group.leave()
+        }
+    }
+    for video in post.videos {
+        group.enter()
+        upload(video) { error in
+            anyError = anyError ?? error
+            group.leave()
+        }
+    }
+    group.notify(queue: .main) {
+        // If an error was encountered while uploading the
+        // post’s media, we’ll call an error handling function
+        // instead of proceeding with the post data upload.
+        if let error = anyError {
+            return handle(error)
+        }
+        upload(post)
+    }
+}
+</code></pre>
+<p>我们现在已经修复了原始代码的所有正确性问题，但在这个过程中，我们也让它变得更加复杂和难以阅读。 我们的新解决方案也相当繁琐(有一个需要跟踪的本地错误变量和调度组调用)，这在这里可能不是问题，但只要我们开始移动更多的异步代码来使用这个模式-事情会很快变得更难维护。</p>
+<h2 id="its-abstraction-time">It’s abstraction time!</h2>
+<p>让我们看看是否可以通过引入在GCD之上引入一个基于任务的瘦抽象层来简化上述操作.</p>
+<p>首先，我们将创建一个名为Task的类型，它本质上是一个闭包的封装包，它将访问控制任务流的控制器:</p>
+<pre><code class="language-swift">struct Task {
+    typealias Closure = (Controller) -&gt; Void
+    private let closure: Closure
+    init(closure: @escaping Closure) {
+        self.closure = closure
+    }
+}
+</code></pre>
+<p>Controller类型反过来提供了完成或失败与其关联的任务的方法， 并通过调用一个处理器来报告任务的结果:</p>
+<pre><code class="language-swift">extension Task {
+    struct Controller {
+        fileprivate let queue: DispatchQueue
+        fileprivate let handler: (Outcome) -&gt; Void
+        func finish() {
+            handler(.success)
+        }
+        func fail(with error: Error) {
+            handler(.failure(error))
+        }
+    }
+}
+</code></pre>
+<p>正如上面的代码所示，Result有两种情况——.success和.failure——这使得它非常类似于带有泛型Void的Result类型。 实际上，我们可以选择将Result实现为它自己的enum类型，或者简单地使用“Swift类型别名的力量”中的一种技术，使其成为Result<Void>的通用简写:</p>
+<pre><code class="language-swift">extension Task {
+    enum Outcome {
+        case success
+        case failure(Error)
+    }
+}
+extension Task {
+    typealias Outcome = Result&lt;Void&gt;
+}
+</code></pre>
+<p>最后，我们需要一种方法来实际执行我们将定义的任务。 为此，让我们在Task上添加一个perform方法，它将接受一个显式的DispatchQueue来执行任务-或者简单地检索任何全局处理程序-以及在任务执行完成后调用的处理程序。在内部，我们将使用给定的DispatchQueue来异步执行任务， 通过创建一个控制器并将它传递到任务的闭包中——像这样:</p>
+<pre><code class="language-swift">extension Task {
+    func perform(on queue: DispatchQueue = .global(),
+                 then handler: @escaping (Outcome) -&gt; Void) {
+        queue.async {
+            let controller = Controller(
+                queue: queue,
+                handler: handler
+            )
+            self.closure(controller)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们的任务API的初始版本就完成了，我们可以开始使用它了。让我们从定义一个任务开始，它将取代之前的照片上传功能 -它调用一个底层的Uploader类，然后使用任务的控制器通知我们结果:</p>
+<pre><code class="language-swift">extension Task {
+    static func uploading(_ photo: Photo,
+                          using uploader: Uploader) -&gt; Task {
+        return Task { controller in
+            uploader.upload(photo.data, to: photo.url) { error in
+                if let error = error {
+                    controller.fail(with: error)
+                } else {
+                    controller.finish()
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>现在我们的第一个任务可用了-让我们看看在调用站点使用它是什么样子的:</p>
+<pre><code class="language-swift">for photo in photos {
+    let task = Task.uploading(photo, using: uploader)
+
+    task.perform { outcome in
+        // Handle outcome
+    }
+}
+</code></pre>
+<p>很酷!😎然而，当我们开始对任务进行分组和排序时，任务的力量才真正开始显现，这将让我们以一种非常优雅的方式解决我们最初的问题。所以让我们继续!</p>
+<h2 id="grouping">Grouping</h2>
+<p>在前面，为了跟踪一组操作何时完成，我们使用了一个输入和离开的DispatchGroup，因此让我们将该逻辑移植到新的任务系统中。为此，我们将在Task上添加一个静态方法，它将接受一个任务数组并将它们分组在一起。 在底层，我们仍将使用与之前完全相同的分派组逻辑——但现在封装在一个更好的API中:</p>
+<pre><code class="language-swift">extension Task {
+    static func group(_ tasks: [Task]) -&gt; Task {
+        return Task { controller in
+            let group = DispatchGroup()
+
+            // To avoid race conditions with errors, we set up a private
+            // queue to sync all assignments to our error variable
+            let errorSyncQueue = DispatchQueue(label: &quot;Task.ErrorSync&quot;)
+            var anyError: Error?
+
+            for task in tasks {
+                group.enter()
+
+                // It’s important to make the sub-tasks execute
+                // on the same DispatchQueue as the group, since
+                // we might cause unexpected threading issues otherwise.
+                task.perform(on: controller.queue) { outcome in
+                    switch outcome {
+                    case .success:
+                        break
+                    case .failure(let error):
+                        errorSyncQueue.sync {
+                            anyError = anyError ?? error
+                        }
+                    }
+                    group.leave()
+                }
+            }
+            group.notify(queue: controller.queue) {
+                if let error = anyError {
+                    controller.fail(with: error)
+                } else {
+                    controller.finish()
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>有了上面的代码，我们就可以大大简化以前的媒体上传代码。我们现在所要做的就是将每个媒体片段映射到一个任务中，然后将这些任务的组合数组传递到我们新的group API中，将它们都分组到一个单一的任务中——像这样:</p>
+<pre><code class="language-swift">let photoTasks = post.photos.map { photo in
+    return Task.uploading(photo, using: uploader)
+}
+let videoTasks = post.videos.map { video in
+    return Task.uploading(video, using: uploader)
+}
+let mediaGroup = Task.group(photoTasks + videoTasks)
+</code></pre>
+<p>我们不依赖于完成分组任务的顺序时，分组是很好的，但并不总是这样。回到我们最初的问题，没有上传一个帖子的数据，直到我们确定所有媒体都成功上传-这就是一个例子。理想情况下，我们希望能够将媒体上传操作与完成post上传的操作进行链结或排序。</p>
+<p>让我们看看如何扩展Task来支持它</p>
+<h2 id="sequencing">Sequencing</h2>
+<p>与其使用DispatchGroup(它对我们的操作顺序没有任何意见)，不如通过跟踪当前任务的索引来实现排序，然后在前一个任务完成后继续执行下一个任务。一旦我们到达了任务列表的末尾，我们将考虑完成序列:</p>
+<pre><code class="language-swift">extension Task {
+    static func sequence(_ tasks: [Task]) -&gt; Task {
+        var index = 0
+
+        func performNext(using controller: Controller) {
+            guard index &lt; tasks.count else {
+                // We’ve reached the end of our array of tasks,
+                // time to finish the sequence.
+                controller.finish()
+                return
+            }
+            let task = tasks[index]
+            index += 1
+            task.perform(on: controller.queue) { outcome in
+                switch outcome {
+                case .success:
+                    performNext(using: controller)
+                case .failure(let error):
+                    // As soon as an error was occurred, we’ll
+                    // fail the entire sequence.
+                    controller.fail(with: error)
+                }
+            }
+        }
+        return Task(closure: performNext)
+    }
+}
+</code></pre>
+<p>我们不简单地使用串行调度队列来实现排序的原因是，我们不能假设我们的序列总是在串行队列上被调度 - API用户可以选择在任何类型的队列上执行它。</p>
+<p>上面我们利用了Swift同时支持第一类函数和内联函数定义的事实——因为我们将performNext函数作为一个闭包传递来为我们的序列创建一个任务。</p>
+<p>就是这样——信不信由你，但我们实际上已经从头开始构建了一个完整的基于任务的并发系统!😀</p>
+<h2 id="putting-all-the-pieces-together">Putting all the pieces together</h2>
+<p>所有的部分就绪之后，让我们最后更新原始的邮政发布代码，以充分利用我们的新系统所提供的一切。 我们不必跟踪错误，也不必因为网络调用的不可预测性而遇到bug。现在，我们可以简单地将一组媒体上传操作与一个post上传任务结合起来，形成一个序列，就像这样:</p>
+<pre><code class="language-swift">func publish(_ post: Post,
+             then handler: @escaping (Outcome) -&gt; Void) {
+    let photoTasks = post.photos.map { photo in
+        return Task.uploading(photo, using: uploader)
+    }
+
+    let videoTasks = post.videos.map { video in
+        return Task.uploading(video, using: uploader)
+    }
+
+    let sequence = Task.sequence([
+        .group(photoTasks + videoTasks),
+        .uploading(post, using: uploader)
+    ])
+
+    sequence.perform(then: handler)
+}
+</code></pre>
+<p>上述解决方案的美妙之处在于，所有内容都是并发执行的——使用分派队列-在幕后，但作为一个API用户，我们所要做的就是创建一些任务，并告诉系统我们想要如何组合它们。由于我们的抽象是如此的薄弱，如果我们遇到了一个问题或意想不到的行为，我们只需要降低一级来调试。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>任务可以是抽象大量并发代码的好方法，这些代码要么应该以尽可能多的并行性执行，要么等待前一个任务完成后再继续执行。它们本质上提供了一种方法，可以在GCD之上创建一个简单、薄的层——这让我们能够以一种非常好的方式利用它的所有功能。</p>
+<p>正如本文前面提到的，当然还有许多其他方法可以在Swift中实现或使用并发性.  Futures &amp; promises使得隐藏正在进行的并发很容易，但代价是控制量稍低——而像RxSwift这样的框架使构建更复杂的执行链成为可能，但使用了更重的抽象。</p>
+<p>我的建议是在Swift中尝试多种不同类型的并发编程——看看哪种(或多种)最适合你、你的团队和你的项目。希望本文能让您对快速实现任务的一种方法有一些了解，以及与社区中常用的其他解决方案相比，任务的实现方式如何。如果是这样的话，我认为我的使命完成了😀。</p>
+<p><a href="https://www.swiftbysundell.com/articles/task-based-concurrency-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ArhVOQ_GL/" class="tag">
+                    concurrency
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/C46TKgaZSw/" class="tag">
+                    GCD
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-power-of-type-aliases-in-swift/">
+                  <h3 class="post-title">
+                    The power of type aliases in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

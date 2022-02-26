@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Dependency Injection Strategies in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Dependency Injection Strategies in Swift
+
+Why should I use it?
+Different strategies to do Dependency Injection in Swif..." />
+    <meta name="keywords" content="dependency injection" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Dependency Injection Strategies in Swift</h2>
+            <div class="post-date">2021-10-07</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gv6wk46qstj60hz08xjrl02.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#dependency-injection-strategies-in-swift">Dependency Injection Strategies in Swift</a>
+<ul>
+<li><a href="#why-should-i-use-it">Why should I use it?</a></li>
+<li><a href="#different-strategies-to-do-dependency-injection-in-swift">Different strategies to do Dependency Injection in Swift</a>
+<ul>
+<li><a href="#initializer-based-dependency-injection">Initializer-based Dependency Injection</a></li>
+<li><a href="#property-based-dependency-injection">Property-based Dependency Injection</a></li>
+</ul>
+</li>
+<li><a href="#factory-classes">Factory Classes</a></li>
+<li><a href="#the-service-locator-pattern">The Service Locator Pattern</a>
+<ul>
+<li><a href="#resolver">Resolver</a></li>
+<li><a href="#servicefactory">ServiceFactory</a></li>
+<li><a href="#container">Container</a></li>
+<li><a href="#usage-of-service-locators">Usage of Service Locators</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="dependency-injection-strategies-in-swift">Dependency Injection Strategies in Swift</h1>
+<!-- ![avatar](https://tva1.sinaimg.cn/large/008i3skNgy1gv6wk46qstj60hz08xjrl02.jpg) -->
+<p>今天我们将深入研究Swift中的依赖注入，它是软件开发中最重要的技术之一，也是许多编程语言中大量使用的概念。 具体来说，我们将探讨我们可以使用哪些策略/模式，包括Swift中的<strong>Service Locator</strong>模式。</p>
+<p><strong>Dependency Injection</strong>背后的意图是通过让一个对象提供另一个对象的依赖关系来解耦对象。 它用于为模块提供不同的配置，对于为(单元)测试模块和/或应用程序提供模拟依赖项特别有用。</p>
+<p>在本文中，我们将仅使用术语依赖注入作为设计模式，描述一个对象如何向其他对象提供依赖关系。 不要将依赖注入与帮助您注入依赖项的框架或库混淆。</p>
+<h2 id="why-should-i-use-it">Why should I use it?</h2>
+<p><strong>依赖注入</strong>帮助我们使组件在不同的上下文中耦合更少、更可重用。基本上，它是关注点分离的一种形式，因为它将使用依赖项的算法从它们的初始化和配置中分离出来。为了实现这一点，我们可以应用不同的技术将依赖项注入到模块中。</p>
+<p>正如上面提到的，依赖项注入的一个非常重要的方面是它使我们的代码更易于测试。 我们可以为我们想要测试的类/模块的依赖项注入模拟实例。这允许我们将测试集中在模块中的代码单元上，并确保这一部分按照预期工作，而不会产生模糊的副作用，从而导致不明确的测试失败，因为它的一个依赖项没有按照预期的行为。这些依赖项应该单独进行测试，以便更容易地找到真正的错误，并加快您的开发工作流。</p>
+<p>我们在之前的一篇文章中已经描述了我们的<a href="https://quickbirdstudios.com/blog/testing-mobile-apps-an-overview/">测试策略</a>。如果您想了解更多关于我们的测试设置，请务必阅读这篇文章。</p>
+<p>此外，依赖注入允许我们绕过软件开发中最常见的错误之一:代码库中过度或误用单例。 如果你想读更多关于为什么单例很糟糕的文章，看看<a href="https://cocoacasts.com/are-singletons-bad">这个</a>或<a href="https://wiki.c2.com/?SingletonsAreEvil">那个</a>的文章。</p>
+<h2 id="different-strategies-to-do-dependency-injection-in-swift">Different strategies to do Dependency Injection in Swift</h2>
+<p>在处理Swift代码库时，有很多方法可以使用依赖注入。大多数原则也适用于其他编程语言，尽管在大多数其他环境中(特别是在Java社区中)，人们倾向于使用特殊的依赖注入框架来完成繁重的工作。</p>
+<p>是的，也有Swift的依赖注入框架，比如<a href="https://github.com/Swinject/Swinject">Swinject</a>或<a href="https://github.com/quickbirdstudios/XServiceLocator">XServiceLocator</a>。 但今天我们将向您展示一些简单的技巧，在不引入另一个第三方框架的情况下注入依赖项。</p>
+<h3 id="initializer-based-dependency-injection">Initializer-based Dependency Injection</h3>
+<p>在Swift中注入依赖项最常见的方法是将依赖项作为参数传递给init函数，然后将它们存储为类的成员变量。 此方法称为基于初始化器的依赖项注入。</p>
+<p>为了了解该技术的实际应用，让我们看一个使用存储库对象获取数据的服务类的简短示例。</p>
+<pre><code class="language-swift">class BasketService {
+    private let repository: Repository&lt;Article&gt;
+
+    init(repository: Repository&lt;Article&gt;) {
+        self.repository = repository
+    }
+
+    func addAllArticles(to basket: Basket) {
+        let allArticles = repository.getAll()
+        basket.articles.append(contentsOf: allArticles)
+    }
+}
+</code></pre>
+<p>我们将一个存储库注入到我们的BasketService中，这样我们的服务就不需要知道所使用的文章是如何提供的。它们可能来自从本地JSON文件获取数据的存储库，也可能来自本地数据库，甚至来自网络服务。</p>
+<p>这允许我们在不同的环境中使用<em>BasketService</em>，如果我们想为这个类编写测试，我们可以注入模拟版本的存储库，通过始终使用相同的测试数据，使我们的测试更可预测。</p>
+<pre><code class="language-swift">class BasketServiceTests: XCTestCase {
+    func testAddAllArticles() {
+        let expectedArticle = Article(title: &quot;Article 1&quot;)
+        let mockRepository = MockRepository&lt;Article&gt;(objects: [expectedArticle])
+        let basketService = BasketService(repository: mockRepository)
+        let basket = Basket()
+
+        basketService.addAllArticles(to: basket)
+
+        XCTAssertEqual(basket.articles.count, 1)
+        XCTAssertEqual(basket.articles[0], expectedArticle)
+    }
+}
+</code></pre>
+<p>很好，我们可以用一个虚拟的项目注入一个模拟版本的存储库，以检查我们的服务是否按照预期工作，并将我们的测试项目添加到所提供的篮子中。</p>
+<h3 id="property-based-dependency-injection">Property-based Dependency Injection</h3>
+<p>基于初始化器的依赖注入似乎是一个很好的解决方案，但在某些情况下它并不合适，例如在<em>ViewControllers</em>中使用初始化器就不那么容易了，特别是当你使用XIB或故事板文件时。</p>
+<p>我们都知道这个错误信息和烦人的Xcode解决方案。但是如何在不覆盖所有默认初始化器的情况下使用依赖注入?</p>
+<p>这就是基于属性的依赖注入发挥作用的地方。我们在初始化模块后为它赋值属性。</p>
+<p>让我们看看这个在我们的<em>BasketViewController</em>中的作用，它有一个依赖于<em>BasketService</em>类。</p>
+<pre><code class="language-swift">class BasketViewController: UIViewController {
+    var basketService: BasketService! = nil
+}
+
+let basketViewController = BasketViewController()
+basketViewController.basketService = BasketService()
+</code></pre>
+<p>这里我们强制使用一个<strong>force unwrapped</strong>可选选项，以确保当之前没有正确注入basketService属性时，应用程序崩溃。</p>
+<p>如果我们想要摆脱强制解包装可选，并提供默认实现，我们可以在声明属性时声明默认值。</p>
+<pre><code class="language-swift">class BasketViewController: UIViewController {
+    var basketService: BasketService = BasketService()
+}
+</code></pre>
+<p>基于属性的依赖注入也有一些缺点:首先，我们的类需要处理依赖项的动态变化，其次，我们需要使属性从外部可访问和可变，不能再将它们定义为私有。</p>
+<h2 id="factory-classes">Factory Classes</h2>
+<p>到目前为止，我们看到的两种解决方案都将注入依赖项的责任转移到了创建新模块的类上。这可能比将依赖项硬编码到模块中要好，但将这种责任转移到自己的类型中通常是更好的解决方案。它还确保了，我们不需要在整个代码库中使用重复的代码来初始化模块。</p>
+<p>这些类型处理类的创建并设置它们的所有依赖项。 这些所谓的Factory类还解决了传递依赖关系的问题。 我们以前必须对所有其他解决方案都这样做，如果你的类有大量的依赖项，或者你有多个层次的依赖项，就像我们上面的例子:<em>BasketViewController –&gt; BasketService –&gt; Repository.</em></p>
+<p>让我们看一下与Basket相关的类的Factory。</p>
+<pre><code class="language-swift">protocol BasketFactory {
+    func makeBasketService() -&gt; BasketService
+    func makeBasketViewController() -&gt; BasketViewController
+}
+</code></pre>
+<p>通过使工厂声明为协议，我们可以有它的多个实现，例如测试用例的一个特殊工厂。</p>
+<p>基于工厂的依赖注入与我们以前见过的解决方案携手工作，并允许我们混合不同的技术，但对如何创建类的实例保持一个清晰的接口。</p>
+<p>没有比给你举个例子更好的解释了:</p>
+<pre><code class="language-swift">class DefaultBasketFactory: BasketFactory {
+
+    func makeBasketService() -&gt; BasketService {
+        let repository = makeArticleRepository()
+        return BasketService(repository: repository)
+    }
+
+    func makeBasketViewController() -&gt; BasketViewController {
+        let basketViewController = BasketViewController()
+        basketViewController.basketService = makeBasketService()
+        return basketViewController
+    }
+
+    // MARK: Private factory methods
+    private func makeArticleRepository() -&gt; Repository&lt;Article&gt; {
+        return DatabaseRepository()
+    }
+
+}
+</code></pre>
+<p>我们的DefaultBasketFactory实现了上面定义的协议，并拥有公共工厂方法和私有工厂方法。工厂方法可以也应该使用类中的其他工厂方法来创建较低的依赖项。</p>
+<p>上面的示例完美地展示了我们是如何将基于初始化器和基于属性的依赖项注入技术结合在一起的，但它的优点是拥有一个优雅而简单的接口来创建依赖项。</p>
+<p>要初始化我们的<em>BasketViewController</em>的实例，我们只需要写这一行代码。</p>
+<pre><code class="language-swift">let basketViewController = factory.makeBasketViewController()
+</code></pre>
+<h2 id="the-service-locator-pattern">The Service Locator Pattern</h2>
+<p>基于到目前为止我们已经看到的解决方案，我们将使用所谓的Service Locator设计模式构建一个更通用和灵活的解决方案。让我们从定义<strong>Service Locator</strong>所涉及的实体开始:</p>
+<ul>
+<li><strong>Container</strong>: 存储关于如何创建已注册类型的实例的配置</li>
+<li><strong>Resolver</strong>: 通过使用Container的配置创建类的实例，解析类型的实际实现</li>
+<li><strong>ServiceFactory</strong>: 用于创建泛型类型实例的泛型工厂解决方案</li>
+</ul>
+<h3 id="resolver">Resolver</h3>
+<p>我们首先为<strong>Service Locator</strong>模式定义(Resolver)解析器协议。这是一个简单的协议，只有一个方法来创建符合所传递的ServiceType类型的实例。</p>
+<pre><code class="language-swift">protocol Resolver {
+    func resolve&lt;ServiceType&gt;(_ type: ServiceType.Type) -&gt; ServiceType
+}
+</code></pre>
+<p>我们可以按照以下方式使用符合该协议的对象:</p>
+<pre><code class="language-swift">let resolver: Resolver = ...
+let instance = resolver.resolve(SomeProtocol.self)
+</code></pre>
+<h3 id="servicefactory">ServiceFactory</h3>
+<p>接下来，我们用一个关联的类型ServiceType定义ServiceFactory协议。我们的工厂将创建符合<em>ServiceType</em>协议的类型的实例。</p>
+<pre><code class="language-swift">protocol ServiceFactory {
+    associatedtype ServiceType
+    func resolve(_ resolver: Resolver) -&gt; ServiceType
+}
+</code></pre>
+<p>这看起来与我们之前看到的Resolver协议非常相似，但是它引入了额外的关联类型，以便为我们的实现添加更多的类型安全性。</p>
+<p>让我们定义符合这个协议的第一个类型<em>BasicServiceFactory</em>。这个工厂类使用注入的工厂方法来生成类型为ServiceType的类/结构的实例。通过将Resolver作为参数传递给工厂闭包，我们可以使用它来创建创建该类型实例所需的低级依赖项。</p>
+<pre><code class="language-swift">struct BasicServiceFactory&lt;ServiceType&gt;: ServiceFactory {
+    private let factory: (Resolver) -&gt; ServiceType
+
+    init(_ type: ServiceType.Type, factory: @escaping (Resolver) -&gt; ServiceType) {
+        self.factory = factory
+    }
+
+    func resolve(_ resolver: Resolver) -&gt; ServiceType {
+        return factory(resolver)
+    }
+}
+</code></pre>
+<p>这个<em>BasicServiceFactory</em>结构体可以作为独立的、比我们上面看到的Factory类更通用的解决方案使用。但我们还没有完成。在Swift中，我们需要实现服务定位器模式的最后一件事是<strong>Container</strong>。</p>
+<h3 id="container">Container</h3>
+<p>在开始编写Container类之前。让我们简单重复一下它应该为我们做什么:</p>
+<ol>
+<li>它应该允许我们为某种类型注册新工厂</li>
+<li>它应该存储<strong>ServiceFactory</strong>实例</li>
+<li>它应该用作任何存储类型的<strong>Resolver</strong></li>
+</ol>
+<p>为了能够以类型安全的方式存储ServiceFactory类的实例，我们需要能够在Swift中实现可变参数泛型。 这在Swift中还不可能实现，但这是通用宣言的一部分，并将在未来版本中添加到Swift中。同时，我们需要使用名为AnyServiceFactory的类型擦除版本来消除泛型类型。</p>
+<p>为了简单起见，我们不会向您展示它的实现，但如果您对它感兴趣，请查看下面链接的完整游乐场。</p>
+<p>现在我们要创建我们的Container结构体:</p>
+<pre><code class="language-swift">struct Container: Resolver {
+
+    let factories: [AnyServiceFactory]
+
+    init() {
+        self.factories = []
+    }
+
+    private init(factories: [AnyServiceFactory]) {
+        self.factories = factories
+    }
+
+    ...
+</code></pre>
+<p>我们将<strong>Container</strong>定义为一个结构体，它充当解析器并存储被擦除类型的工厂。 接下来，我们将添加注册新类型的代码与他们的工厂。</p>
+<pre><code class="language-swift">// MARK: Register
+    func register&lt;T&gt;(_ type: T.Type, instance: T) -&gt; Container {
+        return register(type) { _ in instance }
+    }
+
+    func register&lt;ServiceType&gt;(_ type: ServiceType.Type, _ factory: @escaping (Resolver) -&gt; ServiceType) -&gt; Container {
+        assert(!factories.contains(where: { $0.supports(type) }))
+
+        let newFactory = BasicServiceFactory&lt;ServiceType&gt;(type, factory: { resolver in
+            factory(resolver)
+        })
+        return .init(factories: factories + [AnyServiceFactory(newFactory)])
+    }
+
+    ...
+</code></pre>
+<p>第一个方法允许我们为ServiceType注册一个类的特定实例。这对于注入像UserDefaults和Bundle这样的单例类特别有用。</p>
+<p>第二个方法甚至更重要，它创建一个新工厂，并返回一个包含该新工厂的新的不可变容器。</p>
+<p>最后缺少的部分是实际遵守Resolver协议并使用存储的工厂解析实例。</p>
+<pre><code class="language-swift">// MARK: Resolver
+    func resolve&lt;ServiceType&gt;(_ type: ServiceType.Type) -&gt; ServiceType {
+        guard let factory = factories.first(where: { $0.supports(type) }) else {
+            fatalError(&quot;No suitable factory found&quot;)
+        }
+        return factory.resolve(self)
+    }
+</code></pre>
+<p>我们使用一个守卫语句来检查它是否包含一个能够解决我们的依赖关系并抛出致命错误的工厂。 最后，我们返回由支持该类型的第一个工厂创建的实例。</p>
+<h3 id="usage-of-service-locators">Usage of Service Locators</h3>
+<p>让我们回到之前的篮子例子，为所有与篮子相关的类定义一个容器:</p>
+<pre><code class="language-swift">let basketContainer = Container()
+    .register(Bundle.self, instance: Bundle.main)
+    .register(Repository&lt;Article&gt;.self) { _ in DatabaseRepository() }
+    .register(BasketService.self) { resolver in
+        let repository = resolver.resolve(Repository&lt;Article&gt;.self)
+        return BasketService(repository: repository)
+    }
+    .register(BasketViewController.self) { resolver in
+        let basketViewController = BasketViewController()
+        basketViewController.basketService = resolver.resolve(BasketService.self)
+        return basketViewController
+    }
+</code></pre>
+<p>这已经显示了我们超级简单的解决方案的力量和优雅。我们可以使用链式寄存器方法存储所有工厂，同时使用和混合我们之前看到的所有不同的依赖注入技术。</p>
+<p>最后但并非最不重要的是，我们用于创建实例的接口保持了简单和优雅。</p>
+<pre><code class="language-swift">let basketViewController = basketContainer.resolve(BasketViewController.self)
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>我们已经看到了在Swift中使用依赖注入的不同技术。更重要的是，我们已经看到您不需要决定一个单一的解决方案。它们可以混合在一起，以获得每种技术的综合优势。为了让一切都进入下一个层次，我们引入了工厂类和Swift中更通用的ServiceLocator模式解决方案。这可以通过增加对多个参数的额外支持或在Swift引入可变参数泛型时增加更多类型安全来改进。</p>
+<p>为了简单起见，我们忽略了像作用域、动态依赖和循环依赖这样的东西。 所有这些问题都是可以解决的，但超出了本文的范围。你可以在<a href="https://github.com/quickbirdstudios/DependencyInjectionPlayground">这里</a>看到我们今天向你展示的一切。此外，如果你需要一个轻量级的依赖注入库，它仍然可以为你完成大部分繁重的工作，请在GitHub上查看我们的库<a href="https://github.com/quickbirdstudios/XServiceLocator">XServiceLocator</a>。</p>
+<p><a href="https://quickbirdstudios.com/blog/swift-dependency-injection-service-locators/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/SI7Eu5Vqu/" class="tag">
+                    dependency injection
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swiftui-architectures-model-view-redux-and-mvvm/">
+                  <h3 class="post-title">
+                    SwiftUI Architectures: Model-View, Redux &amp; MVVM
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

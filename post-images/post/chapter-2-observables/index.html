@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Chapter 2: Observables | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Chapter 2: Observables
+
+
+1.1. Getting started
+1.2. What is an observable?
+1.3. Lifecycle of an observable
+1.4. Creat..." />
+    <meta name="keywords" content="observables,rxswift" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Chapter 2: Observables</h2>
+            <div class="post-date">2021-05-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Chapter2:Observables">Chapter 2: Observables</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Gettingstarted">Getting started</a></li>
+<li>1.2. <a href="#Whatisanobservable">What is an observable?</a></li>
+<li>1.3. <a href="#Lifecycleofanobservable">Lifecycle of an observable</a></li>
+<li>1.4. <a href="#Creatingobservables">Creating observables</a></li>
+<li>1.5. <a href="#Subscribingtoobservables">Subscribing to observables</a></li>
+<li>1.6. <a href="#Disposingandterminating">Disposing and terminating</a></li>
+<li>1.7. <a href="#Creatingobservablefactories">Creating observable factories</a></li>
+<li>1.8. <a href="#UsingTraits">Using Traits</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namechapter2observablesachapter-2-observables">1. <a name='Chapter2:Observables'></a>Chapter 2: Observables</h2>
+<p>现在您已经学习了RxSwift的一些基本概念，是时候开始使用可观察对象了。</p>
+<p>在本章中，你将学习几个创建和订阅可观察对象的例子。一些可观察对象在现实世界中的使用可能看起来有点晦涩，但请放心，您将获得重要的技能，并了解RxSwift中可用的可观察对象的类型。你将在本书的其余部分使用这些技巧——甚至更多!</p>
+<h3 id="11-a-namegettingstartedagetting-started">1.1. <a name='Gettingstarted'></a>Getting started</h3>
+<p>在本章中，你将使用一个Xcode项目，它已经包含了一个playground和RxSwift框架。要开始，打开终端应用程序，导航到本章的starter文件夹，然后到RxPlayground项目文件夹。最后，输入以下命令运行bootstrap.sh脚本:</p>
+<pre><code class="language-swift">./bootstraph.sh
+</code></pre>
+<p>引导过程将花费几秒钟;请记住，每当您想要打开这个playground项目时，您将需要重复上述步骤。您不能直接打开playground文件或工作区。</p>
+<p>通过Project导航器中的Sources文件夹，向下扭曲playground页面，并选择SupportCode.swift。它包含以下助手函数example(of:):</p>
+<pre><code class="language-swift">public func example(of description: String, action: () -&gt; Void) {
+  print(&quot;\n--- Example of:&quot;, description, &quot;---&quot;)
+  action()
+}
+</code></pre>
+<p>在完成本章的过程中，您将使用这个函数来封装不同的示例。稍后您将看到如何使用这个函数。</p>
+<p>但在你深入这个问题之前，现在可能是回答这个问题的好时机:什么是observable?</p>
+<h3 id="12-a-namewhatisanobservableawhat-is-an-observable">1.2. <a name='Whatisanobservable'></a>What is an observable?</h3>
+<p>***Observables***是Rx的核心。您将花一些时间讨论什么是可观察对象，如何创建它们，以及如何使用它们。</p>
+<p>你会看到“observable”、“observable sequence”和“sequence”在Rx中可以互换使用。实际上，它们都是一样的。您甚至可能会不时看到一个偶然的“Stream”，特别是来自不同的响应式编程环境的开发人员来到RxSwift。“Stream”也指同样的事情，但在RxSwift中，所有很酷的孩子都称它为序列，而不是流。在RxSwift…</p>
+<p>或者是有序列的东西。 Observable 就是一个序列，有一些特殊powers。其中一个——实际上是最重要的一个——就是它是<strong>异步的</strong>。Observable 在一段时间内产生事件，这被称为<strong>emitting。</strong> 事件可以包含值，如数字或自定义类型的实例，也可以是可识别的手势，如点击。</p>
+<p>将其概念化的最佳方法之一是使用弹珠图，即绘制在时间轴上的值。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqowaln3urj30tm056mxx.jpg" alt="avatar" loading="lazy"></figure>
+<p>从左到右的箭头表示时间，编号的圆圈表示序列的元素。元素1会被触发，一段时间后，2和3会被触发。你问，还有多少时间?它可以出现在可观察对象生命周期中的任何一个点上——这就引出了你将要学习的下一个主题:可观察对象的生命周期。</p>
+<h3 id="13-a-namelifecycleofanobservablealifecycle-of-an-observable">1.3. <a name='Lifecycleofanobservable'></a>Lifecycle of an observable</h3>
+<p>在前面的弹珠图中，observable 发射出三个元素。当一个observable发出一个元素时，它会在所谓的<strong>next</strong>事件中这样做。</p>
+<p>这是另一个弹珠图，这次包括一个竖条，代表这个可观察到的路的尽头。</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqowcy8iylj30ry04gdgg.jpg" alt="avatar" loading="lazy"></figure>
+<p>这个可观察对象发出三个点击事件，然后它结束。这叫做一个completed事件，也就是说，它被终止了。例如，或许这些taps是在一个视图上被驳回的。重要的是，可观察对象被终止了，不能再发出任何东西。这是正常的终止。然而，有时事情也会出错。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqowfpx6mlj30sa04s0tb.jpg" alt="avatar" loading="lazy"></figure>
+<p>在这个弹珠图中出现了一个错误，用红色的x表示。observable 发出了一个包含错误的错误事件。这与一个可观察对象以一个完成的事件正常结束时是一样的。如果一个可观察对象发出了一个error事件，它也会被终止，并且不能再发出任何其他事件。</p>
+<p>这里是一个简短的回顾:</p>
+<ul>
+<li>一个observable发出包含元素的next事件。</li>
+<li>它可以继续执行此操作，直到触发一个terminating event，即一个an error or completed event。</li>
+<li>一旦可观察对象被终止，它就不能再发出事件。</li>
+</ul>
+<p>事件表示为枚举案例。下面是RxSwift源代码中的实际实现:</p>
+<pre><code class="language-swift">/// Represents a sequence event.
+///
+/// Sequence grammar: 
+/// **next\* (error | completed)**
+public enum Event&lt;Element&gt; {
+    /// Next element is produced.
+    case next(Element)
+
+    /// Sequence terminated with an error.
+    case error(Swift.Error)
+
+    /// Sequence completed successfully.
+    case completed
+}
+</code></pre>
+<p>在这里，您可以看到next事件包含了一些Element的实例，错误事件包含了一个Swift.Error的实例和completed 事件只是不包含任何数据的停止事件。</p>
+<p>既然你理解了observable是什么，它做了什么， 您将创建一些observable来查看它们的运行情况。</p>
+<h3 id="14-a-namecreatingobservablesacreating-observables">1.4. <a name='Creatingobservables'></a>Creating observables</h3>
+<p>从当前文件切换回RxSwiftPlayground，并添加以下代码:</p>
+<pre><code class="language-swift">example(of: &quot;just, of, from&quot;) {
+  // 1
+  let one = 1
+  let two = 2
+  let three = 3
+  
+  // 2
+  let observable = Observable&lt;Int&gt;.just(one)
+}
+</code></pre>
+<p>在上述代码中，您:</p>
+<ol>
+<li>
+<p>定义将在下面的示例中使用的整数常量。</p>
+</li>
+<li>
+<p>使用just方法和一个整型常量创建一个Int类型的可观察序列。</p>
+</li>
+</ol>
+<p>just方法的名字很贴切，因为它所做的只是创建一个只包含单个元素的可观察序列。它是Observable上的一个静态方法。然而，在Rx中，方法被称为“operators”。 眼尖的人应该能猜出你接下来要去哪个。</p>
+<p>将此代码添加到相同的示例中:</p>
+<pre><code class="language-swift">let observable2 = Observable.of(one, two, three)
+</code></pre>
+<p>这一次，您没有显式声明类型。你可能会认为，因为你给了它几个整数，所以该类型是[Int]可观察对象。</p>
+<p>但是，选择单击observable2来显示它的推断类型，你会发现它是Int类型的可观察对象，而不是数组:</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqowpxiq1lj313c0jmdml.jpg" alt="avatar" loading="lazy"></figure>
+<p>这是因为of操作符有一个可变参数，Swift可以根据它推断Observable的类型。</p>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqowqomcovj30yq0iu45w.jpg" alt="avatar" loading="lazy"></figure>
+<p>当你想要创建一个可观察数组时，传递一个数组给of。将以下代码添加到示例的底部:</p>
+<pre><code class="language-swift">let observable3 = Observable.of([one, two, three])
+</code></pre>
+<p>点击observable3，你会发现它确实是一个[Int]的Observable。just操作符也可以将一个数组作为其单个元素，这乍一看可能有点奇怪。但是，数组是单个元素，而不是它的内容。</p>
+<p>另一个可以用来创建可观察对象的操作符是from。将以下代码添加到示例的底部:</p>
+<pre><code class="language-swift">let observable4 = Observable.from([one, two, three])
+</code></pre>
+<p>from操作符从一个类型化元素数组中创建单个元素的可观察对象。点击Observable 4，你会看到它是Int类型的可观察对象，而不是[Int]。from操作符只接受一个数组。</p>
+<p>此时你的主机可能看起来很空空如也。这是因为除了示例头文件外，您没有打印任何内容。是时候通过订阅可观察对象来改变这种情况了。</p>
+<h3 id="15-a-namesubscribingtoobservablesasubscribing-to-observables">1.5. <a name='Subscribingtoobservables'></a>Subscribing to observables</h3>
+<p>从你作为iOS开发者的经验来看，你可能对NotificationCenter很熟悉;它向观察者广播通知。然而，这些被观察到的通知不同于RxSwift observable。下面是一个UIKeyboardDidChangeFrame通知的观察者的例子，它的处理程序作为一个尾随的闭包(不要把这段代码添加到你的playground上):</p>
+<pre><code class="language-swift">let observer = NotificationCenter.default.addObserver(
+  forName: UIResponder.keyboardDidChangeFrameNotification,
+  object: nil,
+  queue: nil) { notification in
+  // Handle receiving notification
+}
+</code></pre>
+<p>订阅RxSwift可观察对象是非常相似的;你把观察称为订阅一个可观察对象。所以使用subscribe()代替addObserver()。不同于NotificationCenter，开发者通常只使用它的.default单例实例，Rx中的每个可观察对象都是不同的。</p>
+<p><strong>更重要的是，在拥有订阅方之前，可观察对象不会发送事件或执行任何工作</strong>。</p>
+<p>记住，一个可观察对象实际上是一个序列定义，而订阅一个可观察对象实际上更像是在Swift标准库中的迭代器上调用next()(不要把这段代码添加到你的playground):</p>
+<pre><code class="language-swift">let sequence = 0..&lt;3
+
+var iterator = sequence.makeIterator()
+
+while let n = iterator.next() {
+  print(n)
+}
+
+/* Prints:
+ 0
+ 1
+ 2
+ */
+</code></pre>
+<p>订阅可观察对象更加简化。你也可以为每个可观察对象可以触发的事件类型添加处理程序。回想一下，一个可观察对象会发出next、error和completed事件。next事件将发送的元素传递给处理程序，错误事件包含一个错误实例。</p>
+<p>要查看实际操作，请将这个新示例添加到您的游乐场中。记住要在前一个示例的右花括号之后单独插入每个新示例。</p>
+<pre><code class="language-swift">example(of: &quot;subscribe&quot;) {
+  let one = 1
+  let two = 2
+  let three = 3
+  
+  let observable = Observable.of(one, two, three)
+}
+</code></pre>
+<p>这与前面的示例类似，只是这次使用的是of运算符。现在在这个例子的底部添加下面的代码，来订阅这个可观察对象:</p>
+<pre><code class="language-swift">observable.subscribe { event in
+  print(event)
+}
+</code></pre>
+<p>选择单击subscribe操作符，观察它接受一个闭包参数，该闭包参数接收Int类型的Event，不返回任何东西，而subscribe返回一个Disposable。你很快就会了解到disposables。</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqox12ydj0j30w60jun4a.jpg" alt="avatar" loading="lazy"></figure>
+<p>这个订阅将打印出observable发出的每个事件:</p>
+<pre><code class="language-swift">--- Example of: subscribe ---
+next(1)
+next(2)
+next(3)
+completed
+</code></pre>
+<p>这个可观察对象为每个元素触发一个next事件，然后触发一个completed事件并被终止。在处理可观察对象时，您通常主要感兴趣的是next事件发出的elements，而不是事件本身。</p>
+<p>要查看一种直接访问元素的方法，用下面的代码替换上面的订阅代码:</p>
+<pre><code class="language-swift">observable.subscribe { event in
+  if let element = event.element {
+    print(element)
+  }
+}
+</code></pre>
+<p>Event有一个元素属性。这是一个可选值，因为只有next事件才有一个元素。因此，如果元素不是nil，可以使用可选绑定来打开它。现在只打印元素，而不是包含元素的事件，也不是已完成的事件:</p>
+<pre><code class="language-swift">1
+2
+3
+</code></pre>
+<p>这是一个很好的模式，它被如此频繁地使用，以至于在RxSwift中有一个它的快捷方式。对于observable发出的每种类型的事件，都有一个订阅操作符:next、error和completed。</p>
+<p>用以下代码替换之前的订阅代码:</p>
+<pre><code class="language-swift">observable.subscribe(onNext: { element in
+  print(element)
+})
+</code></pre>
+<p>现在，您只处理下一个事件元素，而忽略其他所有内容。onNext闭包接收next event的元素作为参数，所以您不必像以前那样从事件中手动提取它。</p>
+<p>现在您知道了如何创建可观察的一个元素和多个元素。但是零元素的可观测值呢? empty操作符创建一个空的可观察序列，其中没有元素; 它将只发出一个completed的事件。</p>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;empty&quot;) {
+  let observable = Observable&lt;Void&gt;.empty()
+}
+</code></pre>
+<p>如果一个可观察对象不能被推断，那么它必须被定义为一个特定的类型。因此，必须显式定义类型，因为empty没有任何推断类型的依据。通常使用Void是因为不会发出任何东西。</p>
+<p>将以下代码添加到订阅空可观察对象的示例中:</p>
+<pre><code class="language-swift">observable.subscribe(
+  // 1
+  onNext: { element in
+    print(element)
+  },
+  
+  // 2
+  onCompleted: {
+    print(&quot;Completed&quot;)
+  }
+)
+</code></pre>
+<p>在上述代码中，您:</p>
+<ol>
+<li>
+<p>处理next事件，就像在前面的示例中所做的那样。</p>
+</li>
+<li>
+<p>只需打印一条消息，因为.completed事件不包含元素。</p>
+</li>
+</ol>
+<p>在控制台中，你会看到empty只会发出一个.completed事件:</p>
+<pre><code class="language-swift">--- Example of: empty ---
+Completed
+</code></pre>
+<p>empty observable 有什么用?当你想要返回一个立即终止或有意为零的可观察对象时，它们很方便。</p>
+<p>与empty操作符相反，never操作符创建的可观察对象不会产生任何内容，也不会终止。它可以用来表示无限的持续时间。将这个例子添加到你的操场</p>
+<pre><code class="language-swift">example(of: &quot;never&quot;) {
+  let observable = Observable&lt;Void&gt;.never()
+  
+  observable.subscribe(
+    onNext: { element in
+      print(element)
+    },
+    onCompleted: {
+      print(&quot;Completed&quot;)
+    }
+  )
+}
+</code></pre>
+<p>除了示例头外，不会打印任何内容。即使是“Completed”。你怎么知道这是否有效?在阅读挑战部分之前，保持好奇心。</p>
+<p>到目前为止，您已经使用了特定元素或值的可观察对象。然而，也可以从一系列的值中生成一个可观察对象。</p>
+<p>将这个例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;range&quot;) {
+  // 1
+  let observable = Observable&lt;Int&gt;.range(start: 1, count: 10)
+  
+  observable
+    .subscribe(onNext: { i in  
+      // 2
+      let n = Double(i)
+      
+      let fibonacci = Int(
+        ((pow(1.61803, n) - pow(0.61803, n)) /
+          2.23606).rounded()
+      )
+      
+      print(fibonacci)
+  })
+}
+</code></pre>
+<ol>
+<li>
+<p>使用range操作符创建一个可观察对象，该操作符接受一个起始整数值和一个要生成的连续整数的计数。</p>
+</li>
+<li>
+<p>计算并打印每个发射的元素的第n个Fibonacci数。</p>
+</li>
+</ol>
+<p>实际上有一个比onNext处理程序更好的位置来放置转换所发出元素的代码。你将在第7章“Transforming Operators”中了解到这一点。</p>
+<p>除了never()示例之外，到目前为止，您已经使用了自动触发完成事件并自然终止的可观察对象。这样做可以让你专注于创建和订阅可观察对象的机制，但这忽略了订阅可观察对象的一个重要方面。在继续之前，是时候做些家务了。</p>
+<h3 id="16-a-namedisposingandterminatingadisposing-and-terminating">1.6. <a name='Disposingandterminating'></a>Disposing and terminating</h3>
+<p>记住，在接收到订阅之前，可观察对象不会做任何事情。是订阅触发了可观察对象的工作，导致它发出新的事件，直到一个错误或已完成的事件终止了可观察对象。但是，你也可以通过取消订阅来手动终止一个可观察对象。</p>
+<p>将这个新例子添加到你的playground:</p>
+<pre><code class="language-swift">example(of: &quot;dispose&quot;) {
+  // 1
+  let observable = Observable.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;)
+  
+  // 2
+  let subscription = observable.subscribe { event in
+    // 3
+    print(event)
+  }
+}
+</code></pre>
+<p>简单来说</p>
+<ol>
+<li>
+<p>创建一个可观察的字符串。</p>
+</li>
+<li>
+<p>订阅可观察对象，这次将返回的Disposable保存为一个名为subscription的局部常量。</p>
+</li>
+<li>
+<p>在处理程序中打印每个发出的事件。</p>
+</li>
+</ol>
+<p>要显式取消订阅，请调用dispose()。在你取消订阅或者释放订阅之后，当前示例中的可观察对象将停止发出事件。</p>
+<p>将以下代码添加到示例的底部:</p>
+<pre><code class="language-swift">subscription.dispose()
+</code></pre>
+<p>单独管理每个订阅会很繁琐，所以RxSwift包含了一个DisposeBag类型。处置包保存一次性物品——通常使用dispose(by:)方法添加——并在处置包即将被释放时对每个一次性物品调用dispose()。</p>
+<p>将这个新例子添加到你的palyground:</p>
+<pre><code class="language-swift">example(of: &quot;DisposeBag&quot;) {
+  // 1
+  let disposeBag = DisposeBag()
+  
+  // 2
+  Observable.of(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;)
+    .subscribe { // 3
+      print($0)
+    }
+    .disposed(by: disposeBag) // 4
+}
+</code></pre>
+<p>一步一步:</p>
+<ol>
+<li>
+<p>创建一个释放包。</p>
+</li>
+<li>
+<p>创建一个observable。</p>
+</li>
+<li>
+<p>订阅这个observable并使用默认参数$0打印出发出的事件。</p>
+</li>
+<li>
+<p>将订阅返回的Disposable添加到dispose bag。</p>
+</li>
+</ol>
+<p>这是你最常使用的模式:创建并订阅一个可观察对象，然后立即将订阅添加到一个dispose bag。</p>
+<p>为什么要用disposables呢?</p>
+<p>如果你忘记向dispose包添加订阅，或者在订阅完成后手动调用dispose，或者以其他方式导致observable在某个时刻终止，你可能会泄漏内存。</p>
+<p>忘了也别担心;Swift编译器应该警告你关于未使用的disposables。</p>
+<p>在前面的例子中，您创建了具有特定next事件元素的可观察对象。使用create操作符是指定可观察对象将发出给订阅者的所有事件的另一种方法。</p>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;create&quot;) {
+  let disposeBag = DisposeBag()
+  
+  Observable&lt;String&gt;.create { observer in
+    
+  }
+}
+</code></pre>
+<p>create操作符接受一个名为subscribe的参数。它的工作是提供对可观察对象调用subscribe的实现。换句话说，它定义了将发送给订阅者的所有事件。</p>
+<p>如果您现在选择单击create，您将不会获得Quick Help文档，因为此代码尚未编译。下面是预览:</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqoxnq8ao6j30w80jydnf.jpg" alt="avatar" loading="lazy"></figure>
+<p>ubscribe参数是一个转义闭包，它接受一个AnyObserver并返回一个Disposable。AnyObserver是一种泛型类型，它可以方便地将值添加到可观察序列中，然后将其发送给订阅者。</p>
+<p>将create的实现更改为如下:</p>
+<pre><code class="language-swift">Observable&lt;String&gt;.create { observer in
+  // 1
+  observer.onNext(&quot;1&quot;)
+  
+  // 2
+  observer.onCompleted()
+  
+  // 3
+  observer.onNext(&quot;?&quot;)
+  
+  // 4
+  return Disposables.create()
+}
+</code></pre>
+<p>下面是你对这段代码做的事情:</p>
+<ol>
+<li>
+<p>在观察者上添加下一个事件。onNext(<em>:)是on(.next(</em>😃)的一个方便方法。</p>
+</li>
+<li>
+<p>将一个完成的事件添加到观察者。类似地，onCompleted是on(.completed)的一个方便方法</p>
+</li>
+<li>
+<p>在观察者上添加另一个下一个事件。</p>
+</li>
+<li>
+<p>返回一个disposable对象，定义了当你的可观察对象被终止或销毁时发生什么;在这种情况下，不需要进行任何清理，因此返回一个空的disposable。</p>
+</li>
+</ol>
+<p>认为第二个onNext元素(?)可以被发送到订阅者吗?为什么或为什么不?</p>
+<p>要看你是否猜对了，在create实现后的下一行添加以下代码来订阅可观察对象:</p>
+<pre><code class="language-swift">.subscribe(
+  onNext: { print($0) },
+  onError: { print($0) },
+  onCompleted: { print(&quot;Completed&quot;) },
+  onDisposed: { print(&quot;Disposed&quot;) }
+)
+.disposed(by: disposeBag)
+</code></pre>
+<p>你订阅了这个可观察对象，并分别使用传递给onNext和onError处理程序的元素和错误参数的默认参数名实现了所有的处理程序。结果是，输出第一个下一个事件元素“Completed”和“dispose”。第二个next事件不会被打印，因为这个可观察对象发出了一个已完成的事件，并在它被添加之前终止。</p>
+<pre><code class="language-swift">--- Example of: create ---
+1
+Completed
+Disposed
+</code></pre>
+<p>如果你给观察者添加一个错误会发生什么?在示例的顶部添加以下代码，以定义一个单一情况的错误类型:</p>
+<pre><code class="language-swift">enum MyError: Error {
+  case anError
+}
+</code></pre>
+<p>接下来，在观察者之间添加以下代码行。onNext和observer.onCompleted 调用:</p>
+<pre><code class="language-swift">observer.onError(MyError.anError)
+</code></pre>
+<p>现在可观察对象会发出错误并终止:</p>
+<pre><code class="language-swift">--- Example of: create ---
+1
+anError
+Disposed
+</code></pre>
+<p>如果没有添加已完成或错误事件，也没有向disposeBag添加订阅，会发生什么?注释掉observer.onError,observer.onCompleted和disposed(by: disposeBag) 代码行来查找。</p>
+<p>以下是完整的实现:</p>
+<pre><code class="language-swift">example(of: &quot;create&quot;) {
+  enum MyError: Error {
+    case anError
+  }
+  
+  let disposeBag = DisposeBag()
+  
+  Observable&lt;String&gt;.create { observer in
+    // 1
+    observer.onNext(&quot;1&quot;)
+    
+//    observer.onError(MyError.anError)
+    
+    // 2
+//    observer.onCompleted()
+    
+    // 3
+    observer.onNext(&quot;?&quot;)
+    
+    // 4
+    return Disposables.create()
+  }
+  .subscribe(
+    onNext: { print($0) },
+    onError: { print($0) },
+    onCompleted: { print(&quot;Completed&quot;) },
+    onDisposed: { print(&quot;Disposed&quot;) }
+  )
+//  .disposed(by: disposeBag)
+}
+</code></pre>
+<p>祝贺您，您刚刚泄漏了内存!可观察对象永远不会结束，而一次性对象也永远不会被丢弃。</p>
+<pre><code class="language-swift">--- Example of: create ---
+1
+?
+</code></pre>
+<p>如果您不能忍受让这个示例处于泄漏状态，请随意取消对添加已完成事件的行或向disposeBag添加订阅的代码的注释。</p>
+<h3 id="17-a-namecreatingobservablefactoriesacreating-observable-factories">1.7. <a name='Creatingobservablefactories'></a>Creating observable factories</h3>
+<p>与其创建一个等待订阅者的可观察对象，还不如创建可观察工厂，将一个新的可观察对象出售给每个订阅者。</p>
+<p>将这个新例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;deferred&quot;) {
+  let disposeBag = DisposeBag()
+  
+  // 1
+  var flip = false
+  
+  // 2
+  let factory: Observable&lt;Int&gt; = Observable.deferred {
+    
+    // 3
+    flip.toggle()
+    
+    // 4
+    if flip {
+      return Observable.of(1, 2, 3)
+    } else {
+      return Observable.of(4, 5, 6)
+    }
+  }
+}
+</code></pre>
+<p>从上面开始，你:</p>
+<ol>
+<li>
+<p>创建一个Bool标志来翻转要返回的可观察对象。</p>
+</li>
+<li>
+<p>使用递延操作符创建Int工厂的可观察对象。</p>
+</li>
+<li>
+<p>切换翻转，每次订阅工厂时都会发生。</p>
+</li>
+<li>
+<p>根据flip是真还是假返回不同的可观察对象。</p>
+</li>
+</ol>
+<p>从外部看，一个可观察工厂与一个常规的可观察对象是难以区分的。将此代码添加到示例的底部，以订阅工厂四次:</p>
+<pre><code class="language-swift">for _ in 0...3 {
+  factory.subscribe(onNext: {
+    print($0, terminator: &quot;&quot;)
+  })
+  .disposed(by: disposeBag)
+
+  print()
+}
+</code></pre>
+<p>每次你订阅factory，你会得到相反的观察结果。换句话说，你得到123，然后是456，每次创建一个新的订阅时，这个模式都会重复:</p>
+<pre><code class="language-swift">--- Example of: deferred ---
+123
+456
+123
+456
+</code></pre>
+<h3 id="18-a-nameusingtraitsausing-traits">1.8. <a name='UsingTraits'></a>Using Traits</h3>
+<p>特征是具有比常规可观察对象更窄的一系列行为的可观察对象。它们的使用是可选的;你可以在任何可能使用trait的地方使用一个常规的可观察对象。它们的目的是提供一种更清楚地向代码读者或API消费者传达意图的方式。使用trait所隐含的上下文可以帮助您的代码更加直观。</p>
+<p>RxSwift有三种特性:Single, Maybe和Completable。在对它们一无所知的情况下，你能猜出它们是如何专业化的吗?</p>
+<p><strong>Single</strong> 将触发成功(值)或错误(错误)事件。成功(值)实际上是下一个事件和已完成事件的组合。这对于成功产生值或失败的一次性进程很有用，比如下载数据或从磁盘加载数据时。</p>
+<p><strong>Completable</strong>只会发出一个已完成或错误(错误)事件。它不会产生任何值。当您只关心某个操作成功完成或失败时，可以使用completable，例如文件写入。</p>
+<p>最后，<strong>Maybe</strong>是Single和Completable的混搭。它可以发出成功(值)、完成或错误(错误)。如果您需要实现一个可能成功或失败的操作，并在成功时可选地返回一个值，那么Maybe就是您的票据。</p>
+<p>你将有机会在第4章“Observables &amp; Subjects in Practice”中更多地研究特性。现在，您将运行一个基本的示例，使用单个文件从资源文件夹中的名为Copyright.txt的文本文件中加载一些文本——因为谁不喜欢偶尔使用一些法律术语呢?</p>
+<p>将这个例子添加到你的操场:</p>
+<pre><code class="language-swift">example(of: &quot;Single&quot;) {
+  // 1
+  let disposeBag = DisposeBag()
+
+  // 2
+  enum FileReadError: Error {
+    case fileNotFound, unreadable, encodingFailed
+  }
+  
+  // 3
+  func loadText(from name: String) -&gt; Single&lt;String&gt; {
+    // 4
+    return Single.create { single in
+    
+    }
+  }
+}
+</code></pre>
+<p>在上述代码中，您:</p>
+<ol>
+<li>
+<p>创建一个稍后使用的dispose bag。</p>
+</li>
+<li>
+<p>定义一个Error枚举来建模从磁盘上的文件读取数据时可能发生的一些错误。</p>
+</li>
+<li>
+<p>实现一个返回Single的函数从的磁盘文件中加载文本。</p>
+</li>
+<li>
+<p>创建并返回一个Single。</p>
+</li>
+</ol>
+<p>在create闭包中添加以下代码来完成实现:</p>
+<pre><code class="language-swift">// 1
+let disposable = Disposables.create()
+
+// 2
+guard let path = Bundle.main.path(forResource: name, ofType: &quot;txt&quot;) else {
+  single(.error(FileReadError.fileNotFound))
+  return disposable
+}
+
+// 3
+guard let data = FileManager.default.contents(atPath: path) else {
+  single(.error(FileReadError.unreadable))
+  return disposable
+}
+
+// 4
+guard let contents = String(data: data, encoding: .utf8) else {
+  single(.error(FileReadError.encodingFailed))
+  return disposable
+}
+
+// 5
+single(.success(contents))
+return disposable
+</code></pre>
+<p>有了这个代码，你:</p>
+<ol>
+<li>
+<p>创建一个Disposable，因为Create的订阅闭包期望它作为返回类型。</p>
+</li>
+<li>
+<p>获取文件名的路径，或者将文件未找到错误添加到Single中，并返回您创建的一次性文件。</p>
+</li>
+<li>
+<p>从该路径下的文件获取数据，或者将不可读错误添加到Single中并返回可丢弃的。</p>
+</li>
+<li>
+<p>将数据转换为字符串;否则，将编码失败错误添加到Single中，并返回可丢弃的。发现规律了吗?</p>
+</li>
+<li>
+<p>走了这么远?成功地将内容添加到Single中，并返回一次性的。</p>
+</li>
+</ol>
+<p>现在可以用这个函数了。将以下代码添加到示例中:</p>
+<pre><code class="language-swift">// 1
+loadText(from: &quot;Copyright&quot;)
+// 2
+  .subscribe {
+    // 3
+    switch $0 {
+    case .success(let string):
+      print(string)
+    case .error(let error):
+      print(error)
+    }
+  }
+  .disposed(by: disposeBag)
+</code></pre>
+<ol>
+<li>
+<p>调用loadText(from:)并传递文本文件的根名称。</p>
+</li>
+<li>
+<p>订阅它返回的Single。</p>
+</li>
+<li>
+<p>打开事件，如果成功则打印字符串，如果失败则打印错误。</p>
+</li>
+</ol>
+<p>你应该会看到从文件打印到控制台的文本，这与操场底部的版权注释相同:</p>
+<pre><code class="language-swift">--- Example of: Single ---
+Copyright (c) 2020 Razeware LLC
+...
+</code></pre>
+<p>尝试将文件名更改为其他文件名，您应该会看到打印的文件未找到错误。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/RdD9gnxqo/" class="tag">
+                    observables
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r1b4Frlkm/" class="tag">
+                    rxswift
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/chapter-15-intro-to-schedulers/">
+                  <h3 class="post-title">
+                    Chapter 15: Intro to Schedulers
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

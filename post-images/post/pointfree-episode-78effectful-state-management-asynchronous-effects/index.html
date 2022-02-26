@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 78:Effectful State Management: Asynchronous Effects | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Local state to global state
+
+
+
+
+The async signature
+
+
+
+
+The async effect
+
+
+
+
+Refactor-related bugs
+..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 78:Effectful State Management: Asynchronous Effects</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Localstatetoglobalstate">Local state to global state</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Theasyncsignature">The async signature</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Theasynceffect">The async effect</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Refactor-relatedbugs">Refactor-related bugs</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Thinkingunidirectionally">Thinking unidirectionally</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 78:Effectful State Management: Asynchronous Effects -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>又提取了一个<strong>effect</strong>。让我们再花一点时间来回顾一下我们所取得的成就。</p>
+<p>我们想从我们的视图中提取磁盘<strong>effect</strong>的加载，并以某种方式在<strong>reducer</strong>中建模。我们很快意识到这种<strong>effect</strong>与我们之前处理的<strong>effect</strong>不太一样。保存的<strong>effect</strong>本质上是“射后不理”，它只是完成了自己的工作，之后不需要通知任何人任何事情。</p>
+<p>然而，<strong>loading effect</strong>需要以某种方式将加载的数据反馈到<strong>reducer</strong>中，以便我们能够作出反应。这导致我们将签名从一个空到空的闭包重构为一个空到可选的动作闭包。这允许<strong>effects</strong>做最少的必要工作来完成工作，然后通过发送另一个动作将结果返回到<strong>reducer</strong>。然后<strong>store</strong>成为这些<strong>effects</strong>的解释器，首先运行<strong>reducer</strong>，收集所有想要执行的<strong>effects</strong>，迭代那个错误来执行<strong>effects</strong>， 然后将产生的任何动作发送回<strong>store</strong>。</p>
+<p>如果我们想要处理应用程序中最复杂的<strong>effect</strong>，这正是我们需要能够支持的:一个将当前计数发送到<strong>Wolfram Alpha</strong>以寻找第n个素数的网络请求。我们如何将这种影响转移到我们的架构中?</p>
+<p>我们现在将使用计数器屏幕，它目前执行我们的异步副作用。</p>
+<p>不幸的是，计数器模块现在还不能正常工作，因为我们还没有更新它来支持我们对架构所做的更改，所以让我们更新它，通过给每个<strong>reducer</strong>引入<strong>effect</strong>来做到这一点。</p>
+<p>我们可以从<strong>counter reducer</strong>开始，更新它的签名以返回一个<strong>effects</strong>数组。</p>
+<pre><code class="language-swift">public func counterReducer(state: inout Int, action: CounterAction) -&gt; [Effect&lt;CounterAction&gt;] {
+</code></pre>
+<p>然后我们从每个处理的操作返回一个空数组，因为无论是递增还是递减计数都不会产生<strong>effect</strong>。</p>
+<pre><code class="language-swift">case .decrTapped:
+  state -= 1
+  return []
+
+case .incrTapped:
+  state += 1
+  return []
+</code></pre>
+<p>接下来，我们需要更新基本模态<strong>reducer</strong>，并进行几乎相同的更改，从它的签名开始:</p>
+<pre><code class="language-swift">public func primeModalReducer(
+  state: inout PrimeModalState, action: PrimeModalAction
+) -&gt; [Effect&lt;PrimeModalAction&gt; {
+</code></pre>
+<p>然后返回空的<strong>effect</strong>数组。</p>
+<pre><code class="language-swift">case .removeFavoritePrimeTapped:
+  state.favoritePrimes.removeAll(where: { $0 == state.count })
+  return []
+
+case .saveFavoritePrimeTapped:
+  state.favoritePrimes.append(state.count)
+  return []
+</code></pre>
+<p><strong>counter</strong>模块现在正在再次构建，所以让我们看看我们正在使用的异步效果:询问<strong>Wolfram Alpha API</strong>的“n素数”，其中“n”是计数器应用程序的当前计数。</p>
+<p>计数器视图中有一个按钮可以触发此请求。</p>
+<pre><code class="language-swift">Button(
+  &quot;What is the \(ordinal(self.store.value.count)) prime?&quot;,
+  action: self.nthPrimeButtonAction
+)
+</code></pre>
+<p>它调用一个局部方法，该方法改变一些局部视图状态并内联执行异步副作用。</p>
+<pre><code class="language-swift">func nthPrimeButtonAction() {
+  self.isNthPrimeButtonDisabled = true
+  nthPrime(self.store.value.count) { prime in
+    self.alertNthPrime = prime.map(PrimeAlert.init(prime:))
+    self.isNthPrimeButtonDisabled = false
+  }
+}
+</code></pre>
+<p>所涉及的本地状态包括在请求正在运行时禁用该按钮，并在请求成功时显示带有结果的<strong>alert</strong>。</p>
+<p>为了在我们的<strong>reducer</strong>中捕捉这种<strong>effect</strong>，让我们遵循到目前为止为我们工作的例行程序。与其以内联方式执行这项工作，我们希望能够发送一个动作到<strong>store</strong>，以便<strong>effect</strong>可以在<strong>reducer</strong>中捕获。</p>
+<pre><code class="language-swift">func nthPrimeButtonAction() {
+//    self.isNthPrimeButtonDisabled = true
+//    nthPrime(self.store.value.count) { prime in
+//      self.alertNthPrime = prime.map(PrimeAlert.init(prime:))
+//      self.isNthPrimeButtonDisabled = false
+//    }
+    self.store.send(.nthPrimeButtonTapped)
+  }
+</code></pre>
+<p>要做到这一点，我们必须将该操作添加到充满<strong>counter action</strong>的<strong>enum</strong>中。</p>
+<pre><code class="language-swift">public enum CounterAction {
+  case decrTapped
+  case incrTapped
+  case nthPrimeButtonTapped
+}
+</code></pre>
+<p>我们要用我们的<strong>reducer</strong>处理这个新<strong>case</strong>。</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  &lt;#code#&gt;
+</code></pre>
+<p>在这种情况下，我们想要发射一个<strong>effect</strong>。</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  return [{
+
+  }]
+</code></pre>
+<p>特别是一些捕捉我们在视图中所做的工作的东西。</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  return [{
+    self.isNthPrimeButtonDisabled = true
+    nthPrime(self.store.value.count) { prime in
+      self.alertNthPrime = prime.map(PrimeAlert.init(prime:))
+      self.isNthPrimeButtonDisabled = false
+    }
+  }]
+</code></pre>
+<blockquote>
+<p>🛑 Use of unresolved identifier ‘self’</p>
+</blockquote>
+<p>我们不再能够访问视图的本地状态、<strong>store</strong>和<strong>self</strong>。通过移动到<strong>reducer</strong>，我们需要考虑状态和动作中的一切。</p>
+<h2 id="2-a-namelocalstatetoglobalstatealocal-state-to-global-state">2. <a name='Localstatetoglobalstate'></a>Local state to global state</h2>
+<p>首先，我们必须引入一些附加状态，包括第n个主按钮是否被禁用，以及<strong>alert state</strong>。我们可以为元组定义一个类型别名来保存所有这些状态。</p>
+<pre><code class="language-swift">public typealias CounterState = (
+  alertNthPrime: PrimeAlert?,
+  count: Int,
+  isNthPrimeButtonDisabled: Bool
+)
+</code></pre>
+<p>在这个过程中，我们需要让<strong>PrimeAlert</strong>公开。</p>
+<pre><code class="language-swift">public struct PrimeAlert: Identifiable {
+  let prime: Int
+  public var id: Int { self.prime }
+}
+</code></pre>
+<p>我们现在可以更新计数器<strong>reducer</strong>来处理这个额外的状态。</p>
+<pre><code class="language-swift">public func counterReducer(
+  state: inout CounterState, action: CounterAction
+) -&gt; [Effect&lt;CounterAction&gt; {
+</code></pre>
+<p>当我们改变计数时，我们现在必须更深入地挖掘<strong>state</strong>的计数。</p>
+<pre><code class="language-swift">case .decrTapped:
+  state.count -= 1
+  return []
+
+case .incrTapped:
+  state.count += 1
+  return []
+</code></pre>
+<p>对于我们的新动作，我们可以移除一些<strong>selfs</strong>。我们可以从提取<strong>effect</strong>之外的纯<strong>isNthPrimeButtonDisabled</strong>突变开始。</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  state.isNthPrimeButtonDisabled = true
+</code></pre>
+<p>为了将计数传递给<strong>nthPrime</strong>，我们首先需要创建一个不可变的本地副本，这样<strong>effect</strong>闭包就不会试图捕获一个可变的输入输出值。</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  state.isNthPrimeButtonDisabled = true
+  let count = state.count
+  return [{
+    nthPrime(count) { prime in
+</code></pre>
+<p>在<strong>effect</strong>中完成的其余工作是在请求完成后完成的，此时我们有希望流回系统的数据。要做到这一点，需要引入一个新操作来处理第n个质数响应。</p>
+<pre><code class="language-swift">public enum CounterAction {
+  case decrTapped
+  case incrTapped
+  case nthPrimeButtonTapped
+  case nthPrimeResponse
+}
+</code></pre>
+<p>而<strong>nthprimerresponse</strong>应该捆绑<strong>Wolfram Alpha</strong>返回的质数。</p>
+<pre><code class="language-swift">case nthPrimeResponse(Int?)
+</code></pre>
+<p>我们使用一个可选的<strong>Int</strong>值来表示在获取初始值时可能发生错误，比如网络请求可能失败。</p>
+<p>reducer被破坏了，我们切换另一个<strong>case</strong>吧。</p>
+<pre><code class="language-swift">case .nthPrimeResponse(_):
+  &lt;#code#&gt;
+</code></pre>
+<p>我们可以把工作从<strong>nthPrime</strong>完成处理程序移到这里。</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  state.isNthPrimeButtonDisabled = true
+  let count = state.count
+  return [{
+    nthPrime(count) { prime in
+    }
+  }]
+
+case let .nthPrimeResponse(prime):
+  state.alertNthPrime = prime.map(PrimeAlert.init(prime:))
+  state.isNthPrimeButtonDisabled = false
+  return []
+</code></pre>
+<p>但我们如何让这种<strong>effect</strong>发挥作用呢?</p>
+<pre><code class="language-swift">return [{
+  nthPrime(count) { prime in
+  }
+}]
+</code></pre>
+<blockquote>
+<p>🛑 Cannot convert value of type ‘Void’ to closure result type ‘CounterAction?’</p>
+</blockquote>
+<p>因为我们在回调函数中接收素数，所以我们不能仅仅从那里返回操作。</p>
+<pre><code class="language-swift">return [{
+  nthPrime(count) { prime in
+    return .nthPrimeResponse(prime)
+  }
+}]
+</code></pre>
+<p>我们需要在回调之外返回<strong>nthprimerresponse</strong>动作。</p>
+<pre><code class="language-swift">return [{
+  nthPrime(count) { prime in
+
+  }
+  return .nthPrimeResponse(prime)
+}]
+</code></pre>
+<blockquote>
+<p>🛑 Use of unresolved identifier ‘prime’</p>
+</blockquote>
+<p>我们需要访问这里的初始值，但这是一个我们只能异步访问的值，而我们的<strong>reducer</strong>的<strong>effect</strong>现在必须是同步的。</p>
+<p>我们可以通过引入一个<strong>dispatch semaphore</strong>来强制我们的网络请求是同步的，这样我们就可以在它执行后访问计算好的质数:</p>
+<pre><code class="language-swift">return [{
+  var p: Int?
+  let sema = DispatchSemaphore(value: 0)
+  nthPrime(count) { prime in
+    p = prime
+    sema.signal()
+  }
+  sema.wait()
+  return .nthPrimeResponse(p)
+}]
+</code></pre>
+<p>虽然我们的<strong>reducer</strong>是快乐的，事情还没有完全建立，因为我们已经改变了计数器<strong>reducer</strong>的状态，不能仅仅通过计数再拉它回模块的<strong>reducer</strong>。我们现在有一堆额外的状态要处理。</p>
+<p>首先，我们必须在模块的根状态中考虑这个额外的状态，根状态用元组表示。</p>
+<pre><code class="language-swift">public typealias CounterViewState = (
+  alertNthPrime: PrimeAlert?,
+  count: Int,
+  favoritePrimes: [Int],
+  isNthPrimeButtonDisabled: Bool
+)
+</code></pre>
+<p>但这是行不通的，因为我们需要提供一个单独的关键路径来提取计数器<strong>reducer</strong>和初始模态<strong>reducer</strong>所关心的字段。<br>
+为了访问这样一个键路径，我们必须定义一些计算属性，这意味着我们必须将<strong>CounterViewState</strong>升级为一个结构体。</p>
+<pre><code class="language-swift">public struct CounterViewState {
+  var alertNthPrime: PrimeAlert?
+  var count: Int
+  var favoritePrimes: [Int]
+  var isNthPrimeButtonDisabled: Bool
+)
+</code></pre>
+<p>现在我们可以介绍一些计算性质，它们可以提取出<strong>counter</strong> 模态<strong>reducer</strong>和主模态<strong>reducer</strong>的子态。</p>
+<pre><code class="language-swift">var counter: CounterState {
+
+}
+
+var primeModal: PrimeModalState {
+
+}
+</code></pre>
+<p>为了让这个关键路径是可写的，这是回调函数的要求，我们需要getter和setter。</p>
+<pre><code class="language-swift">var counter: CounterState {
+  get {}
+  set {}
+}
+</code></pre>
+<p><strong>getter</strong>需要返回它关心的<strong>CounterState</strong>元组。</p>
+<pre><code class="language-swift">var counter: CounterState {
+  get { (self.alertNthPrime, self.count, self.isNthPrimeButtonDisabled) }
+  set {}
+}
+</code></pre>
+<p><strong>setter</strong>需要解构这些值并重新赋值。</p>
+<pre><code class="language-swift">var counter: CounterState {
+  get { (self.alertNthPrime, self.count, self.isNthPrimeButtonDisabled) }
+  set { (self.alertNthPrime, self.count, self.isNthPrimeButtonDisabled) = newValue }
+}
+</code></pre>
+<p>素模态状态是相似的，但它关心不同的域。</p>
+<pre><code class="language-swift">var primeModal: PrimeModalState {
+  get { (self.count, self.favoritePrimes) }
+  set { (self.count, self.favoritePrimes) = newValue }
+}
+</code></pre>
+<p>最后，我们有两个全新的关键路径，这将帮助我们组成模块的根<strong>reducer</strong>。</p>
+<pre><code class="language-swift">public let counterViewReducer = combine(
+  pullback(counterReducer, value: \CounterViewState.counter, action: \CounterViewAction.counter),
+  pullback(primeModalReducer, value: \.primeModal, action: \.primeModal)
+)
+</code></pre>
+<p>一切都应该构建，但我们需要确保当第n个主按钮被点击时，我们将<strong>CounterAction</strong>包装为一个<strong>CounterViewAction</strong>。</p>
+<pre><code class="language-swift">self.store.send(.counter(.nthPrimeButtonTapped))
+</code></pre>
+<p>事情正在建设中，但我们仍然需要更新视图，到目前为止，这一直依赖于本地状态。</p>
+<pre><code class="language-swift">public struct CounterView: View {
+  @ObservedObject var store: Store&lt;CounterViewState, CounterViewAction&gt;
+  @State var isPrimeModalShown = false
+  @State var alertNthPrime: PrimeAlert?
+  @State var isNthPrimeButtonDisabled = false
+</code></pre>
+<p>以前<strong>alertNthPrime和isNthPrimeButtonDisabled</strong>是由SwiftUI使用@<strong>State</strong>属性包装器管理的本地状态。但是现在我们已经将这个状态移到了<strong>store</strong>中，所以我们应该能够将它们注释掉。</p>
+<pre><code class="language-swift">//  @State var alertNthPrime: PrimeAlert?
+//  @State var isNthPrimeButtonDisabled = false
+</code></pre>
+<p>现在我们可以使用<strong>store</strong>的状态来更新视图。比如第n个按钮是否被禁用。</p>
+<pre><code class="language-swift">.disabled(self.store.value.isNthPrimeButtonDisabled)
+</code></pre>
+<p>以及是否要发出警报。</p>
+<pre><code class="language-swift">.alert(item: self.store.value.alertNthPrime) { alert in
+</code></pre>
+<p>不幸的是，这个接口需要一个SwiftUI绑定，而不是一个值。那我们现在该怎么做? 也许我们可以看看自己是否有可能建立一个<strong>binding</strong>,它有一个初始化器，接受一个get函数和一个set函数。</p>
+<pre><code class="language-swift">Binding(get: &lt;#() -&gt; _#&gt;, set: &lt;#(_) -&gt; Void#&gt;)
+</code></pre>
+<p><strong>get</strong>函数可以返回<strong>store</strong>的值，而它的<strong>setter</strong>可以是一个无操作闭包。</p>
+<pre><code class="language-swift">Binding(get: { self.store.value.alertNthPrime }, set: { _ in })
+</code></pre>
+<p>现在，一切都很好!</p>
+<p>This doesn’t look great, though:</p>
+<pre><code class="language-swift">.alert(
+  item: Binding(
+    get: { self.store.value.alertNthPrime },
+    set: { _ in }
+  )
+) { alert in
+</code></pre>
+<p>它非常嘈杂，而且为像<strong>alert binding</strong>这样简单和常见的东西引入这么多嘈杂并不好。</p>
+<p>幸运的是，SwiftUI提供了一个绑定助手，可以帮我们完成这项工作! 它被称为“<strong>constant</strong>”绑定，可以作为静态方法使用。</p>
+<pre><code class="language-swift">.alert(
+  item: Binding.constant(self.store.value.alertNthPrime)
+) { aler
+</code></pre>
+<p>我们可以使用类型推断来缩短时间。</p>
+<pre><code class="language-swift">.alert(
+  item: .constant(self.store.value.alertNthPrime)
+) { alert in
+</code></pre>
+<p>所以这为我们的单向架构提供了一种很好的构建SwiftUI绑定的方式。</p>
+<p>现在一切都在构建中，但为了让事情变得更复杂，我们必须最终将<strong>CounterViewState</strong>初始化器公开化，因为我们已经将它从元组升级为结构体。</p>
+<pre><code class="language-swift">public struct CounterViewState {
+  var alertNthPrime: PrimeAlert?
+  var count: Int
+  var favoritePrimes: [Int]
+  var isNthPrimeButtonDisabled: Bool
+
+  public init(
+    alertNthPrime: PrimeAlert?,
+    count: Int,
+    favoritePrimes: [Int],
+    isNthPrimeButtonDisabled: Bool
+  ) {
+    self.alertNthPrime = alertNthPrime
+    self.count = count
+    self.favoritePrimes = favoritePrimes
+    self.isNthPrimeButtonDisabled = isNthPrimeButtonDisabled
+  }
+</code></pre>
+<p>我们现在可以在<strong>playground</strong>上使用这个初始化器!</p>
+<pre><code class="language-swift">PlaygroundPage.current.liveView = UIHostingController(
+  rootView: CounterView(
+    Store: Store&lt;CounterViewState, CounterViewAction&gt;(
+      initialValue: CounterViewState(
+        alertNthPrime: nil,
+        count: 0,
+        favoritePrimes: [],
+        isNthPrimeButtonDisabled: false
+      ),
+      reducer: counterViewReducer
+    )
+  )
+)
+</code></pre>
+<h2 id="3-a-nametheasyncsignatureathe-async-signature">3. <a name='Theasyncsignature'></a>The async signature</h2>
+<p>我们花了一些时间才到达这里，因为我们的异步副作用纠缠在一些局部状态中，而将所有内容移动到<strong>reducer</strong>中会引起一些涟漪效应。</p>
+<p>不幸的是，我们实现异步效果的方式并不是一个好的解决方案。一方面，这个效果现在是阻塞的，这意味着在它完成之前，其他效果都不能运行。虽然我们还没有完成所有连接，但至少让我们探索一下为什么这是有问题的。</p>
+<p>如果我们转到计数器屏幕，并请求第五个素数，我们将注意到在等待网络请求完成时接口冻结。这当然很糟糕。</p>
+<p>现在我们可以做的一件事当然是完全改变我们的<strong>store</strong>运行效果，以支持异步:</p>
+<pre><code class="language-swift">DispatchQueue.global().async {
+  effects.forEach { effect in
+    if let action = effect() {
+      DispatchQueue.main.async {
+        self.send(action)
+      }
+    }
+  }
+}
+</code></pre>
+<p>我们可以重新运行操场，看看情况是不是好一点了。</p>
+<p>但这是有问题的几个原因。</p>
+<ul>
+<li>我们硬编码了一个调度队列来运行我们的异步工作，最糟糕的是，这是为<strong>store</strong>的所有用户做出的一个不灵活的选择。理想情况下，我们应该让每种<strong>effect</strong>决定它们的异步程度。</li>
+<li>我们的异步效果必须使用<strong>GCD</strong>信号量在内部管理它的异步性。这只是处理问题的一种非常笨拙的方法。如果我们能够重新建模效果，以更自然的方式处理异步，而不需要创建需要被告知等待和稍后发出信号的信号量，那就太好了。</li>
+</ul>
+<p>幸运的是，我们已经在Point-Free上多次讨论了一个类型，它代表了异步工作的本质。 我们之前将其称为<strong>Parallel</strong>类型，它看起来如下所示:</p>
+<pre><code class="language-swift">struct Parallel&lt;A&gt; {
+  let run: (@escaping (A) -&gt; Void) -&gt; Void
+}
+</code></pre>
+<p>这个特征虽然乍一看很奇怪，但却是我们在iOS开发中经常遇到的形状。它是我们经常处理的许多异步api的精确形状，如调度异步，UIView动画和URL会话数据任务:</p>
+<pre><code class="language-swift">//DispatchQueue.main.async(execute: () -&gt; Void) -&gt; Void
+//UIView.animate(withDuration: TimeInterval, animations: () -&gt; Void) -&gt; Void
+//URLSession.shared.dataTask(with: URL, completionHandler: (Data?, URLResponse?, Error?) -&gt; Void) -&gt; Void
+</code></pre>
+<p>这个签名允许我们将控制权移交给正在调用的函数，以便它们可以在准备好时返回值，而不是立即要求一个值。</p>
+<p>似乎<strong>Parallel</strong>类型可以在这里帮助我们!</p>
+<p>我们现在基本上需要重复这个故事来达到效果。我们需要抛弃这个要求我们立即返回可选动作的同步效果签名，而使用允许我们在准备好时提供动作的异步签名。</p>
+<h2 id="4-a-nametheasynceffectathe-async-effect">4. <a name='Theasynceffect'></a>The async effect</h2>
+<p>所以，让我们再次更新我们的效果签名，看看所有需要修复的:</p>
+<pre><code class="language-swift">public typealias Effect&lt;Action&gt; = (@escaping (Action) -&gt; Void) -&gt; Void
+</code></pre>
+<p>首先，我们在<strong>store</strong>上的<strong>send</strong>方法不再正确。 我们不希望<strong>store</strong>处理分派异步逻辑。相反，我们需要通过提供一个回调来运行每个<strong>effect</strong>，然后当那个回调被调用时，我们将把结果动作转发给我们的<strong>send</strong>方法:</p>
+<pre><code class="language-swift">public func send(_ action: Action) {
+  let effects = self.reducer(&amp;self.value, action)
+  effects.forEach { effect in
+    effect { action in self.send(action) }
+  }
+}
+</code></pre>
+<p>在传递回调闭包<strong>effect</strong>的地方，我们有机会执行一些异步工作，因为效果本身决定什么时候将一个动作反馈回<strong>send</strong>。</p>
+<p>我们甚至可以通过传递<strong>self.send</strong>为回调值来缩短代码。</p>
+<pre><code class="language-swift">effects.forEach { effect in
+  effect(self.send)
+}
+</code></pre>
+<p>接下来，我们有了回调函数。它需要通过运行这些<strong>effects</strong>将其局部<strong>effect</strong>转换为全局<strong>effect</strong>，然后使用回调函数将局部<strong>effect</strong>嵌入到全局<strong>effect</strong>中:</p>
+<pre><code class="language-swift">public func pullback&lt;LocalValue, GlobalValue, LocalAction, GlobalAction&gt;(
+  _ reducer: @escaping (inout LocalValue, LocalAction) -&gt; [Effect&lt;LocalAction&gt;],
+  value: WritableKeyPath&lt;GlobalValue, LocalValue&gt;,
+  action: WritableKeyPath&lt;GlobalAction, LocalAction?&gt;
+) -&gt; (inout GlobalValue, GlobalAction) -&gt; [Effect&lt;GlobalAction&gt;] {
+  return { globalValue, globalAction in
+    guard let localAction = globalAction[keyPath: action] else { return [] }
+    let localEffects = reducer(&amp;globalValue[keyPath: value], localAction)
+    return localEffects.map { localEffect in
+      { callback in
+//        guard let localAction = localEffect() else { return nil }
+        localEffect { localAction in
+          var globalAction = globalAction
+          globalAction[keyPath: action] = localAction
+          callback(globalAction)
+        }
+      }
+    }
+  }
+}
+</code></pre>
+<p>在我们的可组合架构模块中唯一没有编译的是日志高阶<strong>reducer</strong>，这很容易修复。我们可以忽略<strong>callback</strong>参数，并去掉<strong>return</strong>语句。</p>
+<pre><code class="language-swift">public func logging&lt;Value, Action&gt;(
+  _ reducer: @escaping (inout Value, Action) -&gt; [Effect&lt;Action&gt;]
+) -&gt; (inout Value, Action) -&gt; [Effect&lt;Action&gt;] {
+  return { value, action in
+    let effects = reducer(&amp;value, action)
+    let newValue = value
+    return [{ _ in
+      print(&quot;Action: \(action)&quot;)
+      print(&quot;Value:&quot;)
+      dump(newValue)
+      print(&quot;---&quot;)
+    }] + effects
+  }
+}
+</code></pre>
+<p>现在让我们来解决其他模块中的问题。首先我们得到了计数器模块。我们返回的所有空数组[]仍然是正常的，但我们正在构建一些<strong>effect</strong>的位置需要更新，例如当第n个主按钮被点击时:</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  state.isNthPrimeButtonDisabled = true
+  let count = state.count
+  return [{ callback in
+    nthPrime(count) { prime in
+      callback(.nthPrimeResponse(prime))
+    }
+  }]
+</code></pre>
+<h2 id="5-a-namerefactor-relatedbugsarefactor-related-bugs">5. <a name='Refactor-relatedbugs'></a>Refactor-related bugs</h2>
+<p>计数器模块现在正在建造中和这个<strong>effect</strong>现在是简单得多。</p>
+<p>但是，当我们在另一个舞台上旋转时，我们会看到事情并不像我们预期的那样运行。首先，当我们点击第n个质数按钮时，似乎要花相当长的时间才能得到响应。我们可以在<strong>reducer</strong>中添加一些日志记录，以使用我们在前面章节中定义的日志高阶<strong>reducer</strong>进行调试。</p>
+<pre><code class="language-swift">reducer: logging(counterViewReducer)
+</code></pre>
+<p>当我们点击按钮时，我们会看到在警报显示在屏幕上之前很久就得到了<strong>nthprimerresponse</strong>。</p>
+<p>通过将这个异步<strong>effect</strong>移动到<strong>reducer</strong>中，并将动作发送到<strong>store</strong>中，我们引入了一个SwiftUI之前为我们解决的问题。</p>
+<p>问题是我们在后台线程上改变了<strong>store</strong>的值。默认情况下，<strong>URLSession</strong>数据任务在后台线程上执行它们的完成代码块，这意味着我们在后台线程上把动作发送回<strong>store</strong>，这意味着<strong>store</strong>的值在后台线程上被修改，这意味着这个值在后台线程上被发布到SwiftUI。</p>
+<p>以前，状态位于视图中，我们通过视图的@<strong>state wrapped</strong>属性更新它。这似乎确保了突变总是发生在主线上。但现在我们已经将这个状态移动到一个<strong>store</strong>中，并直接通过<strong>ObservableObject和@Published</strong>机制发布这些更新。</p>
+<p>解决办法很简单。我们可以更新效果，使其结果在主队列上分派:</p>
+<pre><code class="language-swift">nthPrime(n) { prime in
+  DispatchQueue.main.async {
+    callback(.nthPrimeResponse(prime))
+  }
+}
+</code></pre>
+<p>当我们构建并运行时，我们会看到警告会在响应返回时立即弹出，控制台中不再有这些警告。</p>
+<p>然而，如果我们再点击一次按钮，提示就不会出现了! 我们可以检查控制台以确认响应肯定正在传入，那么问题是什么?更奇怪的是，当我们问其他最喜欢的质数时，我们有时会遇到崩溃。</p>
+<h2 id="6-a-namethinkingunidirectionallyathinking-unidirectionally">6. <a name='Thinkingunidirectionally'></a>Thinking unidirectionally</h2>
+<p>我们似乎还漏掉了什么。当我们修复了线程问题时，我们看到了一些新的东西。</p>
+<p>这可能与我们如何将我们的架构与SwiftUI的警报绑定API接口有关。通常，你可以通过绑定来控制某些类型的演示，这样SwiftUI就可以为你置空一些状态。但我们使用了一个“<strong>constant</strong>”约束，这可能会防止我们的状态在警告解除时正确地将事情抛在一边。</p>
+<p>问题在于这种状态是如何被改变的:</p>
+<pre><code class="language-swift">case let .nthPrimeResponse(nthPrime):
+  state.alertNthPrime = nthPrime
+</code></pre>
+<p>而<strong>reducer</strong>将响应的结果设置为<strong>nthPrime</strong>。它永远不会把这个状态置空。</p>
+<p>当再次点击按钮时，我们可以尝试把东西设为<strong>nil</strong>。</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  state.alertNthPrime = nil
+</code></pre>
+<p>这允许我们连续多次请求质数。</p>
+<p>但等待另一个按钮点击并不是置空警报状态的正确位置。当警报被解除时，警报状态消失会更有意义。但是我们使用的是常量绑定，所以当警报被取消时，SwiftUI不能自动写到这个状态。</p>
+<pre><code class="language-swift">.alert(
+  item: .constant(self.store.value.nthPrime)
+) { alert in
+  Alert(
+    title: Text(&quot;The \(ordinal(self.store.value.count)) prime is \(alert.prime)&quot;),
+    dismissButton: .default(Text(&quot;Ok&quot;))
+  )
+}
+</code></pre>
+<p>警报按钮可以选择执行操作。</p>
+<pre><code class="language-swift">Alert.Button.default(&lt;#label: Text#&gt;, action: &lt;#(() -&gt; Void)?#&gt;)
+</code></pre>
+<p>这对于应该执行某些任务的警报选择很重要。例如，带有确认按钮的警报应该只在单击确认按钮时执行该任务。在我们的例子中，我们可以使用这个代码块将一个取消操作返回给<strong>store</strong>，从而置空警报状态。</p>
+<pre><code class="language-swift">Alert(
+  title: Text(&quot;The \(ordinal(self.store.value.count)) prime is \(alert.prime)&quot;),
+  dismissButton: .default(Text(&quot;Ok&quot;)) {
+    self.store.send(.counter(.alertDismissButtonTapped))
+  }
+)
+</code></pre>
+<p>我们需要将这个动作引入到我们的<strong>CounterAction</strong>类型中。</p>
+<pre><code class="language-swift">public enum CounterAction {
+  case alertDismissButtonTapped
+</code></pre>
+<p>我们需要用<strong>reducer</strong>来处理它。</p>
+<pre><code class="language-swift">case .alertDismissButtonTapped:
+  state.alertNthPrime = nil
+  return []
+</code></pre>
+<p>当我们构建并运行playground时，我们现在可以请求一个prime，取消警报，并看到这个取消在日志中反映出来。</p>
+<p>我们最终完全提取了应用程序中最复杂的异步副作用，使其在我们的架构中完全像以前一样工作。在前进的道路上有一些障碍，但我们能够解决每一个问题。</p>
+<p>这个<strong>effect</strong>肯定比其他的更复杂，有两个原因:</p>
+<ul>
+<li>
+<p>首先，这种<strong>effect</strong>与显示和取消警报的想法捆绑在一起，这是我们之前在架构中没有考虑到的。解决这个问题需要我们考虑提取与警报表示相关联的本地状态意味着什么，如何管理绑定、删除等等。大部分的bug都围绕着这个问题，所以在未来我们将探索与SwiftUI api更好的接口方式。</p>
+</li>
+<li>
+<p>其次，效果是异步的!它本质上比同步效应更复杂。我们需要考虑线程问题，尽管这不是架构的错误，而是任何从视图提取逻辑到可观察对象的人都会遇到的问题。</p>
+</li>
+</ul>
+<p>现在我们有了我们的<strong>effect</strong>类型:类似于平行的形状，在这里您可以将一个函数传递给其他人，他们可以做他们的工作，并在准备好的时候调用该函数。我们有<strong>reducer</strong>的形状，它可以在数组中返回任意数量的<strong>effect</strong>，结果可以反馈到<strong>store</strong>中。<br>
+做一个<a href="https://www.pointfree.co/episodes/ep40-async-functional-refactoring">异步的函数重构</a>，让一切都能正常工作。</p>
+<p>我们还能够接受“单向数据流”的想法。即使有了效果和异步性带来的复杂性，我们仍然能够推断出数据如何在应用中流动，因为<strong>effect</strong>只能通过通过<strong>store</strong>发送回的动作改变应用的状态。<strong>store</strong>是突变的唯一入口。这是我们架构中<strong>effects</strong>故事的基本版本。</p>
+<h2 id="7-a-namewhatsthepointawhats-the-point">7. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>这些都是很酷的东西，但是在point - free的每一集的结尾，我们喜欢反思一下已经完成了什么，并问“有什么意义?” 在这种情况下，虽然它很酷，我们能够把一些代码从视图中重构到<strong>reducer</strong>中，但它真的感觉我们只是在移动代码。与其在视图中的闭包中保存副作用代码，不如在<strong>reducer</strong>中的闭包中保存副作用代码。这真的有效果吗?重构的目的是什么?</p>
+<p>虽然这看起来只是一个代码重组，但实际上这只是将我们的简化程序转变为支持我们整个应用程序的健壮业务逻辑单元的许多步骤中的第一步。我们已经看到，<strong>reducer</strong>是一个非常棒的、可组合的单元，可以运行我们的状态管理和突变，因此，让它们负责产生副作用也可能有很多好处。我们下次再来看看吧!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-77effectful-state-management-unidirectional-effects/">
+                  <h3 class="post-title">
+                    PointFree Episode 77:Effectful State Management: Unidirectional Effects
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

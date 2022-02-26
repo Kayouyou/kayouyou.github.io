@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 06: Functional Setters | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Tuples
+
+
+
+
+Nested tuples
+
+
+
+
+Introducing &lt;&lt;&lt;
+
+
+
+
+Arrays
+
+
+
+
+What’s the point?
+
+
+
+
+
+
+1. Int..." />
+    <meta name="keywords" content="setter,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 06: Functional Setters</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Tuples">Tuples</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Nestedtuples">Nested tuples</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Introducing">Introducing &lt;&lt;&lt;</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Arrays">Arrays</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 06: Functional Setters -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>今天我们来谈谈<strong>setters</strong>! 因此，问题是，在我们的应用程序中，我们经常遇到复杂的、深度嵌套的数据结构，我们希望能够修改这些结构的一部分，同时保持其他部分不变。此外，我们希望能够以一种简单、干净、可组合的方式来完成它，“<strong>composable</strong>”的意思是，如果我们有两种修改结构部分的方法，我应该能够将它们组合成一个东西，同时修改这两个部分。</p>
+<h2 id="2-a-nametuplesatuples">2. <a name='Tuples'></a>Tuples</h2>
+<p>让我们看看一些足够简单的东西:</p>
+<pre><code class="language-swift">let pair = (42, &quot;Swift&quot;)
+</code></pre>
+<p>我们转换这个元组的方法是什么？ 比如，如果我们想用老朋友<strong>incr</strong>只增加第一个组件，会怎样?我们可以做:</p>
+<pre><code class="language-swift">(incr(pair.0), pair.1) // (43, &quot;Swift&quot;)
+</code></pre>
+<p>我们还可以创建一个专门对元组进行操作的函数。我们甚至可以让它更通用一些:</p>
+<pre><code class="language-swift">func incrFirst&lt;A&gt;(_ pair: (Int, A)) -&gt; (Int, A) {
+  return (incr(pair.0), pair.1)
+}
+
+incrFirst(pair) // (43, &quot;Swift&quot;)
+</code></pre>
+<p>它们都不是非常可重用的，因为它们最终都绑定到<strong>incr</strong>函数。让我们把它抽象一点。我们要定义一种超一般的方法来转换元组的第一个元素，利用我们对高阶函数的知识，我们知道我们想让变换部分先出现因为它类似于<strong>configuration</strong>。</p>
+<pre><code class="language-swift">func first&lt;A, B, C&gt;(_ f: @escaping (A) -&gt; C) -&gt; ((A, B)) -&gt; (C, B) {
+  return { pair in
+    return (f(pair.0), pair.1)
+  }
+}
+</code></pre>
+<p>第一个函数通过将(A) -&gt; C的变换应用到第一个元素上，将其提升到元组上的变换世界。应用这个函数很简单:</p>
+<pre><code class="language-swift">first(incr)(pair) // (43, &quot;Swift&quot;)
+</code></pre>
+<p>我们可以应用两次</p>
+<pre><code class="language-swift">first(incr)(first(incr)(pair)) // (44, &quot;Swift&quot;)
+</code></pre>
+<p>看起来不太好，但我们可以使用|&gt;将这些<strong>setter</strong>连接起来:</p>
+<pre><code class="language-swift">pair
+  |&gt; first(incr)
+  |&gt; first(incr)
+// (44, &quot;Swift&quot;)
+</code></pre>
+<p>这里一个很酷的事情是，<strong>first</strong>是适当的泛型，我们甚至可以改变pair的第一个组件的类型:</p>
+<pre><code class="language-swift">pair
+  |&gt; first(incr)
+  |&gt; first(String.init)
+// (&quot;43&quot;, &quot;Swift&quot;)
+</code></pre>
+<p>这里我们增加了第一个元素，然后将Int型转换为String型。我们也可以为元组的第二个元素定义这样一个版本:</p>
+<pre><code class="language-swift">func second&lt;A, B, C&gt;(_ f: @escaping (B) -&gt; C) -&gt; ((A, B)) -&gt; (A, C) {
+  return { pair in
+    return (pair.0, f(pair.1))
+  }
+}
+</code></pre>
+<p>现在我们可以应用一些额外的有趣的转换，比如转换第二个组件!</p>
+<pre><code class="language-swift">pair
+  |&gt; first(incr)
+  |&gt; first(String.init)
+  |&gt; second { $0 + &quot;!&quot; }
+(&quot;43&quot;, &quot;Swift!&quot;)
+</code></pre>
+<p>我们还可以进入元组的第二部分并将其大写。</p>
+<pre><code class="language-swift">pair
+  |&gt; first(incr)
+  |&gt; first(String.init)
+  |&gt; second { $0.uppercased() }
+(&quot;43&quot;, &quot;SWIFT&quot;)
+</code></pre>
+<p>我们甚至可以在高阶函数中使用我们的助手。</p>
+<pre><code class="language-swift">pair
+  |&gt; first(incr)
+  |&gt; first(String.init)
+  |&gt; second(zurry(flip(String.uppercased)))
+// (&quot;43&quot;, &quot;SWIFT&quot;)
+</code></pre>
+<p>现在我们有了一个完整的数据管道，甚至不需要一对数据就可以存在!</p>
+<pre><code class="language-swift">first(incr)
+  &gt;&gt;&gt; first(String.init)
+  &gt;&gt;&gt; second(zurry(flip(String.uppercased)))
+// (Int, String) -&gt; (String, String)
+</code></pre>
+<p>这是以前很难看到的代码重用。</p>
+<p>事实上，如果是普通的ole mutation，它会是什么样子呢? 我们可以做一个深拷贝，并增加第一个值。</p>
+<pre><code class="language-swift">var copyPair = pair
+copyPair.0 += 1 // 43
+</code></pre>
+<p>我们还可以改变第二个元素，并将其大写。</p>
+<pre><code class="language-swift">copyPair.1 = copyPair.1.uppercased()
+</code></pre>
+<p>不过，我们还没有将第一个整数转换为字符串。</p>
+<pre><code class="language-swift">copyPair.0 = String(copyPair.0)
+// Cannot assign value of type 'String' to type 'Int'
+</code></pre>
+<p>这根本不管用! 我们的可变类型是固定的，我们不能直接将其部分更改为新类型。在这个世界上，要做到这一点，我们必须从头开始创建一个全新的副本。</p>
+<p>我们也看到一些代数定律，让人想起过去的一些情节。例如，与第一次应用两次转换不同，我们可以将这些转换组合在一起，然后第一次应用:</p>
+<pre><code class="language-swift">pair
+  |&gt; first(incr &gt;&gt;&gt; String.init)
+// (&quot;43&quot;, &quot;Swift&quot;)
+</code></pre>
+<p>跟我一起说: The composition of the <strong>first</strong> is the <strong>first</strong> of the composition! 这是我们第二次看到这种形状。第一个是<strong>map</strong>，我们说map的合成是合成的map。我们会一遍又一遍地看到这个形式，不久我们就会给它起一个恰当的名字!</p>
+<h2 id="3-a-namenestedtuplesanested-tuples">3. <a name='Nestedtuples'></a>Nested tuples</h2>
+<p>现在让我们尝试一些更复杂的东西。假设我们有一个嵌套的元组:</p>
+<pre><code class="language-swift">let nested = ((1, true), &quot;Swift&quot;)
+</code></pre>
+<p>让我们把里面的<strong>true</strong>否定为<strong>false</strong>。我们可以尝试拼凑我们现在拥有的lil函数:</p>
+<pre><code class="language-swift">nested
+  |&gt; first { pair in pair |&gt; second { !$0 } }
+// ((1, false), &quot;Swift&quot;)
+</code></pre>
+<p>它是有效的，但看起来不是很好。我们可以删除named pair参数并使用$0:</p>
+<pre><code class="language-swift">nested
+  |&gt; first { $0 |&gt; second { !$0 } }
+</code></pre>
+<p>仍然不太棒了!应该有一个更好的方法来组成这些<strong>first和second</strong> setters。答案是，就像本系列的大多数内容一样，函数组合! 对于函数，您通常只能做两件事:应用于一个值，并组合它们!</p>
+<p>我们可能会忍不住这样写:</p>
+<pre><code class="language-swift">nested
+  |&gt; (first &gt;&gt;&gt; second) { !$0 }
+</code></pre>
+<p>它读起来就像我们深入到元组的第一部分，然后深入到嵌套元组的第二部分，但这不能编译。</p>
+<pre><code class="language-swift">Generic parameter 'B' could not be inferred
+</code></pre>
+<p>不幸的是，这不能编译，但我们手边有一个快速的组合修复。现在这个组合可能有点像一场心灵之旅，所以请容忍我们。这可能是一次旅行的原因是在我们如何看待这个操作和我们如何执行转换之间有一点脱节。</p>
+<p>我们可以把顺序颠倒一下。</p>
+<pre><code class="language-swift">nested
+  |&gt; (second &gt;&gt;&gt; first) { !$0 }
+// ((1, false), &quot;Swift&quot;)
+</code></pre>
+<p>它编译并生成我们期望的值! 这是怎么回事?</p>
+<p>从视觉上看，我们认为这种嵌套转换是通过使用第一个函数深入第一层，然后通过使用第二个函数深入下一层，然后对布尔值求反，但在执行转换时，我们实际上在做相反的事情: 我们首先转换最内层的值，然后通过代入从第一次转换得到的结果来转换最外层的值。从这个意义上说，这个顺序更正确。</p>
+<p>组合setter函数对应于如何深入嵌套数据结构。</p>
+<h2 id="4-a-nameintroducingaintroducing">4. <a name='Introducing'></a>Introducing &lt;&lt;&lt;</h2>
+<p>好吧，我们没有理由不能定义一种指向另一个方向的构图形式! 实际上，让我们这样做，并称之为反向合成:</p>
+<pre><code class="language-swift">precedencegroup BackwardsComposition {
+  associativity: left
+}
+
+infix operator &lt;&lt;&lt;: BackwardsComposition
+
+func &lt;&lt;&lt; &lt;A, B, C&gt;(g: @escaping (B) -&gt; C, f: @escaping (A) -&gt; B) -&gt; (A) -&gt; C {
+  return { x in
+    g(f(x))
+  }
+}
+</code></pre>
+<p>现在我们更新之前的setter:</p>
+<pre><code class="language-swift">nested
+  |&gt; (first &lt;&lt;&lt; second) { !$0 }
+((1, false), &quot;Swift&quot;)
+</code></pre>
+<p>现在，它会编译、执行我们期望的内容，并且它读起来更像我们在视觉上所期望的:进入第一个组件，然后进入第二个组件，然后求反。</p>
+<p>尽管反向箭头有点熟悉，但您可以将其看作是通过管道向反方向引导转换函数通过嵌套结构。</p>
+<p>现在你知道为什么我们说setter的合成有点像一场思维旅行了:<strong>it goes backwards</strong>!  乍一看，这似乎很奇怪，但事实是，这段代码经过编译，并且组合中涉及的所有函数都是完全通用的，这基本证明了这是这些setter组合的正确方式。他们不可能以任何其他方式结合在一起。</p>
+<p>至少我们对他们为什么要逆向创作有了一些直觉，随着时间的推移，我们会对这个事实感到更舒服。 也许有一天我们会在其他地方看到这些形状我们可以用直觉。 事实上，你和我在建造这个网站的时候遇到过一模一样的东西。 在这个网站的Swift代码库中，我们有一个“中间件”的想法，它就像一个奇特的功能，然后我们有一个“中间件变压器”的想法，它就像中间件之间的功能。经过一段时间的努力，我们最终发现他们是逆向创作的。出于同样的原因，这些都是反向创作的。</p>
+<p>在继续之前，让我们确保向自己证明，引入另一个算子是值得的。它满足了&gt;&gt;&gt;的所有原因:</p>
+<ol>
+<li>✅ 该操作员目前不在Swift中。</li>
+<li>✅ 这个操作符在Haskell和PureScript中使用，并且有一个很好的形状。</li>
+<li>✅ 它解决了一个普遍的问题，逆合成函数。</li>
+</ol>
+<p>我们想要&lt;&lt;和&gt;&gt;&gt;的原因与我们想要&lt;和&gt;的原因相同。有时使用翻转的版本在语义上更有意义。</p>
+<p>好的，现在我们已经建立了setter逆向组合的力量和直觉，让我们稍微弯曲一下。</p>
+<p>我们可以深入到第一个元素并递增它，而不是深入到嵌套元组的第二个元素。</p>
+<pre><code class="language-swift">nested
+  |&gt; (first &lt;&lt;&lt; first)(incr)
+// ((2, true), &quot;Swift&quot;)
+</code></pre>
+<p>我们可以延长链，否定我们的<strong>true</strong>，并在我们最喜欢的语言后面加一个感叹号。</p>
+<pre><code class="language-swift">nested
+  |&gt; (first &lt;&lt;&lt; first) { $0 + 1 }
+  |&gt; (first &lt;&lt;&lt; second) { !$0 }
+  |&gt; second { $0 + &quot;!&quot; }
+// ((2, false), &quot;Swift!&quot;)
+</code></pre>
+<p>令人惊讶的是，我们可以把整个转换过程存储在一个变量中，而不需要用到任何数据。 当形状没有改变时，可以使用&lt;&gt;来表示处理的是单一类型。</p>
+<pre><code class="language-swift">let transformation = (first &lt;&lt;&lt; second) { !$0 }
+  &lt;&gt; (first &lt;&lt;&lt; first) { $0 + 1 }
+  &lt;&gt; second { $0 + &quot;!&quot; }
+// ((Int, Bool), String) -&gt; ((Int, Bool), String)
+</code></pre>
+<p>当我们想要使用它的时候，我们只要通过管道传递我们的值:</p>
+<pre><code class="language-swift">nested |&gt; transformation
+// ((2, false), &quot;Swift!&quot;)
+</code></pre>
+<p>这展示了如何将setter建模为简单函数，从而生成一些非常可组合的东西，从而使代码易于重用。</p>
+<h2 id="5-a-namearraysaarrays">5. <a name='Arrays'></a>Arrays</h2>
+<p>还有另外一种添加嵌套层的方法，函数setter允许我们轻松地遍历这一层。 如果我们想要将数组添加到混合中呢?</p>
+<pre><code class="language-swift">(42, [&quot;Swift&quot;, &quot;Objective-C&quot;])
+</code></pre>
+<p>我们如何深入元组的第二个组件，然后深入数组的元素，然后在其中执行转换呢?</p>
+<p>为了理解我们如何做到这一点，让我们后退一步，看看一些形状。</p>
+<p>到目前为止，我们所有的setter函数都有这样的形状:</p>
+<pre><code class="language-swift">// ((A) -&gt; B) -&gt; (S) -&gt; T
+</code></pre>
+<p>换句话说，we are lifting a transformation on parts <strong>(A) -&gt; B</strong> up to a transformation on wholes <strong>(S) -&gt; T</strong>。<br>
+例如，first和second有以下形状:</p>
+<pre><code class="language-swift">// ((A) -&gt; B) -&gt; ((A, C)) -&gt; (B, C)
+// ((A) -&gt; B) -&gt; ((C, A)) -&gt; (C, B)
+</code></pre>
+<p>这告诉我们，对元组第一个组件的转换可以提升为对整个元组的转换。</p>
+<p>这个形状在数组中是什么样子的? 让我们复制粘贴其中一个，并将元组替换为数组:</p>
+<pre><code class="language-swift">// ((A) -&gt; B) -&gt; ([A]) -&gt; [B]
+</code></pre>
+<p>这看起来很熟悉!这是我们在上一集定义的自由<strong>map</strong>函数。它正是一个将函数(A) -&gt; B提升到数组([A]) -&gt; [B]的函数。</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  return { xs in xs.map(f) }
+}
+</code></pre>
+<p>在某种意义上，map是一个类似setter的函数。 它对数组的各个部分进行转换，以获得对数组本身的转换。</p>
+<p>既然我们知道<strong>map</strong>是一个类似setter的函数，就像我们的<strong>first</strong>和<strong>second</strong>函数一样，我们可以以各种方式将它们组合在一起。 可以使用map转换嵌套数组。</p>
+<pre><code class="language-swift">(42, [&quot;Swift&quot;, &quot;Objective-C&quot;])
+  |&gt; (second &lt;&lt;&lt; map) { $0 + &quot;!&quot; }
+// (42, [&quot;Swift!&quot;, &quot;Objective-C!&quot;])
+</code></pre>
+<p>Which is neat!  我们可以在数组中嵌套这种值!</p>
+<pre><code class="language-swift">[(42, [&quot;Swift&quot;, &quot;Objective-C&quot;]), (1729, [&quot;Haskell&quot;, &quot;PureScript&quot;])]
+  |&gt; (map &lt;&lt;&lt; second &lt;&lt;&lt; map) { $0 + &quot;!&quot; }
+// [(42, [&quot;Swift!&quot;, &quot;Objective-C!&quot;]), (1729, [&quot;Haskell!&quot;, &quot;PureScript!&quot;])]
+</code></pre>
+<p>Jeez! Wild stuff! 令人印象深刻的是，我们能够毫不费力地改造如此复杂的结构。</p>
+<h2 id="6-a-namewhatsthepointawhats-the-point">6. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>好了，我们现在已经探索了一种非常复杂的方法来组合函数setter，我们引入了一个新的运算符，我们已经能够用它做一些非常令人印象深刻的事情，但我们不了解你的情况，我们不是一整天都在转换嵌套的元组。为什么这是有用的?</p>
+<p>元组是我们可以用来转换的最简单的结构。它只需要很少的设置就能开始运行。 我们还一直在处理嵌套结构，比如具有数组值的结构体，而这些值也可以具有数组、可选或枚举。 我们今天讨论的是一个通用框架，在这个框架中我们可以理解如何遍历嵌套结构并执行转换。</p>
+<p>为了看看如果没有这个可组合setter会有多混乱让我们以命令式的方式重新创建最后一个例子。</p>
+<pre><code class="language-swift">let data = [
+  (42, [&quot;Swift&quot;, &quot;Objective-C&quot;]),
+  (1729, [&quot;Haskell&quot;, &quot;PureScript&quot;])
+]
+
+data.map { ($0.0, $0.1.map { $0 + &quot;!&quot; }) }
+</code></pre>
+<p>它很短，但很乱!</p>
+<p>下一步是研究嵌套结构，看看这些思想是如何应用的。 然而，我们希望慢慢来，所以我们将在这里停止，并在下一集介绍结构体。事实证明，有一个美妙的Swift特性可以帮助我们，而且由于这个特性，Swift在编程语言世界中是独一无二的。但是，没有剧透…下次见!</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Qovym9FhB/" class="tag">
+                    setter
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-05-higher-order-functions/">
+                  <h3 class="post-title">
+                    PointFree Episode 05: Higher-Order Functions
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

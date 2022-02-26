@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>iOS模块化第四部分:模块间共享配置 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+iOS模块化第四部分:模块间共享配置
+
+
+1.1. What do I mean by a modular Xcode workspace?
+1.2. The challenge of configuring each module..." />
+    <meta name="keywords" content="modular" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">iOS模块化第四部分:模块间共享配置</h2>
+            <div class="post-date">2021-05-14</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#iOS4:">iOS模块化第四部分:模块间共享配置</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#WhatdoImeanbyamodularXcodeworkspace">What do I mean by a modular Xcode workspace?</a></li>
+<li>1.2. <a href="#Thechallengeofconfiguringeachmodule">The challenge of configuring each module</a></li>
+<li>1.3. <a href="#Arobustsolution">A robust solution</a></li>
+<li>1.4. <a href="#Configuringonapplaunch">Configuring on app launch</a></li>
+<li>1.5. <a href="#Addinganewparametertothefeaturemodule">Adding a new parameter to the feature module</a></li>
+<li>1.6. <a href="#Configuringforunittests">Configuring for unit tests</a></li>
+<li>1.7. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameios4aios模块化第四部分模块间共享配置">1. <a name='iOS4:'></a>iOS模块化第四部分:模块间共享配置</h2>
+<p>在这里，我们提倡模块化我们所做的一切。我在本系列的第1部分:扼杀iOS Monolith中描述了模块化架构的好处。 但是实现的挑战之一是管理如何在模块之间传递配置。 这是因为配置通常被加载到主应用程序包中，依赖的模块无法访问(因为它会形成一个循环依赖)。</p>
+<p>本文将展示我们如何在TAB中克服这个挑战，为一个模块化的Xcode工作区;以及面向协议的方法如何使第三方库受益。</p>
+<h3 id="11-a-namewhatdoimeanbyamodularxcodeworkspaceawhat-do-i-mean-by-a-modular-xcode-workspace">1.1. <a name='WhatdoImeanbyamodularXcodeworkspace'></a>What do I mean by a modular Xcode workspace?</h3>
+<p>我们将代码库分解成特性模块，每个模块在Xcode工作区中都有自己的Xcode项目。</p>
+<p>下图显示了我们如何分解杂货店购物应用程序的工作区:</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gqhym7ideej30dq0e0aab.jpg" alt="avatar" loading="lazy"></figure>
+<p>每个特性模块都是完全独立的，保证了关注点的分离。特性模块之间不存在依赖关系，特性模块也不能依赖于主要的Grocery项目。</p>
+<h3 id="12-a-namethechallengeofconfiguringeachmoduleathe-challenge-of-configuring-each-module">1.2. <a name='Thechallengeofconfiguringeachmodule'></a>The challenge of configuring each module</h3>
+<p>代码库通常具有某种编译时配置。对于模块化的工作空间，我们现在有几个必须配置的模块，但是我们不想复制任何配置。(重复是不可靠和脆弱的，因为这意味着如果任何配置参数发生变化，就需要在多个地方进行更新。)(Duplication is unreliable and fragile, because it would mean making updates in multiple places should any configuration parameters change.)</p>
+<p>该应用程序的目标是从Grocery项目构建的。这包括AppDelegate.swift和主配置文件Config.swift。我们使用内部构建的名为configen的工具在编译时将配置构建到代码中(请参阅<a href="https://www.kinandcarta.com/en/insights/2016/04/a-robust-multienvironment-build-setup/">相关文章</a>)。但是无论你使用什么，你都将面临如何在Xcode项目之间传递配置的挑战。</p>
+<p>一个简单的方法是在每个特性模块中创建一个相应的Config对象，并在应用启动时设置属性，如下所示:</p>
+<pre><code class="language-swift">func application(_: UIApplication, didFinishLaunchingWithOptions: [UIApplicationLaunchOptionsKey: Any]? = nil) -&gt; Bool {
+    Analytics.Config.analyticsKey = Config.analyticsKey
+    Analytics.Config.appVersion = Config.appVersion
+
+    Home.Config.baseURL = Config.baseURL
+    Home.Config.apiKey = Config.apiKey
+    Home.Config.adUnitPrefix = Config.adUnitPrefix
+
+    Search.Config.baseURL = Config.baseURL
+    Search.Config.searchURL = Config.searchURL
+    // ...
+}
+</code></pre>
+<p>但这种方法显然有缺陷:</p>
+<ul>
+<li>
+<p>feature模块的Config属性需要是可变的(即var)，以配置它们</p>
+</li>
+<li>
+<p>feature模块的Config属性必须声明为public，以便在主应用中设置它们</p>
+</li>
+<li>
+<p>您需要确保所有参数都正确设置</p>
+</li>
+<li>
+<p>任何参数设置都很容易在将来被错误地删除</p>
+</li>
+<li>
+<p>当添加一个新参数时，你必须确保在应用启动时传递值，这是不必要的开销</p>
+</li>
+<li>
+<p>对于代码库的新手来说，这并不直观</p>
+</li>
+</ul>
+<h3 id="13-a-namearobustsolutionaa-robust-solution">1.3. <a name='Arobustsolution'></a>A robust solution</h3>
+<p>我提出的解决方案，我们正在TAB的几个应用程序中使用，旨在满足以下标准:</p>
+<ul>
+<li>
+<p>直观的、编译器强制的新参数设置</p>
+</li>
+<li>
+<p>在每个功能模块中的配置(即使用let属性) 配置属性是特性模块的内部属性(不需要public)</p>
+</li>
+<li>
+<p>每个功能模块的单行设置</p>
+</li>
+<li>
+<p>功能模块配置的使用与我们在主应用程序中使用的相同</p>
+</li>
+</ul>
+<p>解决办法很简单。它需要在功能模块中进行一些额外的设置，但是一旦设置完成，扩展就简单而健壮了。</p>
+<p>以Analytics模块为例，我们在Analytics模块的Config.swift文件中定义了我们的配置类型:</p>
+<pre><code class="language-swift">//
+//  Config.swift
+//  Analytics
+//
+final class ConfigType {
+    static fileprivate var shared: ConfigType?
+
+    let analyticsKey: String
+    let appVersion: String
+}
+</code></pre>
+<p>我们需要为这种类型定义一个初始化器。如果我们允许这个类型从另一个符合协议的对象实例化，那么我们就可以简单地让主应用的Config类型符合这个协议。所以我们这样定义初始化器:</p>
+<pre><code class="language-swift">    fileprivate init(_ config: AnalyticsConfig.Type) {
+        self.analyticsKey = config.analyticsKey
+        self.appVersion = config.appVersion
+    }
+</code></pre>
+<p>协议AnalyticsConfig的定义如下:</p>
+<pre><code class="language-swift">public protocol AnalyticsConfig {
+    static var analyticsKey: String { get }
+    static var appVersion: String { get }
+}
+</code></pre>
+<p>这个配置是模块内部的。但我们希望从包含的应用程序的主项目中设置它。我们想要使用一些符合协议的对象来强制设置，所以我们定义了一个模块范围的公共设置方法，如下所示:</p>
+<pre><code class="language-swift">/// Use this method to inject the configuration for this framework.
+public func setup(with config: AnalyticsConfig.Type) {
+    ConfigType.shared = ConfigType(config)
+}
+</code></pre>
+<p>最后一步是允许以相同的方式访问配置属性，无论我们是在主应用程序中访问它们，还是在功能模块中访问它们。</p>
+<p>主应用程序有自己的配置，由带有静态属性的Config结构体提供。(它是使用Configen创建的，在这篇<a href="https://www.kinandcarta.com/en/insights/2016/04/a-robust-multienvironment-build-setup/">博文</a>中有描述。) 主应用程序像这样引用它的配置:Config.analyticsKey。功能模块的ConfigType类目前没有任何用途，因为它的初始化器是Config.swift文件私有的。  它的静态共享属性也是私有的。 因此，我们创建了一个名为Config的模块作用域内部计算属性，使其使用与主应用程序相同 (注意，它的Config带有大写的C，使其在调用站点上的用法与主应用中的结构相同):</p>
+<pre><code class="language-swift">var Config: ConfigType { // swiftlint:disable:this variable_name
+    if let config = ConfigType.shared {
+        return config
+    } else {
+        fatalError(&quot;Please set the Config for \(Bundle(for: ConfigType.self))&quot;)
+    }
+}
+</code></pre>
+<blockquote>
+<p>注意，我们在所有项目中都使用了Realm的SwiftLint，所以我们需要禁用以大写字母开头的属性检查。</p>
+</blockquote>
+<p>这个属性意味着我们可以通过相同的方式访问整个代码库的属性，即Config.analyticsKey。</p>
+<h3 id="14-a-nameconfiguringonapplaunchaconfiguring-on-app-launch">1.4. <a name='Configuringonapplaunch'></a>Configuring on app launch</h3>
+<p>我们需要让主应用的Config类型符合特性模块的协议。我们在Config+Additions.swift文件中这样做，在这个文件中我们还定义了一些运行时配置参数，如下所示:</p>
+<pre><code class="language-swift">extension Config: AnalyticsConfig, HomeConfig, BrowseConfig, SearchConfig {
+    static let appVersion = valueFromInfoPlist(forKey: &quot;CFBundleShortVersionString&quot;)
+}
+</code></pre>
+<p>在功能模块的配置中，我们保持属性名相同，这样一致性是自动的。</p>
+<p>现在，在应用启动时设置功能模块的配置是每个模块的一个简单的一行程序</p>
+<pre><code class="language-swift">Analytics.setup(with: Config.self)
+Home.setup(with: Config.self)
+Browse.setup(with: Config.self)
+Search.setup(with: Config.self)
+</code></pre>
+<p>如果删除了这一行，那么没有配置被传递到特性模块。一旦功能模块的配置被访问，应用程序就会崩溃，并产生一个具有信息性的致命错误消息。</p>
+<h3 id="15-a-nameaddinganewparametertothefeaturemoduleaadding-a-new-parameter-to-the-feature-module">1.5. <a name='Addinganewparametertothefeaturemodule'></a>Adding a new parameter to the feature module</h3>
+<p>我们将来需要向将来的模块添加一个新参数，例如，如果我们要向Analytics模块的配置添加一个buildVersion参数。</p>
+<p>我们首先将其添加到ConfigType类，因为当我们需要使用配置的值时，这是我们要访问的类型。</p>
+<p>这种方法的优雅之处在于，编译器不允许我们出错:</p>
+<ol>
+<li>
+<p>通过添加instance属性，我们将强制更新初始化器</p>
+</li>
+<li>
+<p>通过更新初始化器，我们被迫更新协议</p>
+</li>
+<li>
+<p>通过更新协议，我们被迫更新任何符合协议的类型，比如主应用的Config类型</p>
+</li>
+<li>
+<p>通过更新主应用的Config类型，我们必须声明这个配置参数从哪里来(例如，构建时静态属性，或运行时)</p>
+</li>
+</ol>
+<p>对于这个例子，我们最终会扩展主应用的Config类型，如下所示:</p>
+<pre><code class="language-swift">extension Config: AnalyticsConfig, HomeConfig, BrowseConfig, SearchConfig {
+    static let appVersion = valueFromInfoPlist(forKey: &quot;CFBundleShortVersionString&quot;)
+    static let buildVersion = valueFromInfoPlist(forKey: &quot;CFBundleVersion&quot;)
+}
+</code></pre>
+<h3 id="16-a-nameconfiguringforunittestsaconfiguring-for-unit-tests">1.6. <a name='Configuringforunittests'></a>Configuring for unit tests</h3>
+<p>我们需要确保在单元测试时配置了模块，否则就会看到致命错误。主应用程序的AppDelegate.swift文件中的代码不会针对每个特性模块的测试目标执行。</p>
+<p>因此，我们需要另一种方法来设置模块的Config，它只会在单元测试中执行。我们希望避免在每个测试类中都这样做。</p>
+<p>Introducing the TestInitializer…</p>
+<p>In the test target’s Info.plist file, we set for the NSPrincipalClass key the value AnalyticsTests.TestInitializer. This is super simple: the “Principal class” option can be selected from the dropdown in the Plist editor.</p>
+<p>我们这样定义TestInitializer类(在每个测试目标中都有一个，如果需要的话):</p>
+<pre><code class="language-swift">/// performs one time setup activities before running tests. Used as the Principal class in the test target's info.plist
+class TestInitializer: NSObject {
+    override init() {
+        Analytics.setup(with: MockConfig.self)
+    }
+}
+
+private class MockConfig: AnalyticsConfig {
+    static let appVersion = &quot;1.0&quot;
+    static let buildVersion = &quot;1234&quot;
+    static let analyticsKey = &quot;test_key&quot;
+}
+</code></pre>
+<h3 id="17-a-nameconclusionaconclusion">1.7. <a name='Conclusion'></a>Conclusion</h3>
+<p>我已经分享了功能模块的Config.swift的完整实现。</p>
+<p>本文中概述的技术只是我们在应用程序中构建健壮性的另一种方式——这是我们在TAB中非常热衷的东西。它让新用户能够直观地进行扩展;它消除了所有犯错误的可能性。</p>
+<p>对于单个工作空间内部的依赖关系，这是一种健壮的技术，但没有理由止步于此。如果第三方使用这种面向协议的方法来配置它们的库，它将使设置变得简单和健壮。因此，我们应该在下次创建库时考虑这个问题，不管是开源的还是封闭的。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/GAkD_BWre/" class="tag">
+                    modular
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/ios-mo-kuai-hua-di-san-bu-fen-mo-kuai-pei-zhi-he-ce-shi/">
+                  <h3 class="post-title">
+                     iOS模块化第三部分:模块配置和测试
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

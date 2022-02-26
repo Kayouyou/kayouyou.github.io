@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using the factory pattern to avoid shared state in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="共享状态是大多数应用程序中常见的bug来源。当您(偶然地或故意地)有一个系统的多个部分依赖于相同的可变状态时，就会发生这种情况。 挑战(和bug)通常来自于不能在整个系统中正确地处理对这种状态的更改。
+本周，让我们看看如何在许多情况下避免共..." />
+    <meta name="keywords" content="state management,the factory pattern,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using the factory pattern to avoid shared state in Swift</h2>
+            <div class="post-date">2017-09-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>共享状态是大多数应用程序中常见的bug来源。当您(偶然地或故意地)有一个系统的多个部分依赖于相同的可变状态时，就会发生这种情况。 挑战(和bug)通常来自于不能在整个系统中正确地处理对这种状态的更改。</p>
+<p>本周，让我们看看如何在许多情况下避免共享状态，方法是使用工厂模式创建清晰分离的实例，每个实例管理自己的状态。</p>
+<h2 id="the-problem">The problem</h2>
+<p>假设我们的应用程序包含一个请求类，用于执行对我们的后端请求。它的实现是这样的:</p>
+<pre><code class="language-swift">class Request {
+    enum State {
+        case pending
+        case ongoing
+        case completed(Result)
+    }
+
+    let url: URL
+    let parameters: [String : String]
+    fileprivate(set) var state = State.pending
+
+    init(url: URL, parameters: [String : String] = [:]) {
+        self.url = url
+        self.parameters = parameters
+    }
+}
+</code></pre>
+<p>然后我们有一个DataLoader类，请求可以通过它来执行，如下所示:</p>
+<pre><code class="language-swift">dataLoader.perform(request) { result in
+    // Handle result
+}
+</code></pre>
+<p>那么，上面的设置有什么问题呢? 由于Request不仅包含关于应该在何处和如何执行请求的信息，而且还包含请求的状态，因此我们很容易意外地共享状态。</p>
+<p>不熟悉Request实现细节的开发人员可能会假设它是一个简单的值类型(看起来肯定是这样的)，可以重用，像这样:</p>
+<pre><code class="language-swift">class TodoListViewController: UIViewController {
+    private let request = Request(url: .todoList)
+    private let dataLoader = DataLoader()
+
+    func loadItems() {
+        dataLoader.perform(request) { [weak self] result in
+            self?.render(result)
+        }
+    }
+}
+</code></pre>
+<p>使用上述设置，当在一个挂起的请求完成之前多次调用loadItems时，我们很容易陷入未定义的情况(例如，我们可能包括一个搜索控件，或者一个下拉刷新机制，这可能会导致许多请求)。因为所有的请求都是使用同一个实例执行的，所以我们将不断重置它的状态，这使得我们的数据加载器非常困惑😬。</p>
+<p>解决这个问题的一种方法是在执行新请求时自动取消每个挂起的请求。虽然这可能解决我们眼前的问题，但它肯定会导致其他问题，并使API变得更加不可预测和难以使用。</p>
+<h2 id="factory-methods">Factory methods</h2>
+<p>相反，让我们使用另一种技术来解决上述问题，即使用工厂方法来避免将请求的状态与原始请求本身关联起来。在避免共享状态时，这种解耦通常是必需的，而且通常是创建更可预测代码的良好实践。</p>
+<p>那么我们如何重构Request来使用工厂方法呢? 我们将从引入一个StatefulRequest类型开始，它是Request的一个子类，并将状态信息移动到它上面，像这样:</p>
+<pre><code class="language-swift">// Our Request class remains the same, minus the statefulness
+class Request {
+    let url: URL
+    let parameters: [String : String]
+
+    init(url: URL, parameters: [String : String] = [:]) {
+        self.url = url
+        self.parameters = parameters
+    }
+}
+
+// We introduce a stateful type, which is private to our networking code
+private class StatefulRequest: Request {
+    enum State {
+        case pending
+        case ongoing
+        case completed(Result)
+    }
+
+    var state = State.pending
+}
+</code></pre>
+<p>然后，我们将为Request添加一个工厂方法，让我们可以构造一个已传递请求的有状态版本:</p>
+<pre><code class="language-swift">private extension Request {
+    func makeStateful() -&gt; StatefulRequest {
+        return StatefulRequest(url: url, parameters: parameters)
+    }
+}
+</code></pre>
+<p>最后，当数据加载器开始执行请求时，我们只需让它每次构造一个新的StatefulRequest:</p>
+<pre><code class="language-swift">class DataLoader {
+    func perform(_ request: Request) {
+        perform(request.makeStateful())
+    }
+
+    private func perform(_ request: StatefulRequest) {
+        // Actually perform the request
+        ...
+    }
+}
+</code></pre>
+<p>每次执行请求时总是创建一个新实例，这样我们就消除了共享其状态的所有可能性👍。</p>
+<h2 id="a-standard-pattern">A standard pattern</h2>
+<p>作为一个简单的切线，这实际上是在Swift中迭代序列时使用的完全相同的模式。不是共享迭代状态(例如哪个元素是当前元素)，而是创建一个迭代器来保存每次迭代的这种状态。所以当你输入这样的东西:</p>
+<pre><code class="language-swift">for book in books {
+    ...
+}
+</code></pre>
+<p>在底层发生的事情是Swift调用books.makeIterator()，它根据集合类型返回适当的迭代器。 我们将在接下来的帖子中更多地了解集合以及它们是如何工作的。</p>
+<h2 id="factories">Factories</h2>
+<p>接下来，让我们看看另一种情况，在这种情况下，工厂模式可以使用工厂类型来避免共享状态。</p>
+<p>假设我们正在构建一个关于电影的应用程序，用户可以按照类别列出电影，或者通过获得推荐。我们将为每个用例提供一个视图控制器，它们都使用一个单例MovieLoader来执行针对后端的请求，如下所示:</p>
+<pre><code class="language-swift">class CategoryViewController: UIViewController {
+    // We paginate our view using section indexes, so that we
+    // don't have to load all data at once
+    func loadMovies(atSectionIndex sectionIndex: Int) {
+        MovieLoader.shared.loadMovies(in: category, sectionIndex: sectionIndex) {
+            [weak self] result in
+            self?.render(result)
+        }
+    }
+}
+</code></pre>
+<p>以这种方式使用单例可能一开始并没有什么问题(这也很常见)，但如果用户开始浏览我们的应用程序的速度比请求完成的速度快，我们可能会在相当棘手的情况下结束。我们可能会以一个长长的未完成请求队列结束，这可能会使应用程序使用起来非常缓慢——特别是在恶劣的网络条件下。</p>
+<p>我们在这里面临的是另一个问题，这是共享状态(在本例中是加载队列)的结果</p>
+<p>为了解决这个问题，我们将为每个视图控制器使用一个新的MovieLoader实例。这样，我们可以简单地让每个加载器在被释放时取消所有挂起的请求，这样队列中就不会充满我们不再感兴趣的请求:</p>
+<pre><code class="language-swift">class MovieLoader {
+    deinit {
+        cancelAllRequests()
+    }
+}
+</code></pre>
+<p>不过，我们并不想在每次创建视图控制器时都要手动创建MovieLoader的新实例。我们可能需要注入缓存，URL会话，以及其他我们需要在视图控制器之间传递的东西。听起来很乱，我们还是用工厂吧!</p>
+<pre><code class="language-swift">class MovieLoaderFactory {
+    private let cache: Cache
+    private let session: URLSession
+
+    // We can have the factory contain references to underlying dependencies,
+    // so that we don't have to expose those details to each view controller
+    init(cache: Cache, session: URLSession) {
+        self.cache = cache
+        self.session = session
+    }
+
+    func makeLoader() -&gt; MovieLoader {
+        return MovieLoader(cache: cache, session: session)
+    }
+}
+</code></pre>
+<p>然后，我们用MovieLoaderFactory来初始化我们的每个视图控制器，一旦它需要一个加载器，它就会惰性地使用这个工厂来创建一个。是这样的:</p>
+<pre><code class="language-swift">class CategoryViewController: UIViewController {
+    private let loaderFactory: MovieLoaderFactory
+    private lazy var loader: MovieLoader = self.loaderFactory.makeLoader()
+
+    init(loaderFactory: MovieLoaderFactory) {
+        self.loaderFactory = loaderFactory
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    private func openRecommendations(forMovie movie: Movie) {
+        let viewController = RecommendationsViewController(
+            movie: movie,
+            loaderFactory: loaderFactory
+        )
+
+        navigationController?.pushViewController(viewController, animated: true)
+    }
+}
+</code></pre>
+<p>正如你在上面看到的，在这里使用工厂模式的一大优点是我们可以简单地将工厂传递给任何后续的视图控制器。我们避免了共享状态，并且我们不会因为必须在周围传递多个依赖项而引入更多的复杂性。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>无论是在状态方面还是在创建更好的关注点分离方面，工厂都是解耦代码的一个非常有用的工具。通过总是创建新的实例，可以很容易地避免共享状态，而工厂是封装此类实例创建的一种非常好的方式。</p>
+<p>我们将在后面的帖子中重新讨论工厂模式，看看如何用它来解决其他类型的问题。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-the-factory-pattern-to-avoid-shared-state-in-swift/?rq=factories">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EWN51MbzW/" class="tag">
+                    state management
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/r9ICJ5fqlq/" class="tag">
+                    the factory pattern
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/core-animation-gems-using-replicator-layers-in-swift/">
+                  <h3 class="post-title">
+                    Core Animation gems - Using replicator layers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

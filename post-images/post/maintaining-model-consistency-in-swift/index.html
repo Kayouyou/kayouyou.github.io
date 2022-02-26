@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Maintaining model consistency in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="当设计任何应用程序或系统的模型层时，为我们正在处理的每个状态和数据块建立一个“单一的真相来源”通常是至关重要的，以使我们的逻辑行为可预测。
+然而，确保将每个状态存储在单个位置往往说起来容易做起来难——而且经常会出现由于不一致的模型数据而导致..." />
+    <meta name="keywords" content="models,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Maintaining model consistency in Swift</h2>
+            <div class="post-date">2019-12-15</div>
+            
+            <div class="post-content" v-pre>
+              <p>当设计任何应用程序或系统的模型层时，为我们正在处理的每个状态和数据块建立一个“单一的真相来源”通常是至关重要的，以使我们的逻辑行为可预测。</p>
+<p>然而，确保将每个状态存储在单个位置往往说起来容易做起来难——而且经常会出现由于不一致的模型数据而导致的bug和错误，特别是当这些模型在不同的地方传播和变异时。</p>
+<p>尽管其中一些错误必然会发生在模型本身之外，本周，让我们看看如何改进每个模型的内部一致性-如何这样做可以让我们为整个代码库建立一个更强大的基础。</p>
+<h2 id="deriving-dependent-states">Deriving dependent states</h2>
+<p>任何给定系统的整体模型层通常都可以描述为层次结构，其中更高级的数据片段依赖于某种形式的底层状态。举个简单的例子，假设我们正在开发一个联系人管理应用程序，我们有一个联系人模型，其中包含每个人的联系信息——比如他们的姓名和电子邮件地址:</p>
+<pre><code class="language-swift">struct Contact {
+    let id: ID
+    var firstName: String
+    var lastName: String
+    var fullName: String
+    var emailAddress: String
+    ...
+}
+</code></pre>
+<p>乍一看，上面的数据模型可能看起来像任何标准的数据模型，但实际上，它存在变得不一致的巨大风险。既然我们拥有 三个独立属性：  firstName, lastName 和 fullName。我们总是要记住更新联系人的全名每当我们对firstName or lastName 属性做出变更时，-否则，我们将得到模棱两可的信息。</p>
+<p>因为归根结底，全名是一种方便-一个更高级的状态，使我们的UI构建更简单-让我们使它衍生。与其将其作为一个单独的、存储的属性来实现，不如将其转换为一个计算的属性:</p>
+<pre><code class="language-swift">struct Contact {
+    let id: ID
+    var firstName: String
+    var lastName: String
+    var fullName: String { &quot;\(firstName) \(lastName)&quot; }
+    var emailAddress: String
+    ...
+}
+</code></pre>
+<p>这样，我们就不必担心模型变得不一致了，因为每次根据当前的姓和名访问联系人时，都会重新计算联系人的全名。</p>
+<p>然而，总是在每次访问依赖状态时重新计算它并不总是实用的——特别是当该状态依赖于潜在的大量元素集合时，或者所需要的计算不仅仅是简单地组合几个基础值。</p>
+<p>就像我们在“利用Swift中的值语义”中看到的那样，在这些情况下，维护单独的存储属性可能也是最好的方法-但如果我们防止该属性被外部改变，如果我们让它在其底层状态改变时自动更新，那么我们仍然可以确保包含它的模型保持一致。</p>
+<p>以下是我们如何使用属性观察器在排行榜模型中实现这一点，该模型包含了游戏中最优秀玩家的高分条目，以及这些玩家当前的平均得分:</p>
+<pre><code class="language-swift">struct Leaderboard {
+    typealias Entry = (name: String, score: Int)
+
+    var entries: [Entry] {
+        // Each time that our array of entries gets modified, we
+        // re-compute the current average score:
+        didSet { updateAverageScore() }
+    }
+    
+    // By marking our property as 'private(set)', we prevent it
+    // from being mutated outside of this type:
+    private(set) var averageScore = 0
+
+    init(entries: [Entry]) {
+        self.entries = entries
+        // Property observers don't get triggered as part of
+        // initializers, so we have to call our update method
+        // manually here:
+        updateAverageScore()
+    }
+
+    private mutating func updateAverageScore() {
+        guard !entries.isEmpty else {
+            averageScore = 0
+            return
+        }
+
+        let totalScore = entries.reduce(into: 0) { score, entry in
+            score += entry.score
+        }
+
+        averageScore = totalScore / entries.count
+    }
+}
+</code></pre>
+<p>面使用的模式不仅提高我们的模型的一致性,也使这些模型更容易使用和理解,因为我们不再需要注意的规则就像“永远记得更新X当你修改Y”,因为这种逻辑现在已经融入了模型本身。</p>
+<h2 id="consistent-collections">Consistent collections</h2>
+<p>虽然保持两段状态之间的1:1关系已经足够具有挑战性，但当我们必须确保多个集合彼此保持一致时，事情就变得更加棘手了。回到之前的联系人管理应用的例子，假设我们现在正在构建一个ContactList类-这将存储一组联系人，同时也使那些联系人组织成组，并被标记为收藏:</p>
+<pre><code class="language-swift">class ContactList {
+    var name: String
+    var contacts = [Contact.ID : Contact]()
+    var favoriteIDs = Set&lt;Contact.ID&gt;()
+    var groups = [Contact.Group.Name : Contact.Group]()
+
+    init(name: String) {
+        self.name = name
+    }
+}
+</code></pre>
+<p>在前面的例子中，我们需要手动保持联系人的名字同步，与此类似，上面的模型也让它的每个调用站点负责保持它的一致。例如，当删除一个联系人时，我们还必须记住从favoriteid集合中删除它的ID-当重命名一个组时，我们总是必须在组字典中更新它的键值。</p>
+<p>下面的两个函数都没有做到这一点，即使它们看起来完全有效，但它们都导致了它们所突变的ContactList变得不一致:</p>
+<pre><code class="language-swift">func removeContact(_ contact: Contact) {
+    // If the removed contact was also added as a favorite, its
+    // ID will still remain in that list, even after it was removed.
+    contactList.contacts[contact.id] = nil
+}
+
+func renameGroup(named currentName: Contact.Group.Name,
+                 to newName: Contact.Group.Name) {
+    // The renamed group's key will now be incorrect, since
+    // it's still referring to the group's previous name.
+    contactList.groups[currentName]?.name = newName
+}
+</code></pre>
+<p>关于如何避免上述类型的不一致性，我们最初的想法可能是采取与我们之前在排行榜模型上使用的相同的私有(set)方法，并防止我们的集合在ContactList类型之外发生突变:</p>
+<pre><code class="language-swift">class ContactList {
+    var name: String
+    private(set) var contacts = [Contact.ID : Contact]()
+    private(set) var favoriteIDs = Set&lt;Contact.ID&gt;()
+    private(set) var groups = [Contact.Group.Name : Contact.Group]()
+    ...
+}
+</code></pre>
+<p>然而，在这种情况下，我们实际上需要能够以某种方式改变我们的集合——所以上述方法需要我们复制几个底层集合的api，为了使像添加和删除接触可能的突变:</p>
+<pre><code class="language-swift">extension ContactList {
+    func add(_ contact: Contact) {
+        contacts[contact.id] = contact
+    }
+
+    func remove(_ contact: Contact) {
+        contacts[contact.id] = nil
+        favoriteIDs.remove(contact.id)
+    }
+
+    func renameGroup(named currentName: Contact.Group.Name,
+                     to newName: Contact.Group.Name) {
+        guard var group = groups.removeValue(forKey: currentName) else {
+            return
+        }
+
+        group.name = newName
+        groups[newName] = group
+    }
+}
+</code></pre>
+<p>只要我们只需要以非常简单的方式改变我们的集合，并且只要我们不向我们的模型添加任何新的数据片段，以上方法就可以工作，但它总体上不是一个非常灵活的解决方案。一般来说，要求为每个突变创建一个全新的API并不是一个优秀的设计——因此，让我们看看能否找到一种更动态、更可靠的方法。</p>
+<p>想想看，保持ContactList数据同步只需要我们能够对同时用作元素键的属性(Contact是id, Contact. group是name)的任何更改做出反应，并且能够在删除元素时执行更新(这样我们就可以确保删除的联系人仍然不存在于favoriteIDs集合中)。</p>
+<p>让我们通过实现一个非常轻量级的Dictionary包装器来添加这两种功能。 我们的包装器，让我们称之为Storage，将使用Swift的密钥路径机制来保持我们的密钥同步-也将使我们能够附加一个keyRemovalHandler闭包，以便在密钥被删除时得到通知:</p>
+<pre><code class="language-swift">extension ContactList {
+    struct Storage&lt;Key: Hashable, Value&gt; {
+        fileprivate var keyRemovalHandler: ((Key) -&gt; Void)?
+
+        private let keyPath: KeyPath&lt;Value, Key&gt;
+        private var values = [Key : Value]()
+
+        fileprivate init(keyPath: KeyPath&lt;Value, Key&gt;) {
+            self.keyPath = keyPath
+        }
+    }
+}
+</code></pre>
+<p>我们的初始化器和keyRemovalHandler被标记为filprivate，以防止在定义ContactList的文件之外创建新存储类型的实例，进一步加强了模型代码的一致性。</p>
+<p>为了让存储像真正的Swif Collection，我们有两种选择。我们可以使它符合完整的集合协议，或者，如果我们只需要能够迭代它，我们可以简单地使它符合序列——通过将对makeIterator()的调用转发到它的底层字典:</p>
+<pre><code class="language-swift">extension ContactList.Storage: Sequence {
+    func makeIterator() -&gt; Dictionary&lt;Key, Value&gt;.Iterator {
+        values.makeIterator()
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们仍然可以在集合上编写for循环，并在集合上使用forEach、map和filter等api——就像直接使用Dictionary一样。</p>
+<p>接下来，为了使存储发生变化，我们将添加一个下标实现，它既确保了元素的键值在其键值所基于的属性发生变化时得到更新，当一个键被删除时，它也调用我们的keyRemovalHandler:</p>
+<pre><code class="language-swift">extension ContactList.Storage {
+    subscript(key: Key) -&gt; Value? {
+        get { values[key] }
+        set {
+            guard let newValue = newValue else {
+                return remove(key)
+            }
+
+            let newKey = newValue[keyPath: keyPath]
+            values[newKey] = newValue
+
+            if key != newKey {
+                remove(key)
+            }
+        }
+    }
+
+    private mutating func remove(_ key: Key) {
+        values[key] = nil
+        keyRemovalHandler?(key)
+    }
+}
+</code></pre>
+<p>就像这样，我们的集合包装器完成了，我们准备好更新ContactList以使用它 -通过使用我们的新类型存储我们的联系人和组，并通过注册一个keyremovalHandler来确保我们的favoriteid集与我们的联系人集合保持同步:</p>
+<pre><code class="language-swift">class ContactList {
+    var name: String
+    var contacts = Storage(keyPath: \Contact.id)
+    var favoriteIDs = Set&lt;Contact.ID&gt;()
+    var groups = Storage(keyPath: \Contact.Group.name)
+
+    init(name: String) {
+        self.name = name
+
+        contacts.keyRemovalHandler = { [weak self] key in
+            self?.favoriteIDs.remove(key)
+        }
+    }
+}
+</code></pre>
+<p>注意Swift是如何根据传递到存储实例中的键路径推断出通用的键和值类型的——漂亮!</p>
+<p>使用我们的新实现，我们仍然可以通过添加和删除值来改变集合，就像直接使用Dictionary一样-直到现在，我们才确保我们的数据保持一致，完全自动。</p>
+<p>作为额外的好处，因为我们现在已经有了一个自定义的集合类型，我们可以更进一步，让它更易于使用——通过添加方便的api来添加和删除值，而不必担心使用哪个键:</p>
+<pre><code class="language-swift">extension ContactList.Storage {
+    mutating func add(_ value: Value) {
+        let key = value[keyPath: keyPath]
+        values[key] = value
+    }
+
+    mutating func remove(_ value: Value) {
+        let key = value[keyPath: keyPath]
+        remove(key)
+    }
+}
+</code></pre>
+<p>使用上面的api和我们之前的下标实现，我们现在可以自由地决定如何在每种情况下添加和删除值，而不会以任何方式影响我们模型的一致性:</p>
+<pre><code class="language-swift">// Adding values:
+contactList.contacts[contact.id] = contact
+contactList.contacts.add(contact)
+
+// Removing values:
+contactList.contacts[contact.id] = nil
+contactList.contacts.remove(contact)
+</code></pre>
+<p>虽然编写自定义集合并不总是合适的，但每当我们想要向标准库提供的数据结构之一添加新行为时，创建针对特定领域量身定制的轻量级包装器是一个很好的方法。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在许多方面，为了使代码库真正健壮和强大，我们必须从尽可能使其核心数据模型可预测和一致开始-因为这些模型通常作为基础，我们其余的代码库是建立在它之上的。</p>
+<p>通过不要求手动同步各种状态，并从一开始就防止存储不一致的状态，我们不仅获得了一个更强大的基础-但是它通常也更容易使用，因为我们的模型架构最终为我们做了很多同步工作。</p>
+<p><a href="https://www.swiftbysundell.com/articles/maintaining-model-consistency-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nDwRYvQYce/" class="tag">
+                    models
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/predicates-in-swift/">
+                  <h3 class="post-title">
+                    Predicates in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

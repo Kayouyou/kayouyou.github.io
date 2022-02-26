@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Specialized extensions using generic type constraints | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Specialized extensions using generic type constraints
+
+Constraining an extension based on a generic type
+Self constrai..." />
+    <meta name="keywords" content="generics" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Specialized extensions using generic type constraints</h2>
+            <div class="post-date">2021-10-27</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#specialized-extensions-using-generic-type-constraints">Specialized extensions using generic type constraints</a>
+<ul>
+<li><a href="#constraining-an-extension-based-on-a-generic-type">Constraining an extension based on a generic type</a></li>
+<li><a href="#self-constraints">Self constraints</a></li>
+<li><a href="#applying-constraints-to-individual-functions">Applying constraints to individual functions</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<p>将Swift强大的泛型系统与任何Swift类型都可以用新的api和功能进行扩展的事实相结合，使我们能够编写有针对性的扩展，当类型或协议符合特定要求时，有条件地向其添加新特性。</p>
+<p>这一切都从<strong>where</strong>关键字开始，它允许我们在一系列不同的情况下应用泛型类型约束。在本文中，让我们看看如何将该关键字应用于扩展，以及通过这样做可以解锁什么样的模式。</p>
+<h2 id="constraining-an-extension-based-on-a-generic-type">Constraining an extension based on a generic type</h2>
+<p>我们可以用更具体的api扩展泛型类型或协议的方法之一是对扩展本身应用基于where的类型约束。例如,这里我们扩展标准库的<strong>Sequence</strong>协议(数组和集合设置符合)和一个方便的API,让我们直接在一个序列上通过调用<strong>render()<strong>呈现一系列</strong>Renderable-conforming</strong>类型,只要这个序列包含此类<strong>Renderable</strong>的元素:</p>
+<pre><code class="language-swift">protocol Renderable {
+    func render(using renderer: inout Renderer)
+}
+
+extension Sequence where Element == Renderable {
+    func render() -&gt; UIImage {
+        var renderer = Renderer()
+
+        for member in self {
+            member.render(using: &amp;renderer)
+        }
+
+        return renderer.makeImage()
+    }
+}
+</code></pre>
+<p>上述模式的好处是，它使我们添加的渲染方法的内部实现完全类型安全(因为我们有一个编译时保证，我们将始终使用<strong>Renderable</strong>元素)，现在，当我们想要渲染符合<strong>Renderable</strong>值的数组时，我们可以访问一个整洁方便的API:</p>
+<pre><code class="language-swift">class CanvasViewController: UIViewController {
+    var renderables = [Renderable]()
+    private lazy var imageView = UIImageView()
+    ...
+
+    func render() {
+        imageView.image = renderables.render()
+        ...
+    }
+}
+</code></pre>
+<p>另一种编写受类型约束的扩展可能非常有用的情况是，当我们希望有条件地使泛型类型符合协议时。例如，只有当Swift的标准数组类型包含<strong>Renderable</strong>元素时，它才符合上面的<strong>Renderable</strong>协议:</p>
+<pre><code class="language-swift">extension Array: Renderable where Element: Renderable {
+    func render(using renderer: inout Renderer) {
+        for member in self {
+            member.render(using: &amp;renderer)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在能够使用<strong>Renderable</strong>值的嵌套数组(这在分组方面有很大的好处)，同时仍然能够像以前一样渲染顶层的<strong>renderables</strong>数组:</p>
+<pre><code class="language-swift">extension CanvasViewController {
+    func userDidDrawShapes(_ shapes: [Shape]) {
+        renderables.append(shapes)
+        render()
+    }
+}
+</code></pre>
+<p>上面的模式在<em>Swift</em>的标准库中被广泛使用(例如，当数组的元素也符合<strong>Equatable和Codable</strong>协议时，就使数组符合这些协议)，并且在我们自己的代码中也非常有用——特别是在构建自定义库时。</p>
+<h2 id="self-constraints">Self constraints</h2>
+<p>类型约束扩展还可以使我们添加只能由满足特定需求的类型使用的默认协议实现。例如，这里我们提供了一个默认实现的<strong>Dismissable</strong>协议的<strong>dismiss</strong>方法，当该协议被<strong>UIViewController</strong>的子类遵循时:</p>
+<pre><code class="language-swift">protocol Dismissable {
+    func dismiss()
+}
+
+extension Dismissable where Self: UIViewController {
+    func dismiss() {
+        dismiss(animated: true)
+    }
+}
+</code></pre>
+<p>上述模式的好处是，它让我们选择遵循<strong>Dismissable</strong>的视图控制器，而不是将该方法添加到我们整个应用程序中的所有<strong>UIViewController</strong>实例中。同时，由于我们的扩展，我们不需要在每个视图控制器中实际重新实现<strong>dismiss</strong>方法，但可以只是遵循我们的新协议，并利用它的默认实现:</p>
+<pre><code class="language-swift">class ProductViewController: UIViewController, Dismissable {
+    ...
+}
+</code></pre>
+<p>我们仍然可以选择在需要的地方提供一个自定义的<strong>dimiss</strong>实现，对于那些不是<strong>UIViewController</strong>子类的类型，提供这样一个专用的实现是必需的(因为那些类型不能访问我们受约束的扩展的默认实现):</p>
+<pre><code class="language-swift">class AlertPresenter: Dismissable {
+    func dismiss() {
+        ...
+    }
+}
+</code></pre>
+<h2 id="applying-constraints-to-individual-functions">Applying constraints to individual functions</h2>
+<p>最后，让我们看看如何不仅将泛型类型约束应用于整个扩展，还应用于此类扩展中的单个函数。例如，如果我们想，我们可以像这样写之前的序列扩展:</p>
+<pre><code class="language-swift">extension Sequence /*where Element == Renderable*/ {
+    func render() -&gt; UIImage where Element == Renderable {
+        ...
+    }
+}
+</code></pre>
+<p>在上述情况下，我们是将泛型类型约束应用于扩展还是直接应用于函数实际上并不重要——这两种方法都给我们带来了完全相同的效果。然而，情况并非总是如此。为了进一步研究，让我们假设我们正在开发一个包含以下<strong>Group</strong>协议的应用程序，该协议使用泛型关联类型来允许每个组定义它包含的成员值的类型:</p>
+<pre><code class="language-swift">protocol Group {
+    associatedtype Member
+    var members: [Member] { get }
+    init(members: [Member])
+}
+</code></pre>
+<p>然后，假设我们想创建一个简单的API，通过合并两个组的<strong>members</strong>数组来合并两个组——这可以不使用任何形式的通用约束，例如:</p>
+<pre><code class="language-swift">extension Group {
+    func combined(with other: Self) -&gt; Self {
+        Self(members: members + other.members)
+    }
+}
+</code></pre>
+<p>然而，上面的扩展确实要求被组合的两个组具有完全相同的类型。也就是说，仅仅让它们包含相同类型的<strong>Member</strong>值是不够的—<strong>groups</strong>本身需要匹配，这可能不是我们想要的。</p>
+<p>因此，为了解决这个问题，让我们修改上面的扩展，使用直接附加到组合方法的泛型类型约束，这使得两个组可以是不同的类型，同时仍然要求它们的成员类型相同:</p>
+<pre><code class="language-swift">extension Group {
+    func combined&lt;T: Group&gt;(
+        with other: T
+    ) -&gt; Self where T.Member == Member {
+        Self(members: members + other.members)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以轻松地组合组，只要这些组存储相同类型的值。例如，这里我们将一个<strong>ArticleGroup</strong>实例和一个<strong>FavoritesGroup</strong>组合在一起，这是可能的，因为它们都存储了<strong>Article</strong>值:</p>
+<pre><code class="language-swift">let articles: ArticleGroup = ...
+let favorites: FavoritesGroup = ...
+let combined = articles.combined(with: favorites)
+</code></pre>
+<p>整洁! 虽然上面的模式肯定比我们在本文中看到的其他模式更具体，但在使用Swift进行更高级的泛型编程时，它非常有用。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift版本的泛型和扩展本身都非常有用，但当它们结合在一起时，我们可以采用一些更有趣、更强大的模式。当然，并不是每个代码库都需要利用这些功能——不要过度概括我们编写的代码非常重要——但是，如果有必要，类型约束扩展可以成为我们Swift开发人员工具箱中的一个很好的工具。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-04-algebraic-data-types/">
+                  <h3 class="post-title">
+                    PointFree Episode 04: Algebraic Data Types
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

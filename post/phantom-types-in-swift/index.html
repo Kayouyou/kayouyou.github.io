@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Phantom types in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="一般来说，模棱两可的数据可以说是应用程序漏洞和问题最常见的来源之一。而Swift通过其强大的类型系统和完善的编译器帮助我们避免了许多歧义来源 - 当我们不能保证编译时的数据总是符合我们的要求时，我们总是有可能陷入一种模棱两可或不可预测的状态..." />
+    <meta name="keywords" content="type system,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Phantom types in Swift</h2>
+            <div class="post-date">2019-08-04</div>
+            
+            <div class="post-content" v-pre>
+              <p>一般来说，模棱两可的数据可以说是应用程序漏洞和问题最常见的来源之一。而Swift通过其强大的类型系统和完善的编译器帮助我们避免了许多歧义来源 - 当我们不能保证编译时的数据总是符合我们的要求时，我们总是有可能陷入一种模棱两可或不可预测的状态。</p>
+<p>本周，让我们来看看一种技术，它可以让我们利用Swift的类型系统在编译时执行更多种类的数据验证-通过使用幻像类型，消除更多潜在的歧义来源，并帮助我们在整个代码库中保持类型安全。</p>
+<h2 id="well-formed-yet-still-ambiguous">Well formed, yet still ambiguous</h2>
+<p>举个例子，假设我们正在开发一个文本编辑器，而它最初只支持纯文本文件 - 随着时间的推移，我们也增加了对编辑HTML文档的支持，以及预览pdf文档。</p>
+<p>为了能够重用尽可能多的原始文档处理代码， 我们一直在使用与开始时相同的文档模型——只是现在它获得了一个Format属性，告诉我们正在处理的文档类型:</p>
+<pre><code class="language-swift">struct Document {
+    enum Format {
+        case text
+        case html
+        case pdf
+    }
+
+    var format: Format
+    var data: Data
+    var modificationDate: Date
+    var author: Author
+}
+</code></pre>
+<p>虽然能够避免代码重复当然是一件好事，枚举通常是建模状态的一种好方法 - 当我们处理不同的格式或模型的变体时，上面的设置实际上会导致相当多的歧义。</p>
+<p>例如，我们可能有一些api，这些api只对给定格式的文档调用有意义 - 例如打开一个文本编辑器的函数，它假设传入它的任何文档都是一个文本文档:</p>
+<pre><code class="language-swift">func openTextEditor(for document: Document) {
+    let text = String(decoding: document.data, as: UTF8.self)
+    let editor = TextEditor(text: text)
+    ...
+}
+</code></pre>
+<p>如果我们不小心把一个HTML文档传递给了上面的函数(毕竟HTML只是文本)，这也不会是世界末日，尝试以这种方式打开PDF很可能会导致呈现一些完全无法理解的内容，我们的文本编辑功能都无法工作，我们的应用程序甚至可能会崩溃。</p>
+<p>我们会在编写其他特定格式的代码时遇到同样的问题， 例如，如果我们想通过实现一个解析器和一个专门的编辑器来改善HTML文档的用户体验:</p>
+<pre><code class="language-swift">func openHTMLEditor(for document: Document) {
+    // Just like our above function for text editing, this function
+    // assumes that it'll always be passed HTML documents.
+    let parser = HTMLParser()
+    let html = parser.parse(document.data)
+    let editor = HTMLEditor(html: html)
+    ...
+}
+</code></pre>
+<p>关于如何解决上述问题的初步想法可能是编写一个包装函数来切换传递的文档格式，然后为每种情况打开正确的编辑器。然而，尽管这对于文本和HTML文档来说非常有效，因为PDF文档不能在我们的应用程序中编辑 - 当遇到PDF文件时，我们将被迫抛出错误、触发断言或以其他方式失败:</p>
+<pre><code class="language-swift">func openEditor(for document: Document) {
+    switch document.format {
+    case .text:
+        openTextEditor(for: document)
+    case .html:
+        openHTMLEditor(for: document)
+    case .pdf:
+        assertionFailure(&quot;Cannot edit PDF documents&quot;)
+    }
+}
+</code></pre>
+<p>上面的情况并不好，因为它要求作为开发人员的我们总是跟踪在任何给定的代码路径中我们正在处理的文档类型，我们可能犯的任何错误都只会在运行时被发现——编译器没有足够的信息来在编译时执行这些检查。</p>
+<p>因此，尽管我们的文档模型乍一看可能非常优雅，格式也很好，但事实证明它并不是当前情况的正确解决方案。</p>
+<h2 id="sounds-like-we-need-a-protocol">Sounds like we need a protocol!</h2>
+<p>解决上述问题的一种方法是将文档变成协议，而不是一个具体的类型，并将其所有属性(格式除外)作为要求:</p>
+<pre><code class="language-swift">protocol Document {
+    var data: Data { get }
+    var modificationDate: Date { get }
+    var author: Author { get }
+}
+</code></pre>
+<p>有了上述改变，我们现在可以为三种文档格式中的每一种实现专用类型，并使每一种类型都符合我们的新文档协议——像这样:</p>
+<pre><code class="language-swift">struct TextDocument: Document {
+    var data: Data
+    var modificationDate: Date
+    var author: Author
+}
+</code></pre>
+<p>上述方法的美妙之处在于，它使我们既能实现可以操作任何文档的通用功能，也能实现只接受特定类型的特定api:</p>
+<pre><code class="language-swift">// This function can save any document, so it accepts anything
+// conforming to our new Document protocol:
+func save(_ document: Document) {
+    ...
+}
+// We can now only pass text documents to our function that
+// opens a text editor:
+func openTextEditor(for document: TextDocument) {
+    ...
+}
+</code></pre>
+<p>我们上面所做的实际上是将以前在运行时执行的检查转移到编译时进行验证 - 因为编译器现在能够检查我们是否总是将一个正确格式的文档传递给我们的每个api，这是一个巨大的胜利。</p>
+<p>然而，通过执行上述更改，我们也失去了最初实现中最重要的东西——代码重用。 因为我们现在使用一个协议来表示所有的文档格式，所以我们需要为三种文档类型中的每一种编写完全重复的模型实现，也需要为将来可能添加支持的任何其他格式编写完全重复的模型实现。</p>
+<h2 id="enter-phantom-types">Enter phantom types</h2>
+<p>如果我们能够找到一种方法，既能够对所有格式重用相同的文档模型，又能够在编译时验证特定格式的代码，那不是很好吗? 事实证明，我们之前的代码行实际上可以给我们一个提示，以一种方式实现:</p>
+<pre><code class="language-swift">let text = String(decoding: document.data, as: UTF8.self)
+</code></pre>
+<p>在将数据转换为字符串时，就像上面所做的那样，通过传递对该类型本身的引用，传递我们想要解码字符串的编码——在本例中是UTF8。这是非常有趣的。如果我们再深入一点，就会发现Swift标准库将上述UTF8类型定义为另一个名为Unicode的类似名称空间的枚举中的无骨架枚举:</p>
+<pre><code class="language-swift">enum Unicode {
+    enum UTF8 {}
+    ...
+}
+
+typealias UTF8 = Unicode.UTF8
+</code></pre>
+<p>注意，如果你看一下UTF8类型的实际实现，它确实包含一个私有情况，它只是为了向后兼容Swift 3而存在的。</p>
+<p>我们在这里看到的是一种称为幻像类型的技术——当类型被用作标记时，而不是被实例化来表示值或对象。事实上，由于上述两个枚举都没有任何公共用例，它们甚至不能被实例化!</p>
+<p>看看我们能不能用同样的技巧来解决我们的文档难题。 首先，我们将把Document还原为一个结构体，只是这一次我们将删除它的format属性(以及相关的enum)，而将其转换为任何格式类型的泛型——像这样:</p>
+<pre><code class="language-swift">struct Document&lt;Format&gt; {
+    var data: Data
+    var modificationDate: Date
+    var author: Author
+}
+</code></pre>
+<p>受标准库Unicode枚举及其各种编码的启发，我们将定义一个类似的枚举——DocumentFormat——它将作为三个无骨架枚举的命名空间，分别对应我们的格式:</p>
+<pre><code class="language-swift">enum DocumentFormat {
+    enum Text {}
+    enum HTML {}
+    enum PDF {}
+}
+</code></pre>
+<p>注意，这里不涉及任何协议——任何类型都可以用作格式，因为就像字符串及其各种编码一样，我们将只使用文档的格式类型作为编译时标记。这样我们就可以像这样编写特定于格式的api:</p>
+<pre><code class="language-swift">func openTextEditor(for document: Document&lt;DocumentFormat.Text&gt;) {
+    ...
+}
+
+func openHTMLEditor(for document: Document&lt;DocumentFormat.HTML&gt;) {
+    ...
+}
+
+func openPreview(for document: Document&lt;DocumentFormat.PDF&gt;) {
+    ...
+}
+</code></pre>
+<p>当然，我们仍然可以编写不需要任何特定格式的通用代码。例如，下面是我们如何将之前的save API转换为一个完全通用的函数:</p>
+<pre><code class="language-swift">func save&lt;F&gt;(_ document: Document&lt;F&gt;) {
+    ...
+}
+</code></pre>
+<p>但是，必须总是输入Document&lt;DocumentFormat.Text&gt;可能非常繁琐，所以让我们也使用类型别名为每种格式定义缩写。这将给我们一个漂亮的，语义化的名字，而不需要任何代码重复:</p>
+<pre><code class="language-swift">typealias TextDocument = Document&lt;DocumentFormat.Text&gt;
+typealias HTMLDocument = Document&lt;DocumentFormat.HTML&gt;
+typealias PDFDocument = Document&lt;DocumentFormat.PDF&gt;
+
+</code></pre>
+<p>当涉及到特定格式扩展时，幻影类型也非常出色，现在可以直接使用Swift强大的泛型系统和同类型约束来实现。例如，下面是我们如何使用一个生成NSAttributedString的方法来扩展所有文本文档:</p>
+<pre><code class="language-swift">extension Document where Format == DocumentFormat.Text {
+    func makeAttributedString(withFont font: UIFont) -&gt; NSAttributedString {
+        let string = String(decoding: data, as: UTF8.self)
+
+        return NSAttributedString(string: string, attributes: [
+            .font: font
+        ])
+    }
+}
+</code></pre>
+<p>由于我们的幻像类型最终只是普通类型——我们也可以让它们遵从协议，并使用这些协议作为通用约束。 例如，我们可以让一些DocumentFormat类型符合可打印协议，然后我们可以在打印代码中使用该协议作为约束。这里有很多可能性。</p>
+<h2 id="a-standard-pattern">A standard pattern</h2>
+<p>首先，幻影类型在Swift中可能看起来有点“不合适”。 然而，虽然Swift并没有像更纯的函数式语言(如Haskell)那样提供对幻像类型的一流支持，但在标准库和苹果平台sdk的许多不同地方都可以找到这种模式。</p>
+<p>例如，Foundation的测量API在传递各种测量值(如度数、长度和重量)时使用幻像类型来确保类型安全:</p>
+<pre><code class="language-swift">let meters = Measurement&lt;UnitLength&gt;(value: 5, unit: .meters)
+let degrees = Measurement&lt;UnitAngle&gt;(value: 90, unit: .degrees)
+</code></pre>
+<p>通过使用幻像类型，上述两个测量值不能混合，因为每个值对应的单元类型被编码到该值的类型中。这防止我们意外地将长度传递给接受角度的函数，反之亦然——就像我们之前防止文档格式混淆一样。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用幻像类型是一种非常强大的技术，它可以让我们利用类型系统来验证给定值的不同变体。而使用幻像类型通常会使API更加冗长，并且会增加泛型的复杂性 - 当处理不同的格式和变体时，它可以让我们减少对运行时检查的依赖，而让编译器来执行这些检查。</p>
+<p>就像一般泛型一样，我认为在部署幻像类型之前，首先仔细评估当前情况是很重要的。就像我们最初的文档模型不是当前任务的正确选择一样，尽管格式良好，但幻影类型可能会使简单的设置变得复杂得多 —如果部署在错误的情况下。 和往常一样，关键是要为工作选择合适的工具。</p>
+<p><a href="https://www.swiftbysundell.com/articles/phantom-types-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/JQK7bx_qF/" class="tag">
+                    type system
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/strings/">
+                  <h3 class="post-title">
+                    Strings
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

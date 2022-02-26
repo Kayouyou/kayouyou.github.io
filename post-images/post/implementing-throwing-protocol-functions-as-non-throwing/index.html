@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Implementing throwing protocol functions as non-throwing | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在Swift中，可以使用非抛出函数来满足抛出函数协议需求，这在某些情况下非常有用。例如，假设我们已经为解析器定义了一个协议，它允许我们以某种方式对字符串进行标记:
+protocol TokenParser {
+    func parseT..." />
+    <meta name="keywords" content="protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Implementing throwing protocol functions as non-throwing</h2>
+            <div class="post-date">2019-11-05</div>
+            
+            <div class="post-content" v-pre>
+              <p>在Swift中，可以使用非抛出函数来满足抛出函数协议需求，这在某些情况下非常有用。例如，假设我们已经为解析器定义了一个协议，它允许我们以某种方式对字符串进行标记:</p>
+<pre><code class="language-swift">protocol TokenParser {
+    func parseToken(from string: String) throws -&gt; Token
+}
+</code></pre>
+<p>虽然上述协议的某些实现需要抛出，但这并不一定适用于所有符合标准的类型。例如，下面的KeywordParser会抛出错误，而TextParser不会:</p>
+<pre><code class="language-swift">struct KeywordParser: TokenParser {
+    func parseToken(from string: String) throws -&gt; Token {
+        ...
+    }
+}
+struct TextParser: TokenParser {
+    // This will satisfy our protocol requirement, even though
+    // this implementation doesn't actually throw:
+    func parseToken(from string: String) -&gt; Token {
+        ...
+    }
+}
+</code></pre>
+<p>由于协议函数的原始声明被标记为throw，所以当不知道确切的符合类型时，无论底层实现是否真正抛出，我们都需要使用try调用它:</p>
+<pre><code class="language-swift">let parsers: [TokenParser] = ...
+
+for parser in parsers {
+    // Since all we know about each parser within this iteration
+    // is that it conforms to our 'TokenParser' protocol, we'll
+    // need to use 'try' when calling its function:
+    let token = try parser.parseToken(from: string)
+}
+</code></pre>
+<p>然而，当直接处理非抛出类型时，我们现在可以省略try关键字——即使原来的协议要求被标记为抛出:</p>
+<pre><code class="language-swift">let parser = TextParser()
+let text = parser.parseToken(from: string)
+</code></pre>
+<p>这是一个小特性，但是我们可以使用非抛出函数来实现抛出函数需求，这在符合包含此类函数的协议时，给了我们更大的灵活性。</p>
+<p><a href="https://www.swiftbysundell.com/tips/implementing-throwing-protocol-functions-as-non-throwing/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/deciding-whether-to-adopt-new-swift-technologies/">
+                  <h3 class="post-title">
+                    Deciding whether to adopt new Swift technologies
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

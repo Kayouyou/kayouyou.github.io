@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Expert Swift Chapter 6 : Sequences, Collections &amp; Algorithms | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+A family of protocols
+
+
+
+
+Sequences and collections
+
+
+
+
+Iterators and sequences
+
+
+3.1. StrideThrough and StrideTo
+3...." />
+    <meta name="keywords" content="expert swift,sequences" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Expert Swift Chapter 6 : Sequences, Collections &amp; Algorithms</h2>
+            <div class="post-date">2021-09-11</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1guciz5mmz1j61900u0dl602.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Afamilyofprotocols">A family of protocols</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Sequencesandcollections">Sequences and collections</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Iteratorsandsequences">Iterators and sequences</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#StrideThroughandStrideTo">StrideThrough and StrideTo</a></li>
+<li>3.2. <a href="#UnfoldFirstSequenceandUnfoldSequence">UnfoldFirstSequence and UnfoldSequence</a></li>
+<li>3.3. <a href="#TypeerasurewithAnySequence">Type erasure with AnySequence</a></li>
+<li>3.4. <a href="#ImplementingSequencewithAnySequenceandAnyIterator">Implementing Sequence with AnySequence and AnyIterator</a></li>
+</ul>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Collections">Collections</a></li>
+</ol>
+<ul>
+<li>4.1. <a href="#AFizzBuzzcollection">A FizzBuzz collection</a></li>
+<li>4.2. <a href="#BidirectionalCollection">BidirectionalCollection</a></li>
+<li>4.3. <a href="#RandomAccessCollection">RandomAccessCollection</a></li>
+<li>4.4. <a href="#MutableCollection">MutableCollection</a></li>
+<li>4.5. <a href="#TherulesofConwaysLife">The rules of Conway’s Life</a></li>
+<li>4.6. <a href="#MakeBitmapacollection">Make Bitmap a collection</a></li>
+<li>4.7. <a href="#Creatingthesimulation">Creating the simulation</a></li>
+<li>4.8. <a href="#RangeReplaceableCollectionandothers">RangeReplaceableCollection and others</a></li>
+<li>4.9. <a href="#Subsequencesandslices">Subsequences and slices</a></li>
+<li>4.10. <a href="#Memorymanagement">Memory management</a></li>
+<li>4.11. <a href="#Theworldoflazyevaluation">The world of lazy evaluation</a></li>
+</ul>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Genericalgorithms">Generic algorithms</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Keypoints">Key points</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="sequences-collections-algorithms">Sequences, Collections &amp; Algorithms</h1>
+<p>数组、字典和集合位于一个高度可组合的基础协议层次结构之上。这些协议(包括<em>Sequence</em>和<em>Collection</em>等)捕获了这些类型的本质。Swift标准库设计是Swift泛型和面向协议编程的一个案例研究，您可以从中学习和利用。</p>
+<p>这些协议所表达的概念非常普遍，可能出现在您意想不到的地方。 例如，您在上一章中看到的范围和步长就是序列和集合，就像数组一样。 尽管<em>Range</em>类型不需要像<em>Array</em>那样为元素分配内存，但它共享许多相同的功能和特征。在本章中，您将学习<strong>Sequence, Collection</strong>和其他相关协议，并了解如何使用它们来编写跨类型族操作的泛型算法。</p>
+<h2 id="1-a-nameafamilyofprotocolsaa-family-of-protocols">1. <a name='Afamilyofprotocols'></a>A family of protocols</h2>
+<p>通过使用协议定义值序列、值集合和其他集合特征的基本概念，可以编写高性能的泛型算法。 这让编译器可以处理具体类型采用它们时所使用的内存布局的细节。</p>
+<p>在其他语言中，数据结构及其算法的实现数量可能面临所谓的“<strong>the M by N problem</strong>”。如果没有泛型和协议这样的语言特性，那么M个数据结构和N个算法的实现数量就是这两者的简单乘积。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu9akla7bzj60kr09gt9k02.jpg" alt="avatar" loading="lazy"></figure>
+<p>想象一下必须维护所有这些代码。上面的图形只显示了总共16种实现的4种集合类型和4种算法。事实上，Swift有很多具体的序列和集合类型，比如<strong>CollectionOfOne、JoinedSequence、DropWhileSequence</strong>等等。</p>
+<p>多亏了协议和泛型，实现的数量只有M + n，这意味着您永远不会重复自己。</p>
+<p>在这个世界上，任何符合所需协议的类型都可以免费获得按需生成的所有算法实现。 编译器使用协议声明的**协议见证表(protocol witness table)**来实现函数定义。 尽管了解这些基本协议类型会让程序员付出复杂性的代价，但正如您将看到的，这些知识会为自己带来便利。</p>
+<h2 id="2-a-namesequencesandcollectionsasequences-and-collections">2. <a name='Sequencesandcollections'></a>Sequences and collections</h2>
+<p>要充分利用该系统，您需要熟悉与序列和集合相关的协议。下面是层级结构的样子:</p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gu9anu1dn8j60jq0f2mxz02.jpg" alt="avatar" loading="lazy"></figure>
+<p>层次结构包括:</p>
+<ul>
+<li>
+<p><strong>Sequence</strong> - 这是层次结构中最基本的类型，允许您遍历值列表。它不能保证能够重新访问某个项目。虽然符合标准的类型可以是像数组这样的集合，但它也可以是来自网络套接字的数据流或永不重复的随机数序列。采用<strong>Sequence</strong>的类型可以是不可变的，但必须提供符合<strong>IteratorProtocol</strong>的相关可变类型。</p>
+</li>
+<li>
+<p><strong>IteratorProtocol</strong> - 这个幕后协议知道如何获取下一个元素，并在完成时返回nil。 可以直接使用迭代器类型，但通常在使用for语句时，编译器会为您创建一个迭代器类型。</p>
+</li>
+<li>
+<p><strong>Collection</strong> - 所有collection都是sequence，但是Collection添加了一个保证，可以使用索引类型重新访问项。  如果你有一个索引，你可以在常数时间O(1)中查找一个元素。当您实现您的集合时，可能很容易打破这种保证。<br>
+但是这样做会破坏所继承算法的复杂性保证。 尽量不要这样做。如果必须打破复杂性的保证，请在API的文档中明确说明。</p>
+</li>
+<li>
+<p><strong>MutableCollection</strong> - 这将改进集合，使您可以通过索引来改变元素。 突变的关键在于戳出单个元素。重要的是，它并不意味着能够添加和删除元素。</p>
+</li>
+<li>
+<p><strong>BidirectionalCollection</strong> - 这样就增加了集合的分量，通过适当地推进索引，可以向前或向后遍历集合。</p>
+</li>
+<li>
+<p><strong>RangeReplaceableCollection</strong> - 这些集合允许您一次修改整个子范围。这种一致性允许您删除、插入和添加元素。</p>
+</li>
+<li>
+<p><strong>RandomAccessCollection</strong> -  这允许集合在常量时间内以任何顺序遍历元素。它允许您在常数时间内更新索引和度量索引之间的距离。</p>
+</li>
+<li>
+<p><strong>StringProtocol</strong> - 这是一个双向集合，用于字符串和子字符串。您将在下一章中更详细地探讨String。</p>
+</li>
+</ul>
+<p>这个列表可能感觉很理论化，所以现在是时候用一些简单、具体的例子进行实践了。</p>
+<h2 id="3-a-nameiteratorsandsequencesaiterators-and-sequences">3. <a name='Iteratorsandsequences'></a>Iterators and sequences</h2>
+<p>创建一个自定义类型，当您使用for语句循环遍历该类型时，该类型将倒数为零。 打开本章的倒计时启动器，添加以下内容:</p>
+<pre><code class="language-swift">struct CountdownIterator: IteratorProtocol {
+  var count: Int
+  mutating func next() -&gt; Int? {
+    guard count &gt;= 0 else {  // 1 
+      return nil
+    }
+    defer { count -= 1 }     // 2
+    return count
+  }
+}
+</code></pre>
+<p>如您所见，定义迭代器很简单。您需要实现一个不断变化的next()方法，它更新状态并返回下一个元素。这段代码:</p>
+<ul>
+<li>只要计数状态大于或等于零，就继续进行。否则，它将通过返回nil来终止迭代。</li>
+<li>在返回当前值后递减计数。在返回值后更改值是defer语句的常见用法。</li>
+</ul>
+<p>现在，创建实际的Countdown序列类型，它提供CountdownIterator:</p>
+<pre><code class="language-swift">struct Countdown: Sequence {
+  let start: Int
+  func makeIterator() -&gt; CountdownIterator {
+    CountdownIterator(count: start)
+  }
+}
+</code></pre>
+<p>这个类型所做的只是返回上面的迭代器。现在，试着加上:</p>
+<pre><code class="language-swift">for value in Countdown(start: 5) {
+  print(value)
+}
+</code></pre>
+<p>在底层，编译器为Countdown实例化一个迭代器，并反复调用next()，直到它返回nil。后台迭代器实例负责跟踪循环的状态。</p>
+<blockquote>
+<p>Note:  如果您没有注意到，这里有许多类型推断和泛型约束。序列类型有它们创建的迭代器(Iterator)和它们返回的元素(Element)的关联类型。 一个通用约束保证Sequence.Element与Sequence.Iterator.Element的类型相同。也可以通过从makeIterator()返回一些IteratorProtocol而不是特定类型来对客户端隐藏迭代器的实现。</p>
+</blockquote>
+<p>诚然，上述准则是人为设计的、学术性的。不过，获得像这样从头开始构建序列的经验是很好的，这样您就可以欣赏Swift标准库中的其他工具。 这个练习还揭示了如何在迭代器实例中保存状态及其突变而序列保持不变。</p>
+<h3 id="31-a-namestridethroughandstridetoastridethrough-and-strideto">3.1. <a name='StrideThroughandStrideTo'></a>StrideThrough and StrideTo</h3>
+<p>上一节可能看起来是关于该任务的大量代码。是的，有更简单的方法来完成倒计时任务。 例如，您可以使用简单的<strong>StrideThrough</strong>类型，通过调用上一章中看到的stride函数创建该类型。把这个添加到playground:</p>
+<pre><code class="language-swift">print(&quot;---&quot;)
+for value in stride(from: 5, through: 0, by: -1) {
+  print(value)
+}
+print(&quot;---&quot;)
+for value in stride(from: 5, to: -1, by: -1) {
+  print(value)
+}
+</code></pre>
+<p>StrideThrough和StrideTo分别符合<strong>sequence</strong>并且从**stride(from:through:)和stride(from:to:)**得到结果。当你运行palyground时，你会看到两次从5到0的倒计时。参数through:在步幅中包含value，而参数to:向上但不包含value。</p>
+<h3 id="32-a-nameunfoldfirstsequenceandunfoldsequenceaunfoldfirstsequence-and-unfoldsequence">3.2. <a name='UnfoldFirstSequenceandUnfoldSequence'></a>UnfoldFirstSequence and UnfoldSequence</h3>
+<p>Swift标准库函数**sequence(first:next:)和sequence(state:next:)**允许您定义自定义序列，而不需要定义新的序列类型(和迭代器)。</p>
+<pre><code class="language-swift">let countDownFrom5 = sequence(first: 5) { value in
+  value-1 &gt;= 0 ? value-1 : nil
+}
+print(&quot;---&quot;)
+for value in countDownFrom5 {
+  print(value)
+}
+</code></pre>
+<p>你再次看到控制台上的数字从5倒数到0。 函数*sequence(first:next:)*返回UnfoldFirstSequence类型。 您需要一个初始值和一个接受当前值的闭包，并在完成时返回元素或nil。注意，这个序列永远不能为空，因为您指定了第一个元素。</p>
+<p>接下来，将这个变体添加到playground的末尾:</p>
+<pre><code class="language-swift">let countDownFrom5State = sequence(state: 5) { (state: inout Int) -&gt; Int? in
+  defer { state -= 1 }
+  return state &gt;= 0 ? state : nil
+}
+print(&quot;---&quot;)
+for value in countDownFrom5State {
+  print(value)
+}
+</code></pre>
+<p>再一次从5倒数到0。sequence()函数的重载接受一个初始状态和一个闭包，该闭包允许使用inout变量改变该状态。闭包返回的值是序列的可选<Element>类型。这个序列由UnfoldSequence表示，比第一个重载更灵活，因为它独立处理状态和返回的元素。</p>
+<blockquote>
+<p>Note: “展开”是一个函数式编程术语，与fold相反。 Swift使用了一个常见的替代术语reduce而不是fold。 您甚至可能认为，标准库的作者应该使用Unreduced这样的名称，而不是UnfoldSequence。 在实践中，您不需要担心这些类型的名称，因为它们很少显式声明，通常隐藏在类型擦除之后。你将在第十章“高阶函数”中学习更多关于reduce相关的知识。</p>
+</blockquote>
+<h3 id="33-a-nametypeerasurewithanysequenceatype-erasure-with-anysequence">3.3. <a name='TypeerasurewithAnySequence'></a>Type erasure with AnySequence</h3>
+<p>为了降低复杂性，您通常希望对用户(和您自己)隐藏序列的类型细节。最好从函数中返回一个不透明的返回类型，比如某个Sequence。然而，不透明的返回类型目前不允许约束相关类型，如Element，因此不幸的是，这不起作用。但还是有办法的。隐藏这些不重要的类型细节，使用类型删除AnySequence保持界面整洁。</p>
+<p>为AnySequence添加这个方便的辅助方法到你的playground中:</p>
+<pre><code class="language-swift">extension Sequence {
+  func eraseToAnySequence() -&gt; AnySequence&lt;Element&gt; {
+    AnySequence(self)
+  }
+}
+</code></pre>
+<p>这段代码为Sequence添加了一个扩展，该扩展擦除AnySequence中的具体序列。这与Combine框架的AnyPublisher(您以前可能见过)的做法是一样的。</p>
+<p>使用扩展助手添加:</p>
+<pre><code class="language-swift">let seq = countDownFrom5State.eraseToAnySequence()
+print(&quot;---&quot;)
+for value in seq {
+  print(value)
+}
+print(type(of: countDownFrom5State))
+print(type(of: seq))
+</code></pre>
+<p>运行代码可以看到.seq类型是AnySequence<Int>而不是底层的countDownFrom5State，它是一个UnfoldSequence&lt;Int, Int&gt;。类型擦除方法参数和返回AnySequence很有帮助，这样您就不会被锁定在特定类型的序列中。</p>
+<p>尽管它隐藏了实现的复杂性，但这种额外的间接方式会带来较小的损失。例如，如果你在AnySequence(或AnyCollection)中包装了一个数组，你将不再能够访问数组的连续存储缓冲区。出现这种访问不足的情况，再次说明，协议通常对采用它们的具体类型的内存布局不做任何假设。</p>
+<h3 id="34-a-nameimplementingsequencewithanysequenceandanyiteratoraimplementing-sequence-with-anysequence-and-anyiterator">3.4. <a name='ImplementingSequencewithAnySequenceandAnyIterator'></a>Implementing Sequence with AnySequence and AnyIterator</h3>
+<p>在上面的例子中，你定义了一个序列，然后用类型擦除它，但是AnySequence也给了你一个初始化器来一次性完成这两件事。添加:</p>
+<pre><code class="language-swift">let anotherCountdown5 = AnySequence&lt;Int&gt; { () -&gt; AnyIterator&lt;Int&gt; in
+  var count = 5
+  return AnyIterator&lt;Int&gt; {
+    defer { count -= 1}
+    return count &gt;= 0 ? count : nil
+  }
+}
+print(&quot;---&quot;)
+for value in anotherCountdown5 {
+  print(value)
+}
+</code></pre>
+<p>你会看到另一个倒计时从五开始。这个AnySequence接受一个闭包并生成一个迭代器。你可以显式地创建该类型，或者使用AnyIterator来擦除迭代器。这个版本的初始化器允许您内联地定义next()方法。</p>
+<p>上面的示例演示了Swift标准库允许您创建序列的许多方法。在下一节中，你将从从五倒数中毕业。首先，尝试一些练习，看看你是否理解了这些概念。</p>
+<h2 id="4-a-namecollectionsacollections">4. <a name='Collections'></a>Collections</h2>
+<p>集合构建在序列之上，并具有可以重新访问元素的额外保证。要访问一个元素，你只需要一个可以在常数时间O(1)内访问元素的索引。 这种复杂性保证是很重要的，因为许多其他算法都依赖于这种基本性能水平来保证自己的性能。</p>
+<h3 id="41-a-nameafizzbuzzcollectionaa-fizzbuzz-collection">4.1. <a name='AFizzBuzzcollection'></a>A FizzBuzz collection</h3>
+<p>像序列一样，学习集合的一个很好的方法是自己创建一个简单的集合。查看Collection的所有协议需求使得创建一个集合似乎是一项艰巨的任务。然而，因为大多数API都有很好的默认协议实现，所以它非常简单。 在某些方面，创建集合比从头创建序列更容易。更重要的是，因为Collection是一个序列，所以您可以免费获得所有的序列功能。您将使用FizzBuzz来查看这一操作。</p>
+<p><strong>FizzBuzz</strong>是一个经典的练习，你打印从1到100的数字。 但是，如果数字能被3整除，则输出“Fizz”，如果数字能被5整除，则输出“Buzz”。如果这个数字能被3和5整除，就打印“FizzBuzz”。不同于仅仅打印数字，您将创建一个自定义的数字集合类型，fizzes, buzzes and fizzbuzzes。</p>
+<p>首先打开FizzBuzz入门平台，添加以下内容:</p>
+<pre><code class="language-swift">struct FizzBuzz: Collection {
+  typealias Index = Int
+
+  var startIndex: Index { 1 }
+  var endIndex: Index { 101 }
+  func index(after i: Index) -&gt; Index { i + 1 }
+
+  // .... subscript with index ....
+
+}
+</code></pre>
+<p>这段代码定义了FizzBuzz集合。您首先决定Index的关联类型是什么，并定义开始和结束索引。这里没有必要使用typealias定义Index，但是这样做可以澄清代码。 endIndex被定义为超出有效范围一。函数**index(after:)**定义了如何提升索引。 在本例中，实现很简单，只是添加了一个。</p>
+<p>接下来，用下标操作符替换注释:</p>
+<pre><code class="language-swift">subscript (index: Index) -&gt; String {
+  precondition(indices.contains(index), &quot;out of 1-100&quot;)
+  switch (index.isMultiple(of: 3), index.isMultiple(of: 5)) {
+  case (false, false):
+    return String(index)
+  case (true, false):
+    return &quot;Fizz&quot;
+  case (false, true):
+    return &quot;Buzz&quot;
+  case (true, true):
+    return &quot;FizzBuzz&quot;
+  }
+}
+</code></pre>
+<p>这段代码使用Swift模式匹配来实现实际的FizzBuzz逻辑。<strong>switch</strong>元组表达式为给定的索引生成适当的元素。</p>
+<p>就是这样。默认协议实现完成了创建成熟集合类型的其余工作。你可以用以下方法测试你的新集合:</p>
+<pre><code class="language-swift">let fizzBuzz = FizzBuzz()
+for value in fizzBuzz {
+  print(value, terminator: &quot; &quot;)
+}
+print()
+</code></pre>
+<p>同样，在内部，编译器创建了一个FizzBuzz迭代器，并在其上重复调用next()，直到循环结束。但还有更多。你可以使用Swift提供的所有收集算法。例如，您可以使用enumerated()和reduce(into:)打印所有“FizzBuzz”出现的位置，并通过将其添加到您的playground:</p>
+<pre><code class="language-swift">let fizzBuzzPositions = 
+  fizzBuzz.enumerated().reduce(into: []) { list, item in
+    if item.element == &quot;FizzBuzz&quot; {
+      list.append(item.offset + fizzBuzz.startIndex)
+    }
+  }
+
+print(fizzBuzzPositions)
+</code></pre>
+<p>运行playground输出[15,30,45,60,75,90]。enumerated()方法产生一个由偏移量和元素组成的元组。 您需要确保将<strong>startIndex</strong>添加到偏移量中以获得有效的位置。</p>
+<h3 id="42-a-namebidirectionalcollectionabidirectionalcollection">4.2. <a name='BidirectionalCollection'></a>BidirectionalCollection</h3>
+<p>因为您只实现了集合一致性，所以标准库算法只知道如何向前遍历您的集合。要看到这一点，在之前的index(after:)中添加一些调试打印:</p>
+<pre><code class="language-swift">func index(after i: Index) -&gt; Index {
+  print(&quot;Calling \(#function) with \(i)&quot;)
+  return i + 1
+}
+</code></pre>
+<p>注释掉之前的测试代码，并添加以下内容:</p>
+<pre><code class="language-swift">print(fizzBuzz.dropLast(40).count)
+</code></pre>
+<p>如您所料，这将删除最后40个元素，并打印数字60，即剩余的元素计数。你可能会惊讶地发现after(index:)被调用了220次。</p>
+<p>前100个调用是从开始寻找集合中的最后一个元素。接下来的60次调用将查找要删除的范围的第一个索引。最后60个调用将计算剩下的60个元素。</p>
+<p>通过将FizzBuzz设置为双向集合(可以向前或向后遍历)，可以减少调用的数量。把这个添加上:</p>
+<pre><code class="language-swift">extension FizzBuzz: BidirectionalCollection {
+  func index(before i: Index) -&gt; Index {
+    print(&quot;Calling \(#function) with \(i)&quot;)
+    return i - 1
+  }
+}
+</code></pre>
+<p>这段代码允许您通过i - 1实现跳转到当前索引之前的索引。</p>
+<p>当你运行代码时，你会得到和之前一样的答案:60。但是你会看到**index(before:)<strong>只被调用40次，当它向后扫描找到要删除的第一项时。然后</strong>index(after:)**被调用60次，以计数剩下的元素。该算法充分利用了算法的双向遍历能力。</p>
+<h3 id="43-a-namerandomaccesscollectionarandomaccesscollection">4.3. <a name='RandomAccessCollection'></a>RandomAccessCollection</h3>
+<p>通过将FizzBuzz设置为随机访问集合，可以消除所有额外的遍历调用。把这个添加到你的Playground:</p>
+<pre><code class="language-swift">extension FizzBuzz: RandomAccessCollection {
+}
+</code></pre>
+<p>现在，当你运行*print(fizzBuzz.dropLast(40).count)<em>时，函数</em>index(before:)和index(after:)*根本不会被调用。一般来说，当你创建一个RandomAccessCollection时，你需要实现一个名为**index(_:offsetBy:)**的函数。但是，在本例中，由于您选择了Int作为索引类型，并且整数是Strideable和Comparable，因此您可以免费获得实现。事实上，有了RandomAccessCollection的一致性和步进索引，库就完成了所有的工作，你可以删除index(before:)和index(after:)的实现。没有它们，一切依然正常。</p>
+<p>接下来，我们将使用一个稍微强大一点的示例来探索如何使集合可修改。</p>
+<h3 id="44-a-namemutablecollectionamutablecollection">4.4. <a name='MutableCollection'></a>MutableCollection</h3>
+<p>因为FizzBuzz从定义上来说是不可变的，所以再举一个例子。可变集合允许您使用下标setter更改元素。MutableCollection意味着项目可以交换和重新排序。 这个操作并不意味着集合大小的改变。</p>
+<p>这个示例不仅具有可变性，而且具有自定义的非整数索引类型。您将使用自定义集合实现Conway 's Life，这是一个二维元胞自动机模拟。</p>
+<h3 id="45-a-nametherulesofconwayslifeathe-rules-of-conways-life">4.5. <a name='TherulesofConwaysLife'></a>The rules of Conway’s Life</h3>
+<p>作为一款所谓的“zero-player”游戏，《Conway’s Life》的规则很简单:</p>
+<ul>
+<li>Starvation（饥饿）:任何少于两个相邻细胞的细胞都会死亡。</li>
+<li>Equilibrium（平衡）:任何有两三个邻居的细胞都可以生存。</li>
+<li>Overpopulation（人口过剩）:任何超过三个邻居的细胞都会死亡。</li>
+<li>Birth（出生）:任何有三个邻居的空细胞出生。</li>
+</ul>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1guag6udptuj608n0ejq3c02.jpg" alt="avatar" loading="lazy"></figure>
+<p>你可以绘制细胞，然后开始和停止模拟，观察细胞进化，直到它们达到稳定点，模拟自动停止。</p>
+<p>打开启动器项目ConwaysLife，并花一点时间熟悉这些文件。</p>
+<p>这里有一个快速的纲要，帮助你熟悉。</p>
+<ul>
+<li><strong>AppMain.swift</strong>:这是标准的应用定义和@main入口点。</li>
+<li><strong>ContentView.swif</strong>t:创建并拥有仿真模型类型。它提供了一个LifeView来显示并让您与模型交互。</li>
+<li><strong>Bitmap.swift</strong>:您可能还记得Mandelbrot项目中的这种类型。它表示一组二维像素。这个版本通过从Pixel占位符类型中删除PixelProtocol要求，将其更一般化，允许您将其用作任何二维网格。您仍然拥有PixelProtocol的强大功能和使用该文件中定义的条件一致性生成CGImage的能力。</li>
+<li><strong>Bitmap+ collection .swift</strong>:这是为Bitmap定义可变、随机访问集合一致性的地方。</li>
+<li><strong>LifeSimulation.swift</strong>:在这里你将定义游戏的业务逻辑。</li>
+<li><strong>LifeView.swift</strong>:这是使用你的LifeSimulation模型的用户界面的SwiftUI定义。</li>
+<li><strong>RingMemory.swift</strong>:这是一个可记忆最后n项的公共工具类。这种内存可以识别之前的细胞模式，并在看到一个模式时自动停止模拟。</li>
+</ul>
+<h3 id="46-a-namemakebitmapacollectionamake-bitmap-a-collection">4.6. <a name='MakeBitmapacollection'></a>Make Bitmap a collection</h3>
+<p>打开Bitmap+Collection.swift文件，添加以下内容:</p>
+<pre><code class="language-swift">extension Bitmap: RandomAccessCollection, MutableCollection {
+  @usableFromInline
+  struct Index: Comparable {
+    @inlinable static func &lt; (lhs: Index, rhs: Index) -&gt; Bool {
+      (lhs.row, lhs.column) &lt; (rhs.row, lhs.column)
+    }
+    var row, column: Int
+  }
+
+  // More to come...
+}
+</code></pre>
+<p>你使位图采用RandomAccessCollection和MutableCollection。首先，需要一个Index类型。与前面的FizzBuzz示例不同，这个类型不是单个Int，而是两个跟踪行和列的整数。</p>
+<p>您需要定义位图索引应用Comparable意味着什么。一个合理的选择是使遍历发生在光栅扫描顺序。使用元组比较实现多值比较。 栅格扫描是行优先，这意味着该行是最重要的值。只有当左侧(lhs)和右侧(rhs)的行相等时，列才会打破束缚来确定哪个更大。</p>
+<p>该类型被标记为@usableFromInline，方法被标记为@inlinable，以提示编译器，您希望这些方法速度快，但可能需要额外的代码大小。你会看到@inlinable在下面的方法中重复出现。</p>
+<pre><code class="language-swift">@inlinable var startIndex: Index {
+  Index(row: 0, column: 0)
+}
+
+@inlinable var endIndex: Index {
+  Index(row: height, column: 0)
+}
+
+@inlinable func index(after i: Index) -&gt; Index {
+  i.column &lt; width-1 ?
+  Index(row: i.row, column: i.column+1) :
+  Index(row: i.row+1, column: 0)
+}
+
+// More to come...
+</code></pre>
+<p>减去您稍后将定义的下标操作符，这段代码提供了Collection类型的基本定义。 值得注意的是index(after:)的定义。要知道何时跳转到下一行，您需要知道集合的宽度。为什么推进索引是集合的责任，而不是索引本身，需要知道索引之外的信息。(您可以想象一个更复杂的数据结构，比如树，需要知道集合的内部细节才能前进。)</p>
+<blockquote>
+<p>Note: 索引属于给定的集合。 但是，如果要复制集合，则任何索引都必须在原始集合和副本中都工作。  改变操作(例如改变集合的大小)可能会使索引失效。 您应该记录这些操作。给索引赋值语义使它们更容易推理。</p>
+</blockquote>
+<p>接下来，继续添加以下代码:</p>
+<pre><code class="language-swift">@inlinable func index(before i: Index) -&gt; Index {
+  i.column &gt; 0 ?
+    Index(row: i.row,   column: i.column-1) :
+    Index(row: i.row-1, column: width-1)
+}
+
+// More to come...
+</code></pre>
+<p>这满足了<strong>BidirectionalCollection</strong>的索引要求。接下来,添加:</p>
+<pre><code class="language-swift">@inlinable 
+func index(_ i: Index, offsetBy distance: Int) -&gt; Index {
+  Index(row: i.row + distance / width, 
+        column: i.column + distance % width)
+}
+
+@inlinable 
+func distance(from start: Index, to end: Index) -&gt; Int {
+  (end.row * width + end.column) 
+     - (start.row * width + start.column)
+}
+
+// More to come...
+</code></pre>
+<p>这满足了RandomAccessCollection的索引需求。因为索引是按光栅扫描顺序移动的，所以除法和模运算决定了如何按任意距离跳跃。</p>
+<pre><code class="language-swift">@inlinable 
+func index(of i: Index, rowOffset: Int, columnOffset: Int) -&gt; Index {
+  Index(row: i.row + rowOffset, column: i.column + columnOffset)
+}
+
+// More to come...
+</code></pre>
+<p>此索引方法不是集合协议的一部分。这只是一个方便的方法，你可以用来查看相邻的像素。</p>
+<p>最后加上</p>
+<pre><code class="language-swift">@inlinable func contains(index: Index) -&gt; Bool {
+  (0..&lt;width).contains(index.column) &amp;&amp;
+   (0..&lt;height).contains(index.row)
+}
+
+@inlinable subscript(position: Index) -&gt; Pixel {
+
+  get {
+    precondition(contains(index: position), 
+                 &quot;out of bounds index \(position)&quot;)
+    return pixels[position.row * width + position.column]
+  }
+
+  set {
+    precondition(contains(index: position), 
+                 &quot;out of bounds index \(position)&quot;)
+    pixels[position.row * width + position.column] = newValue
+  }
+}
+</code></pre>
+<p>下标方法使Bitmap成为RandomAccessCollection, setter使它成为MutableCollection。</p>
+<p>定义contains(index:)不是必需的，但是对于这种类型来说，它是一个很好的实用工具和安全措施。</p>
+<h3 id="47-a-namecreatingthesimulationacreating-the-simulation">4.7. <a name='Creatingthesimulation'></a>Creating the simulation</h3>
+<p>使用位图集合实现仿真。打开LifeSimulation.swift。模型对象有三个已发布的属性——isRunning、generation和cells——它们在每次更改时都会重新绘制用户界面。将这条语句添加到LifeSimulation的初始化式的末尾:</p>
+<pre><code class="language-swift">Timer.publish(every: 0.1, on: .main, in: .common)
+  .autoconnect()
+  .sink { [weak self] _ in
+    self?.evolve()
+  }
+  .store(in: &amp;subscriptions)
+</code></pre>
+<p>此代码创建对Combine计时器发布者的订阅，并将其存储在订阅中。每十分之一秒，发布者就会调用evolve()。</p>
+<p>在实现evolve()之前，创建一个helper方法来计算给定单元周围的邻居数量。在LifeSimulation中添加以下内容:</p>
+<pre><code class="language-swift">func neighborCount(around index: Bitmap&lt;Bool&gt;.Index) -&gt; Int {
+  var count = 0
+  for rowOffset in -1...1 {
+    for columnOffset in -1...1 {
+      guard rowOffset != 0 || columnOffset != 0 else {
+        continue
+      }
+      let probe = cells.index(of: index, rowOffset: rowOffset,
+                              columnOffset: columnOffset)
+      count += cells.contains(index: probe) ?
+        (cells[probe] ? 1 : 0) : 0
+    }
+  }
+  return count
+}
+</code></pre>
+<p>该函数使用命令式风格。它使用前面定义的创建索引方法和contains helper方法。 如果一个索引位置超出了位图集合的边界，则将其计数为零。 (这个选择有点随意。你可以把它绕起来。)</p>
+<p>接下来，实现evolve()方法。它应该是这样的:</p>
+<pre><code class="language-swift">func evolve() {
+  guard isRunning else {
+    return
+  }
+  generation += 1
+  let neighbors = cells.indices.map(neighborCount(around:))
+
+  // The core rules of Life.
+  zip(cells.indices, neighbors).forEach { index, count in
+    switch (cells[index], count) {
+    case (true, 0...1):
+      cells[index] = false // death by starvation
+    case (true, 2...3):
+      cells[index] = true  // live on
+    case (true, 4...):
+      cells[index] = false // death by overcrowding
+    case (false, 3):
+      cells[index] = true  // birth
+    default:
+      break // no change
+    }
+  }
+
+  // automatically stop the simulation if stability is reached
+  if previous.contains(cells) {
+    isRunning = false
+  }
+  previous.add(cells)
+}
+</code></pre>
+<p>如果模拟不运行，guard将立即退出。 如果是，则代递增并查找所有单元格位置的邻居计数。cells.indices.map(neighborCount(around:))生成所有cell位置的序列，并将其映射到neighborCount(around:)。接下来，运用游戏的核心规则。 zip算法创建一个索引元组序列，其中包含相邻的计数，switch语句根据Life的规则改变集合。最后，previous用于检查模式是否重复，如果重复，则停止模拟。</p>
+<p>接下来，实现用于创建图像的cellImage属性getter。它应该是这样的:</p>
+<pre><code class="language-swift">var cellImage: UIImage {
+  let pixels = cells.map { $0 ? Self.live : Self.none }
+  guard let image = Bitmap(pixels: pixels, width: cells.width)
+                      .cgImage else {
+    fatalError(&quot;could not create a core graphics image&quot;)
+  }
+  return UIImage(cgImage: image)
+}
+</code></pre>
+<p>这段代码将布尔值的位图映射到它可以显示的颜色像素的位图。因为你保证了一个有效的像素类型，创建位图不会失败，如果失败，你可以fatalError。</p>
+<p>最后，实现让您在板子上绘制单元格的方法。将方法setLive(row:column:)替换为:</p>
+<pre><code class="language-swift">func setLive(row: Int, column: Int) {
+  let position = Bitmap&lt;Bool&gt;.Index(row: row, column: column)
+  if cells.contains(index: position) {
+    cells[position] = true
+    previous.reset() // reset automatic stop detection
+  }
+}
+</code></pre>
+<p>这里的代码很简单。获取位置并将其设置为true。你不会想要寻找之前的细胞模式会停止模拟，所以这是一个重置模式历史的好地方。</p>
+<p>构建和运行。在灰色矩形中绘制一些单元格，看看它们是如何模拟的。</p>
+<blockquote>
+<p>Note:  康威的《生命游戏》是图灵的杰作。 这意味着你可以用Swift(或任何其他图灵完整语言)进行的任何计算都可以通过在Life中绘制细胞并在一个足够大的网格上进行模拟来实现。如果你有兴趣了解更多关于生活和它神奇的创造者，约翰·康威，看看这个视频:[https://www.youtube.com/watch?v=Kk2MH9O4pXY]，准备让你大吃一惊吧。</p>
+</blockquote>
+<h3 id="48-a-namerangereplaceablecollectionandothersarangereplaceablecollection-and-others">4.8. <a name='RangeReplaceableCollectionandothers'></a>RangeReplaceableCollection and others</h3>
+<p>RangeReplaceableCollection允许您从集合中添加和删除值。关键的例子包括Swift Array和String，但在幕后还有很多其他的例子，比如Data、continuousarray和Substring。与其他序列细化协议一样，您实现了一组最小的协议需求，结果得到了大量的算法。对于RangeReplaceableCollection，你实现一个空的初始化式，该方法用:replaceSubrange(_😃。这样，您就可以为所有类型的insert、append和remove方法获得合理的默认实现。</p>
+<blockquote>
+<p>Note:  为什么不在生活中为你的位图类型实现RangeReplaceableCollection一致性? 如果你稍微思考一下，你就会意识到这没什么意义。 例如，如果删除单个像素，会发生什么? 它应该删除整列像素吗? 一个完整的行吗? 最好是创建一个新的抽象，比如GridCollection，它显式地处理行和列操作，并从中形成泛型算法。</p>
+</blockquote>
+<h3 id="49-a-namesubsequencesandslicesasubsequences-and-slices">4.9. <a name='Subsequencesandslices'></a>Subsequences and slices</h3>
+<p>想要处理序列或集合的子集是很常见的。Collection协议这样定义一个默认关联类型:</p>
+<pre><code class="language-swift">associatedtype SubSequence: Collection = Slice&lt;Self&gt; where  // 1
+       Self.Element == Self.SubSequence.Element,            // 2
+       Self.SubSequence == Self.SubSequence.SubSequence     // 3
+</code></pre>
+<p>考虑每一行:</p>
+<ul>
+<li>集合的子序列类型本身就是集合，默认为标准库类型Slice。</li>
+<li>子序列的元素与集合相同。</li>
+<li>子序列(集合)的子序列与原始子序列相同。定义是递归的，所以子序列都是相同的集合类型。</li>
+</ul>
+<p>要查看实际效果，请返回FizzBuzz游乐场，注释掉调试打印语句，这样控制台就不会太吵。</p>
+<p>然后，在末尾加上以下内容:</p>
+<pre><code class="language-swift">let slice = fizzBuzz[20...30]
+slice.startIndex
+slice.endIndex
+slice.count
+for item in slice.enumerated() {
+  print(&quot;\(item.offset):\(item.element)&quot;, terminator: &quot; &quot;)
+}
+</code></pre>
+<p>花点时间来欣赏一下，不需要任何额外的代码，就可以在FizzBuzz中使用一系列索引创建子序列。切片集合不像原始集合那样从1开始，而是从20开始。结束索引是31，总共有11个元素。可以调用enumeration()来循环遍历切片中的元素。</p>
+<p>你可以切成一片。试试下面的代码:</p>
+<pre><code class="language-swift">let sliceOfSlice = slice[22...24]
+sliceOfSlice.startIndex                // value of 22
+sliceOfSlice[sliceOfSlice.startIndex]
+</code></pre>
+<p>同样，起始索引与原始集合中的编号匹配。 而且，正如泛型约束所说，slice和sliceOfSlice的类型都是slice <FizzBuzz>。</p>
+<h3 id="410-a-namememorymanagementamemory-management">4.10. <a name='Memorymanagement'></a>Memory management</h3>
+<p>片不会分配新的内存，而是引用原始集合的内存。这个引用意味着它们是廉价的O(1)创建，因为它们不复制元素，可以用来构造高效的泛型算法。</p>
+<p>但是因为Slice引用了原始集合，所以即使很小的Slice也会延长原始集合的生命周期。 如果您想与原始集合断开连接，以便当它超出作用域时可以解除分配，那么您可以使用适当的初始化式显式地创建一个副本。要想看到它的实际效果，请将以下内容添加到您的playground中:</p>
+<pre><code class="language-swift">let numbers = Array(0..&lt;100)
+let upperHalf = numbers[(numbers.count/2)...]
+let newNumbers = Array(upperHalf)
+</code></pre>
+<p>numbers数组从0到100的Range<Int>集合初始化。实例upperHalf是startIndex以50开头的numbers的子序列。 newNumbers分配并复制到startIndex为0的新存储中。因此，newNumbers独立于原始的数字数组。</p>
+<blockquote>
+<p>Note:  概念上与Slice相同，upperHalf实际上是ArraySlice类型，它在默认的Slice类型上添加了更多类似数组的行为。如果您希望切片的行为更像它们来自的原始集合，或者希望在底层集合发生变化时构建特殊的索引失效规则，则普通旧的Slice不会对其进行切割。 具有特殊片类型的集合的另一个例子是String。 字符串的切片是一种名为Substring的类型。这种类型和String都符合StringProtocol，使得两者的工作方式几乎相同。</p>
+</blockquote>
+<h3 id="411-a-nametheworldoflazyevaluationathe-world-of-lazy-evaluation">4.11. <a name='Theworldoflazyevaluation'></a>The world of lazy evaluation</h3>
+<p>集合使用片类型来控制分配和复制到新集合的时间。以同样的方式，您可以通过使用类型来控制一个序列迭代的执行。默认情况下，序列是主动求值的，但是你可以使用lazy来改变这种行为。</p>
+<p>考虑以下问题。在FizzBuzz集合中找到前三个，甚至非fizz, Buzz, FizzBuzz数字。通过添加以下代码来解决它:</p>
+<pre><code class="language-swift">let firstThree = FizzBuzz()
+  .compactMap(Int.init)
+  .filter { $0.isMultiple(of: 2) }
+  .prefix(3)
+
+print(firstThree)
+</code></pre>
+<p>这段代码通过遍历所有100个字符串并压缩为53个整数的数组来创建一个FizzBuzz集合。然后，它通过创建一个由27个偶数组成的新数组来过滤该数组。最后，它选取[2,4,8]的前三个值。</p>
+<p>因为只需要前三个数字，所以惰性地计算这个计算链的效率要高得多。 你可以在找到三个后就停止，而不是找到所有的东西然后扔掉所有的东西，只留下前三个。你可以通过访问序列的lazy属性来实现:</p>
+<pre><code class="language-swift">let firstThreeLazy = FizzBuzz()
+  .lazy
+  .compactMap(Int.init)
+  .filter { $0.isMultiple(of: 2) }
+  .prefix(3)
+
+print(Array(firstThreeLazy))
+</code></pre>
+<p>lazy属性返回一个名为LazySequence<FizzBuzz>的类型，它实现map、filter、reduce、compactMap等的特殊惰性版本。这些实现接受您传递给它们的函数或闭包，并且只按需执行。在上面的例子中，compactMap执行Int。初始化8次，isMultiple(of:) 8次来找到这三个值。没有中间临时数组需要分配，因为链执行时是急切的。</p>
+<blockquote>
+<p>Note: 如果你打印(firstThreeLazy)而没有将它初始化为一个数组，它将打印懒惰表达式的未求值类型。  哇。那是某种类型! 就像Slice类型一样，通常不应该在API边界上使用惰性类型，或者至少键入erase它们。</p>
+</blockquote>
+<h2 id="5-a-namegenericalgorithmsageneric-algorithms">5. <a name='Genericalgorithms'></a>Generic algorithms</h2>
+<p>Swift标准库包含一组算法，可自动应用于满足适当需求的序列和集合。 例如，首先，forEach、map、reduce、sort和zip是标准的库算法。</p>
+<p>现在是时候练习创建自己的自定义算法了。将FizzBuzz游乐场中的元素按顺序划分为块，并添加以下内容:</p>
+<pre><code class="language-swift">let values: [Int] = [1, 3, 4, 1, 3, 4, 7, 5]
+
+extension Array {
+  func chunks(ofCount chunkCount: Int) -&gt; [[Element]] {
+    var result: [[Element]] = []
+    for index in stride(from: 0, to: count, by: chunkCount) {
+      let lastIndex = Swift.min(count, index + chunkCount)
+      result.append(Array(self[index ..&lt; lastIndex]))
+    }
+    return result
+  }
+}
+
+values.chunks(ofCount: 3)
+</code></pre>
+<p>Array上的这个扩展将元素分解为给定计数的块。 最后一个块可能比请求的计数更小，这取决于数组中有多少项。它使用从0到count的stride序列来重复初始化较小的数组。</p>
+<p>虽然这段代码可以工作，但它不是特别通用或有效。例如，如果你将数组切片并试图获取其中的块，它将无法编译，因为ArraySlice不是数组。它肯定不会与FizzBuzz这样的系列合作。此外，每个块需要单独的堆分配，可能需要重新分配，这取决于被分割成块的数组的大小。 你可以做得更好。注释掉之前的版本及其调用站点，并添加如下内容:</p>
+<pre><code class="language-swift">extension Collection {
+  func chunks(ofCount chunkCount: Int) -&gt; [SubSequence] {
+    var result: [SubSequence] = []
+    result.reserveCapacity(count / chunkCount 
+                           + (count % chunkCount).signum())
+    var idx = startIndex
+    while idx &lt; endIndex {
+      let lastIndex = index(idx, offsetBy: chunkCount, 
+                            limitedBy: endIndex) ?? endIndex
+      result.append(self[idx ..&lt; lastIndex])
+      idx = lastIndex
+    }
+    return result
+  }
+}
+</code></pre>
+<p>因为扩展了Collection，所以除了数组之外，它还可以用于更多类型。它返回一个子序列数组，根据类型的不同，可以是Slices、ArraySlices或SubStrings。您不能像以前那样假设一个基于零的索引，因此需要使用startIndex。最后，使用reserveccapacity()可以确保只有一个分配，而不是很多。</p>
+<p>继续并通过添加以下内容来测试它:</p>
+<pre><code class="language-swift">values.chunks(ofCount: 3)
+Array(FizzBuzz().chunks(ofCount: 5).last!)
+&quot;Hello world&quot;.chunks(ofCount: 2)
+</code></pre>
+<p>泛型算法功能强大，可重用，提高清晰度。使用这样的算法而不是原始循环通常会使您的代码更容易阅读和维护。</p>
+<h2 id="6-a-namekeypointsakey-points">6. <a name='Keypoints'></a>Key points</h2>
+<p>Swift标准库的序列和集合协议充分利用泛型系统来创建一致的、可预测的(和不可思议的)编程模型。以下是一些要点:</p>
+<ul>
+<li><strong>Sequences</strong>是序列层次结构中最基本的类型，它保证您只能访问元素列表一次。</li>
+<li>序列可以是不可变的，但可变迭代器会跟踪迭代状态。</li>
+<li>迭代器可以直接使用，但Swift编译器通常会为您生成并维护它们。每次编写for循环时，编译器都会生成一个。</li>
+<li><strong>Collections</strong>是可以使用索引任意次数访问元素的序列。</li>
+<li>由于有默认的协议实现，集合相对容易定义。</li>
+<li>另外一些协议，如RangeReplaceableCollection，进一步完善了集合的功能。</li>
+<li>算法利用集合的遍历能力来更有效地操作。</li>
+<li>有很多方法可以创建自定义序列，从手工编写迭代器和序列类型，到使用标准库实用程序方法以更少的代码完成任务。</li>
+<li>stride函数创建序列的stride类型。</li>
+<li><strong>Sequence</strong>函数创建UnfoldSequence，它将某些状态展开为一系列值。</li>
+<li>AnySequence允许输入-擦除底层序列类型。</li>
+<li>AnySequence和AnyIterator都有初始化器，这些初始化器接受闭包，这些闭包组成一个简单的自定义序列。</li>
+<li><strong>Collections</strong>类型具有定义的<strong>index</strong>类型。</li>
+<li>您可以通过添加**index(before:)**方法来实现对BidirectionalCollection的一致性。</li>
+<li>如果您使用Strideable和Comparable类型，例如Int，则会自动满足RandomAccessCollection要求。</li>
+<li>在大多数情况下，MutableCollection在不使索引失效的情况下改变集合。</li>
+<li><strong>SubSequence</strong>是Sequence和Collection中获取元素子集的关联类型的名称。</li>
+<li><strong>Slice</strong>是集合用来实现子序列的默认类型。</li>
+<li>使用Slice不会复制底层集合，而是引用它并延长它的生命周期。</li>
+<li>一般来说，避免在高级api中使用子序列，因为即使是很小的片也可以维持巨大的底层集合。</li>
+<li>String使用Substring，而Array使用ArraySlice而不是普通的Slice，以使这些子序列的处理更像原始集合。</li>
+<li>有一整套LazySequence类型可以防止急于求值，并可以防止不必要的计算，从而提高代码的速度。</li>
+<li>Swift标准库使用协议和泛型定义泛型算法。很容易定义你自己的。</li>
+<li>通过根据算法所需要的协议定义算法，可以使其在更多的地方可用，而不是依赖于具体类型(如Array)。</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fhJM3gN7U/" class="tag">
+                    expert swift
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4Y-jgrPFi/" class="tag">
+                    sequences
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/async-sequences-streams-and-combine/">
+                  <h3 class="post-title">
+                    Async sequences, streams, and Combine
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

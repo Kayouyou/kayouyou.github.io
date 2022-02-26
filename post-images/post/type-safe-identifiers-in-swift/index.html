@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Type-safe identifiers in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在大多数代码中，我们需要一种唯一标识特定值和对象的方法。它可以是在跟踪缓存或数据库中的模型时，也可以是在执行为某个实体获取更多数据的网络请求时。
+在“Swift中识别对象”中，我们了解了如何使用内置的ObjectIdentifier类型识别..." />
+    <meta name="keywords" content="identifiers,type safety,models" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Type-safe identifiers in Swift</h2>
+            <div class="post-date">2018-05-13</div>
+            
+            <div class="post-content" v-pre>
+              <p>在大多数代码中，我们需要一种唯一标识特定值和对象的方法。它可以是在跟踪缓存或数据库中的模型时，也可以是在执行为某个实体获取更多数据的网络请求时。</p>
+<p>在“Swift中识别对象”中，我们了解了如何使用内置的ObjectIdentifier类型识别对象——本周，我们将为值构造类似的标识符类型，并提高类型安全性。</p>
+<p>让我们开始吧!😀</p>
+<h2 id="a-dedicated-type">A dedicated type</h2>
+<p>作为一种语言，Swift非常注重类型和类型安全。对于泛型、协议和静态类型等特性，总是鼓励(甚至强迫)我们了解正在处理的对象和值的确切类型。</p>
+<p>说到标识符，Swift标准库提供了专用的UUID类型——它使我们能够轻松地为任何值类型添加唯一标识符，就像用户模型一样:</p>
+<pre><code class="language-swift">struct User {
+    let id: UUID
+    let name: String
+}
+</code></pre>
+<p>但是，UUID是专门构建的，它由一个给定的标准化格式(具体来说是RFC 4122)的字符串支持，当标识符需要跨多个不同的系统(如应用程序的服务器或其他平台，如Android)使用时，这并不总是实用的(甚至可能)。</p>
+<p>正因为如此，通常只使用普通字符串作为标识符，就像这样:</p>
+<pre><code class="language-swift">struct User {
+    let id: String
+    let name: String
+}
+</code></pre>
+<p>虽然字符串对于文本这样的东西很好，但对于标识符这样的东西却不是一个非常健壮或安全的解决方案。 并不是每个字符串都是有效的标识符，理想情况下，我们希望利用类型系统来防止在不小心将不兼容的字符串作为标识符传递时可能出现的bug。</p>
+<p>字符串还可以做很多我们不希望标识符能够做的事情(比如添加或删除字符)。理想情况下，我们希望有一个更窄的专用类型(就像UUID一样)，我们可以使用它来为任何标识符建模。</p>
+<p>好消息是，定义这样的类型非常容易，而且既然我们现在(Swift 4.1)免费获得了哈希支持，我们真正需要做的是声明一个由任意格式字符串支持的标识符类型——像这样:</p>
+<pre><code class="language-swift">struct Identifier: Hashable {
+    let string: String
+}
+</code></pre>
+<p>现在，我们可以在模型代码中使用专用的标识符类型，以清楚地表明某个属性是标识符，而不是任何字符串:</p>
+<pre><code class="language-swift">struct User {
+    let id: Identifier
+    let name: String
+}
+</code></pre>
+<h2 id="the-native-feel">The native feel</h2>
+<p>我们的新标识符类型很好，但它不像使用plains 字符串时那样“原生”。例如，初始化标识符现在要求我们将底层字符串作为参数传递，如下所示:</p>
+<pre><code class="language-swift">let id = Identifier(string: &quot;new-user&quot;)
+</code></pre>
+<p>值得庆幸的是，这是我们可以轻易解决的问题。由于Swift标准库是如此的面向协议，让我们自己的自定义类型感觉很“自在”，只需要遵循一些简单的协议。</p>
+<p>首先，让我们可以使用字符串字面量创建标识符。这样，我们获得了与使用普通字符串相同的便利，但增加了使用专用类型的安全性。 要做到这一点，我们所要做的就是遵循ExpressibleByStringLiteral并实现一个额外的初始化式:</p>
+<pre><code class="language-swift">extension Identifier: ExpressibleByStringLiteral {
+    init(stringLiteral value: String) {
+        string = value
+    }
+}
+</code></pre>
+<p>我们还希望简化打印标识符或在字符串文本中包含标识符的操作。为了实现这一点，我们还将为CustomStringConvertible添加一个一致性:</p>
+<pre><code class="language-swift">extension Identifier: CustomStringConvertible {
+    var description: String {
+        return string
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在就可以很容易地将专用标识符类型与字符串字面值连接起来:</p>
+<pre><code class="language-swift">let user = User(id: &quot;new-user&quot;, name: &quot;John&quot;)
+print(user.identifier) // &quot;new-user&quot;
+</code></pre>
+<p>另一个让我们的标识符类型感觉更原生的特性是添加编码支持。随着codeable的引入，我们可以简单地让编译器为我们生成编码支持，但这将要求我们的数据(例如JSON)具有以下格式:</p>
+<pre><code class="language-swift">{
+    &quot;id&quot;: {
+        &quot;string&quot;: &quot;49-12-90-21&quot;
+    },
+    &quot;name&quot;: &quot;John&quot;
+}
+</code></pre>
+<p>这不是很好，而且它将再次使与其他系统和平台的兼容性变得更加困难。相反，让我们编写自己的可编码实现，使用单个值容器:</p>
+<pre><code class="language-swift">extension Identifier: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        string = try container.decode(String.self)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(string)
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在还可以使用单个字符串编码和解码标识符值，就像我们能够使用字符串字面量初始化标识符值一样。我们的专用类型现在有了很好的原生感觉，并且可以很自然地在许多不同的环境中使用。很甜!🍭</p>
+<h2 id="even-more-type-safety">Even more type safety</h2>
+<p>我们现在已经避免了将字符串与标识符混淆，但是我们仍然可以意外地使用一个不兼容的模型类型的标识符值。例如，编译器不会给我们任何类型的警告，如果我们不小心以这样的代码结束:</p>
+<pre><code class="language-swift">// Ideally, it shouldn't be possible to look up an 'Article' model
+// using a 'User' identifier.
+articleManager.article(withID: user.id)
+</code></pre>
+<p>因此，即使拥有一个专用的标识符类型是迈向更好的类型安全的巨大一步，我们仍然可以通过将给定的标识符与它所表示的值类型相关联来更进一步。为了做到这一点，让我们为标识符添加一个泛型值类型:</p>
+<pre><code class="language-swift">struct Identifier&lt;Value&gt;: Hashable {
+    let string: String
+}
+</code></pre>
+<p>现在，我们被迫指定要处理的标识符类型，使每个标识符只与其对应的值强关联，如下所示:</p>
+<pre><code class="language-swift">struct User {
+    let id: Identifier&lt;User&gt;
+    let name: String
+}
+</code></pre>
+<p>如果我们现在再次尝试使用一个用户标识符来查找一篇文章，我们会得到一个编译器错误，说明我们试图将一个标识符<User>的值传递给一个接受类型为标识符<Article>的形参的函数。</p>
+<h2 id="generalizing-our-generic">Generalizing our generic</h2>
+<p>我们能再进一步吗?完全!😉</p>
+<p>并非所有标识符都由字符串支持，在某些情况下，我们可能需要标识符类型也支持其他支持值——比如Int，甚至是UUID。</p>
+<p>当然，我们可以通过引入不同的类型(如StringIdentifier和identifier)来实现这一点，但这需要我们复制一堆代码， 而且也不会感觉像“Swift”。相反，让我们引入一个我们的可识别模型和价值观可以遵循的协议:</p>
+<pre><code class="language-swift">protocol Identifiable {
+    associatedtype RawIdentifier: Codable = String
+
+    var id: Identifier&lt;Self&gt; { get }
+}
+</code></pre>
+<p>如上所述，我们的可识别协议允许我们的各种类型灵活地声明一个自定义RawIdentifier类型-同时仍然保持将String作为默认值的便利性。 然后，我们将要求标识符的泛型值类型符合可识别类型，我们完成了:</p>
+<pre><code class="language-swift">struct Identifier&lt;Value: Identifiable&gt; {
+    let rawValue: Value.RawIdentifier
+
+    init(rawValue: Value.RawIdentifier) {
+        self.rawValue = rawValue
+    }
+}
+</code></pre>
+<p>由于我们选择保留String作为默认的原始值，所有现有的模型将像之前一样工作，我们需要做的是添加一个一致性到可识别:</p>
+<pre><code class="language-swift">struct User: Identifiable {
+    let id: Identifier&lt;User&gt;
+    let name: String
+}
+</code></pre>
+<p>多亏了Swift 4.1的条件一致性特性，我们现在可以很容易地同时支持Int和String字面值。我们所要做的就是在符合每种文字表达式协议的情况下，在值的RawIdentifier上添加一个约束，像这样:</p>
+<pre><code class="language-swift">extension Identifier: ExpressibleByIntegerLiteral
+          where Value.RawIdentifier == Int {
+    typealias IntegerLiteralType = Int
+
+    init(integerLiteral value: Int) {
+        rawValue = value
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在也可以自由地使用基于int的标识符，使用完全相同的代码，以一种非常类型安全的方式:</p>
+<pre><code class="language-swift">struct Group: Identifiable {
+    typealias RawIdentifier = Int
+
+    let id: Identifier&lt;Group&gt;
+    let name: String
+}
+</code></pre>
+<h2 id="type-safety-everywhere">Type safety everywhere</h2>
+<p>拥有类型安全的标识符不仅在防止开发人员犯错方面很有用，而且当我们在不同的上下文中处理模型和值时，它还使我们能够构造一些非常好的api。例如，现在我们有了可识别的协议，我们也可以使我们的数据库代码类型安全:</p>
+<pre><code class="language-swift">protocol Database {
+    func record&lt;T: Identifiable&gt;(withID id: Identifier&lt;T&gt;) -&gt; T?
+}
+</code></pre>
+<p>同样的事情也发生在我们的网络代码上，它也可以在可识别的约束下变成通用的:</p>
+<pre><code class="language-swift">protocol ModelLoader {
+    typealias Handler&lt;T&gt; = (Result&lt;T&gt;) -&gt; Void
+
+    func loadModel&lt;T: Identifiable&gt;(withID id: Identifier&lt;T&gt;,
+                                    then handler: @escaping Handler&lt;T&gt;)
+}
+</code></pre>
+<p>现在，我们可以在整个代码库中以更多的方式利用类型系统和编译器。🎉</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>使用类型安全标识符可以使我们的模型代码更加健壮，并且减少因意外使用错误类型标识符而导致的错误。 它还使我们能够在整个代码库中以有趣的方式利用编译器，从而使模型和值的处理更加简单和安全。</p>
+<p>当然，适合您的代码的类型安全程度取决于您的具体设置和需求。简单地使用专用的、非泛型标识符类型可能就足够了，而且可以很容易地实现，并且是朝着更类型安全的标识符处理迈出的一大步。如果您想要或需要更多的类型安全，使用泛型和协议也是一个很好的选择。</p>
+<p><a href="https://www.swiftbysundell.com/articles/type-safe-identifiers-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/1sLScrWc1/" class="tag">
+                    identifiers
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/MOO0pS2XVp/" class="tag">
+                    type safety
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nDwRYvQYce/" class="tag">
+                    models
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/logic-controllers-in-swift/">
+                  <h3 class="post-title">
+                    Logic controllers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

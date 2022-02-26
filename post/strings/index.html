@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Strings | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="编程语言如何建模文本往往比它最初看起来要复杂得多——Swift的字符串类型也不例外。虽然字符串是任何程序都会处理的最常见的数据片段之一，也是我们作为人们非常熟悉的东西，但当涉及到如何在代码中表示文本时，有一些非常现实的挑战。理解其中的一些挑..." />
+    <meta name="keywords" content="strings" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Strings</h2>
+            <div class="post-date">2019-07-31</div>
+            
+            <div class="post-content" v-pre>
+              <p>编程语言如何建模文本往往比它最初看起来要复杂得多——Swift的字符串类型也不例外。虽然字符串是任何程序都会处理的最常见的数据片段之一，也是我们作为人们非常熟悉的东西，但当涉及到如何在代码中表示文本时，有一些非常现实的挑战。理解其中的一些挑战，以及Swift是如何克服它们的，这通常是使在不同的环境下使用字符串变得更容易的关键。</p>
+<p>Swift字符串被建模为使用非常常见的UTF-8文本编码的字符集合，这使得它们可以表示各种不同的字符和表情符号。 由于字符串是集合，它们既可以使用文字(代码中内联定义的字符串)初始化，也可以使用另一个包含字符元素的集合(例如数组)初始化:</p>
+<pre><code class="language-swift">let stringA = &quot;Hello!&quot;
+let stringB = String([&quot;H&quot;, &quot;e&quot;, &quot;l&quot;, &quot;l&quot;, &quot;o&quot;, &quot;!&quot;])
+print(stringA == stringB) // true
+</code></pre>
+<p>字符串在许多其他方面的行为也类似于其他集合(如数组或字典)。例如，可以很容易地遍历字符串中的所有字符，就像遍历数组中的元素一样:</p>
+<pre><code class="language-swift">func printCharacters(in string: String) {
+    for character in string {
+        print(character)
+    }
+}
+</code></pre>
+<p>我们甚至可以直接在字符串上使用最常见的集合操作，如map、flatMap和compactMap。 例如，下面是我们如何在一个字符串上使用map来将它转换成一个字符数组:</p>
+<pre><code class="language-swift">func characters(in string: String) -&gt; [Character] {
+    return string.map { $0 }
+}
+</code></pre>
+<p>因为字符串和数组在它们所支持的api类型方面如此相似，我们可能还希望能够使用基于int的下标从字符串中检索任何字符——像这样:</p>
+<pre><code class="language-swift">let string = &quot;Hello, world!&quot;
+let character = string[1]
+</code></pre>
+<p>然而，运行上面的代码会给我们一个编译错误，因为(与数组不同)我们不能通过使用Int索引来随机访问字符串中的任何字符。为了理解这是为什么，我们必须深入到一个层次——超越String的表面层次API，并看看字符串实际上是如何在底层表示的。</p>
+<p>让我们首先接受一个包含特殊(或非ascii)字符(本例中为café)的字符串，并比较它的字符数与用于表示它的UTF-8代码单元数之间的差异:</p>
+<pre><code class="language-swift">&quot;Café&quot;.count // 4
+&quot;Café&quot;.utf8.count // 5
+</code></pre>
+<p>如上所述，字符串中可感知的字符数和实际的UTF-8字符数并不总是相等的。当我们开始把表情符号添加到组合中时，这种差异会变得更大——尤其是那些由许多不同代码单元组成的表情符号，比如家庭表情符号的不同变体:</p>
+<pre><code class="language-swift">&quot;👨‍👩‍👧‍👦&quot;.count // 1
+&quot;👨‍👩‍👧‍👦&quot;.utf8.count // 25
+
+</code></pre>
+<p>由于上述字符在底层工作方式上的差异，Swift没有提供一种使用原始Int索引访问字符串字符的方法，而是选择了一种更加锁定和安全的方法，使用专用String.Index类型，以及用于操作这些索引的特定api。每个字符串都有一个startIndex和一个endIndex，使用它们可以派生出任何希望检索字符的其他索引——像这样:</p>
+<pre><code class="language-swift">let string = &quot;Hello, world!&quot;
+
+let secondIndex = string.index(after: string.startIndex)
+let thirdIndex = string.index(string.startIndex, offsetBy: 2)
+let lastIndex = string.index(before: string.endIndex)
+
+print(string[secondIndex]) // e
+print(string[thirdIndex]) // l
+print(string[lastIndex]) // !
+</code></pre>
+<p>我们也可以在字符串索引之外形成range，并使用这些range来提取字符串的一部分——通常称为子字符串:</p>
+<pre><code class="language-swift">let range = secondIndex..&lt;lastIndex
+let substring = string[range]
+print(substring) // ello, world
+</code></pre>
+<p>Swift中子字符串的有趣之处在于它们实际上不是字符串值。相反，它们使用Substring类型表示，这使我们能够检索和传递子字符串，而无需不断复制底层字符串-当我们要处理大量文本时，这对性能很有帮助。然而，字符串和子字符串不是同一类型的实例，这可能会导致一些棘手的情况，例如，如果我们试图将子字符串分配为UILabel的文本:</p>
+<pre><code class="language-swift">let label = UILabel()
+label.text = substring // Compiler error
+</code></pre>
+<p>上面的代码给了我们一个编译器错误，说一个Substring不能被赋值给一个String?属性，因为——就编译器而言——它们是完全不同的类型。值得庆幸的是，将子字符串转换为合适的字符串很容易:</p>
+<pre><code class="language-swift">label.text = String(substring)
+</code></pre>
+<p>在执行上述类型的转换时，需要记住的一点是，它确实将子字符串复制到一个新的字符串中，这通常是我们想要的，因为它还允许底层字符串从内存中释放(如果没有其他子字符串仍然引用它)。</p>
+<p>虽然String和Substring是不同的类型，但它们有很多共同的api——因为它们都遵循相同的StringProtocol。当我们想要编写既可以用于字符串也可以用于子字符串的泛型代码时，这就非常方便了—例如下面这个函数从一个字符串中提取所有的字母:</p>
+<pre><code class="language-swift">func letters&lt;S: StringProtocol&gt;(in string: S) -&gt; [Character] {
+    return string.filter { $0.isLetter }
+}
+</code></pre>
+<p>除了isLetter, Swift的角色类型还附带了一整套其他属性，这使得我们可以很容易地检查我们所处理的角色类型。</p>
+<p>与其他编程语言相比，Swift的字符串建模方法乍一看可能相当复杂，但Swift的字符串API是这样设计的有很好的理由-特别是当看到字符串实际上是如何存储的，以及在一个现代的，国际化的应用程序中准确表示文本的一些挑战。总的来说，Swift strings 给了我们很大的性能和安全性，尽管它可能会让我们在这里和那里损失一些方便。</p>
+<p><a href="https://www.swiftbysundell.com/basics/strings/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/-e6COW1bj/" class="tag">
+                    strings
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/rule-based-logic-in-swift/">
+                  <h3 class="post-title">
+                    Rule-based logic in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

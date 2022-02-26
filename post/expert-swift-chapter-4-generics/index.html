@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Expert Swift Chapter 4 : Generics | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Getting started with generics
+
+
+1.1. Generic types
+1.2. Protocols with associated types
+1.3. Extending generics
+1.4...." />
+    <meta name="keywords" content="expert swift,generics" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Expert Swift Chapter 4 : Generics</h2>
+            <div class="post-date">2021-08-26</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gtujc09e69j618t0u0n3t02.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Gettingstartedwithgenerics">Getting started with generics</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Generictypes">Generic types</a></li>
+<li>1.2. <a href="#Protocolswithassociatedtypes">Protocols with associated types</a></li>
+<li>1.3. <a href="#Extendinggenerics">Extending generics</a></li>
+<li>1.4. <a href="#Selfandmeta-types">Self and meta-types</a></li>
+</ul>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Creatingagenericnetworkinglibrary">Creating a generic networking library</a></li>
+</ol>
+<ul>
+<li>2.1. <a href="#MakingNetworkergeneric">Making Networker generic</a></li>
+<li>2.2. <a href="#UsingPATs">Using PATs</a></li>
+<li>2.3. <a href="#Typeconstraints">Type constraints</a></li>
+<li>2.4. <a href="#Addingcachingwithtypeerasure">Adding caching with type erasure</a></li>
+<li>2.5. <a href="#Fetchingandsavingaresponse">Fetching and saving a response</a></li>
+</ul>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Keypoints">Key points</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>几乎所有使用Swift的人——从完全的初学者到经验丰富的老手——都使用过泛型，不管他们是否知道。泛型支持 <strong>arrays and dictionaries, JSON decoding,****Combine publishers</strong>和Swift和iOS的许多其他部分。由于您已经使用过其中的许多特性，因此您可以直接了解泛型是多么强大。在本章中，您将学习如何利用这种能力来构建泛型支持的特性。</p>
+<p>通过继续在上一章开始的网络库中工作，您将更加熟悉泛型。这一次，您将修改它以使用泛型来创建一个更好的API。您将学习如何编写泛型函数、类和结构，如何使用与相关类型相关的协议，什么是类型擦除，以及如何将所有这些放在一起来创建一致的API。</p>
+<p>不过，在此之前，本章预先加载了相当多的理论，为您提供了泛型必须提供的参考。别担心——在本章的后面，你会亲自动手的!</p>
+<h2 id="1-a-namegettingstartedwithgenericsagetting-started-with-generics">1. <a name='Gettingstartedwithgenerics'></a>Getting started with generics</h2>
+<p>虽然这不是必需的，但你可以通过创建一个新的<strong>Swift Xcode playground</strong>来遵循这一节。从编写一个泛型函数开始:</p>
+<pre><code class="language-swift">func replaceNilValues&lt;T&gt;(from array: [T?], with element: T) -&gt; [T] {
+  array.compactMap {
+    $0 == nil ? element : $0
+  }
+}
+</code></pre>
+<p>使这个函数泛型的一个特殊语法是函数原型中的<T>。圆括号(())将函数的参数括起来，尖括号(&lt;&gt;)将函数的类型参数括起来。泛型函数接收类型参数作为函数调用的一部分，就像接收常规函数参数一样。</p>
+<p>在本例中，只有一个类型参数，称为<strong>T</strong>。这个参数的名称不是某个神奇的特殊常量——它是用户定义的。 在上面的例子中，您可以使用<strong>Element</strong>或其他任何东西。一旦在尖括号中定义了类型参数，就可以在函数声明的其余部分，甚至在函数体中使用它。</p>
+<p>当你调用这个函数时，Swift会用一个具体的类型替换T。</p>
+<pre><code class="language-swift">let numbers: [Int?] = [32, 3, 24, nil, 4]
+let filledNumbers = replaceNilValues(from: numbers, with: 0)
+print(filledNumbers) // [32, 3, 24, 0, 4]
+</code></pre>
+<p>在函数的原型中，定义了函数接收一个可选的<strong>T</strong>数组以及另一个<strong>T</strong>值。当你用<strong>numbers</strong>调用函数时，Swift知道数字有一个类型[Int?]，并知道需要用Int替换T。Swift就是这么聪明。这允许您创建一个可以跨所有可能类型工作的函数，从而不必复制和粘贴函数。从某种意义上说，泛型是协议的对立面。协议允许您在多个类型上调用函数，其中每个类型可以指定函数的实现。泛型允许您使用函数的相同实现在多个类型上调用函数。</p>
+<blockquote>
+<p>Note: 当您的函数非常泛型，并且类型可以是任何类型时，可以使用单个字母类型参数名，如T和U。 但通常情况下，类型参数将具有某种语义意义。在这种情况下，最好使用更具描述性的类型名，以便向读者提示其含义。例如，您可以使用Element、Value、Output等，而不是使用单个字母。</p>
+</blockquote>
+<p>当然，像常规参数一样，你可以有多个逗号分隔的类型参数:</p>
+<pre><code class="language-swift">func replaceNils&lt;K, V&gt;(
+  from dictionary: [K: V?], 
+  with element: V) -&gt; [K: V] {
+  dictionary.compactMapValues {
+    $0 == nil ? element : $0
+  }
+}
+</code></pre>
+<p>然而，有时您希望一个函数只适用于其中一些类型，而不是适用于所有可能类型的函数。Swift允许您向泛型类型添加约束:</p>
+<pre><code class="language-swift">func max&lt;T: Comparable&gt;(lhs: T, rhs: T) -&gt; T {
+  return lhs &gt; rhs ? lhs : rhs
+}
+</code></pre>
+<p>在上面的示例中，您需要使用&gt;操作符比较两个值。并不是Swift中的每一种类型都可以进行比较(例如，一个视图是否比另一个视图大?)。因此，您需要指定T必须符合Comparable。Swift知道T关于&gt;的有效实现。您使用<strong>Comparable</strong>作为泛型约束:一种告诉Swift泛型类型参数接受哪些类型的方法。</p>
+<h3 id="11-a-namegenerictypesageneric-types">1.1. <a name='Generictypes'></a>Generic types</h3>
+<p>泛型函数只能做到这一点。在某些时候，您会遇到需要泛型类或结构的情况。您已经一直在使用泛型类型:数组、字典和<strong>Combine publishers</strong>都是泛型类型。</p>
+<p>看一个泛型结构体:</p>
+<pre><code class="language-swift">struct Preference&lt;T&gt; {
+  let key: String
+
+  var value: T? {
+    get {
+      UserDefaults.standard.value(forKey: key) as? T
+    } set {
+      UserDefaults.standard.setValue(newValue, forKey: key)
+    }
+  }
+}
+</code></pre>
+<p>与泛型函数一样，泛型类型也有类型参数，在类型名称旁边声明。上面的示例显示了一个通用结构，它可以从<strong>UserDefaults</strong>中存储和检索任何类型。</p>
+<p>你可以通过在类型名称旁边的尖括号内写类型来为泛型类型提供具体类型:</p>
+<pre><code class="language-swift">var volume = Preference&lt;Float&gt;(key: &quot;audioVolume&quot;)
+volume.value = 0.5
+</code></pre>
+<p>这里，Swift用Float替换了T。用具体类型值替换类型参数的过程称为特化。在本例中，输入<Float>是必要的，因为Swift没有方法推断它。在其他情况下，当您在初始化式中使用类型参数时，Swift可以计算出您的具体类型，而无需编写尖括号。</p>
+<p>但是请记住，<strong>Preference</strong>本身不是一个类型。如果您尝试使用<strong>Preference</strong>作为变量的类型，您将得到一个编译器错误。Swift仅将该类型的专门化变体(如Preference<String>)识别为真实类型。泛型类型本身更像是蓝图:一种为您搭建的脚手架，但对编译器用处不大。</p>
+<h3 id="12-a-nameprotocolswithassociatedtypesaprotocols-with-associated-types">1.2. <a name='Protocolswithassociatedtypes'></a>Protocols with associated types</h3>
+<p>除了泛型结构体、枚举和类之外，还可以使用泛型协议。但是我们不这样称呼它们，我们简称它们为带关联类型的协议或PATs。 PATs的结构略有不同。<strong>泛型类型不是协议的参数，而是协议的需求之一，就像协议方法和属性一样。</strong></p>
+<pre><code class="language-swift">protocol Request {
+  associatedtype Model
+  func fetch() -&gt; AnyPublisher&lt;Model, Error&gt;
+}
+</code></pre>
+<p>在上面的协议中，Model只是协议的需求之一。要实现协议，你需要声明一个具体的Model类型，通过添加typealias到你的实现:</p>
+<pre><code class="language-swift">struct TextRequest: Request {
+  typealias Model = String
+
+  func fetch() -&gt; AnyPublisher&lt;Model, Error&gt; {
+    Just(&quot;&quot;)
+      .setFailureType(to: Error.self)
+      .eraseToAnyPublisher()
+  }
+}
+</code></pre>
+<p>在大多数情况下，Swift可以找出关联的类型，所以你不需要添加<strong>typealias</strong>，只要你在实现协议的方法之一时使用类型:</p>
+<pre><code class="language-swift">struct TextRequest: Request {
+  func fetch() -&gt; AnyPublisher&lt;String, Error&gt; {
+    // ...
+  }
+}
+</code></pre>
+<p>在上面的例子中，Swift看到您使用String代替Model，因此它可以推断String是关联的类型。</p>
+<p>与泛型类型一样，PATs不是类型! 如果你不相信我，试着用PAT作为类型: 会报错，该错误告诉您，Request只能用作通用约束，这在本节前面已经提到。那句话的意思是它不能用作一种类型。原因与Swift处理泛型类型的方式有关。 Swift需要在编译时使用一个具体的类型，以便在程序运行时避免出现错误和未定义的行为。没有所有类型参数的泛型不是具体类型。根据类型参数，方法和属性实现可以更改，对象本身也可以在内存中以不同的方式布局。因为Swift总是倾向于谨慎，所以它迫使您始终在代码中使用具体的、已知的类型。</p>
+<p>安全固然很好，但究竟如何定义一个PATs数组呢? 答案是类型擦除，您将在本章后面看到一个示例。</p>
+<blockquote>
+<p><a href="https://coding-pages-bucket-3400815-8719473-16768-590431-1304325418.cos-website.ap-hongkong.myqcloud.com/post/swift-advanced-protocol-xiang-jie/#%E5%8D%8F%E8%AE%AE%E5%92%8C%E5%85%B3%E8%81%94%E7%B1%BB%E5%9E%8B">协议关联类型的深入探究</a></p>
+</blockquote>
+<h3 id="13-a-nameextendinggenericsaextending-generics">1.3. <a name='Extendinggenerics'></a>Extending generics</h3>
+<p>在前一章中，您已经看到了扩展协议和实现它们的类型的所有方法。泛型也不例外! 首先，你可以扩展泛型作为任何其他类型，附加的好处是你可以访问扩展内部的类型参数:</p>
+<pre><code class="language-swift">extension Preference {
+  mutating func save(from untypedValue: Any) {
+    if let value = untypedValue as? T {
+      self.value = value
+    }
+  }
+}
+</code></pre>
+<p>在上面的示例中，您可以访问Preferences类型参数T，使用它强制转换接收到的值。</p>
+<p>与协议扩展一样，您还可以约束泛型类型的扩展。例如，可以将扩展约束为仅泛型类型，其中类型参数实现了协议:</p>
+<pre><code class="language-swift">extension Preference where T: Decodable {
+  mutating func save(from json: Data) throws {
+    let decoder = JSONDecoder()
+    self.value = try decoder.decode(T.self, from: json)
+  }
+}
+</code></pre>
+<p>在上面的代码中，save将只存在于类型参数为<strong>Decodable</strong>的Preferences上。</p>
+<p>你不需要约束扩展-你也可以约束一个单一的方法:</p>
+<pre><code class="language-swift">extension Preference {
+  mutating func save(from json: Data) throws where T: Decodable {
+    let decoder = JSONDecoder()
+    self.value = try decoder.decode(T.self, from: json)
+  }
+}
+</code></pre>
+<p>这段代码的作用与刚才看到的代码块相同。但是它约束了方法本身，而不是整个扩展。</p>
+<p>扩展PATs的工作方式与此相同。在本章的实践部分，你会看到一个例子。</p>
+<h3 id="14-a-nameselfandmeta-typesaself-and-meta-types">1.4. <a name='Selfandmeta-types'></a>Self and meta-types</h3>
+<p>“What is the self?”是一个哲学问题。这一章更重要的是解释什么是<strong>self</strong>，什么是<strong>Self</strong>和<strong>T.self</strong>。这些问题比哲学问题更容易回答。虽然本节可能不直接与泛型相关，但它与类型系统本身有很大关系。理解不同的<strong>selves</strong>和在Swift中使用类型的方法将帮助您更好地理解泛型。</p>
+<p>正如你已经知道的，self通常是对你当前所在对象的引用。如果你在User结构的实例方法中使用self, self将是该结构的实例。到目前为止，这很简单。然而，当你在一个类的类方法中，self不能是一个实例的引用，因为没有实例:你在类本身中。</p>
+<pre><code class="language-swift">class Networker {
+  class func whoAmI() {
+    print(self)
+  }
+}
+
+Networker.whoAmI() // &quot;Networker&quot;
+</code></pre>
+<p><strong>在类和静态方法中，self具有当前类型的值，而不是实例</strong>。当您考虑它时，这是有意义的:静态方法和类方法存在于类型上，而不是实例上。</p>
+<p>但是，Swift中的所有值都需要有一个类型，包括上面的self。 毕竟，您需要能够将它存储在变量中，并从函数中返回它。在类和静态方法中保存self的类型是什么? 答案是“<strong>Networker.Type</strong>”: 包含所有<strong>Networker</strong>子类型的类型!</p>
+<p>就像Int包含所有整型值一样，<strong>Int.Type</strong>保存所有Int类型的值。<strong>这些包含其他类型的类型称为元类型(meta-types)</strong>。这让你头晕目眩，对吧?</p>
+<pre><code class="language-swift">class WebsocketNetworker: Networker {
+  class func whoAmI() -&gt; Networker.Type {
+    return self
+  }
+}
+
+let type: Networker.Type = WebsocketNetworker.whoAmI()
+print(type)
+</code></pre>
+<p>在上面的例子中，您声明了一个名为type的元类型变量。元类型不仅可以包含Networker类型本身，还可以包含它的所有子类，比如WebsocketNetworker。在协议的情况下，协议的元类型(YourProtocol.Type)可以包含协议类型以及与该协议一致的所有具体类型。</p>
+<p>要将类型本身用作值，例如将其传递给函数或存储在变量中，需要使用<strong>type.self</strong>:</p>
+<pre><code class="language-swift">let networkerType: Networker.Type = Networker.self
+</code></pre>
+<p>出于实际原因，你必须这么做。通常，类型名用于声明变量或函数形参的类型。当它们不用于声明类型时，它们被隐式地用作初始化式。使用.self可以更清楚地说明您需要将类型作为值而不是作为其他东西的类型，并且您没有调用初始化式。</p>
+<p>最后，还有一个大写S的Self。值得庆幸的是，这个问题没有所有这些元对话那么复杂。<strong>Self总是它所出现的作用域的具体类型的别名</strong>。之所以强调<strong>Concrete</strong>，是因为Self始终是一个具体类型，即使它在协议方法中使用。</p>
+<pre><code class="language-swift">extension Request {
+  func whoAmI() {
+    print(Self.self)
+  }
+}
+
+TextRequest().whoAmI() // &quot;TextRequest&quot;
+</code></pre>
+<p>当您希望从协议方法返回当前的具体类型，或在创建工厂方法时将其用作静态方法中的初始化式时，Self是有用的。</p>
+<p>这是足够的理论。是时候启动Xcode并开始使用泛型了。</p>
+<h2 id="2-a-namecreatingagenericnetworkinglibraryacreating-a-generic-networking-library">2. <a name='Creatingagenericnetworkinglibrary'></a>Creating a generic networking library</h2>
+<p>在Xcode中创建本章材料中提供的初始项目。这个项目几乎与您在前一章中所写的项目相同。如果您还没有读过，请阅读前一章以熟悉该项目。它是一个很小的<strong>raywenderlich.com</strong>客户端应用程序，使用你的网络库由协议驱动。</p>
+<p>在本章中，您将扩展该库，使用泛型为您的用户提供一个更好的API。</p>
+<h3 id="21-a-namemakingnetworkergenericamaking-networker-generic">2.1. <a name='MakingNetworkergeneric'></a>Making Networker generic</h3>
+<p>首先在<strong>network .swift</strong>中添加一个通用函数，该函数可以下载可解码类型并对其进行解码。 在<strong>Networking</strong>中添加以下函数原型:</p>
+<pre><code class="language-swift">func fetch&lt;T: Decodable&gt;(url: URL) -&gt; AnyPublisher&lt;T, Error&gt;
+</code></pre>
+<p><strong>fetch(url:)<strong>是一个泛型函数，它有一个泛型类型参数T。您声明T是必须符合</strong>Decodable</strong>的类型。一旦将T声明为类型参数，就可以在类型签名的其他地方使用它—例如作为返回值。</p>
+<p>接下来，在<strong>networkworker</strong>中实现这个方法:</p>
+<pre><code class="language-swift">func fetch&lt;T: Decodable&gt;(url: URL) -&gt; AnyPublisher&lt;T, Error&gt; {
+  URLSession.shared.dataTaskPublisher(for: url)
+    .map { $0.data }
+    .decode(type: T.self, decoder: JSONDecoder())
+    .eraseToAnyPublisher()
+}
+</code></pre>
+<p>因为可以访问泛型类型参数T，所以可以在函数体中使用它将接收到的数据解码为T。Swift将用调用函数时使用的具体类型替换T。因为您声明了T符合<strong>decodebable</strong>，所以编译器对您的代码很满意。如果有人试图用不可解码的类型(如UIImage)调用这个函数，编译器将抛出一个错误。</p>
+<h3 id="22-a-nameusingpatsausing-pats">2.2. <a name='UsingPATs'></a>Using PATs</h3>
+<p>当您有快速的一次性请求时，使用泛型函数是很好的。但是，如果能够创建可重用的请求，您可以从代码中的任何地方发出请求，这将会有所帮助。为此，您需要将Request转换为具有关联类型的协议。打开<strong>Request.swift</strong>，并在协议中添加以下两行:</p>
+<pre><code class="language-swift">associatedtype Output
+func decode(_ data: Data) throws -&gt; Output
+</code></pre>
+<p>Output类型告诉用户这个请求应该获取什么。它可以是一篇<strong>Article, [Articles], User</strong>等等。**decode(_😃**函数负责将从URLSession接收到的数据转换为输出类型。</p>
+<p>接下来，在文件底部添加一个**decode(_😃**的默认实现:</p>
+<pre><code class="language-swift">extension Request where Output: Decodable {
+  func decode(_ data: Data) throws -&gt; Output {
+    let decoder = JSONDecoder()
+    return try decoder.decode(Output.self, from: data)
+  }
+}
+</code></pre>
+<p>当您创建其类型符合decodebable的请求实现时，您将免费获得该实现。它将尝试使用JSON解码器来返回Output类型。</p>
+<p>因为<strong>raywenderlich.com API</strong>提供的JSON响应不一定与项目中定义的模型匹配，所以您将无法使用这个默认实现。您将在<strong>ArticleRequest.swift</strong>中提供自己的。</p>
+<p>向结构体添加一个新方法:</p>
+<pre><code class="language-swift">func decode(_ data: Data) throws -&gt; [Article] {
+  let decoder = JSONDecoder()
+  let articlesCollection = try decoder.decode(Articles.self, from: data)
+  return articlesCollection.data.map { $0.article }
+}
+</code></pre>
+<p>首先将接收到的数据解码为Articles，这是一个与API响应匹配的helper结构体。然后将其转换为Article数组并返回。注意，您没有指定Output为[Article]。因为您使用它作为decode(_:)的返回类型，Swift可以推断出Output的类型，而无需您说明。</p>
+<p>接下来，您还将为图像实现decode(_😃。打开ImageRequest.swift并在结构体中添加一个enum:</p>
+<pre><code class="language-swift">enum Error: Swift.Error {
+  case invalidData
+}
+</code></pre>
+<p>您可以创建一个自定义枚举来表示在解码图像时可能发生的不同类型的错误。在本例中，您将只使用一个错误，但是您可以在自己的代码中扩展这个错误以使其更具描述性。通过遵循Swift的Error类型，您可以将此enum用作Combine发布者的错误类型，或者将其与throw关键字一起使用。</p>
+<p>最后，在结构体中实现decode(_😃:</p>
+<pre><code class="language-swift">func decode(_ data: Data) throws -&gt; UIImage {
+  guard let image = UIImage(data: data) else {
+    throw Error.invalidData
+  }
+  return image
+}
+</code></pre>
+<p>你试着把数据转换成UIImage。如果它不起作用，则抛出刚才声明的错误。</p>
+<h3 id="23-a-nametypeconstraintsatype-constraints">2.3. <a name='Typeconstraints'></a>Type constraints</h3>
+<p>现在您已经对Request进行了更改，现在可以在<strong>Networker.swift</strong>中使用这些更改了。您可能已经注意到一个奇怪的编译器错误:“<strong>协议请求只能用作通用约束，因为它有Self或相关的类型要求</strong>”。</p>
+<p>前面我提到，具有关联类型的协议本身不是类型，尽管它们的行为可能类似于类型。相反，它们是类型约束。</p>
+<p>将Networking中fetch(_:)的声明改为:</p>
+<pre><code class="language-swift">func fetch&lt;R: Request&gt;(_ request: R) -&gt; AnyPublisher&lt;R.Output, Error&gt;
+</code></pre>
+<p>将fetch(_:)转换为R类型的泛型函数，表示任何请求。您知道它是一个请求，因为您声明该类型必须符合request。 然后使用Request’s关联Output类型返回一个发布者。在这里，您不再使用Request作为具体类型。相反，您使用它作为R的约束，这样编译器错误就消失了。</p>
+<p>接下来，改变Networker中的fetch(_:)以匹配新的协议要求:</p>
+<pre><code class="language-swift">func fetch&lt;R: Request&gt;(_ request: R) -&gt; AnyPublisher&lt;R.Output, Error&gt; {
+  var urlRequest = URLRequest(url: request.url)
+  urlRequest.httpMethod = request.method.rawValue
+  urlRequest.allHTTPHeaderFields = delegate?.headers(for: self)
+
+  var publisher = URLSession.shared
+    .dataTaskPublisher(for: urlRequest)
+    .compactMap { $0.data }
+    .eraseToAnyPublisher()
+
+  if let delegate = delegate {
+    publisher = delegate.networking(self, transformPublisher: publisher)
+  }
+
+  return publisher.tryMap(request.decode).eraseToAnyPublisher()
+}
+</code></pre>
+<p>除了几个关键的变化外，功能基本保持不变。首先，您更改了声明，使它成为一个泛型函数。其次，您在末尾添加了一行代码，试图调用Request的decode(_:)函数来返回Output关联的类型。</p>
+<p>现在您已经完成了所有这些更改，您终于可以按预期使用networker了。打开<strong>ArticlesViewModel.swift</strong>。</p>
+<p>首先，从fetchArticles中删除<strong>trymap ([Article].init)<strong>行。因为Request为您完成了这一点，所以您不再需要该行。而且，因为ArticleRequest声明[Article]为其</strong>Output</strong>类型，Swift知道从发布者发布[Article]值，所以类型系统很高兴。</p>
+<p>接下来，在fetchImage内部，将整个fetch(_:)调用链替换为以下内容:</p>
+<pre><code class="language-swift">let request = ImageRequest(url: article.image)
+networker.fetch(request)
+  .sink(receiveCompletion: { completion in
+    switch completion {
+    case .failure(let error): print(error)
+    default: break
+    }
+  }, receiveValue: { [weak self] image in
+    self?.articles[articleIndex].downloadedImage = image
+  })
+  .store(in: &amp;cancellables)
+</code></pre>
+<p>同样，不需要将任何东西转换成UIImage因为ImageRequest会帮你做这个。相反，您可以在图像到达时获取图像，如果没有到达则打印出错误。</p>
+<p>你应该看到raywenderlich.com的文章列表和他们的图片。祝贺您，您刚刚使用泛型创建了一个可工作的网络库! 不过，不要停留在过去的成就上。您仍然可以通过使用泛型添加缓存来进一步改进库。</p>
+<h3 id="24-a-nameaddingcachingwithtypeerasureaadding-caching-with-type-erasure">2.4. <a name='Addingcachingwithtypeerasure'></a>Adding caching with type erasure</h3>
+<p>在前一章中，您在视图模型中添加了一个检查，检查图像是否已经下载，因为每次屏幕上出现一行时都会调用fetchImage函数。这是一种实现缓存的特别方法。通过向项目中添加通用缓存类，可以使此行为更具可重用性。</p>
+<p>创建一个名为<strong>RequestCache.swift</strong>的新文件，并添加以下内容:</p>
+<pre><code class="language-swift">class RequestCache&lt;Value&gt; {
+  private var store: [Request: Value] = [:]
+}
+</code></pre>
+<p>创建一个新的泛型类，将请求响应存储在普通Swift字典中的内存缓存中。您将存储由获取它们的请求指定的响应，这样您就可以轻松地将请求与其响应绑定在一起。</p>
+<p>您可能会注意到一个编译器错误。这个错误和你之前看到的是一样的:“Protocol Request只能被用作通用约束，因为它有Self或相关的类型要求”。在前面，您通过不直接使用Request类型而不是将其作为约束来修复这个错误。</p>
+<p>但在这种情况下，这是不可能的。你不能约束字典的键——它们都需要是相同的具体类型。在需要使用带有关联类型的协议作为具体类型的情况下，需要使用类型擦除。您可以将PATs视为通用协议。而类型擦除，顾名思义，是通过删除类型信息将泛型协议转换为具体类型的一种方法。</p>
+<p>转到Request.swift并在文件底部添加一个新结构:</p>
+<pre><code class="language-swift">struct AnyRequest: Hashable {
+  let url: URL
+  let method: HTTPMethod
+}
+</code></pre>
+<p>这个结构体支持类型擦除。 您可以将任何请求(不管其关联类型如何)转换为AnyRequest的一个实例。 AnyRequest只是一个没有任何泛型的普通Swift结构体。 因此，很自然地，您在这个过程中丢失了类型信息。你不能使用AnyRequest使你的代码更类型安全。但有时您可以放弃类型信息，从而使您可以更轻松地编写代码。</p>
+<p>现在，你可以回到RequestCache.swift，在store的声明中使用类型擦除结构体而不是Request:</p>
+<pre><code class="language-swift">private var store: [AnyRequest: Value] = [:]
+</code></pre>
+<p>你不是唯一一个用这种方式使用类型删除的人。很多苹果的api使用相同的模式，如Combine的<strong>AnyCancellable或AnyPublisher</strong>。<strong>AnySequence、AnyIterator和AnyCollection</strong>可以帮助你更容易地创建自己的序列和集合。SwiftUI的AnyView允许你在同一个数据结构中存储不同类型的视图。这些只是几个例子，向您展示类型擦除是一种常见的模式在Swift。 由于该模式是常见的，熟悉它将帮助您理解现有的api，并在将来创建新的api。</p>
+<h3 id="25-a-namefetchingandsavingaresponseafetching-and-saving-a-response">2.5. <a name='Fetchingandsavingaresponse'></a>Fetching and saving a response</h3>
+<p>现在可以继续编写类。您将向类添加两个方法，一个用于获取存储的响应，另一个用于保存响应。在你刚刚声明的属性下面添加一个新方法:</p>
+<pre><code class="language-swift">func response&lt;R: Request&gt;(for request: R) -&gt; Value? 
+  where R.Output == Value {
+  let erasedRequest = AnyRequest(url: request.url, method: request.method)
+  return store[erasedRequest]
+}
+</code></pre>
+<p>当有人想要为给定请求检索已存储的响应时，将调用此函数。这个函数的原型可能看起来有点复杂，所以分解它会有帮助。首先，声明一个必须符合Request的泛型参数R。然后接收相同类型的参数并返回Value的实例，Value是RequestCache类的泛型类型参数。 最后，指定R关联的Output类型必须与类的类型参数相同。</p>
+<p>函数原型的最后一部分验证了没有人会用错误的请求意外地调用函数。如果缓存存储图像(RequestCache<UIImage>)，只有获取图像的请求可以被检索(R.Output == UIImage)。如果你尝试用一个不匹配的Request来调用这个方法，你会得到一个编译器错误:</p>
+<p>但是，请记住，这仍然是一个泛型函数，因此只要多个Request类型的输出类型与存储值的类型匹配，就可以检索它们。例如，你可以使用<strong>AvatarThumbnailRequest和ImageRequest</strong>在RequestCache<UIImage>实例上调用这个方法。</p>
+<p>在该方法中，通过从所提供的请求构造AnyRequest来使用类型擦除，可以使用AnyRequest从字典中检索值。</p>
+<p>接下来，添加一个方法来为请求保存新响应:</p>
+<pre><code class="language-swift">func saveResponse&lt;R: Request&gt;(_ response: Value, for request: R)
+  where R.Output == Value {
+  let erasedRequest = AnyRequest(url: request.url, method: request.method)
+  store[erasedRequest] = response
+}
+</code></pre>
+<p>同样，在函数的签名中添加一个where子句，以验证请求类型是否匹配，从而防止意外的错误条目。正如您在**response(for:)**中所做的那样，您使用类型擦除在字典中存储一个新的响应。</p>
+<p>现在您有了一个通用缓存，可以创建一个缓存来存储所有下载的图像。打开Networking.swift并添加一个新的属性到networkworker:</p>
+<pre><code class="language-swift">private let imageCache = RequestCache&lt;UIImage&gt;()
+</code></pre>
+<p>您将使用这个实例来存image像请求响应。</p>
+<p>接下来，向类添加一个新的(未完成的)方法:</p>
+<pre><code class="language-swift">func fetchWithCache&lt;R: Request&gt;(_ request: R) 
+  -&gt; AnyPublisher&lt;R.Output, Error&gt; where R.Output == UIImage {
+  if let response = imageCache.response(for: request) {
+    return Just&lt;R.Output&gt;(response)
+      .setFailureType(to: Error.self)
+      .eraseToAnyPublisher()
+  }
+}
+</code></pre>
+<p>您很快就会完成这个方法。</p>
+<p>创建一个新的泛型方法，它接收请求并返回一个发布者，就像fetch(_:)一样。但是，如果响应已经存储，这个方法使用缓存来检索响应;如果没有存储，则存储新响应。这个函数的原型声明这个方法只能被Output类型为UIImage的请求使用，因为您目前只缓存UIImage实例。</p>
+<p>在方法中，首先检查响应是否已经缓存。如果是，则使用Just返回一个释放缓存值的发布者。</p>
+<p>用下面的代码完成这个方法:</p>
+<pre><code class="language-swift">return fetch(request)
+  .handleEvents(receiveOutput: {
+    self.imageCache.saveResponse($0, for: request)
+  })
+  .eraseToAnyPublisher()
+</code></pre>
+<p>如果没有缓存的响应，您可以使用fetch(_:)返回一个新的发布者。您还可以订阅发布者的输出事件，以便将响应存储在缓存中。</p>
+<p>接下来，将您的新方法添加到Networking:</p>
+<pre><code class="language-swift">func fetchWithCache&lt;R: Request&gt;(_ request: R)
+  -&gt; AnyPublisher&lt;R.Output, Error&gt; where R.Output == UIImage
+</code></pre>
+<p>现在在Networker中已经有了新的缓存方法，现在可以从视图模型中使用它了。打开ArticlesViewModel.swift并更改fetchImage如下:</p>
+<pre><code class="language-swift">func fetchImage(for article: Article) {
+  guard let articleIndex = articles.firstIndex(
+    where: { $0.id == article.id }) else {
+    return
+  }
+
+  let request = ImageRequest(url: article.image)
+  networker.fetchWithCache(request)
+    .sink(receiveCompletion: { error in
+      print(error)
+    }, receiveValue: { image in
+      self.articles[articleIndex].downloadedImage = image
+    })
+    .store(in: &amp;cancellables)
+}
+</code></pre>
+<p>您不再需要在这里执行任何检查。Networker负责所有缓存，让视图模型专注于准备视图数据，而不用担心存储请求。 生成并运行项目。它应该像以前一样工作，除了现在您有一个更好的API。</p>
+<h2 id="3-a-namekeypointsakey-points">3. <a name='Keypoints'></a>Key points</h2>
+<ul>
+<li>方法、结构、枚举和类都可以通过在尖括号中添加类型参数变成泛型!</li>
+<li>通过使用带有关联类型的协议，协议也可以是通用的。</li>
+<li><strong>self</strong> 在静态方法和计算属性中具有当前类型的值，在这些情况下<strong>self</strong>的类型是元类型。</li>
+<li><strong>Self</strong> 始终具有当前具体类型的值。</li>
+<li>可以使用带有泛型约束的扩展，当泛型类型参数满足特定需求时，使用where关键字扩展泛型类型。</li>
+<li>还可以使用where关键字专门化方法本身。</li>
+<li>使用类型擦除将泛型和PATs作为常规类型使用。</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/fhJM3gN7U/" class="tag">
+                    expert swift
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/expert-swift-chapter-3-protocols/">
+                  <h3 class="post-title">
+                    Expert Swift - Chapter 3: Protocols
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

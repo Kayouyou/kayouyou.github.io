@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 65: SwiftUI and State Management: Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+A tour of the application
+
+
+
+
+The navigation screen
+
+
+
+
+The counter screen
+
+
+
+
+Persisting the count..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 65: SwiftUI and State Management: Part 1</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Atouroftheapplication">A tour of the application</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Thenavigationscreen">The navigation screen</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Thecounterscreen">The counter screen</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Persistingthecounterscreen">Persisting the counter screen</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Nexttime:primechecking">Next time: prime checking</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 65: SwiftUI and State Management: Part 1 -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>今天我们将开始讨论一些应用程序架构的想法，在Point-Free发布的一年半时间里，不知怎么的，我们还没有真正正面讨论过这些想法。关于如何使应用程序更易于理解和测试，我们已经讨论了许多广泛的概念，例如将副作用推到极限，尽可能多地使用纯函数，以及将函数和组合置于所有其他抽象之上。</p>
+<p>因此，随着函数式编程的基础牢固地扎根于每个人的头脑中，我们现在可以开始讨论如何将所有这些想法粘合到构建大型、复杂应用程序的内聚故事中。但是，在此之前，我们需要探索一些问题空间，并看看当我们试图创建一个中等复杂的应用程序时，我们会遇到什么样的挑战。 在接下来的几集中不会有太多函数式编程，因为我们需要做好准备，这样我们就可以看到函数式编程对架构有什么影响。</p>
+<p>因此，在下一节中，我们将开始构建一个应用程序，它将演示应用程序开发中出现的许多复杂情况。它将有一些需要被操作和持久化的状态，它将涉及从API请求加载数据并显示警报，它将有多个界面，所有这些都需要对全局应用程序状态进行更改。无论您是独立开发人员还是在大型团队中，拥有一种坚持己见和一致的方式来完成这些任务对于创建一个可伸缩的、可以长期维护的体系结构是至关重要的。</p>
+<p>我们已经决定使用Swift 5.1和Xcode 11测试版在<strong>SwiftUI</strong>上做这个应用，但我们讨论的所有问题也同样适用于<strong>UIKit</strong>应用。我们之所以选择<strong>SwiftUI</strong>，是因为苹果在如何构建应用方面采取了比以往<strong>UIKit</strong>更强硬的立场。这给了我们一个绝佳的机会去理解为什么架构是重要的，以及我们如何利用苹果提供的工具来采用适合我们需求的架构。</p>
+<p>同样值得注意的是，我们并没有对<strong>SwiftUI</strong>的工作方式进行全面的探索，我们只会描述我们需要让应用程序运行的内容。我们将详细解释我们使用的部分<strong>SwiftUI</strong>，但有些内容将在未来的章节中进行更深入的探讨。</p>
+<h2 id="2-a-nameatouroftheapplicationaa-tour-of-the-application">2. <a name='Atouroftheapplication'></a>A tour of the application</h2>
+<p>这是一款计数应用，可以让你检查一个数是否为质数(也就是说，一个数只能被1和它本身整除)，如果是，你可以保存或从喜爱的质数列表中删除它。你也可以让它计算第n个素数，这实际上是对Wolfram Alpha做一个API请求，一个科学计算API。我们还可以回去查看我们喜欢的质数的整个列表，如果我们愿意，可以删除任何质数。我们在这个应用程序中没有进行任何样式设置，因为我们想完全关注数据如何在这个应用程序中移动的复杂性。</p>
+<p>当然，这不是一个超级真实的应用程序的例子，它更像是一个玩具，但它触及了我们在任何应用程序的架构中需要解决的很多问题的核心:</p>
+<ul>
+<li>
+<p>有很多状态会改变UI的显示。 例如，按下一个按钮会导致一个新的界面出现，而新界面的内容取决于前一个界面上发生的事情，并且我们的这个按钮，它会触发一个网络请求，当请求正在运行时，我们想要禁用这个按钮。</p>
+</li>
+<li>
+<p>状态有时必须跨越多个界面(在本例中它是最喜欢的质数的列表,因为我们需要它来表示是否添加或删除,我们需要在列表视图中所有的质数都是我们最喜欢的)。</p>
+</li>
+<li>
+<p>有许多小的子组件需要拼凑在一起，使应用成为一个整体。我们希望这些界面可以在不了解更大的应用程序的情况下独立开发，甚至可以将它们放在自己的Swift包中。</p>
+</li>
+<li>
+<p>特别是当我们想要计算“n”素数时发生的API请求，会有一些副作用会发生。我们希望有一种自以为是的方式将这种影响引入到我们的视图中，这样我们就不会到处散布网络请求了。这样做会使我们很难理解数据是如何在应用程序中流动的，并使视图更难测试。</p>
+</li>
+</ul>
+<h2 id="3-a-namethenavigationscreenathe-navigation-screen">3. <a name='Thenavigationscreen'></a>The navigation screen</h2>
+<p>让我们通过做一些简单的事情来接触<strong>SwiftUI</strong>。 我们要创建这个根视图。它只有一个标题视图和两个垂直堆叠的按钮。 无论如何，当你开始在<strong>SwiftUI</strong>创建一个视图时，你总是先创建一个符合<strong>view</strong>协议的结构，我喜欢使用<strong>EmptyView</strong>来实现基本的一致性:</p>
+<pre><code class="language-swift">import SwiftUI
+
+struct ContentView: View {
+  var body: some View {
+    EmptyView()
+  }
+}
+
+import PlaygroundSupport
+
+PlaygroundPage.current.liveView = UIHostingController(
+  rootView: ContentView()
+)
+</code></pre>
+<p>现在我们已经遇到了一些有趣的Swift 5.1的新东西:</p>
+<ul>
+<li>
+<p><em>body</em>属性的类型中有<strong>some</strong>关键字。幸运的是，为了在这个界面上取得进展，我们不需要深入了解它是如何工作的。我们将在以后的章节中更深入地讨论一些概念，但现在只需要知道，在这个属性的主体中，我们只需要返回一些符合<strong>View</strong>协议的值。</p>
+</li>
+<li>
+<p>我们可以忽略computed属性体的<strong>return</strong>，因为它只是一个一行代码块</p>
+</li>
+</ul>
+<p>为了在<strong>playground</strong>中获得这个视图渲染，我们需要将它包装在<strong>UIHostingController</strong>中，它是<strong>SwiftUI</strong>世界和<strong>UIKit</strong>世界之间的桥梁。</p>
+<p>接下来，我们要开始填充这个视图的主体。因为我们想从这个视图导航到其他子视图，我们的根视图将是<strong>NavigationView</strong>:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    NavigationView {
+    }
+  }
+}
+</code></pre>
+<p>这将允许我们在新界面上创建按钮。说到这里，我们可以使用<strong>NavigationLink</strong>元素来创建其中一些:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    NavigationView {
+      NavigationLink(destination: EmptyView()) {
+        Text(&quot;Counter demo&quot;)
+      }
+      NavigationLink(destination: EmptyView()) {
+        Text(&quot;Favorite primes&quot;)
+      }
+    }
+  }
+}
+</code></pre>
+<p>只显示了第一个导航链接，因为我们还没有告诉<strong>SwiftUI</strong>这两个元素应该如何流动:它们应该并排还是堆叠在一起? 如果我们将它们包装在一个<strong>List</strong>中，我们可以让它们都很好地呈现。</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    NavigationView {
+      List {
+        NavigationLink(destination: EmptyView()) {
+          Text(&quot;Counter demo&quot;)
+        }
+        NavigationLink(destination: EmptyView()) {
+          Text(&quot;Favorite primes&quot;)
+        }
+      }
+    }
+  }
+}
+</code></pre>
+<p>最后，我们可以通过在<strong>NavigationView</strong>的根级视图中设置<strong>navigationBarTitle</strong>来为这个视图添加标题:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    NavigationView {
+      List {
+        NavigationLink(destination: EmptyView()) {
+          Text(&quot;Counter demo&quot;)
+        }
+        NavigationLink(destination: EmptyView()) {
+          Text(&quot;Favorite primes&quot;)
+        }
+      }
+      .navigationBarTitle(&quot;State management&quot;)
+    }
+  }
+}
+</code></pre>
+<p>值得指出的是，我们使用<strong>EmptyView</strong>作为目的地，因为我们还没有这些视图的内容。这是一个方便的技巧来慢慢填充UI。如果有什么东西需要视图，但你手边没有任何东西，你可以只使用<strong>EmptyView</strong>。这类似于我们在本系列中多次使用的实现函数，只不过我们使用了<strong>fatalError</strong>，这是一个<strong>Never</strong>返回的函数。</p>
+<p>就这样，我们有了第一个界面! 点击按钮只会导致空白屏幕，但我们能够如此迅速地将内容呈现在屏幕上。</p>
+<h2 id="4-a-namethecounterscreenathe-counter-screen">4. <a name='Thecounterscreen'></a>The counter screen</h2>
+<p>接下来，我们将开始建造计数器界面。我们可以开始建立一些脚手架和切换到我们的实时视图:</p>
+<pre><code class="language-swift">struct CounterView: View {
+  var body: some View {
+    EmptyView()
+  }
+}
+
+import PlaygroundSupport
+
+PlaygroundPage.current.liveView = UIHostingController(
+//  rootView: ContentView()
+  rootView: CounterView()
+)
+</code></pre>
+<p>现在我们需要使用<strong>HStacks和VStacks</strong>来构建counter视图的内容，以便水平和垂直堆叠视图。</p>
+<pre><code class="language-swift">struct CounterView: View {
+  var body: some View {
+    VStack {
+      HStack {
+        Button(action: {}) {
+          Text(&quot;-&quot;)
+        }
+        Text(&quot;0&quot;)
+        Button(action: {}) {
+          Text(&quot;+&quot;)
+        }
+      }
+      Button(action: {}) {
+        Text(&quot;Is this prime?&quot;)
+      }
+      Button(action: {}) {
+        Text(&quot;What is the 0th prime?&quot;)
+      }
+    }
+  }
+}
+</code></pre>
+<p>创建<strong>Button</strong>需要指定一个操作闭包，该闭包在按下按钮时执行。我们很快就会想在那里做一些工作，但现在我们将提供一个无操作闭包</p>
+<p>在本集中，我们有意不讨论样式，但为了使内容更容易阅读，让我们将该视图的字体增大到与标题大小相同。</p>
+<pre><code class="language-swift">.font(.title)
+</code></pre>
+<p>现在所有的核心UI都就位了，但我们需要更新我们的根内容视图，这样点击一个按钮就会让我们深入到这个视图:</p>
+<pre><code class="language-swift">NavigationLink(destination: CounterView()) {
+</code></pre>
+<p>现在我们可以向下进入到这个视图。</p>
+<p>为了让标题就位，我们需要添加一个导航标题到计数器视图。</p>
+<pre><code class="language-swift">.navigationBarTitle(&quot;Counter demo&quot;)
+</code></pre>
+<p>这个屏幕上没有任何连接。当点击任何一个按钮，什么都不会发生。</p>
+<p><strong>SwiftUI</strong>为我们提供了一些将状态引入视图的选项，只要状态发生变化，视图就会用更新状态重新呈现。 让我们从最简单的选项开始，首先在视图中引入一个var属性，用@State属性标记:</p>
+<pre><code class="language-swift">@State var count: Int = 0
+</code></pre>
+<p>这是Swift的一项新功能，称为“<strong>property wrapper</strong>”。它是一种机制，允许您将一个类型封装到另一个提供一些功能的类型中，同时仍然直接向我们公开底层封装的值。 这个@<strong>State</strong>属性用一个新对象包装了一个整数，它为我们做两件事:</p>
+<p>它为我们提供了一个<strong>count</strong>变量，我们可以在视图中使用该变量来基于该值更新其表示。</p>
+<pre><code class="language-swift">self.count // Int
+</code></pre>
+<p>最简单的就是把计数的值放在<strong>TextView</strong>里面:</p>
+<pre><code class="language-swift">Text(&quot;\(self.count)&quot;)
+</code></pre>
+<p>非常容易。稍微复杂一点的是更新负责计算“第n个素数”的按钮的标签。 我们想要将<strong>count</strong>值转换为顺序(例如，1、2、3等)，我们可以通过一个数字格式化程序来实现:</p>
+<pre><code class="language-swift">private func ordinal(_ n: Int) -&gt; String {
+  let formatter = NumberFormatter()
+  formatter.numberStyle = .ordinal
+  return formatter.string(for: n) ?? &quot;&quot;
+}
+</code></pre>
+<p>现在我们可以在按钮的标签中使用这个助手函数。</p>
+<pre><code class="language-swift">Button(action: {}) {
+  Text(&quot;What's the \(ordinal(self.count)) prime?&quot;)
+}
+</code></pre>
+<p>到目前为止，@<strong>State</strong>似乎没有做什么。我们只是直接访问整数计数。然而，在幕后，@<strong>State</strong>属性也把<strong>count</strong>包装进<strong>binding</strong>:</p>
+<pre><code class="language-swift">self.$count // Binding&lt;Int&gt;
+</code></pre>
+<p>这是<strong>SwiftUI</strong>用来知道值何时被更新的一种类型，这样它就可以用更新的信息重新计算它的视图。 这真的很强大，因为在视图中，我们可以以简单、熟悉的方式改变这个变量，但在内部，<strong>SwiftUI</strong>会做一些工作，以确保变化传播到适当的位置。</p>
+<p>例如，在+/-按钮中，我们可以对<strong>count</strong>变量做一个非常简单的改变:</p>
+<pre><code class="language-swift">Button(action: { self.count -= 1 }) {
+  Text(&quot;-&quot;)
+}
+Button(action: { self.count += 1 }) {
+  Text(&quot;+&quot;)
+}
+</code></pre>
+<p>就像这样，我们已经有了一个半功能的应用程序。点击这些按钮现在导致计数器值上升和下降，甚至改变按钮的标签。</p>
+<h2 id="5-a-namepersistingthecounterscreenapersisting-the-counter-screen">5. <a name='Persistingthecounterscreen'></a>Persisting the counter screen</h2>
+<p>站起来跑起来很容易，几乎太容易了。事实上，这是一个相当严重的问题。使用@<strong>State</strong>属性，我们指定视图有一些它关心的本地状态，但是没有简单的方法允许该状态传播到其他屏幕。我们可以通过简单地改变计数器来看到这一点，回到主界面，然后回到计数器。它被重置为0，而不是保持以前的值。</p>
+<p>这样做的原因是@<strong>State</strong>专门用于本地的、非持久化的状态，只有这个视图才会关心和想要控制这些状态。 典型的例子是按钮的高亮状态，它完全由用户的触摸控制，因此不需要移动到比按钮本身更远的地方。</p>
+<p>对于您确实希望状态持久存在的情况，<strong>SwiftUI</strong>提供了另一个称为@<strong>ObjectBinding</strong>的概念。这与@<strong>State</strong>的工作方式基本相同，不同的是它让您负责描述状态的变化如何发生，以及这些变化如何通知SwiftUI系统。有了这种权限，你就可以将状态表示为一个更全局的对象，而不是视图的局部对象，这样状态的变化就可以影响到整个应用程序。</p>
+<p>首先，我们将@<strong>State</strong>改为@<strong>ObjectBinding</strong>:</p>
+<pre><code class="language-swift">@ObjectBinding var count: Int = 0
+</code></pre>
+<p>这里有两个问题:</p>
+<ul>
+<li>
+<p>首先，我们不应该将这个值默认为0，因为每次这个屏幕打开时计数器都从0开始，这不再是正确的。我们希望它引用一个持久化的全局值，因此应该去掉默认值，只指定类型:<strong>var count: Int</strong>。</p>
+</li>
+<li>
+<p>其次，@<strong>ObjectBinding</strong>的值的类型必须符合<strong>BindableObject</strong>协议。 正是实现了这个协议，我们才能控制持久性状态的变化以及如何通知系统的其他部分。</p>
+</li>
+</ul>
+<p>这第二点意味着我们需要将计数值包装在符合此协议的新类型中。我们可能会尝试使用结构体，因为我们知道值类型很棒:</p>
+<pre><code class="language-swift">struct AppState: BindableObject {
+  var count: Int
+}
+</code></pre>
+<p>但我们马上就遇到了一个问题:</p>
+<blockquote>
+<p>🛑 Non-class type ‘AppState’ cannot conform to class protocol ‘BindableObject’</p>
+</blockquote>
+<p>这是因为<strong>BindableObject</strong>协议继承自<strong>AnyObject</strong>，这意味着它必须是一个类。 这是有意义的，因为我们想要一个单一的，持久的应用状态源，所以复制我们的状态并对其进行操作是没有意义的。我们希望所有操作都发生在单一的真实数据上。</p>
+<p>让我们换成一个类:</p>
+<pre><code class="language-swift">class AppState: BindableObject {
+  var count: Int
+}
+</code></pre>
+<p>现在有几个编译器错误告诉我们<strong>count</strong>没有初始化，我们还没有满足协议的所有要求。</p>
+<p>我们可以默认<strong>count</strong>为0。</p>
+<pre><code class="language-swift">class AppState: BindableObject {
+  var count = 0
+}
+</code></pre>
+<p>然后为了符合协议，我们必须提供一个<strong>didChange</strong>属性。自动完成有点让人困惑，但这里真正要做的是我们需要提供一个<strong>didChange</strong>发布者:</p>
+<pre><code class="language-swift">var didChange: AppState.PublisherType
+</code></pre>
+<blockquote>
+<p>Correction<br>
+In Xcode 11 beta 5 and later versions, SwiftUI’s BindableObject protocol was deprecated in favor of an ObservableObject protocol that was introduced to the Combine framework. This protocol utilizes an objectWillChange property of ObservableObjectPublisher, which is pinged before (not after) any mutations are made to your model:<br>
+<strong>let objectDidChange = ObservableObjectPublisher()</strong><br>
+This boilerplate is also not necessary, as the ObservableObject protocol will synthesize a default publisher for you automatically.</p>
+</blockquote>
+<p>现在<strong>publishers</strong>是与<strong>SwiftUI</strong>一起发布的<strong>Combine</strong>框架中的一个概念，我们将在未来的章节中对它进行大量介绍，但现在我们可以将其视为一种机制，当有什么变化时，我们可以通知感兴趣的订阅户。出于我们的目的，我们可以使用<strong>PassthroughSubject</strong>，它有两个泛型:一个用于它可以发出的值，另一个用于它可以完成的错误。 再次简化，我们将使用<strong>Void</strong>和<strong>Never</strong>来代表一个主题，当一些事情发生变化时，它不会发出任何感兴趣的东西，而且永远不会失败:</p>
+<pre><code class="language-swift">var didChange = PassthroughSubject&lt;Void, Never&gt;()
+</code></pre>
+<p>这种机制的工作原理与通知中心非常相似，但本地化程度更高。任何对监听这个对象的更改感兴趣的人都可以很容易地订阅，我们可以通过简单地点击这个值的<strong>send</strong>方法来通知更改。</p>
+<p>这就足够让编译器满意了，但它还没有做任何事情。 每次我们的模型改变时，我们都需要<strong>ping</strong>这个<strong>publisher</strong>，幸运的是Swift让这变得非常简单:我们只需要给我们的属性附加一个<strong>didSet</strong>处理程序:</p>
+<pre><code class="language-swift">var count = 0 {
+  didSet {
+    self.didChange.send()
+  }
+}
+</code></pre>
+<blockquote>
+<p>Correction<br>
+With Xcode 11 beta 5 and later, willSet should be used instead of didSet:</p>
+</blockquote>
+<pre><code class="language-swift">var count = 0 {
+  willSet {
+    self.objectWillChange.send()
+  }
+}
+</code></pre>
+<p>Or you can remove this boilerplate entirely by using a @Published property wrapper:</p>
+<pre><code class="language-swift">@Published var count = 0
+</code></pre>
+<p>这就是我们为应用程序获得持久状态所需要做的一切。为了将它连接到视图，我们将更新状态变量:</p>
+<pre><code class="language-swift">@ObjectBinding var state: AppState
+</code></pre>
+<blockquote>
+<p>Correction<br>
+With Xcode 11 beta 5 and later, SwiftUI’s @<strong>ObjectBinding</strong> property wrapper was deprecated in favor of the @<strong>ObservedObject</strong> wrapper introduced to the Combine framework.</p>
+</blockquote>
+<p>这将破坏我们视图中的一些东西，因为我们不再有<strong>count</strong>字段，而是必须通过<strong>state</strong>字段访问它:</p>
+<pre><code class="language-swift">Button(action: { self.state.count -= 1 }) {
+…
+Text(&quot;\(self.state.count)&quot;)
+…
+Button(action: { self.state.count += 1 }) {
+…
+Text(&quot;What's the \(ordinal(self.state.count)) prime?&quot;)
+</code></pre>
+<p>最后，唯一需要解决的事情是，当我们深入时，显式地将app状态传递给计数器视图:</p>
+<pre><code class="language-swift">NavigationLink(destination: CounterView(state: &lt;#AppState#&gt;)) {
+</code></pre>
+<p>但为了做到这一点，我们的<strong>ContentView</strong>也需要访问应用状态，所以我想我们应该添加它:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  @ObjectBinding var state: AppState
+</code></pre>
+<p>然后我们可以把它传递下去:</p>
+<pre><code class="language-swift">NavigationLink(destination: CounterView(state: self.state)) {
+</code></pre>
+<p>最后，当它第一次实例化到playground实时视图时，我们需要提供应用的状态给<strong>ContentView</strong>:</p>
+<pre><code class="language-swift">PlayergroundPage.current.live = UIHostingController(
+  rootView: ContentView(state: AppState())
+)
+</code></pre>
+<p>好的，所以我们必须做一些管道，以在我们的每个视图适当地得到我们的全局应用状态，但做这项工作的好处是，现在计数值将持续在所有屏幕上。我们可以向下深入计数器，更改它，回到主屏幕，再向下深入，一切都恢复到以前的状态。所以我们用<strong>SwiftUI</strong>中的@<strong>ObjectBinding</strong>只需要很少的工作就实现了一致性。</p>
+<h2 id="6-a-namenexttimeprimecheckinganext-time-prime-checking">6. <a name='Nexttime:primechecking'></a>Next time: prime checking</h2>
+<p>现在我们知道了如何在视图中表达状态，如何让视图对状态的变化做出反应，甚至如何在整个应用程序中一致化状态，让我们在应用程序中构建另一个界面。我们来做质数检查模态视图。 当你点击“这是质数吗?”按钮，它会显示一个标签，让你知道当前计数器是否为素数，它还会给你一个按钮，用于从收藏列表中保存或删除该数字。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/swift-overture/">
+                  <h3 class="post-title">
+                    swift-overture
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

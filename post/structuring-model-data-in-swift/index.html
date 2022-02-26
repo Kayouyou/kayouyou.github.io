@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Structuring model data in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="为了使代码更容易使用，在代码库中建立一个坚实的结构通常是必不可少的。然而，要实现一个既能防止bug和问题又能灵活应对现有特性和未来任何更改的结构是非常棘手的。
+这对于模型代码来说尤其如此，它经常被许多不同的特性所使用，每个特性都有自己的一组..." />
+    <meta name="keywords" content="models,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Structuring model data in Swift</h2>
+            <div class="post-date">2019-04-28</div>
+            
+            <div class="post-content" v-pre>
+              <p>为了使代码更容易使用，在代码库中建立一个坚实的结构通常是必不可少的。然而，要实现一个既能防止bug和问题又能灵活应对现有特性和未来任何更改的结构是非常棘手的。</p>
+<p>这对于模型代码来说尤其如此，它经常被许多不同的特性所使用，每个特性都有自己的一组需求。本周，让我们来看看构建组成核心模型的数据的一些不同的技术，以及改进该结构如何对我们的代码库的其余部分产生巨大的积极影响。</p>
+<h2 id="forming-hierarchies">Forming hierarchies</h2>
+<p>在项目的开始阶段，模型通常可以保持相当简单。因为我们还没有实现很多特性，所以我们的模型很可能不需要包含很多数据。然而，随着我们的代码库的增长，我们的模型也在不断增长——曾经简单的模型最终变成了所有类型相关数据的“包罗万象”，这种情况是很常见的。</p>
+<p>例如，假设我们正在构建一个电子邮件客户端，它使用消息模型来跟踪每条消息。最初，该模型可能只包含给定消息的主题行和主体，但从那以后，它已经包含了各种各样的附加数据:</p>
+<pre><code class="language-swift">struct Message {
+    var subject: String
+    var body: String
+    let date: Date
+    var tags: [Tag]
+    var replySent: Bool
+    let senderName: String
+    let senderImage: UIImage?
+    let senderAddress: String
+}
+</code></pre>
+<p>虽然上面的所有数据都是呈现消息所必需的，但是将它们都直接保存在消息类型本身中会使事情变得有点混乱——而且很可能会使消息更难处理，尤其是在我们创建新实例时-在编写新消息或编写单元测试时。</p>
+<p>缓解上述问题的一种方法是将我们的数据分解为多个专用类型——然后我们可以使用这些类型来形成一个模型层次结构。例如，我们可以将消息发送方的所有数据提取到Person结构中，并将所有元数据(例如消息的标记和日期)提取到元数据类型中，如下所示:</p>
+<pre><code class="language-swift">struct Person {
+    var name: String
+    var image: UIImage?
+    var address: String
+}
+
+extension Message {
+    struct Metadata {
+        let date: Date
+        var tags: [Tag]
+        var replySent: Bool
+    }
+}
+</code></pre>
+<p>现在，有了上面的内容，我们可以给我们的消息类型一个更清晰的结构——因为每个不是消息本身的一部分的数据现在被包装在一个更加上下文相关的、专用的类型中:</p>
+<pre><code class="language-swift">struct Message {
+    var subject: String
+    var body: String
+    var metadata: Metadata
+    let sender: Person
+}
+</code></pre>
+<p>上述方法的另一个好处是，我们现在可以更容易地在不同的上下文中重用部分数据。例如，我们可以使用新的Person类型来实现联系人列表之类的功能，或者允许用户定义组——因为该数据不再直接绑定到消息类型。</p>
+<h2 id="reducing-duplication">Reducing duplication</h2>
+<p>除了用来更好地组织我们的代码外，一个坚实的结构还可以帮助减少项目中的重复。假设我们的电子邮件应用程序使用事件驱动的方法来处理不同的用户操作——使用一个像这样的事件枚举:</p>
+<pre><code class="language-swift">enum Event {
+    case add(Message)
+    case update(Message)
+    case delete(Message)
+    case move(Message, to: Folder)
+}
+</code></pre>
+<p>使用enum来定义各种代码需要处理的事件的有限列表是在应用程序中建立更清晰的数据流的好方法-但是我们当前的实现要求每个案例都包含事件对应的消息 -导致事件类型本身的重复，当我们想要从事件的消息中提取信息时也是如此。</p>
+<p>既然每个事件的操作都是在消息上执行的，那么让我们将两者分开，并创建一个更简单的enum类型，它将包含我们所有的操作</p>
+<pre><code class="language-swift">enum Action {
+    case add
+    case update
+    case delete
+    case move(to: Folder)
+}
+</code></pre>
+<p>然后，让我们再次形成一个层次结构——这一次，通过重构我们的事件类型，使其成为一个包装器，包含一个动作和它将被应用到的消息——像这样:</p>
+<pre><code class="language-swift">struct Event {
+    let message: Message
+    let action: Action
+}
+</code></pre>
+<p>上面的方法在某种程度上为我们提供了两全其美的效果——处理事件现在只是简单地切换事件的操作，而从事件的消息中提取数据现在可以直接使用message属性</p>
+<h2 id="recursive-structures">Recursive structures</h2>
+<p>到目前为止，我们已经形成了层次结构，其中每个子节点和父节点都是完全不同的类型——但这并不总是最优雅或最方便的解决方案。假设我们正在开发一个显示各种内容的应用程序，比如文本和图像，并且我们再次使用enum来定义每一段内容——像这样:</p>
+<pre><code class="language-swift">enum Content {
+    case text(String)
+    case image(UIImage)
+    case video(Video)
+}
+</code></pre>
+<p>现在，假设我们想让用户形成内容组——例如创建收藏列表，或者使用文件夹来组织内容。最初的想法可能是使用一个专门的组类型，包含组的名称和属于它的内容:</p>
+<pre><code class="language-swift">struct Group {
+    var name: String
+    var content: [Content]
+}
+</code></pre>
+<p>然而，尽管上面看起来优雅且结构良好，但在这种情况下它有一些缺点。通过引入一种新的、专用的类型，我们将被要求从单独的内容片段中单独处理组——这使得构建列表之类的东西变得更加困难——而且我们也不能轻易地支持嵌套的组。</p>
+<p>由于在这种情况下，组只不过是构造内容的一种不同方式，所以让我们通过简单地为它添加一个新情况，让它成为content enum本身的第一类成员——就像这样:</p>
+<pre><code class="language-swift">enum Content {
+    case text(String)
+    case image(UIImage)
+    case video(Video)
+    case group(name: String, content: [Content])
+}
+</code></pre>
+<p>我们上面所做的实际上是将内容变成递归的数据结构。 这种方法的美妙之处在于，我们现在可以重用大部分用于处理内容的相同代码来处理组，并且可以自动支持任意数量的嵌套组。</p>
+<p>例如，下面是我们如何处理显示内容列表的表格视图的单元格选择:</p>
+<pre><code class="language-swift">extension ListViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let content = contentList[indexPath.row]
+
+        switch content {
+        case .text(let string):
+            navigator.showText(string)
+        case .image(let image):
+            navigator.showImage(image)
+        case .video(let video):
+            navigator.openPlayer(for: video)
+        case .group(let name, let content):
+            navigator.openList(withTitle: name, content: content)
+        }
+    }
+}
+</code></pre>
+<p>因为内容现在是递归的，调用navigator.openList在处理一个组时，现在只需要用组的内容列表创建一个ListViewController的新实例，使用户可以自由地创建和导航任何内容层次结构，而我们只需要很少的工作。</p>
+<h2 id="specialized-models">Specialized models</h2>
+<p>虽然能够重用代码通常是一件好事，但有时创建一个更专门化的模型新版本，而不是试图在一个非常不同的上下文中重用它，会更好。</p>
+<p>回到我们之前的电子邮件应用示例，假设我们想让用户保存部分组成的邮件草稿。而不是让该功能处理完整的消息实例，因为这需要一些草稿无法使用的数据，比如发送者的名字，或消息收到的日期 -  让我们创建一个更简单的草案类型，我们将嵌套在消息中以获得更多的上下文:</p>
+<pre><code class="language-swift">extension Message {
+    struct Draft {
+        var subject: String?
+        var body: String?
+        var recipients: [Person]
+    }
+}
+</code></pre>
+<p>这样，我们就可以自由地将某些属性保留为可选的，并减少在加载和保存草稿时需要处理的数据量——而不会影响任何处理适当消息的代码。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>虽然哪种模型结构最适合每种情况在很大程度上取决于需要什么样的数据，以及如何使用这些数据——在能够重用代码和不创建过于复杂的模型之间取得平衡通常是关键。</p>
+<p>形成清晰的层次结构——使用专用类型或创建递归数据结构——同时偶尔为特定用例创建模型的专门化版本，可以在我们的模型代码中形成更清晰的结构 - 和往常一样，不断的重构和小的改进通常是实现这一目标的方法。</p>
+<p><a href="https://www.swiftbysundell.com/articles/structuring-model-data-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nDwRYvQYce/" class="tag">
+                    models
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/property-observers-in-swift/">
+                  <h3 class="post-title">
+                    Property observers in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

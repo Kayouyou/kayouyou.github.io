@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Separation of Concerns in Software Design | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+SoC for programming functions
+
+
+
+
+SoC for modules
+
+
+
+
+Cohesion and Coupling
+
+
+
+
+Benefits of the Loose Coupling and H..." />
+    <meta name="keywords" content="separation of concerns" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Separation of Concerns in Software Design</h2>
+            <div class="post-date">2021-08-29</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/008i3skNgy1gtvhq7k9fbj60f50a076802.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#SoCforprogrammingfunctions">SoC for programming functions</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#SoCformodules">SoC for modules</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#CohesionandCoupling">Cohesion and Coupling</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#BenefitsoftheLooseCouplingandHighCohesion">Benefits of the Loose Coupling and High Cohesion</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#SoCforthesystemsdesign">SoC for the system’s design</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#Repository">Repository</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>关注点分离(SoC)是软件开发中最基本的原则之一。</p>
+<p>5个SOLID原则中有2个(单一责任和接口隔离)是直接从这个概念衍生出来的。</p>
+<p>原则很简单:不要把你的程序写成一个完整的代码块，而是把代码块分解成最终确定的系统小块，每个小块能够完成一个简单的不同的工作。</p>
+<p>在本文中，我详细阐述了在所有抽象层次上应用这一深刻原则:从每个功能内部的编程代码和模块的设计到整个应用程序的架构，所有这些都是为了实现我们所说的软件可靠性。</p>
+<h2 id="1-a-namesocforprogrammingfunctionsasoc-for-programming-functions">1. <a name='SoCforprogrammingfunctions'></a>SoC for programming functions</h2>
+<p>如果我们在最低层次(实际的编程代码)时，SoC指示我们避免编写长而复杂的函数。当函数开始膨胀时，这是一个危险信号，说明该方法可能同时处理过多的事情。</p>
+<p>在这种情况下，SoC促使我们重构它，将其变成一个更简洁和描述性的修订。在此过程中，原始算法的部分被导出并封装在单独的较小函数中，具有私有访问级别。我们获得了代码的清晰性，并且算法块最终可以被其他部分重用，即使我们最初并没有预料到这一点。</p>
+<h2 id="2-a-namesocformodulesasoc-for-modules">2. <a name='SoCformodules'></a>SoC for modules</h2>
+<p>在更高的层次上，这个原则告诉我们将功能分组到自包含的模块中，每个模块负责完成一组具有清晰逻辑相关性的任务。这个过程非常类似于我们对功能所做的事情:分离不太密切相关的功能，并将服务于相同不同目的的特性分组。</p>
+<h2 id="3-a-namecohesionandcouplingacohesion-and-coupling">3. <a name='CohesionandCoupling'></a>Cohesion and Coupling</h2>
+<p>注点分离的应用涉及两个过程:<strong>减少耦合和增加内聚</strong>。</p>
+<p>内聚是通过职责集、细节级别和局部性度量相似性。例如，<strong>drawCircle和drawTriangle</strong>函数具有足够的内聚性，可以属于负责绘图的同一个模块，在代码中把这两个函数放在一起感觉很自然(高相似度~高内聚性)。</p>
+<p>另一方面，耦合是部分对系统其余部分依赖程度的度量(低依赖~松散耦合)。</p>
+<p>上述的圆形和三角形可用于函数drawCybertruck。我们可能也想把这个函数放在绘图模块中，但<strong>drawCyberthuck</strong>可能依赖于物理引擎和外部状态。因此，这将使整个绘图模块的可重用性大大降低，并与一些其他组件紧密耦合。</p>
+<p>可以看出，<strong>primitive drawing functions和drawCyberthuck</strong>属于不同的抽象层次和逻辑复杂性，因此它们需要驻留在不同的模块中。</p>
+<p>如果在某个时候我们决定在另一个项目中使用绘图模块-将不依赖于物理引擎，所以我们将能够更容易地提取它。</p>
+<p>一种快速记住应该增加或减少哪个属性的方法:</p>
+<ul>
+<li>解耦是好的-因此我们需要以松耦合为目标</li>
+<li>内聚是好的-我们需要以高凝聚力为目标</li>
+</ul>
+<p>高内聚(低耦合)代码的一个很好的例子是使用闭包回调函数而不是委托方法。考虑发送网络请求的代码:</p>
+<pre><code class="language-swift">// configuring and sending the request
+session.send(request: URLRequest) { response in
+    // handling the response
+}
+</code></pre>
+<p>想象一下，如果<strong>URLSession</strong>有一个基于委托的API来发出请求:所有的响应将被传递到一个<strong>handle(response: URLResponse, for request: URLRequest)</strong></p>
+<p>这将使网络更容易出错和繁琐，因为处理所有响应的逻辑现在必须绑定到那一个函数上。</p>
+<p>使用基于回调的API，操作和操作的结果在一个地方处理，从而更容易跟踪执行流。</p>
+<p>如果我们需要在遵循算法逻辑的功能或模块之间跳转，这意味着代码的内聚性很低，这通常被称为意大利面条代码。</p>
+<h2 id="4-a-namebenefitsoftheloosecouplingandhighcohesionabenefits-of-the-loose-coupling-and-high-cohesion">4. <a name='BenefitsoftheLooseCouplingandHighCohesion'></a>Benefits of the Loose Coupling and High Cohesion</h2>
+<p>坚持关注点分离的原则有助于改进代码库的许多特性:</p>
+<ol>
+<li>代码更清晰。当每个模块都有一个简洁而清晰的API和一组具有逻辑作用域的方法时，就更容易理解程序中发生的事情。</li>
+<li>代码可重用性更好(DRY原则)。重用代码的主要好处是减少了维护成本。无论何时，当你需要扩展功能或修复bug时——当你确定它只出现在一个地方时，做起来会轻松得多。</li>
+<li>可测试性更好。独立模块具有适当范围的功能，并与应用程序的其余部分隔离开来，测试起来很容易。您不需要设置整个环境来查看模块是如何工作的—用虚拟模拟或假数据源替换相邻的真实模块就足够了。通过这种方式，您可以通过验证输出来将模块作为黑盒测试，或者通过查看连接的模块(BDD)上调用了哪些方法来将模块作为白盒测试。</li>
+<li>项目迭代更快。无论是新特性还是现有特性的更新，模块的隔离都有助于确定程序中可能受更改影响的区域，从而加快开发速度。</li>
+<li>组织多个工程师同时进行开发更容易。 他们只需要就他们正在工作的模块达成一致，以确保他们不会相互干扰。只有模块API的更新可以作为显式通知其他开发人员的标志，而大多数更改可以添加而不需要其他贡献者立即注意。当与良好的测试覆盖率结合在一起时，并行开发将变得与每个单独工作的工程师的累积生产力一样高效(它通常会更慢)。</li>
+</ol>
+<blockquote>
+<p>如您所见，从程序员的角度来看，耦合和内聚是最终影响代码使用方便性的特征。</p>
+</blockquote>
+<h2 id="5-a-namesocforthesystemsdesignasoc-for-the-systems-design">5. <a name='SoCforthesystemsdesign'></a>SoC for the system’s design</h2>
+<p>对于一堆职责明确、目的明确的模块，我们仍然需要概述一个全局策略，以确定模块之间应该如何相互引用。</p>
+<p>如果我们不引入这种策略，我们可能最终会得到一个具有纠缠关系和难以跟踪的数据流的系统。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtvf3vn063j60js09igm402.jpg" alt="avatar" loading="lazy"></figure>
+<p>系统设计的主要目标是勾勒出模块之间相互感知的边界。</p>
+<p>每个现有的体系结构模式都提供了这个策略。以模型-视图-控制器为例，我们会看到视图不允许与模型直接交互，而应该使用控制器作为中介。</p>
+<p>在我看来，这些策略通常来自于这样一个普遍观点，即放任是不好的。在我看来，这要么导致过度设计的解决方案，要么相反地导致系统的责任没有充分分离。</p>
+<p>我倾向于认为系统设计需要一种更正式的方法，带有清晰的参数和动机。</p>
+<p>我们已经看到，当应用到函数和模块时，SoC总是会带来更多可重用、可测试和可维护的代码。那么，为什么不将内聚和耦合作为这些指标，并在应用程序级别上应用SoC呢?</p>
+<p>这就是我们将模块划分成层的方法。这不是一个具体的架构模式，而是我所讨论的策略的高级规范。</p>
+<p>模块按层分组，就像我们从一组不同的函数组成一个模块一样。</p>
+<blockquote>
+<p>基于系统中类似的职责和相同的抽象级别，一层中生成的模块集具有高内聚性，而层之间的通信和环境感知受到很大限制，以实现松散耦合。</p>
+</blockquote>
+<p>我们不仅限制了通信——底层具有更高环境细节的层(存储库，例如数据库包装器或网络服务)禁止直接引用在更高层中定义的任何东西(业务逻辑或UI)。</p>
+<p>因此，如果我们只使用与后端通信的网络服务，那么它应该不了解系统的其他部分，而只提供发送请求的API。</p>
+<p>业务逻辑层将知道并使用该存储库，但它不应该知道是否有任何UI附加到系统。</p>
+<p>UI层知道业务逻辑模块，并使用它们的api来读取最新的数据和触发操作，但同时，它对存储库一无所知，因为业务逻辑对它隐藏了实际的底层基础设施。</p>
+<blockquote>
+<p>通过这种方式，我们可以保证整个系统的内在可测试性，其中每一层甚至不知道另一层的存在，或者解耦到如此高的程度，以至于在测试中很容易被模拟包围。</p>
+</blockquote>
+<h2 id="6-a-namerepositoryarepository">6. <a name='Repository'></a>Repository</h2>
+<p>虽然业务逻辑和UI的分离是一个标准步骤，但我发现iOS的大多数流行模式都没有强调业务逻辑与数据网关(如网络层)分离的重要性。</p>
+<p>我多次看到请求直接从视图控制器或其他业务逻辑模块发送。数据库查询、UserDefaults和任何其他本地或远程数据存储也是如此。</p>
+<p>您可以猜到，我不喜欢这里的紧密耦合。但这不仅仅是模块之间的耦合，这或多或少是可以容忍的。</p>
+<p>我们讨论的是算法的输入和算法本身之间的紧密耦合。这样的代码几乎不可能进行测试或改进。</p>
+<p>不希望在业务逻辑中嵌入直接读写操作的原因有很多，这样就无法轻松地将实际调用与模拟调用进行交换:</p>
+<ol>
+<li>在运行未完成的算法时，您可能会意外地损坏有价值的数据</li>
+<li>对真实数据的访问可能很慢(本地资源的文件大小较大，访问远程资源的网络/测试服务器很慢)</li>
+<li>外部数据可能不可用(本地数据库为空，需要预填充、服务器宕机或Internet连接中断)</li>
+<li>后端可能会在您意想不到的时候突然更改响应格式</li>
+</ol>
+<p>后一种情况是臭名昭著的。当然，在一个理想的世界里，这是不应该发生的，但它确实发生了，而且比你想象的更频繁。就算是CI也救不了你。</p>
+<p>应用程序将停止工作，第一个被指责的人将是你，移动工程师。你的应用了。在失败被发现后的最初几分钟里，你必须提供借口，表现得很可怜。</p>
+<p>想象一下，你公司的CEO正在一个重要的活动上向投资者展示你的应用，然后发生了这样的事情。</p>
+<p>理想的解决办法是:应用程序不会崩溃，而是优雅地显示用户友好的错误信息。我们把另一台设备交给老板，该设备使用模拟演示数据在离线模式下运行，演示继续进行，事故几乎没有引起注意。</p>
+<p>离线演示模式? 听起来有很多工作要做! 但如果你已经从数据网关中分离和抽象出来，就不是这样了。</p>
+<p>当我们有一个业务逻辑模块从其他地方查询数据时，我们需要将访问外部数据资源的关注点提取到一个单独的模块中，并将不必要的查询细节隐藏在facade后面。</p>
+<p>这就是存储库的形成方式。</p>
+<p>让我们来看一个例子。我们有一个<strong>ViewController</strong>来加载和显示一些项目的列表:</p>
+<pre><code class="language-swift">class ListViewController: UIViewController {
+    
+    var items: [Item] = []
+    var tableView: UITableView?
+    
+    override func viewDidLoad() {
+        let url = URL(string: &quot;https://api.service.com/list&quot;)!
+        let request = URLRequest(url: url)
+        URLSession.shared.dataTask(with: request) { [weak self] (data, response, error) in
+            if let list = try? JSONDecoder().decode([Item].self, from: data ?? Data()) {
+                self?.items = list
+                self?.tableView?.reloadData()
+            }
+        }
+    }
+}
+</code></pre>
+<p>首先要做的是引入ListRepository协议并重构ViewController来使用它:</p>
+<pre><code class="language-swift">protocol ListRepository {
+    func loadList(completion: @escaping ([Item], Error?) -&gt; Void)
+}
+</code></pre>
+<pre><code class="language-swift">class ListViewController: UIViewController {
+    
+    var items: [Item] = []
+    var tableView: UITableView?
+    var repository: ListRepository
+    
+    override func viewDidLoad() {
+        repository.loadList { [weak self] (list, error) in
+            self?.items = list
+            self?.tableView?.reloadData()
+        }
+    }
+}
+</code></pre>
+<p>现在我们可以自由替换后台实际工作的实现:</p>
+<pre><code class="language-swift">struct RealListRepository: ListRepository {
+    func loadList(completion: @escaping ([Item], Error?) -&gt; Void) {
+        // networking code
+    }
+}
+</code></pre>
+<p>或者即使在脱机模式下也提供演示数据的虚拟存储库:</p>
+<pre><code class="language-swift">struct DummyListRepository: ListRepository {
+    func loadList(completion: @escaping ([Item], Error?) -&gt; Void) {
+        DispatchQueue.main.async {
+            let list = [
+                Item(id: &quot;1&quot;, name: &quot;First item&quot;),
+                Item(id: &quot;2&quot;, name: &quot;Second item&quot;)
+            ]
+            completion(list, nil)
+        }
+    }
+}
+</code></pre>
+<p>通过这种设置，应用程序可以配置为使用真实的网络API或模拟数据，我们还可以将这些数据保存在捆绑的资源中，而不是硬编码。</p>
+<p>对于上面的例子，我还应该注意到，当我们为异步API调用实现存根时，我们应该始终保持它的异步性(从<strong>DispatchQueue.main.async</strong>内部触发回调)。否则，我们就<strong>releasing Zalgo</strong>。</p>
+<p>你可以看到，在我为swifti应用提出的Clean Architecture变体中，Repository扮演了一个内在的角色。</p>
+<h2 id="7-a-nameconclusionaconclusion">7. <a name='Conclusion'></a>Conclusion</h2>
+<p>“关注点分离”是一个巨人，在他的肩膀上站立着许多我们今天知道的时髦模式。仅仅这一原则本身就为在所有级别上显著提高软件质量提供了必要的指导。</p>
+<p>在编写代码或设计架构时，不要忽视它。松耦合和高内聚是你的好朋友!</p>
+<p>为了更好的可测试性，将算法从输入和输出中分离出来，你的软件即使没有SOLID也会坚如磐石:)</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/LQkV1TKwE/" class="tag">
+                    separation of concerns
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/programmatic-navigation-in-swiftui-project/">
+                  <h3 class="post-title">
+                    Programmatic navigation in SwiftUI project
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

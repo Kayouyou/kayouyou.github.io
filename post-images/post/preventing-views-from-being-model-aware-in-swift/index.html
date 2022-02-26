@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Preventing views from being model aware in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="作为开发人员，我们经常需要在编写方便的代码和易于维护的代码之间取得平衡， 当然，最好的办法是，如果我们能同时做到这两点，但这并不总是容易的，有时甚至是可能的。
+在建立视图层和模型层之间的关系时，找到一个很好的便利性/可维护性的平衡往往是非常..." />
+    <meta name="keywords" content="ui developement,models,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Preventing views from being model aware in Swift</h2>
+            <div class="post-date">2018-03-18</div>
+            
+            <div class="post-content" v-pre>
+              <p>作为开发人员，我们经常需要在编写方便的代码和易于维护的代码之间取得平衡， 当然，最好的办法是，如果我们能同时做到这两点，但这并不总是容易的，有时甚至是可能的。</p>
+<p>在建立视图层和模型层之间的关系时，找到一个很好的便利性/可维护性的平衡往往是非常棘手的。无论使用哪种体系结构模式，都很容易在这些层之间创建过于紧密的连接，从而导致代码既难以重构，又难以重用。</p>
+<p>本周，让我们来看看几种不同的方法，我们可以将UI代码与模型代码解耦，以及这样做的一些好处。虽然这篇文章中的所有代码示例都是针对ios的，但这些原则应该适用于Swift的任何类型的UI代码。</p>
+<h2 id="specialized-views">Specialized views</h2>
+<p>让我们从看一个例子开始。在构建应用程序时，开始创建专门的视图是很常见的，这些视图是专门为显示特定类型的数据而构建的。假设我们想要在一个表格视图中显示一个用户列表，我们想要自定义每个单元格的图像为圆角。一种常见的方法是创建一个新的cell子类，专门用于呈现用户，如下所示:</p>
+<pre><code class="language-swift">class UserTableViewCell: UITableViewCell {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        let imageView = self.imageView!
+        imageView.layer.masksToBounds = true
+        imageView.layer.cornerRadius = imageView.bounds.height / 2
+    }
+}
+</code></pre>
+<p>由于上面的单元格是专门为呈现用户而构建的，所以添加一个功能让我们可以轻松地用用户模型填充单元格实例也是很常见的。</p>
+<pre><code class="language-swift">extension UserTableViewCell {
+    func configure(with user: User) {
+        textLabel?.text = &quot;\(user.firstName) \(user.lastName)&quot;
+        imageView?.image = user.profileImage
+    }
+}
+</code></pre>
+<p>做上面的事情可能看起来无害，但从技术上讲，我们实际上已经开始将模型层的细节泄露到视图层。我们的UserTableViewCell类现在不仅专门化了单个用例，而且知道用户模型本身。一开始，这可能不是一个问题，但如果我们继续沿着这条路走下去，很容易就会得到包含APP逻辑基本部分的视图代码</p>
+<pre><code class="language-swift">extension UserTableViewCell {
+    func configure(with user: User) {
+        textLabel?.text = &quot;\(user.firstName) \(user.lastName)&quot;
+        imageView?.image = user.profileImage
+
+        // Since this is where we do our model-&gt;view binding,
+        // it may seem like the natural place for setting up
+        // UI events and responding to them.
+        if !user.isFriend {
+            let addFriendButton = AddFriendButton()
+
+            addFriendButton.closure = {
+                FriendManager.shared.addUserAsFriend(user)
+            }
+
+            accessoryView = addFriendButton
+        } else {
+            accessoryView = nil
+        }
+    }
+}
+</code></pre>
+<p>像上面那样编写UI代码可能看起来很方便，但通常会导致应用很难测试和维护。在上述设置下，我们必须为所有的应用程序模型创建专用的、专门的视图(即使它们有很多共享的功能或看起来相同)——这使得将来引入新的应用程序范围的特性或执行重构变得更加困难</p>
+<h2 id="generalized-views">Generalized views</h2>
+<p>上述问题的一个解决方案是在我们的视图代码和模型代码之间坚持更严格的分离。在这样做的过程中，我们不仅要确保从UI代码中删除模型类型的使用，而且要从概念上分离这两个层。</p>
+<p>让我们回到UserTableViewCell再看一下。 我们可以为它命名来描述它的实际功能，也就是让它的图像视图是圆形的，而不是将它与渲染用户紧密结合起来。让我们称它为RoundedImageTableViewCell，并删除它的配置方法，它严格地绑定到用户类型:</p>
+<pre><code class="language-swift">class RoundedImageTableViewCell: UITableViewCell {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        let imageView = self.imageView!
+        imageView.layer.masksToBounds = true
+        imageView.layer.cornerRadius = imageView.bounds.height / 2
+    }
+}
+</code></pre>
+<p>进行上述更改的最大好处是，我们现在可以很容易地将这个单元格类型用于任何其他模型，我们希望用圆角图像来渲染。我们的UI代码现在也不会对它要渲染的内容做任何艰难的假设——它只是简单地渲染它被要求渲染的内容，这通常是件好事。</p>
+<p>然而，在一般化和解耦我们的模型代码和视图代码的过程中，我们也降低了它的使用方便性。以前，我们可以简单地调用configure(with:)来开始渲染用户模型，但现在这个方法消失了，我们需要找到一种新的方法来做这件事(而不必在我们的应用程序中复制相同的数据绑定代码)。</p>
+<p>相反，我们可以创建一个专门的对象来配置显示用户的单元格。在本例中，我们将其称为UserTableViewCellConfigurator，但根据您选择的架构模式，您也可以将其称为Presenter或Adapter（ 我们将在以后的文章中更深入地研究各种类似的模式）。 不管怎样，这就是这样一个对象的样子</p>
+<pre><code class="language-swift">class UserTableViewCellConfigurator {
+    private let friendManager: FriendManager
+
+    init(friendManager: FriendManager) {
+        self.friendManager = friendManager
+    }
+
+    func configure(_ cell: UITableViewCell, forDisplaying user: User) {
+        cell.textLabel?.text = &quot;\(user.firstName) \(user.lastName)&quot;
+        cell.imageView?.image = user.profileImage
+
+        if !user.isFriend {
+            // We create a local reference to the friend manager so that
+            // the button doesn't have to capture the configurator.
+            let friendManager = self.friendManager
+
+            let addFriendButton = AddFriendButton()
+
+            addFriendButton.closure = {
+                friendManager.addUserAsFriend(user)
+            }
+
+            cell.accessoryView = addFriendButton
+        } else {
+            cell.accessoryView = nil
+        }
+    }
+}
+</code></pre>
+<p>我们现在有了两方面的优点——可以轻松重用的通用UI代码，以及在table view单元格中显示用户实例的方便方式。作为额外的奖励，我们还采取了一些步骤，通过使用FriendManager的依赖注入，而不是依赖单例(Swift中避免单例的更多步骤)，使我们的代码更具可测试性。</p>
+<p>当我们想要使用表格视图单元格呈现用户时，我们现在可以简单地使用我们的配置器</p>
+<pre><code class="language-swift">class UserListViewController: UITableViewController {
+    override func tableView(_ tableView: UITableView,
+                            cellForRowAt indexPath: IndexPath) -&gt; UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: &quot;cell&quot;, for: indexPath)
+        let user = users[indexPath.row]
+
+        configurator.configure(cell, forDisplaying: user)
+
+        return cell
+    }
+}
+</code></pre>
+<h2 id="view-factories">View factories</h2>
+<p>配置器(或类似的对象)非常适合于可重用的视图，比如表格或集合视图单元，因为它们需要在新模型重用时不断地重新配置。 但对于更多的“静态”视图，通常能够配置一次就足够了，因为它们所渲染的模型在它们的生命周期内不会改变。</p>
+<p>在这种情况下，使用工厂模式是一个很好的选择。通过这种方式，我们可以将视图的创建和配置捆绑在一起，同时仍然保持UI代码本身的简单，并与任何模型代码完全解耦。</p>
+<p>假设我们想要创建一种简单的方法来在我们的应用程序中渲染一条消息。 我们可能有一个显示消息的视图控制器，以及当用户接收到一个新消息时弹出的某种形式的通知视图。为了不为这些不同的用例复制任何代码，让我们创建一个MessageViewFactory，它让我们可以轻松地为给定的消息创建视图</p>
+<pre><code class="language-swift">class MessageViewFactory {
+    func makeView(for message: Message) -&gt; UIView {
+        let view = TextView()
+
+        view.titleLabel.text = message.title
+        view.textLabel.text = message.text
+        view.imageView.image = message.icon
+
+        return view
+    }
+}
+</code></pre>
+<p>正如您在上面看到的，我们不仅使用了一个通用的TextView类来显示我们的消息(而不是一个专门的类，如MessageView)，而且我们还隐藏了我们从外部世界使用的确切视图类(我们的方法只是返回任何UIView)。 就像我们在“Swift中的代码封装”中看到的那样，从api中移除具体的类型是一种很好的方式，可以使代码在未来更容易更改和使用。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>在我们的视图层和模型层之间保持一个严格的边界通常会导致更灵活和更容易重用代码。 随着应用程序的发展，我们不需要不断创建新的专门的视图类，而可以在我们已经编写的UI代码上构建。 我们还可以把这个概念更进一步，甚至把UI的样式与视图本身分离开来，但我们将把这个问题留到以后的文章中讨论😉。</p>
+<p>这是否意味着所有UI代码都应该完全泛化，并随时准备呈现任何模型?我个人不这么认为。创建专门的视图是我们有时不得不做的事情——例如，当创建非常自定义的图形或视图集群时，为了工作需要彼此。 在这种情况下尝试泛化可能会导致代码变得非常复杂和难以导航。像往常一样，这都是关于权衡，并试图在每种情况下取得正确的平衡。</p>
+<p><a href="https://www.swiftbysundell.com/articles/preventing-views-from-being-model-aware-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/FhUIK00QN/" class="tag">
+                    ui developement
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nDwRYvQYce/" class="tag">
+                    models
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/using-tuples-as-lightweight-types-in-swift/">
+                  <h3 class="post-title">
+                    Using tuples as lightweight types in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

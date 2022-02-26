@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Extending optionals in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="大多数现代编程语言的一个共同点是，它们为表示可选值提供了某种形式的语言级支持。 当一个值丢失时，我们不用冒崩溃或其他运行时失败的风险，像Swift这样的语言让我们利用编译器来验证是否做了正确的检查，是否正确地解包了定义为可选的值。
+Swif..." />
+    <meta name="keywords" content="optionals" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Extending optionals in Swift</h2>
+            <div class="post-date">2018-11-18</div>
+            
+            <div class="post-content" v-pre>
+              <p>大多数现代编程语言的一个共同点是，它们为表示可选值提供了某种形式的语言级支持。 当一个值丢失时，我们不用冒崩溃或其他运行时失败的风险，像Swift这样的语言让我们利用编译器来验证是否做了正确的检查，是否正确地解包了定义为可选的值。</p>
+<p>Swift实现可选选项的一个非常优雅的方面是，该特性的很大一部分是使用类型系统实现的——因为所有可选值实际上都是使用enum可选的<Wrapped>来表示的。这为我们提供了一些有趣的功能，因为我们可以扩展该枚举——就像任何其他类型一样——来添加我们自己的便利api和其他类型的功能。</p>
+<p>本周，让我们看看如何做到这一点，以及如何这样做才能让我们以一种非常好的方式处理某些可选值。</p>
+<h2 id="converting-nil-into-errors">Converting nil into errors</h2>
+<p>在处理可选值时，通常希望将nil值转换为适当的Swift错误，然后将其传播并显示给用户。例如，这里我们准备通过一系列操作将一个映像上传到服务器。由于每个操作都可能返回空值，我们将展开每个步骤的结果，如果遇到空值就抛出一个错误——像这样:</p>
+<pre><code class="language-swift">func prepareImageForUpload(_ image: UIImage) throws -&gt; UIImage {
+    guard let watermarked = watermark(image) else {
+        throw Error.preparationFailed
+    }
+
+    guard let encrypted = encrypt(watermarked) else {
+        throw Error.preparationFailed
+    }
+
+    return encrypted
+}
+</code></pre>
+<p>上面的代码可以工作，但是让我们看看是否可以使用扩展的功能使它更简洁一些。 首先，让我们在可选的enum类型上创建一个扩展，它可以让我们返回它的包装值，或者在它包含nil时抛出一个错误，就像这样:</p>
+<pre><code class="language-swift">extension Optional {
+    func orThrow(
+        _ errorExpression: @autoclosure () -&gt; Error
+    ) throws -&gt; Wrapped {
+        guard let value = self else {
+            throw errorExpression()
+        }
+
+        return value
+    }
+}
+</code></pre>
+<p>上面我们使用了@autoclosure，这样我们只需要在需要的时候计算错误表达式，这样就不会做任何不必要的工作——不需要新函数的调用者使用任何额外的语法。</p>
+<p>使用上面的方法，加上使用flatMap的可选链接， 现在我们可以构造一个非常好的“操作链”，让我们可以处理链末端由nil值产生的任何错误， 并很容易地将这些缺失的值转换为正确的错误-像这样:</p>
+<pre><code class="language-swift">func prepareImageForUpload(_ image: UIImage) throws -&gt; UIImage {
+    return try watermark(image)
+        .flatMap(encrypt)
+        .orThrow(Error.preparationFailed)
+}
+</code></pre>
+<p>做上面这样的事情可能看起来纯粹是装点门面的更改，但是它使我们能够通过将代码建模为操作序列来增加代码的可预测性——而不必跟踪多个局部变量。当然，它看起来也很漂亮也没什么不好😉。</p>
+<h2 id="expressive-checks">Expressive checks</h2>
+<p>在处理可选项时，另一个常见的场景是希望对未包装的值执行某种检查。 例如，在实现表单UI时，我们可能想要在文本发生变化时改变每个文本字段的边框颜色——这取决于该字符串当前是否为空:</p>
+<pre><code class="language-swift">extension FormViewController {
+    @objc func textFieldDidChange(_ textField: UITextField) {
+        // Since the text field's text property is an optional
+        // we need to provide a default value here
+        if textField.text?.isEmpty ?? true {
+            textField.layer.borderColor = UIColor.red.cgColor
+        } else {
+            textField.layer.borderColor = UIColor.green.cgColor
+        }
+    }
+}
+</code></pre>
+<p>当一个可选对象包含nil时，使用默认值，就像我们上面所做的那样，在一个明确的上下文中使用通常是一个很好的解决方案 - 但它也可能导致代码变得更难读，因为额外的语法要求。因为检查字符串(或任何其他类型的集合)是否为空是相当常见的操作 -让我们再次看看我们是否可以通过使用可选的扩展来提高代码的可读性。</p>
+<p>这一次，我们将向所有包含符合集合类型的可选属性添加一个名为isniloreempty的计算属性，在这个可选属性中，我们将执行与上面相同的检查:</p>
+<pre><code class="language-swift">extension Optional where Wrapped: Collection {
+    var isNilOrEmpty: Bool {
+        return self?.isEmpty ?? true
+    }
+}
+</code></pre>
+<p>如果我们现在更新我们之前的文本字段处理代码来使用我们的新属性，我们最终会得到一个更漂亮和更容易阅读的控制流:</p>
+<pre><code class="language-swift">extension FormViewController {
+    @objc func textFieldDidChange(_ textField: UITextField) {
+        if textField.text.isNilOrEmpty {
+            textField.layer.borderColor = UIColor.red.cgColor
+        } else {
+            textField.layer.borderColor = UIColor.green.cgColor
+        }
+    }
+}
+</code></pre>
+<p>使用可选扩展来实现便利api的好处在于，我们可以在许多不同的上下文中轻松地重用这些相同的api。例如，我们可能想要检查一组可选的完成教程步骤是否为nil或空，以决定向用户显示什么初始屏幕，或使用相同的API来检查用户是否在我们的应用中添加了任何朋友:</p>
+<pre><code class="language-swift">let showInitialTutorial = completedTutorialSteps.isNilOrEmpty
+let hasAddedFriends = !user.friends.isNilOrEmpty
+</code></pre>
+<p>使用扩展来包装某些常见的表达式也是一种使我们的代码更加自文档化的好方法，因为这些表达式的意图变得非常清晰。</p>
+<h2 id="matching-against-a-predicate">Matching against a predicate</h2>
+<p>接下来，让我们看看如何向可选项添加匹配功能。 就像我们之前检查集合是否为空一样，在解包装可选值时，通常希望将可选值与更自定义的表达式匹配。</p>
+<p>例如，这里我们打开一个搜索栏的文本，然后在执行搜索之前验证它至少包含3个字符:</p>
+<pre><code class="language-swift">guard let query = searchBar.text, query.length &gt; 2 else {
+    return
+}
+
+performSearch(with: query)
+</code></pre>
+<p>同样，上面的代码可以工作，但是让我们看看是否可以让它更优雅一些，因为我们可以根据给定的谓词匹配任何可选的内容。 为此，让我们添加另一个可选的扩展。它添加了一个名为match的函数，该函数以闭包的形式接受一个谓词，在传递了一个未包装的可选值后返回Bool值:</p>
+<pre><code class="language-swift">extension Optional {
+    func matching(_ predicate: (Wrapped) -&gt; Bool) -&gt; Wrapped? {
+        guard let value = self else {
+            return nil
+        }
+
+        guard predicate(value) else {
+            return nil
+        }
+
+        return value
+    }
+}
+</code></pre>
+<p>使用上述方法，我们现在可以通过构造另一个可选表达式链，使我们的搜索栏处理代码非常漂亮和富有表现力。首先，我们使用新的匹配API来检查搜索栏的文本是否符合我们的长度要求，然后我们将该操作的结果直接映射到我们的performSearch方法中——像这样:</p>
+<pre><code class="language-swift">searchBar.text.matching { $0.count &gt; 2 }
+              .map(performSearch)
+</code></pre>
+<p>虽然上面的方法很酷，但是当我们想要匹配一系列不同的谓词时，是这个方法真正的亮点。使用带有较长的条件列表的guard语句可能很快就会变得混乱，但是有了新的匹配函数，我们现在有了一种将多个谓词链接在一起的简单方法 -就像在这个例子中，我们正在验证一个数据库记录匹配两个不同的需求:</p>
+<pre><code class="language-swift">let activeFriend = database.userRecord(withID: id)
+    .matching { $0.isFriend }
+    .matching { $0.isActive }
+
+</code></pre>
+<p>现在，我们可以将可选值视为可查询的值。很酷!😎</p>
+<h2 id="assigning-reusable-views">Assigning reusable views</h2>
+<p>最后，让我们看看如何扩展可选类型，使使用可重用视图的工作变得更好。苹果UI框架的一个常见模式是让视图提供特定的“槽”，作为API用户，我们可以在其中插入自己的自定义子视图。例如，UITableViewCell提供了一个accessoryView属性，可以让我们把任何想要的视图放置在单元格的末尾边缘——这在构建自定义列表时非常方便。</p>
+<p>然而，因为那些插槽需要支持任何类型的视图，我们处理的类型通常是可选的<UIView> -这意味着我们几乎总是需要进行类型转换，将这样一个属性的值转换为我们自己的视图类型，导致许多if let舞蹈看起来像这样:</p>
+<pre><code class="language-swift">// Since we want to reuse any existing accessory view if possible,
+// we first need to cast it to our own view type
+if let statusView = cell.accessoryView as? TodoItemStatusView {
+    statusView.status = item.status
+} else {
+    let statusView = TodoItemStatusView()
+    statusView.status = item.status
+    cell.accessoryView = statusView
+}
+</code></pre>
+<p>这是另一种情况，在可选的扩展可以非常方便。让我们为包装UIView的所有可选项写一个扩展，并再次使用@autoclosure的功能，使我们能够在需要时传递一个创建新视图的表达式，这只在我们没有现有视图的情况下使用</p>
+<pre><code class="language-swift">extension Optional where Wrapped == UIView {
+    mutating func get&lt;T: UIView&gt;(
+        orSet expression: @autoclosure () -&gt; T
+    ) -&gt; T {
+        guard let view = self as? T else {
+            let newView = expression()
+            self = newView
+            return newView
+        }
+
+        return view
+    }
+}
+</code></pre>
+<p>使用上面的扩展，我们现在可以使我们的单元配置代码从以前好多了-转换成两行简单的代码:</p>
+<pre><code class="language-swift">let statusView = cell.accessoryView.get(orSet: TodoItemStatusView())
+statusView.status = item.status
+</code></pre>
+<p>我们不仅通过消除手动展开和分配附属视图的需要来消除样板，我们还通过使用定义清晰的表达式替换if和else条件，使代码更具声明性。大赢!😀</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift的类型系统被设计成支持任何类型的自定义扩展，以及可选选项是使用标准enum实现的 -让做一些真正有趣的事情成为可能。通过在目标明确的可选扩展中包装常见的表达式和操作，我们既可以减少样板，又可以使处理可选的代码更清晰、更有表现力。</p>
+<p>然而，仔细决定我们希望在代码库中引入哪种类型的扩展也是很重要的，因为大量的扩展会使我们项目的学习曲线变得更加陡峭。通常，避免过早的优化是关键，只有当我们看到一个模式在多个地方重复出现时才引入扩展可能是一个好策略。</p>
+<p><a href="https://www.swiftbysundell.com/articles/extending-optionals-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l0njz2RSr/" class="tag">
+                    optionals
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/avoiding-race-conditions-in-swift/">
+                  <h3 class="post-title">
+                    Avoiding race conditions in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

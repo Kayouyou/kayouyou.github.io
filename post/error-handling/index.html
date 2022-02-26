@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Error Handling | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="应用程序如何处理错误和意外值与如何处理有效结果同样重要。让我们看看一些关键技术，它们可以帮助我们在代码中遇到错误时提供更好的用户体验。
+Swift提供了一种使用错误协议来定义和处理错误的本地方法。符合它不需要我们添加任何特定的属性或方法，所..." />
+    <meta name="keywords" content="control flow,errors" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Error Handling</h2>
+            <div class="post-date">2019-03-12</div>
+            
+            <div class="post-content" v-pre>
+              <p>应用程序如何处理错误和意外值与如何处理有效结果同样重要。让我们看看一些关键技术，它们可以帮助我们在代码中遇到错误时提供更好的用户体验。</p>
+<p>Swift提供了一种使用错误协议来定义和处理错误的本地方法。符合它不需要我们添加任何特定的属性或方法，所以我们可以轻松地使任何类型符合它 - 例如这个枚举包含了在验证字符串值时可能遇到的一些不同的错误:</p>
+<pre><code class="language-swift">enum ValidationError: Error {
+    case tooShort
+    case tooLong
+    case invalidCharacterFound(Character)
+}
+</code></pre>
+<p>使用上面的error enum，我们现在可以编写一个简单的函数来验证给定的用户名是否太长或太短，并且它不包含任何非字母字符。为此，我们将使用throw将函数标记为能够抛出错误，并使用throw关键字在未满足验证要求的情况下触发错误——像这样:</p>
+<pre><code class="language-swift">func validate(username: String) throws {
+    guard username.count &gt; 3 else {
+        throw ValidationError.tooShort
+    }
+
+    guard username.count &lt; 15 else {
+        throw ValidationError.tooLong
+    }
+
+    for character in username {
+        guard character.isLetter else {
+            throw ValidationError.invalidCharacterFound(character)
+        }
+    }
+}
+</code></pre>
+<p>由于我们用抛出标记了上面的函数，现在需要在对它的任何调用前面加上try关键字——这反过来迫使我们处理从它抛出的任何错误(或使用try?将其返回值转换为可选的值)。例如，这里我们使用函数来验证用户刚刚选择的用户名，如果验证通过(没有抛出错误)，那么我们将继续向服务器提交该用户名 - 否则，我们会显示使用UILabel遇到的错误:</p>
+<pre><code class="language-swift">func userDidPickName(_ username: String) {
+    do {
+        try validate(username: username)
+        // If we reach this point in the code, then it means
+        // that no error was thrown, and the validation passed.
+        submit(username)
+    } catch {
+        // The variable ‘error’ is automatically available
+        // inside of ‘catch’ blocks.
+        errorLabel.text = error.localizedDescription
+    }
+}
+</code></pre>
+<p>然而，如果我们以无效的用户名(例如“john-sundell”)作为输入运行上述代码，我们将在errorLabel中显示一个相当模糊的错误消息:</p>
+<pre><code class="language-swift">The operation couldn’t be completed. (App.ValidationError error 0.)
+</code></pre>
+<p>这并不是很好，因为它最终可能会让用户感到困惑。没有可操作的信息，而且我们还向用户公开实现细节(如错误类型的名称)。</p>
+<p>幸运的是，这是很容易修复的-通过允许我们的错误类型本地化。为此，让我们扩展ValidationError以符合LocalizedError，这是错误协议的一个特殊版本。通过这样做，并实现其errorDescription属性- 我们现在可以为每个错误情况返回一个合适的本地化消息:</p>
+<pre><code class="language-swift">extension ValidationError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .tooShort:
+            return NSLocalizedString(
+                &quot;Your username needs to be at least 4 characters long&quot;,
+                comment: &quot;&quot;
+            )
+        case .tooLong:
+            return NSLocalizedString(
+                &quot;Your username can't be longer than 14 characters&quot;,
+                comment: &quot;&quot;
+            )
+        case .invalidCharacterFound(let character):
+            let format = NSLocalizedString(
+                &quot;Your username can't contain the character '%@'&quot;,
+                comment: &quot;&quot;
+            )
+
+            return String(format: format, String(character))
+        }
+    }
+}
+</code></pre>
+<p>有了上面的改变，我们之前的验证错误现在将以一种更友好的方式显示:</p>
+<pre><code class="language-swift">Your username can't contain the character '-'
+</code></pre>
+<p>👍好多了。好消息是，在处理异步错误时，我们也可以应用大部分相同的技术。到目前为止，我们只以完全同步的方式处理错误和抛出函数-上面使用的“do, try, catch”模式非常适合这种情况-但当涉及到异步代码时，错误通常会传递给完成处理程序，而不是抛出。</p>
+<p>例如，假设我们想让我们的验证函数异步执行——也许是为了能够进行网络绑定的验证， 或者在后台线程上执行更复杂的规则。为了实现这一点，我们将把函数签名转换成这样:</p>
+<pre><code class="language-swift">func validate(username: String,
+              then handler: @escaping (ValidationError?) -&gt; Void) {
+    ...
+}
+</code></pre>
+<p>由于错误现在作为可选信息传递给处理程序闭包，所以我们必须使用稍微不同的策略来捕获它们。值得庆幸的是，我们只需要打开这个可选选项，并使用相同的localizedDescription属性来访问本地化后的错误消息——而不是使用catch块:</p>
+<pre><code class="language-swift">func userDidPickName(_ username: String) {
+    validate(username: username) { error in
+        if let error = error {
+            errorLabel.text = error.localizedDescription
+        } else {
+            submit(username)
+        }
+    }
+}
+</code></pre>
+<p>花点额外的时间在应用中添加适当的错误处理方法能够提升游戏的感知质量。 没有人喜欢被困在一个模糊的错误信息的屏幕上，这并没有真正说明什么，也没有提供任何形式的建议操作来纠正错误。通过在错误类型中添加本地化，以及一些处理和显示这些错误的代码，我们有希望让用户满意——即使确实出现了错误。</p>
+<p><a href="https://www.swiftbysundell.com/basics/error-handling/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/n5Ua5GKgs/" class="tag">
+                    control flow
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/wQerok9iv/" class="tag">
+                    errors
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-power-of-userdefaults-in-swift/">
+                  <h3 class="post-title">
+                    The power of UserDefaults in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

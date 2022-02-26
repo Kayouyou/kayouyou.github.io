@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using tuples as lightweight types in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift的一个真正有趣的特性是能够使用元组创建轻量级的值容器。这个概念非常简单——元组允许您轻松地将任意数量的对象或值组合在一起，而不必创建新的类型。 尽管这是一个简单的概念，但它带来了一些非常酷的机会，无论是在API设计方面还是在构建代..." />
+    <meta name="keywords" content="tuples,code structure" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using tuples as lightweight types in Swift</h2>
+            <div class="post-date">2018-03-11</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift的一个真正有趣的特性是能够使用元组创建轻量级的值容器。这个概念非常简单——元组允许您轻松地将任意数量的对象或值组合在一起，而不必创建新的类型。 尽管这是一个简单的概念，但它带来了一些非常酷的机会，无论是在API设计方面还是在构建代码时。</p>
+<p>在标准库中，元组用于在遍历字典时形成(键、值)对，或在返回插入到集合的结果时(就像我们上周在Swift的集合功能中使用的那样)。本周，让我们看看如何在我们自己的代码中使用元组，以及它们使我们能够使用的一些技术。</p>
+<h2 id="lightweight-types">Lightweight types</h2>
+<p>描述元组的一种方式是，它们是轻量级的内联类型。如果你有两个值——比如说一个标题和一个副标题——你可以快速地把它们组合成一个新的类型，完全内联在任何你使用它的地方，像这样:</p>
+<pre><code class="language-swift">class TextView: UIView {
+    func render(_ texts: (title: String, subtitle: String)) {
+        titleLabel.text = texts.title
+        subtitleLabel.text = texts.subtitle
+    }
+}
+</code></pre>
+<p>上述方法的另一种替代方法是创建一个结构体。当您将在多个地方使用这类pair，从而能够保持类型定义内联的情况下，这可能是更可取的。在你真正使用它的地方-可以让事情变得简单。它还使添加额外的属性变得像更改函数签名一样简单:</p>
+<pre><code class="language-swift">class TextView: UIView {
+    func render(_ texts: (title: String, subtitle: String, description: String)) {
+        titleLabel.text = texts.title
+        subtitleLabel.text = texts.subtitle
+        descriptionLabel.text = texts.description
+    }
+}
+</code></pre>
+<p>使用上面的方法可能看起来微不足道，但我个人发现，如果我可以在相同的地方输入内容，而不是为了做这样一个简单的更改而在代码库中跳转到多个地方，这真的会对生产率产生很大的影响。</p>
+<p>不过，上述方法的一个缺点是，如果属性列表开始增长，事情往往会变得有点混乱。 解决这个问题的一种方法是使用typealias为元组创建轻量级类型定义，同时保持事情的美观和简单:</p>
+<pre><code class="language-swift">class TextView: UIView {
+    typealias Texts = (title: String, subtitle: String, description: String)
+
+    func render(_ texts: Texts) {
+        titleLabel.text = texts.title
+        subtitleLabel.text = texts.subtitle
+        descriptionLabel.text = texts.description
+    }
+}
+</code></pre>
+<p>执行上述操作还可以非常容易地将元组提取为显式类型(如struct)，因为我们的代码现在使用文本来引用它。</p>
+<h2 id="simplified-call-sites">Simplified call sites</h2>
+<p>对于元组的另一件很酷的事情是它们可以对特定API的调用站点产生影响。即使元组可以有标签，在创建实例时也可以忽略这些标签。这有助于使调用站点看起来非常漂亮和干净，例如在处理矢量类型(如坐标)时。</p>
+<p>假设我们的应用程序有一个在基于贴图的地图上存储位置的模型，我们选择使用一个元组来定义地图上的坐标，如下所示:</p>
+<pre><code class="language-swift">struct Map {
+    private let width: Int
+    private var tiles: [Tile]
+
+    subscript(_ coordinate: (x: Int, y: Int)) -&gt; Tile {
+        return tiles[coordinate.x + coordinate.y * width]
+    }
+}
+</code></pre>
+<p>由于我们使用了元组，现在在创建坐标时可以选择包含或省略x和y标签:</p>
+<pre><code class="language-swift">let tileA = map[(x: 1, y: 0)]
+let tileB = map[(2, 1)]
+</code></pre>
+<p>再次强调，这可能看起来像一个小细节，但如果它使我们的代码更好读和写-然后我认为这是一个相当大的胜利👍。</p>
+<h2 id="equality">Equality</h2>
+<p>在检查多个值是否相等时，元组也非常有用。即使它们不符合Equatable协议(或任何类似的协议)，Swift标准库也为包含的值是Equatable的元组定义了==重载。</p>
+<p>假设我们正在构建一个视图控制器，它允许用户在给定的范围内搜索其他用户(例如，他们可能选择只在他们的朋友中搜索)。因为我们不想浪费资源来搜索已经显示的结果，所以我们可以很容易地使用一个元组来跟踪当前的搜索条件和验证自上次搜索以来，它们是否真的发生了变化，如下所示:</p>
+<pre><code class="language-swift">class UserSearchViewController: UIViewController {
+    enum Scope {
+        case friends
+        case favorites
+        case all
+    }
+    private var currentCriteria: (query: String, scope: Scope)?
+    
+    func searchForUsers(matching query: String, in scope: Scope) {
+        if let criteria = currentCriteria {
+            // If the search critera matches what is already rendered, we can
+            // return early without having to perform an actual search
+            guard (query, scope) != criteria else {
+                return
+            }
+        }
+        currentCriteria = (query, scope)
+
+        // Perform search
+        ...
+    }
+}
+</code></pre>
+<p>不需要定义额外的类型，也不需要编写任何公平的实现(虽然希望这很快就会成为过去，因为Swift很快就会开始为我们合成这些实现🎉)。</p>
+<h2 id="combined-with-first-class-functions">Combined with first class functions</h2>
+<p>结合元组和Swift支持第一类函数这一事实可以让我们做一些非常有趣的事情。事实证明，任何闭包的参数列表实际上都可以使用元组来描述，而且由于第一类函数的存在，所有的函数都是闭包，所以我们实际上可以使用元组来将参数传递给函数。 我们所要做的就是让Swift把函数当作闭包来处理。要做到这一点，我们可以定义一个调用函数，它接受任何函数，并对其应用所需的参数，如下所示:</p>
+<pre><code class="language-swift">func call&lt;Input, Output&gt;(_ function: (Input) -&gt; Output, with input: Input) -&gt; Output {
+    return function(input)
+}
+</code></pre>
+<p>现在，假设我们想实例化一组视图类，它们都可以使用相同类型的参数列表进行初始化:</p>
+<pre><code class="language-swift">class HeaderView: UIView {
+    init(font: UIFont, textColor: UIColor) {
+        ...
+    }
+}
+
+class PromotionView: UIView {
+    init(font: UIFont, textColor: UIColor) {
+        ...
+    }
+}
+
+class ProfileView: UIView {
+    init(font: UIFont, textColor: UIColor) {
+        ...
+    }
+}
+</code></pre>
+<p>使用我们的call函数，我们现在可以简单地应用一个包含预期参数的元组(在这种情况下，我们想要使用样式创建视图)，方法是将每个视图的初始化器作为一个函数传递，并使用我们的styles元组调用它:</p>
+<pre><code class="language-swift">let styles = (UIFont.systemFont(ofSize: 20), UIColor.red)
+
+let headerView = call(HeaderView.init, with: styles)
+let promotionView = call(PromotionView.init, with: styles)
+let profileView = call(ProfileView.init, with: styles)
+</code></pre>
+<p>以上是有点疯狂，但它是相当酷!😀</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift中的元组很简单，但是非常强大。我们不仅可以使用它们快速地内联定义类型，还可以使用它们使检查多个值是否相等这样的任务变得简单得多。最后，结合第一类函数，我们可以使用元组来传递参数列表作为值——这真的很有趣。</p>
+<p>就像Swift的其他特性一样，元组与更明确定义的类型(如类和结构)有不同的权衡。它们的定义要容易得多，而且非常轻量级，但因此它们不能存储弱引用或在其中包含任何类型的逻辑(如拥有方法)。一方面，这是一个缺点，但在处理更简单的数据容器时，它也有助于保持简单性。</p>
+<p><a href="https://www.swiftbysundell.com/articles/using-tuples-as-lightweight-types-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/vBtqMp5oO/" class="tag">
+                    tuples
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-power-of-sets-in-swift/">
+                  <h3 class="post-title">
+                    The power of sets in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

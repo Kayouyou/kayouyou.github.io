@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 66: SwiftUI and State Management: Part 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+The prime checking modal
+
+
+
+
+Adding a side effect
+
+
+
+
+The favorites list
+
+
+
+
+Next time: what’s the ..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 66: SwiftUI and State Management: Part 2</h2>
+            <div class="post-date">2021-11-20</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Theprimecheckingmodal">The prime checking modal</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Addingasideeffect">Adding a side effect</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Thefavoriteslist">The favorites list</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Nexttime:whatsthepoint">Next time: what’s the point?</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 66: SwiftUI and State Management: Part 2 -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>好的，所以我们必须做一些管道，以适当地在我们的每个视图中得到我们的全局应用状态，但做这项工作的好处是，现在计数值将持续在所有屏幕上。 我们可以深度探讨计数器，更改它，回到主屏幕，再深度探讨，一切都恢复到以前的状态。 所以我们用SwiftUI中的@<strong>ObjectBinding</strong>只需要很少的工作就实现了持久性。</p>
+<h2 id="2-a-nametheprimecheckingmodalathe-prime-checking-modal">2. <a name='Theprimecheckingmodal'></a>The prime checking modal</h2>
+<p>现在我们知道了如何在视图中表达状态，如何让视图对状态的变化做出反应，甚至如何在整个应用程序中持久化状态，让我们在应用程序中构建另一个视图。我们来做质数检查模态。当你点击“这是质数吗?”按钮，它会显示一个标签，让你知道当前计数器是否为素数，它还会给你一个按钮，用于从收藏列表中保存或删除该数字。</p>
+<p>让我们回顾一下视图是什么样子的。当我们询问计数器视图一个数字是否为质数时，我们显示一个模态，告诉用户这个数字是否为质数，如果是，我们为用户提供从他们喜欢的质数中添加或删除这个数字的能力。</p>
+<p><strong>Modals</strong>在SwiftUI中通过在视图中设置<strong>presentation</strong>信息来呈现:</p>
+<pre><code class="language-swift">.presentation(&lt;#T##modal: Modal?##Modal?#&gt;)
+</code></pre>
+<blockquote>
+<p>Correction<br>
+这一集是在Xcode 11 beta 3中录制的，并且在beta 4和Xcode的后续版本中对演示api进行了更改。模态表示API是在一些称为<strong>sheet</strong>的视图修饰器方法中捕获的，这些方法在给定<strong>Binding</strong>的状态下显示并隐藏视图。</p>
+</blockquote>
+<p>如果你在这里提供一个空值，什么也不会发生，如果你提供一个<strong>Modal</strong>值，它会在你的当前视图中显示那个<strong>Modal</strong>。然后要<strong>dismiss modal</strong>，你必须把nil放回这个函数。</p>
+<p>所以，听起来我们需要一些状态来跟踪这个<strong>modal</strong>什么时候应该显示和隐藏。但是我们必须决定是否通过@<strong>State</strong>属性将其作为本地状态使用，或者是否要将其添加到全局<strong>AppState</strong>中。可能有一个用例需要在全局级别上获得这些信息，比如我们可能想在呈现模态时执行一些操作，或者我们想支持深入链接到这个模态，在这种情况下，我们想要将这些信息添加到<strong>AppState</strong>。然而，我们目前还没有使用它，所以我们将它建模为本地状态:</p>
+<pre><code class="language-swift">@State var isPrimeModalShown: Bool = false
+</code></pre>
+<p>然后我们可以使用这个值来决定要把什么交给.<strong>presentation</strong>模态:</p>
+<pre><code class="language-swift">.presentation(
+  self.isPrimeModalShown
+    ? Modal(Text(&quot;I don't know if \(self.state.count) is prime&quot;))
+    : nil
+)
+</code></pre>
+<p>如果我们运行这个，什么也不会发生，因为我们还没有修改<strong>isprimemodalshow</strong>以使模态显示和隐藏。为了让它显示出来，我们只需挂钩到按钮的动作:</p>
+<pre><code class="language-swift">Button(action: { self.isPrimeModalShown = true }) {
+</code></pre>
+<p>如果我们运行这个，它似乎是工作的，但我们会发现我们有一个错误。我们可以点击按钮使模态出现，然后隐藏模态，但当我们改变计数器(或视图中的任何状态)时，模态会突然返回。为什么?</p>
+<p>好吧，我们还没有将<strong>isprimemodalshow</strong>布尔值重置为<strong>false</strong>，所以下一次这个视图渲染SwiftUI会认为它需要呈现另一个模态。 重置这个状态很容易，我们可以挂钩到<strong>Modal</strong>值的<strong>onDismiss</strong>行为:</p>
+<pre><code class="language-swift">.presentation(
+  self.isPrimeModalShown
+    ? Modal(
+      Text(&quot;I don't know if \(self.state.count) is prime&quot;),
+      onDismiss: { self.isPrimeModalShown = false }
+      )
+    : nil
+)
+</code></pre>
+<p>这将确保布尔值被重置，现在当我们<strong>dismiss</strong>模态时，它保持<strong>dismissed</strong>状态。</p>
+<p>所以我们现在正确地捕捉了模态的状态，但是模态没有任何有用的信息。目前，我们正在显示一个简单的文本视图，但我们想显示一些相当复杂的东西:一个<strong>VStack</strong>与一个文本视图和按钮内部，以及一些如何渲染这些视图的逻辑。由于这个视图的复杂性，最好创建一个全新的类型来封装它的逻辑:</p>
+<pre><code class="language-swift">struct IsPrimeModalView: View {
+  var body: some View {
+    Text(&quot;I don't know if \(self.state.count) is prime&quot;)
+  }
+}
+</code></pre>
+<p>然后我们可以更新我们的演示来使用这个视图:</p>
+<pre><code class="language-swift">.presentation(
+  self.isPrimeModalShown
+    ? Modal(
+      IsPrimeModalView(),
+      onDismiss: { self.isPrimeModalShown = false }
+      )
+    : nil
+)
+</code></pre>
+<blockquote>
+<p>🛑 Value of type ‘IsPrimeModalView’ has no member ‘state’</p>
+</blockquote>
+<p>现在我们需要将状态引入到模态中。</p>
+<pre><code class="language-swift">struct IsPrimeModalView: View {
+  @ObjectBinding var state: AppState
+  var body: some View {
+    Text(&quot;I don't know if \(self.state.count) is prime&quot;)
+  }
+}
+</code></pre>
+<p>并传递给它的初始化式。</p>
+<pre><code class="language-swift">.presentation(
+  self.isPrimeModalShown
+    ? Modal(
+      IsPrimeModalView(state: self.state),
+      onDismiss: { self.isPrimeModalShown = false }
+      )
+    : nil
+)
+</code></pre>
+<p>现在一切都像以前一样构建，但我们可以单独关注子视图。</p>
+<p>模态视图的布局很简单,让我们来做一些基本的准备, 一组垂直堆叠的视图，包括告诉我们一个数字是否是质数的文本,还有一个按钮，可以让我们从喜爱的素数列表中添加和删除素数:</p>
+<pre><code class="language-swift">struct IsPrimeModalView: View {
+  @ObjectBinding var state: AppState
+  var body: some View {
+    VStack {
+      Text(&quot;I don't know if \(self.state.count) is prime&quot;)
+      Button(action: {}) {
+        Text(&quot;Save/remove to/from favorite primes&quot;)
+      }
+    }
+  }
+}
+</code></pre>
+<p>这里有一些我们想要联系起来的逻辑。 为了自定义文本，我们需要知道数字是否是质数。让我们引入一个方便的<strong>isPrime</strong> helper函数:</p>
+<pre><code class="language-swift">private func isPrime (_ p: Int) -&gt; Bool {
+  if p &lt;= 1 { return false }
+  if p &lt;= 3 { return true }
+  for i in 2...Int(sqrtf(Float(p))) {
+    if p % i == 0 { return false }
+  }
+  return true
+}
+</code></pre>
+<p>使用这个值，我们可以轻松地更改文本框的内容，</p>
+<pre><code class="language-swift">if isPrime(self.state.count) {
+  Text(&quot;\(self.state.count) is prime 🎉&quot;)
+} else {
+  Text(&quot;\(self.state.count) is not prime :(&quot;)
+}
+</code></pre>
+<p>当我们快速运行时，根据数字是否是质数，我们会在模态中显示不同的文本。</p>
+<p>接下来我们要弄清楚如何处理这个按钮。如果这个计数值不是质数，它应该不会显示出来，所以我们至少可以将它移到if的第一个分支中:</p>
+<pre><code class="language-swift">if isPrime(self.state.count) {
+  Text(&quot;\(self.state.count) is prime 🎉&quot;)
+  Button(action: {}) {
+    Text(&quot;Save/remove to/from favorite primes&quot;)
+  }
+} else {
+  Text(&quot;\(self.state.count) is not prime :(&quot;)
+}
+</code></pre>
+<p>然后我们应该根据质数是否在用户收藏列表中来改变标签和操作。但是最喜欢的名单是什么呢?我们还没有在应用程序状态中捕捉到喜爱素数列表的概念。所以让我们把它加起来!</p>
+<p>我们回到<strong>AppState</strong>类，添加一个数组字段来保存所有用户最喜欢的质数，然后重写<strong>didSet</strong>，这样我们就可以通知感兴趣的用户发生变化:</p>
+<pre><code class="language-swift">var favoritePrimes: [Int] = [] {
+  didSet { self.didChange.send() }
+}
+</code></pre>
+<blockquote>
+<p>Correction<br>
+这一集是用Xcode 11 beta 3录制的。在后面的beta版本中，SwiftUI的BindableObject协议被弃用，取而代之的是引入到Combine框架中的ObservableObject协议。该协议利用了<strong>ObservableObjectPublishe</strong>r的<strong>objectWillChange</strong>属性，该属性在对模型进行任何更改之前(而不是之后)被ping通。因此，应该使用willSet而不是didSet:</p>
+</blockquote>
+<pre><code class="language-swift">var favoritePrimes: [Int] = [] {
+  willSet { self.objectWillChange.send() }
+}
+</code></pre>
+<p>更好的是，我们可以通过使用@<strong>Published</strong>属性包装器来完全删除这个样板文件:</p>
+<pre><code class="language-swift">@Published var favoritePrimes: [Int] = []
+</code></pre>
+<p>每当我们向<strong>BindableObject</strong>添加state时，这种舞蹈总是必要的:我们需要记住进入<strong>didSet</strong>并通过调用它的<strong>send</strong>方法ping <strong>didChange。</strong></p>
+<p>现在我们可以访问<strong>favorites</strong>数组了，我们可以实现必要的逻辑:</p>
+<pre><code class="language-swift">if self.state.favoritePrimes.contains(self.state.count) {
+  Button(action: {}) {
+    Text(&quot;Remove from favorite primes&quot;)
+  }
+} else {
+  Button(action: {}) {
+    Text(&quot;Save to favorite primes&quot;)
+  }
+}
+</code></pre>
+<p>接下来，我们如何连接按钮的动作来完成这项工作? 去掉质数很简单。标准库中用于删除的API接受一个谓词，用于查找你想要删除的所有值:</p>
+<pre><code class="language-swift">Button(action: { self.state.favoritePrimes.removeAll(where: { $0 == self.state.count }) }) {
+</code></pre>
+<p>加法甚至更简单。我们只需要将当前的<strong>count</strong>值添加到数组中:</p>
+<pre><code class="language-swift">Button(action: { self.state.favoritePrimes.append(self.state.count) }) {
+</code></pre>
+<p>现在，当我们运行应用程序时，当我们向收藏夹添加或删除一个质数时，按钮文本就会切换。正如我们通过重新调用模态所看到的，状态也会持续存在。</p>
+<h2 id="3-a-nameaddingasideeffectaadding-a-side-effect">3. <a name='Addingasideeffect'></a>Adding a side effect</h2>
+<p>我们现在应该有一个完整的功能模态! 我们可以在收藏列表中添加和删除质数，UI就会自动更新。</p>
+<p>让我们将这个应用程序的复杂性提高一个档次。 屏幕上有一个按钮可以计算第n个质数，其中n是计数器的值。做这项工作可能会产生相当高的计算成本，而我们的<strong>isPrime</strong>助手目前还非常幼稚。代替弄清楚如何使这些东西更有效，并在本地完成所有的逻辑，让我们利用一个API，可以很容易地为我们回答这个问题。有一个叫<strong>Wolfram Alpha</strong>的服务，它是一个强大的科学计算平台。</p>
+<p>我有一些与<strong>Wolfram API</strong>交互的简单库代码。它只是一些对API返回的数据建模的结构:</p>
+<pre><code class="language-swift">struct WolframAlphaResult: Decodable {
+  let queryresult: QueryResult
+
+  struct QueryResult: Decodable {
+    let pods: [Pod]
+
+    struct Pod: Decodable {
+      let primary: Bool?
+      let subpods: [SubPod]
+
+      struct SubPod: Decodable {
+        let plaintext: String
+      }
+    }
+  }
+}
+</code></pre>
+<p>作为一个函数，它接受一个查询字符串，发送它到<strong>Wolfram Alpha API</strong>，试图解码json数据到我们的结构，并调用一个回调的结果:</p>
+<pre><code class="language-swift">func wolframAlpha(query: String, callback: @escaping (WolframAlphaResult?) -&gt; Void) -&gt; Void {
+  var components = URLComponents(string: &quot;https://api.wolframalpha.com/v2/query&quot;)!
+  components.queryItems = [
+    URLQueryItem(name: &quot;input&quot;, value: query),
+    URLQueryItem(name: &quot;format&quot;, value: &quot;plaintext&quot;),
+    URLQueryItem(name: &quot;output&quot;, value: &quot;JSON&quot;),
+    URLQueryItem(name: &quot;appid&quot;, value: wolframAlphaApiKey),
+  ]
+
+  URLSession.shared.dataTask(with: components.url(relativeTo: nil)!) { data, response, error in
+    callback(
+      data
+        .flatMap { try? JSONDecoder().decode(WolframAlphaResult.self, from: $0) }
+    )
+    }
+    .resume()
+}
+</code></pre>
+<p>有了这个辅助函数，我们可以做一个更具体的API请求，一个请求<strong>Wolfram Alpha</strong>的第n个素数:</p>
+<pre><code class="language-swift">func nthPrime(_ n: Int, callback: @escaping (Int?) -&gt; Void) -&gt; Void {
+  wolframAlpha(query: &quot;prime \(n)&quot;) { result, response, error in
+    callback(
+      result
+        .flatMap {
+          $0.queryresult
+            .pods
+            .first(where: { $0.primary == .some(true) })?
+            .subpods
+            .first?
+            .plaintext
+        }
+        .flatMap(Int.init)
+    )
+  }
+}
+</code></pre>
+<p>我们可以通过查询第一千个质数兜一圈。</p>
+<pre><code class="language-swift">nthPrime(1_000) { p in print(p) }
+// 7919
+</code></pre>
+<p>利用这个API，我们甚至可以查询第100万个质数，这在本地执行是非常昂贵的计算成本。</p>
+<pre><code class="language-swift">nthPrime(1_000_000) { p in print(p) }
+// 15485863
+</code></pre>
+<p>我们该怎么用这个呢?让我们用语言来解释一下我们要做什么。当我们点击“第n个质数是多少?”按钮，我们想执行这个API请求，处理结果，然后显示一个警告。所以在我们进入所有这些之前，让我们看看警报是如何显示的。</p>
+<p>警报的执行与模态非常相似，您可以使用.<strong>presentation</strong>方法指定显示警报的条件，并提供一个自定义视图来表示警报。然而，它需要一个显式的<strong>Binding</strong>值来控制何时显示和解除警报，而不是像我们对<strong>modal</strong>所做的那样采用一个可选的<strong>alert</strong>值。这个API有两个版本:</p>
+<pre><code class="language-swift">.presentation(&lt;#T##isShown: Binding&lt;Bool&gt;##Binding&lt;Bool&gt;#&gt;, alert: &lt;#T##() -&gt; Alert#&gt;)
+.presentation(&lt;#T##data: Binding&lt;Identifiable?&gt;##Binding&lt;Identifiable?&gt;#&gt;, alert: &lt;#T##(Identifiable) -&gt; Alert#&gt;)
+</code></pre>
+<blockquote>
+<p>Correction<br>
+这一集是在Xcode 11 beta 3中录制的，并且在beta 4和Xcode的后续版本中对演示api进行了更改。上面的api已经被重命名为alert(ispresentated:content:)和alert(item:content:)。</p>
+</blockquote>
+<p>我们可以提供一个布尔值<strong>Binding</strong>,只要绑定变成<strong>true</strong>alert显示,当它是<strong>false</strong>alert消失,或者我们可以提供绑定的一个可选的,这样当一个存在的值时alert显示,当它是<strong>nil</strong>alert消失。</p>
+<p>我们将使用后一种API，获得Binding值的最简单方法是引入一些状态，通过本地@<strong>State</strong>值或持久化@<strong>ObjectBinding</strong>值。由于显示和隐藏<strong>alert</strong>似乎是一个局部问题，我们很可能不需要从其他屏幕访问，让我们介绍一些@<strong>State</strong>:</p>
+<pre><code class="language-swift">@State var alertNthPrime: Int?
+</code></pre>
+<p>然后基于这个值，我们可以显示一个警告:</p>
+<pre><code class="language-swift">.presentation(self.$alertNthPrime) { n in
+  Alert(
+    title: Text(&quot;The \(ordinal(self.state.count)) prime is \(n)&quot;),
+    dismissButton: Alert.Button.default(Text(&quot;Ok&quot;))
+  )
+}
+</code></pre>
+<p>注意，我们使用$<strong>alertNthPrime</strong>是为了传递<strong>alertNthPrime</strong>的绑定，而不仅仅是普通的布尔值。</p>
+<p>当这个状态值变成一个诚实的整数时，闭包将使用该整数执行，我们可以构造一个警报值，这个警报将显示给用户。</p>
+<p>现在的问题是:我们如何设置状态的值? 在点击按钮之后，我们想要向<strong>Wolfram Alpha</strong>发出一个API请求，当我们得到一个响应时，就会显示带有返回结果的警报。 看起来我们需要回到我们的&quot; <strong>What 's the nth prime</strong> &quot;按钮并实现它的动作:</p>
+<pre><code class="language-swift">Button(action: {
+  nthPrime(self.state.count) { prime in
+    self.alertNthPrime = prime
+  }
+}) {
+  Text(&quot;What's the \(ordinal(self.state.count)) prime?&quot;)
+}
+</code></pre>
+<p>如果我们运行这个，我们会看到，当我们点击按钮时，有一个短暂的暂停，而网络请求正在作出，然后最终我们得到警报。注意，当用户解除警报时，<strong>SwiftUI</strong>负责将该绑定重置为nil。</p>
+<h2 id="4-a-namethefavoriteslistathe-favorites-list">4. <a name='Thefavoriteslist'></a>The favorites list</h2>
+<p>现在我们有了一个比较复杂的应用程序。我们在整个应用程序中管理和持久化状态，我们在呈现中添加微妙的逻辑，现在我们还添加了一个与外部服务通信的副作用。但我们需要进一步提高复杂性，因为目前这基本上只是一个单一屏幕的应用程序。这个屏幕有很多内容，但是为了演示它是多么强大，我们可以在整个应用程序中共享状态，我们应该构建另一个需要访问该状态的屏幕。所以，让我们构建一个最终的屏幕，可以显示所有我们喜欢的质数，并添加删除不再喜欢的质数的功能。</p>
+<p>让我们回顾一下这个屏幕是什么以及如何到达那里。在根导航视图中，我们可以深入到收藏质数列表，这个列表将被我们收藏的任何质数填充，我们将能够删除不再喜欢的质数。</p>
+<p>让我们从一些小步骤开始，然后粘贴脚手架来创建一个新视图。</p>
+<pre><code class="language-swift">struct FavoritePrimes: View {
+  @ObjectBinding var state: AppState
+
+  var body: some View {
+    EmptyView()
+      .navigationBarTitle(Text(&quot;Favorite Primes&quot;))
+  }
+}
+</code></pre>
+<p>然后我们可以将这个视图连接到根内容视图:</p>
+<pre><code class="language-swift">NavigationLink(destination: FavoritePrimes(state: self.state)) {
+  Text(&quot;Favorite primes&quot;)
+}
+</code></pre>
+<p>现在我们想要什么样的质数呢?它将是一个任意行数的列表，每一行对应一个我们喜欢的质数。所以我们可能会这样做:</p>
+<pre><code class="language-swift">var body: some View {
+  List {
+    self.state.favoritePrimes.map { prime in
+      Text(&quot;\(prime)&quot;)
+    }
+  }
+    .navigationBarTitle(Text(&quot;Favorite Primes&quot;))
+}
+</code></pre>
+<p>然而，SwiftUI目前不允许这种视图构造。 相反，还有另一个视图包装器，类似于<strong>List</strong>包装器，它允许我们指定列表的所有行。它叫做<strong>ForEach</strong>，它是这样使用的:</p>
+<pre><code class="language-swift">var body: some View {
+  List {
+    ForEach(self.state.favoritePrimes) { prime in
+      Text(&quot;\(prime)&quot;)
+    }
+  }
+    .navigationBarTitle(Text(&quot;Favorite Primes&quot;))
+}
+</code></pre>
+<p>现在我们加上几个质数，回到这个屏幕我们会看到所有的质数。让我们添加删除功能。这可以通过在<strong>ForEach</strong>元素中添加<strong>onDelete</strong>处理程序来实现:</p>
+<pre><code class="language-swift">.onDelete(perform: { indexSet in
+  for index in indexSet {
+    self.state.favoritePrimes.remove(at: index)
+  }
+})
+</code></pre>
+<p>现在我们可以添加一些喜欢的质数,回到我们的最爱列表,删除那些不再是我们的最爱,并仔细检查所有的状态同步让我们回到柜台查看和添加'重新成为一个最喜欢的。</p>
+<h2 id="5-a-namenexttimewhatsthepointanext-time-whats-the-point">5. <a name='Nexttime:whatsthepoint'></a>Next time: what’s the point?</h2>
+<p>我们现在有了一个在SwiftUI中构建的比较复杂的应用程序。这真的很神奇。我们绝对不可能在使用UIKit的时间内构建这个应用。 在这一过程中，可能会出现许多需要实现的协议和需要建立的委托，而且可能还会引入大量的bug。但尽管这很酷，在每个point - free主题的结尾，我们都喜欢问这样一个问题:“重点是什么?”“为了把事情弄清楚，这样我们就能从树上看到森林。这一集已经相当实用了，但也有一些非常重要的教训需要吸取。</p>
+<p>我们想要做的是列出所有我们喜欢SwiftUI的东西，以及所有似乎还没有实现的东西。最后，我们将探索我们可以做些什么来弥补SwiftUI留下的空白。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-65-swiftui-and-state-management-part-1/">
+                  <h3 class="post-title">
+                    PointFree Episode 65: SwiftUI and State Management: Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

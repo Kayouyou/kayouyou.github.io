@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Defining dynamic colors in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Defining dynamic colors in Swift
+
+Using system colors
+Custom colors
+Conclusion
+
+
+
+
+Defining dynamic colors in Swift
+在大..." />
+    <meta name="keywords" content="dynamic colors,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Defining dynamic colors in Swift</h2>
+            <div class="post-date">2021-08-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#defining-dynamic-colors-in-swift">Defining dynamic colors in Swift</a>
+<ul>
+<li><a href="#using-system-colors">Using system colors</a></li>
+<li><a href="#custom-colors">Custom colors</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="defining-dynamic-colors-in-swift">Defining dynamic colors in Swift</h1>
+<p>在大多数情况下，可以说现代iOS和Mac应用在<strong>light</strong>模式或<strong>dark</strong>模式下都能很好地适应用户运行的设备，这通常要求我们在UI中使用更动态的颜色。</p>
+<p>虽然苹果使用<em>Xcode</em>的<strong>asset</strong>目录来系统声明这种动态颜色是相当直接的，但有时我们可能想要在Swift代码中<strong>inline</strong>定义颜色。让我们发现一些方法来做到这一点，使用SwiftUI或UIKit。</p>
+<h2 id="using-system-colors">Using system colors</h2>
+<p>也许确保我们的颜色适应各种用户偏好的最简单的方法是尽可能使用作为UIKit和SwiftUI的一部分的预定义颜色。所有SwiftUI的内置颜色默认都是自适应的，对于所有以system为前缀的UIColor api也是如此:</p>
+<pre><code class="language-swift">// SwiftUI
+label.foregroundColor(.orange)
+
+// UIKit
+label.textColor = .systemOrange
+</code></pre>
+<p>虽然上面的标签总是有一个橙色的文本颜色，但具体使用的橙色阴影会根据用户的设备是使用深色还是浅色模式，以及是否启用了某些可访问性设置(如增加对比度)而变化。</p>
+<p>SwiftUI和UIKit也提供了一套更抽象的颜色，然后在运行时解析为特定的、与上下文相关的颜色。 例如，当使用SwiftUI时，主色和次色在处理文本时通常特别有用，因为它们会让我们的文本颜色与系统中使用的颜色相匹配:</p>
+<pre><code class="language-swift">struct ArticleListItem: View {
+    var article: Article
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(article.title)
+                .font(.headline)
+                .foregroundColor(.primary)
+            Text(article.description)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/008i3skNgy1gtkq5lqifrj60ce07c0t402.jpg" alt="avatar" loading="lazy"></figure>
+<p>UIKit包含了一组更全面的上下文颜色，这些颜色与某些系统组件使用的默认颜色关联更大。 因此，在使用UIColor时，SwiftUI的原色和次色的等效值被称为label和secondaryLabel:</p>
+<pre><code class="language-swift">label.textColor = .label
+detailLabel.textColor = .secondaryLabel
+view.backgroundColor = .systemBackground
+</code></pre>
+<h2 id="custom-colors">Custom colors</h2>
+<p>虽然系统提供的颜色绝对是一个很好的起点，但我们可能还想在每个项目中使用一些完全自定义的颜色，我们可能还需要使这些颜色适应用户当前的配色方案。</p>
+<p>一种方法是让我们的UI代码观察颜色方案何时发生变化，然后更新任何需要调整的自定义颜色。 例如在使用SwiftUI时:</p>
+<pre><code class="language-swift">struct ArticleListItem: View {
+    var article: Article
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(article.title)
+                .font(.headline)
+                .foregroundColor(titleColor)
+            Text(article.description)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+    
+    private var titleColor: Color {
+        switch colorScheme {
+        case .light:
+            return Color(white: 0.2)
+        case .dark:
+            return Color(white: 0.8)
+        @unknown default:
+            return Color(white: 0.2)
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>当使用UIKit时，我们可以通过覆盖一个视图或视图控制器中的<strong>traitCollectionDidChange(_😃<strong>方法来执行同样的观察。然后我们可以打开传入的特征集合的</strong>userInterfaceStyle。</strong></p>
+</blockquote>
+<p>然而，尽管上述技术确实有效，但如果我们需要在许多不同的视图中执行相同的观察，那么事情很快就会变得非常混乱和重复。在使用SwiftUI时，解决这个问题的一种方法是创建一个可重用的<strong>view modifier</strong>，让我们为明暗模式指定单独的前景色，然后让我们的修改器在内部观察当前的颜色方案——像这样:</p>
+<pre><code class="language-swift">struct AdaptiveForegroundColorModifier: ViewModifier {
+    var lightModeColor: Color
+    var darkModeColor: Color
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    func body(content: Content) -&gt; some View {
+        content.foregroundColor(resolvedColor)
+    }
+    
+    private var resolvedColor: Color {
+        switch colorScheme {
+        case .light:
+            return lightModeColor
+        case .dark:
+            return darkModeColor
+        @unknown default:
+            return lightModeColor
+        }
+    }
+}
+
+extension View {
+    func foregroundColor(
+        light lightModeColor: Color,
+        dark darkModeColor: Color
+    ) -&gt; some View {
+        modifier(AdaptiveForegroundColorModifier(
+            lightModeColor: lightModeColor, 
+            darkModeColor: darkModeColor
+        ))
+    }
+}
+</code></pre>
+<p>有了上面的修饰符，我们现在可以轻松地指定我们的自适应前景颜色内联在我们的视图中，而不需要任何观察或在每个调用站点的其他复杂性:</p>
+<pre><code class="language-swift">struct ArticleListItem: View {
+    var article: Article
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(article.title)
+                .font(.headline)
+                .foregroundColor(
+                    light: Color(white: 0.2),
+                    dark: Color(white: 0.8)
+                )
+            Text(article.description)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+}
+</code></pre>
+<p>如果我们只是想与颜色在一组有限的方面那上述技术是非常有用的,但是如果我们想要定制各种颜色——前景,背景,着色,抚摸和填充形状等等,那么我们可能要想出一个更通用的解决方案。</p>
+<p>为此，我们可以转而使用UIColor，它提供了一种用动态闭包初始化颜色的方法，当当前活动的UITraitCollection被更改时，系统将调用这个动态闭包。这反过来使我们能够实现一个自定义初始化器——就像我们上面使用的模式一样——让我们指定单独的<strong>light</strong>模式和<strong>dark</strong>模式颜色，然后根据当前trait集合的<strong>userInterfaceStyle</strong>来解析:</p>
+<pre><code class="language-swift">extension UIColor {
+    convenience init(
+        light lightModeColor: @escaping @autoclosure () -&gt; UIColor,
+        dark darkModeColor: @escaping @autoclosure () -&gt; UIColor
+     ) {
+        self.init { traitCollection in
+            switch traitCollection.userInterfaceStyle {
+            case .light:
+                return lightModeColor()
+            case .dark:
+                return darkModeColor()
+            @unknown default:
+                return lightModeColor()
+            }
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>上述解决方案的一个很大的好处是，它可以很容易地扩展到考虑其他类型的特征(如各种可访问性设置)，因为我们传递的<strong>UITraitCollection</strong>实例包含了更多的信息，而不仅仅是使用的颜色方案。</p>
+</blockquote>
+<p>真正了不起的是，SwiftUI的Color和UIColor可以很容易地连接起来——这意味着我们也可以用很少的额外代码使上述解决方案完全兼容SwiftUI:</p>
+<pre><code class="language-swift">extension Color {
+    init(
+        light lightModeColor: @escaping @autoclosure () -&gt; Color,
+        dark darkModeColor: @escaping @autoclosure () -&gt; Color
+    ) {
+        self.init(UIColor(
+            light: UIColor(lightModeColor()),
+            dark: UIColor(darkModeColor())
+        ))
+    }
+}
+</code></pre>
+<blockquote>
+<p>注意，在iOS 15 SDK中，上面的Color初始化器已经被弃用，取而代之的是一个名为init(uiColor:)的新版本，其工作方式完全相同。</p>
+</blockquote>
+<p>在上面的地方，我们现在可以创建自适应颜色和UIColor实例，只要这样做:</p>
+<pre><code class="language-swift">struct ArticleListItem: View {
+    var article: Article
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(article.title)
+                .font(.headline)
+                .foregroundColor(Color(
+                    light: Color(white: 0.2),
+                    dark: Color(white: 0.8)
+                ))
+            Text(article.description)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+}
+</code></pre>
+<p>如果我们想要更进一步，我们甚至可以将颜色定义从视图中完全抽象出来，将它们移到静态属性中，与作为系统一部分的主要、次要和其他动态颜色具有相同的作用:</p>
+<pre><code class="language-swift">extension Color {
+    static var title: Self {
+        Self(light: Color(white: 0.2),
+             dark: Color(white: 0.8))
+    }
+}
+</code></pre>
+<p>以上绝对是我在构建应用程序时更喜欢使用的架构。通过将每种颜色关联到标题、背景、appTint等属性中，我发现保持应用程序的颜色一致和组织良好要容易得多。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>一开始，定义自定义颜色似乎是一个简单的问题，但随着运行应用程序的执行环境变得越来越动态，我们必须让颜色适应这些由于不同的环境可能会继续增加的复杂性。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Q5zZMmeDc/" class="tag">
+                    dynamic colors
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/expert-swift-chapter-2-types-and-mutation/">
+                  <h3 class="post-title">
+                    Expert Swift - Chapter 2: Types &amp; Mutation
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

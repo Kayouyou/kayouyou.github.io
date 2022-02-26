@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>SwiftUI and UIKit interoperability - Part 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="上周，我们仔细研究了如何将UIKit视图导入到SwiftUI的声明式世界中，这既让我们有机会重用现有的基于uiview的组件，也在SwiftUI还不支持特定用例时充当重要的“出口”
+但是，SwiftUI与UIKit的互操作性也是完全相反的，..." />
+    <meta name="keywords" content="uikit,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">SwiftUI and UIKit interoperability - Part 2</h2>
+            <div class="post-date">2020-11-15</div>
+            
+              <div class="feature-container" style="background-image: url('https://images.unsplash.com/photo-1520970014086-2208d157c9e2?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8c3VtbWFyeXxlbnwwfHwwfHw%3D&amp;ixlib=rb-1.2.1&amp;auto=format&amp;fit=crop&amp;w=900&amp;q=60')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>上周，我们仔细研究了如何将UIKit视图导入到SwiftUI的声明式世界中，这既让我们有机会重用现有的基于uiview的组件，也在SwiftUI还不支持特定用例时充当重要的“出口”<br>
+但是，SwiftUI与UIKit的互操作性也是完全相反的，因为我们也能够将SwiftUI视图嵌入到基于UIKit的视图控制器中——这正是我们本周要讲的内容。</p>
+<h2 id="hosting-a-swiftui-view-within-a-view-controller">Hosting a SwiftUI view within a view controller</h2>
+<p>从part one的例子中继续基于应用的事件,假设我们的应用程序正在显示一个当下完全由UIViewcontroller实现的单独的事件,它使用一个视图模型跟踪其当前状态,然后在viewWillAppear中要求ViewModel去更新自身——像这样:</p>
+<pre><code class="language-swift">class EventViewController: UIViewController {
+    private let viewModel: EventViewModel
+    private lazy var descriptionLabel = UILabel()
+    private lazy var tagListView = EventTagListView()
+
+    init(viewModel: EventViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+        viewModel.delegate = self
+    }
+
+    ...
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        view.addSubview(descriptionLabel)
+        view.addSubview(tagListView)
+        
+        // Add layout constraints and perform other kinds of setup
+        ...
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        viewModel.update()
+    }
+    
+    ...
+}
+</code></pre>
+<p>作为上述实现的一部分，我们分配我们的视图控制器作为它的视图模型的委托代理，这反过来要求我们遵守一个EventViewModelDelegate协议，用于处理事件，如当视图模型被更新，或当遇到一个错误:</p>
+<pre><code class="language-swift">extension EventViewController: EventViewModelDelegate {
+    func eventViewModelDidUpdate(_ viewModel: EventViewModel) {
+        // Updating our views according to our view model's
+        // current state:
+        descriptionLabel.text = viewModel.event.description
+        tagListView.tags = viewModel.event.tags
+    }
+
+    func eventViewModelDidEncounterError(_ viewModel: EventViewModel,
+                                         error: Error) {
+        // Show a description of the error and a retry button
+        ...
+    }
+}
+</code></pre>
+<p>以上所用的模式在UIKit中都非常好用，但如果我们现在想要添加一个SwiftUI视图呢?</p>
+<p>例如，假设我们一直想要添加一个头视图到我们的EventViewController，因为那将是一个新的独立视图，那么这是我们使用SwiftUI的绝佳机会。下面是这样一个头视图的初始实现:</p>
+<pre><code class="language-swift">struct EventHeaderView: View {
+    var event: Event
+
+    var body: some View {
+        ZStack {
+            EventGradient().edgesIgnoringSafeArea(.top)
+            VStack {
+                Image(systemName: event.icon.imageName)
+                Text(event.name)
+                    .foregroundColor(.white)
+                    .font(.title)
+            }
+        }
+    }
+}
+</code></pre>
+<p>但现在的问题是——我们如何将上面的EventHeaderView集成到我们现有的视图控制器中?在最基本的层面上，我们实际上需要做的就是将我们的新SwiftUI视图包装到UIHostingController中，这将自动在渲染方面弥合SwiftUI和UIKit之间的差距:</p>
+<pre><code class="language-swift">class EventViewController: UIViewController {
+    private let viewModel: EventViewModel
+    private lazy var header = makeHeader()
+    private lazy var descriptionLabel = UILabel()
+    private lazy var tagListView = EventTagListView()
+    
+    ...
+    
+    private func makeHeader() -&gt; UIHostingController&lt;EventHeaderView&gt; {
+        let headerView = EventHeaderView(event: viewModel.event)
+        let headerVC = UIHostingController(rootView: headerView)
+        headerVC.view.translatesAutoresizingMaskIntoConstraints = false
+        return headerVC
+    }
+}
+</code></pre>
+<p>然后实际显示我们的头部视图，我们首先需要把它的包装UIHostingController作为子控制器到添加到我们的EventViewController，然后我们将应用一系列的布局约束到包装视图控制器的视图，以便给它我们想要的布局:</p>
+<pre><code class="language-swift">class EventViewController: UIViewController {
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Add our header view controller as a child:
+        addChild(header)
+        view.addSubview(header.view)
+        header.didMove(toParent: self)
+        
+        // Apply a series of Auto Layout constraints to its view:
+        NSLayoutConstraint.activate([
+            header.view.topAnchor.constraint(equalTo: view.topAnchor),
+            header.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            header.view.widthAnchor.constraint(equalTo: view.widthAnchor),
+            header.view.heightAnchor.constraint(
+                equalTo: view.heightAnchor,
+                multiplier: 0.25
+            )
+        ])
+
+        ...
+    }
+
+    ...
+}
+</code></pre>
+<p>这是一个很好的开始，只要我们的SwiftUI视图在视图控制器的生命周期中不被更新，上面的实现就可以正常工作。然而，在本例中，我们确实希望在视图模型的事件发生改变时更新EventHeaderView，这可以通过几种不同的方式实现。</p>
+<p>也许最简单的方法是，每当我们的eventViewModelDidUpdate委托方法被调用时，就给我们的UIHostingController分配一个新的头视图——像这样:</p>
+<pre><code class="language-swift">extension EventViewController: EventViewModelDelegate {
+    func eventViewModelDidUpdate(_ viewModel: EventViewModel) {
+        let event = viewModel.event
+
+        header.rootView = EventHeaderView(event: event)
+
+        descriptionLabel.text = event.description
+        tagListView.tags = event.tags
+    }
+    
+    ...
+}
+</code></pre>
+<p>乍一看，上面的方法可能非常低效，因为我们实际上是在每个状态更改时重新创建视图。但是我们必须记住，SwiftUI视图并不是在屏幕上呈现的实际像素的具体表示，而是对我们想要的UI的相当轻量的描述，并且SwiftUI会自动尽可能地重用它的底层视图和层。</p>
+<p>因此，至少对于更简单的用例来说，上面的方法可能非常有效，只要我们正在包装的SwiftUI视图不包含自己的任何状态，因为当我们像上面那样手动切换实例时，该状态将会丢失。</p>
+<h2 id="updating-an-embedded-swiftui-view">Updating an embedded SwiftUI view</h2>
+<p>另一个选项是让我们的EventHeaderView自己观察我们的视图模型的状态，这将进一步使它成为一个独立的组件，也将使它能够修改该状态。<br>
+为了实现这一点，我们先把EventViewModel变成一个ObservableObject，这也是我们在第一部分中让基于uikit的嵌入式视图和它们的SwiftUI包装器之间共享状态的方式:</p>
+<pre><code class="language-swift">class EventViewModel: ObservableObject {
+    @Published private(set) var event: Event
+    weak var delegate: EventViewModelDelegate?
+    ...
+}
+</code></pre>
+<p>有了以上的改变，我们的EventHeaderView现在可以直接使用@ObservedObject来观察我们的视图模型，并且它会在每次视图模型的event属性发生改变时自动更新:</p>
+<pre><code class="language-swift">struct EventHeaderView: View {
+    @ObservedObject var viewModel: EventViewModel
+
+    var body: some View {
+        ZStack {
+            EventGradient().edgesIgnoringSafeArea(.top)
+            VStack {
+                Image(systemName: viewModel.event.icon.imageName)
+                Text(viewModel.event.name)
+                    .foregroundColor(.white)
+                    .font(.title)
+            }
+        }
+    }
+}
+</code></pre>
+<p>最后，在创建SwiftUI视图时，我们将把视图控制器的viewModel注入到视图中，这样我们就可以只做一次，而不是每次我们的状态被改变时都这样做:</p>
+<pre><code class="language-swift">class EventViewController {
+    ...
+
+    private func makeHeader() -&gt; UIHostingController&lt;EventHeaderView&gt; {
+        let headerView = EventHeaderView(viewModel: viewModel)
+        let headerVC = UIHostingController(rootView: headerView)
+        headerVC.view.translatesAutoresizingMaskIntoConstraints = false
+        return headerVC
+    }
+}
+</code></pre>
+<p>上述方法的美妙之处在于，基于UIKit的代码可以继续使用委托模式，或者任何其他完全匹配UIKit本身整体设计的模式，而基于SwiftUI的代码可以自由地充分利用Combine和SwiftUI的声明式状态管理系统。</p>
+<h2 id="two-way-data-bindings">Two-way data bindings</h2>
+<p>到目前为止，我们的数据只在一个方向流动-从我们的EventViewModel到我们的视图控制器及其托管的EventHeaderView。但是，让我们看看如何在嵌入式SwiftUI视图和它的托管视图控制器之间建立双向绑定。<br>
+例如，假设我们想让我们的用户能够使用我们的EventHeaderView直接更改给定事件的名称。实现这一点的一种方法是，给我们的视图模型一个专门的方法来执行这种突变:</p>
+<pre><code class="language-swift">class EventViewModel: ObservableObject {
+    @Published private(set) var event: Event
+    weak var delegate: EventViewModelDelegate?
+
+    ...
+
+    func updateName(to newName: String) {
+        event.name = newName
+        delegate?.eventViewModelDidUpdate(self)
+        }
+}
+</code></pre>
+<p>然后，我们可以用一个完全动态的文本字段替换头视图之前的静态标题。然而，由于该控件使用绑定引用来传播状态变化，我们还需要一种方式来转发这些变化到我们的视图模型的updateName方法-这可以使用手工构建的绑定，像这样:</p>
+<pre><code class="language-swift">struct EventHeaderView: View {
+    @ObservedObject var viewModel: EventViewModel
+
+    var body: some View {
+        ZStack {
+            EventGradient().edgesIgnoringSafeArea(.top)
+            VStack {
+                Image(systemName: viewModel.event.icon.imageName)
+                TextField(&quot;Event name&quot;, text: nameBinding)
+                .foregroundColor(.white)
+                .font(.title)
+                .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    private var nameBinding: Binding&lt;String&gt; {
+        Binding(
+            get: { viewModel.event.name },
+            set: { viewModel.updateName(to: $0) }
+        )
+    }
+}
+</code></pre>
+<p>上述方法的好处是，基于SwiftUI的状态转换完全可以在我们的SwiftUI视图中进行，这反过来又让我们的基于uikit的代码不受这种复杂性的影响。</p>
+<p>然而，总是必须手动创建绑定实例可能会有点乏味，所以让我们来探讨第二种方法，它将我们的视图模型的事件属性变为可写的，而不是只读的。当这样做的时候，我们还需要确保我们总是传播任何外部更改到该属性，这可以通过使用didSet属性观察者来完成-像这样:</p>
+<pre><code class="language-swift">class EventViewModel: ObservableObject {
+    @Published var event: Event {
+        didSet { delegate?.eventViewModelDidUpdate(self) }
+    }
+    weak var delegate: EventViewModelDelegate?
+    ...
+}
+</code></pre>
+<p>有了以上的改变，我们现在可以把头视图的TextField直接绑定到视图模型的event属性上了，这让我们摆脱了之前使用的手工创建的绑定:</p>
+<pre><code class="language-swift">struct EventHeaderView: View {
+    @ObservedObject var viewModel: EventViewModel
+
+    var body: some View {
+        ZStack {
+            EventGradient().edgesIgnoringSafeArea(.top)
+            VStack {
+                Image(systemName: viewModel.event.icon.imageName)
+                TextField(&quot;Event name&quot;, text: $viewModel.event.name)
+                    .foregroundColor(.white)
+                    .font(.title)
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+}
+</code></pre>
+<p>在上述两种方法中，我们最终会选择哪一种，这可能取决于当前的情况，以及我们自己的个人偏好。主要的问题是，我们是否需要对现有的基于uikit的代码进行修改，以适应我们新的基于swift的组件，或者我们是否更喜欢将复杂性封装在我们的swift视图中。</p>
+<h2 id="embracing-reactive-rendering">Embracing reactive rendering</h2>
+<p>最后，让我们看看我们迄今为止所做的更改如何给我们一个有趣的机会来调整我们在基于uikit的代码中处理状态的方式。<br>
+由于我们的EventViewModel现在将所有更改发布到它的event属性，我们也可以让我们的EventViewController直接观察该属性，而不是使用委托模式。我们所要做的就是使用Combine将该属性接收到一个观察闭包中，就像这样:</p>
+<pre><code class="language-swift">class EventViewController: UIViewController {
+    private let viewModel: EventViewModel
+    private lazy var header = makeHeader()
+    private lazy var descriptionLabel = UILabel()
+    private lazy var tagListView = EventTagListView()
+    private var cancellable: AnyCancellable?
+
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        cancellable = viewModel.$event.sink { [weak self] event in
+        self?.updateViews(with: event)
+        }
+        ...
+    }
+    ...
+    
+    private func updateViews(with event: Event) {
+        descriptionLabel.text = event.description
+        tagListView.tags = event.tags
+    }
+} 
+</code></pre>
+<p>上述方法的一个好处,除了的一致性方面,是它使我们能够建立更细粒度的观察在我们的视图和视图控制器——因为我们可以选择我们想要观察哪些属性,而不是依靠单个委托方法为所有类型的变化。<br>
+当然，这并不意味着我们应该立即用Combine和@ published标记的属性替换所有的委托模式，但当我们逐步将现有的代码库迁移到苹果最新的工具和框架时，上述技术绝对值得牢记</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>尽管SwiftUI和UIKit确实有很大的不同——无论是在它们的整体API设计上，还是在使用它们时状态变化的传播方式上——但我们仍然有多种方式可以连接和集成它们<br>
+我希望这两部分给你几条建议和想法如何做到这一点,和这些技术将使你保持好利用任何现有UIKit-based你的代码,即使你保持SwiftUI冒险进入激动人心的世界。</p>
+<p><a href="https://www.swiftbysundell.com/articles/swiftui-and-uikit-interoperability-part-2/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/l8xvWHOizF/" class="tag">
+                    uikit
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/creating-custom-swiftui-container-views/">
+                  <h3 class="post-title">
+                    Creating custom SwiftUI container views
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

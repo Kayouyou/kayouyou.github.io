@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The power of subscripts in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="使用下标访问不同集合(如数组和字典)中的元素，这不仅在Swift中非常常见 - 而且在几乎所有相对现代的编程语言中都很常见。然而，Swift中实际实现的下标方式是非常独特的，而且非常强大——因为它允许我们在自己的类型中添加下标api，就像标..." />
+    <meta name="keywords" content="subscripts,the power of" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The power of subscripts in Swift</h2>
+            <div class="post-date">2019-08-18</div>
+            
+            <div class="post-content" v-pre>
+              <p>使用下标访问不同集合(如数组和字典)中的元素，这不仅在Swift中非常常见 - 而且在几乎所有相对现代的编程语言中都很常见。然而，Swift中实际实现的下标方式是非常独特的，而且非常强大——因为它允许我们在自己的类型中添加下标api，就像标准库中的那些api一样。</p>
+<p>本周，让我们来看看在Swift中下标是如何工作的，以及将其整合到我们设计api中的几种不同方法——包括一些在Swift 5.1中添加的全新功能。</p>
+<h2 id="subscripts-vs-methods">Subscripts vs methods</h2>
+<p>可以说，下标最大的好处是它在调用时为我们提供了难以置信的轻量级语法。不必调用特定的方法，这些方法的名称需要我们记住或查找，下标可以让我们简单地使用它的索引或键来检索值:</p>
+<pre><code class="language-swift">let fifthElement = array[4]
+let accessToken = dictionary[&quot;token&quot;]
+</code></pre>
+<p>只需要将上面两个api与它们的方法对等体进行比较:</p>
+<pre><code class="language-swift">let fifthElement = array.element(at: 4)
+let accessToken = dictionary.value(forKey: &quot;token&quot;)
+</code></pre>
+<p>然而，尽管下标对于有点窄的用例集确实很方便，但如果在动态获取和设置值的领域之外使用它，也可能导致相当混乱的代码。例如，这行代码是否会导致通知被发送，并不是很清楚:</p>
+<pre><code class="language-swift">notificationsToSend[.userUpdated] = Notification(value: user)
+</code></pre>
+<p>由于上面的API是用于执行一个动作的，而不是指定一个值，一个好的老式方法可能会更合适:</p>
+<pre><code class="language-swift">send(Notification(value: user), forEvent: .userUpdated)
+</code></pre>
+<p>因此，下标绝对不是方法的替代，而是一种更容易提供对底层值集访问的方法  - 无论那是一个集合，一个数据库，或一个模型正在被一个键路径访问。</p>
+<h2 id="custom-subscripting">Custom subscripting</h2>
+<p>假设我们正在构建一个项目管理应用程序，让我们的用户通过将任务放置在一个二维网格上来组织他们的任务。为了简单起见，我们将网格建模为一个给定水平宽度且按行顺序排列的任务值数组:</p>
+<pre><code class="language-swift">struct Grid {
+    var tasks: [Task]
+    var width: Int
+}
+</code></pre>
+<p>问第一行中的任何任务都可以通过直接下标任务数组来完成(例如第三个任务的任务[2])，当我们开始垂直遍历网格时，我们必须做一些基本的数学运算来计算对应于给定的X和Y坐标集的索引。为了避免代码重复和潜在的错误，我们将这些计算封装在一个方法中——像这样:</p>
+<pre><code class="language-swift">extension Grid {
+    func task(atX x: Int, y: Int) -&gt; Task? {
+        // We choose to be a bit defensive here, and return nil
+        // for invalid coordinates, rather than crash. This is
+        // because we expect this code to be called within many
+        // different contexts across our app.
+        guard x &gt;= 0 &amp;&amp; y &gt;= 0 &amp;&amp; x &lt; width else {
+            return nil
+        }
+
+        let index = x + y * width
+
+        guard index &lt; tasks.count else {
+            return nil
+        }
+
+        return tasks[index]
+    }
+}
+</code></pre>
+<p>就像我们前面看到的假设的数组和字典api一样，上面的方法可以工作，但有点不必要的冗长。因为我们实际上只是从集合中访问一个元素——让我们也提供一个与上面API等价的下标，像这样:</p>
+<pre><code class="language-swift">extension Grid {
+    subscript(x: Int, y: Int) -&gt; Task? {
+        return task(atX: x, y: y)
+    }
+}
+</code></pre>
+<p>只读下标看起来很像Swift中的方法，只是它们使用了下标关键字，而不是func后面跟着一个名称。</p>
+<p>有了上面的内容，我们现在可以很容易地访问网格内的任何任务，只需要使用我们感兴趣的坐标进行下标:</p>
+<pre><code class="language-swift">func selectTask(at point: CGPoint) {
+    let x = Int(point.x / tileSize)
+    let y = Int(point.y / tileSize)
+    let task = grid[x, y]
+    select(task)
+}
+</code></pre>
+<p>上面的下标如此有效的原因是，访问网格中的tile的概念与从数组或字典中检索值非常相似 -但也因为它很容易理解x和y指的是坐标，不需要任何额外的措辞。</p>
+<h2 id="overloading">Overloading</h2>
+<p>就像方法和自由函数一样，Swift下标可以重载，为不同的输入集提供不同的功能。 例如，我们想要提供一个额外的下标API来访问网格中的一整行任务，可以这样做:</p>
+<pre><code class="language-swift">extension Grid {
+    // We add a computed convenience property here to calculate
+    // the height of the grid (which might be asymetrical): 
+    var height: Int {
+        return Int(ceil(Double(tasks.count) / Double(width)))
+    }
+
+    subscript(rowIndex: Int) -&gt; ArraySlice&lt;Task&gt; {
+        guard rowIndex &gt;= 0 &amp;&amp; rowIndex &lt; height else {
+            return []
+        }
+
+        let lowerBound = rowIndex * width
+        let upperBound = min(lowerBound + width, tasks.count)
+        return tasks[lowerBound..&lt;upperBound]
+    }
+}
+</code></pre>
+<p>上面我们返回了一个ArraySlice，而不是一个合适的数组，以避免每次访问下标时必须复制返回的任务范围。这与上周给出计算属性常量时间复杂度的方法非常相似。</p>
+<p>虽然我们的新下标在上面看起来很棒，但一旦我们开始使用它，我们就会发现它在调用站点上看起来相当模糊-由于下标默认情况下不获取外部参数标签，使它看起来我们只是访问一个单一的任务，而不是整个行:</p>
+<pre><code class="language-swift">func selectTasksOnRow(withIndex index: Int) {
+    let tasks = Array(grid[index])
+    select(tasks)
+}
+</code></pre>
+<p>在应用下标时，歧义是最突出的风险之一，因为我们需要确保基于下标的api的所有用法都能给阅读我们代码的人足够的上下文来理解发生了什么——这绝对不是上面的情况。</p>
+<p>幸运的是，上面的问题可以很容易地解决，因为如果我们想的话，我们实际上可以向下标添加外部参数标签-完全相同的方式，我们添加自定义外部标签的函数参数-通过添加一个标签的右边的参数名:</p>
+<pre><code class="language-swift">extension Grid {
+    // It's completely fine to use the same name for a parameter's
+    // external label as for its name.
+    subscript(rowIndex rowIndex: Int) -&gt; ArraySlice&lt;Task&gt; {
+        ...
+    }
+}
+</code></pre>
+<p>有了上面的调整，我们的调用站点现在看起来清晰多了——因为我们在使用新的下标时显式地引用了rowIndex:</p>
+<pre><code class="language-swift">func selectTasksOnRow(withIndex index: Int) {
+    // Here we make a deliberate choice to convert the returned
+    // ArraySlice into a proper Array, rather than always doing
+    // that whenever our subscript is accessed.
+    let tasks = Array(grid[rowIndex: index])
+    select(tasks)
+}
+</code></pre>
+<p>无论何时我们设计任何类型的api，在减少冗长和仍然在调用站点提供足够的清晰度之间取得这种平衡都是一个常见的挑战，但在使用下标时尤其重要——因为它们默认不包括任何类型的措辞。</p>
+<h2 id="getters-setters-and-generics">Getters, setters, and generics</h2>
+<p>下标和函数的另一个共同点是它们可以是泛型的， 这使我们能够在留下无类型(或Any)值的情况下保持类型安全。</p>
+<p>作为一个例子，让我们看看如何使用该功能来提高非常常用的UserDefaults系统API的类型安全性。</p>
+<p>首先，我们将使用泛型键类型扩展UserDefaults，它携带我们正在寻找的值类型(几乎类似于幻像类型)。我们还将添加一个读写下标，使我们能够以类型安全的方式检索和存储值:</p>
+<pre><code class="language-swift">extension UserDefaults {
+    struct Key&lt;Value&gt; {
+        var name: String
+    }
+
+    subscript&lt;T&gt;(key: Key&lt;T&gt;) -&gt; T? {
+        get {
+            return value(forKey: key.name) as? T
+        }
+        set {
+            setValue(newValue, forKey: key.name)
+        }
+    }
+}
+</code></pre>
+<p>上面出现在set块中的newValue变量是由编译器自动生成的，它表示使用下标分配的新值-就像使用属性观察者一样。</p>
+<p>有了上面的内容，我们现在可以扩展UserDefaults了。具有计算的类似工厂属性的键，用于创建我们的键-每个键都与它对应的值的确切类型相关联，提供了完全的类型安全:</p>
+<pre><code class="language-swift">extension UserDefaults.Key {
+    static var bookmarks: UserDefaults.Key&lt;[String]&gt; {
+        return .init(name: &quot;bookmarks&quot;)
+    }
+
+    static var notificationSnoozed: UserDefaults.Key&lt;Bool&gt; {
+        return .init(name: &quot;notificationSnoozed&quot;)
+    }
+}
+</code></pre>
+<p>由于静态属性可以与点语法一起使用，我们现在可以像这样轻松地使用UserDefaults值:</p>
+<pre><code class="language-swift">class SettingsViewModel {
+    private let userDefaults: UserDefaults
+
+    init(userDefaults: UserDefaults = .standard) {
+        self.userDefaults = userDefaults
+    }
+
+    func snoozeNotifications() {
+        userDefaults[.notificationSnoozed] = true
+    }
+}
+</code></pre>
+<p>很酷!但是可能更酷的是，尝试存储不正确类型的值现在会给我们一个编译器错误:</p>
+<pre><code class="language-swift">// Error: Cannot assign value of type 'String' to type 'Bool?'
+userDefaults[.notificationSnoozed] = &quot;yep!&quot;
+</code></pre>
+<p>我们还可以通过添加第二个接受默认值的重载，为我们的新类型安全下标API提供额外的功能——就像Dictionary的工作方式一样:</p>
+<pre><code class="language-swift">extension UserDefaults {
+    subscript&lt;T&gt;(
+        key: Key&lt;T&gt;,
+        default defaultProvider: @autoclosure () -&gt; T
+    ) -&gt; T {
+        get {
+            return value(forKey: key.name) as? T
+                ?? defaultProvider()
+        }
+        set {
+            setValue(newValue, forKey: key.name)
+        }
+    }
+}
+</code></pre>
+<p>上面我们使用@autoclosure来只在需要时计算默认值表达式——这可以帮助提高重型操作的性能， 降低出现意想不到副作用的风险。更多信息，请查看“在设计Swift api时使用@autoclosure”。</p>
+<p>使用我们新的下标变量，我们现在可以很容易地做一些事情，比如将一个元素追加到存储在UserDefaults中的数组中，或者在需要时创建一个新元素——所有这些都在一行代码中:</p>
+<pre><code class="language-swift">func addBookmark(named name: String) {
+    userDefaults[.bookmarks, default: []].append(name)
+}
+</code></pre>
+<p>同样，我们必须提供足够的上下文和措辞，使下标API的作用更加明显，在这方面，遵循与Dictionary相同的约定当然会有所帮助，因为任何熟悉下标API的人都很可能理解我们在上面要做的事情。</p>
+<h2 id="static-subscripts">Static subscripts</h2>
+<p>最后，让我们来看看Swift 5.1中引入的一个新特性——静态下标——它的工作方式与实例下标非常相似，只是它们使我们能够直接针对类型本身进行下标。</p>
+<p>例如，我们可以使用这个新特性为调用工具或脚本时传递的命令行参数和环境变量提供专用的访问类型:</p>
+<pre><code class="language-swift">struct Arguments {
+    static subscript(index: Int) -&gt; String? {
+        let arguments = CommandLine.arguments
+
+        guard index &lt; arguments.count - 1 else {
+            return nil
+        }
+
+        // We discard the first command line argument here,
+        // since it contains the execution path of our program.
+        return arguments[index + 1]
+    }
+}
+
+struct Environment {
+    static subscript(key: String) -&gt; String? {
+        return ProcessInfo.processInfo.environment[key]
+    }
+}
+</code></pre>
+<p>由于上述两段数据在程序中本质上是通用的，因此可以很方便地访问它们，而不必担心传递实例，只需通过下标获取我们的新参数和环境类型-像这样:</p>
+<pre><code class="language-swift">let sourcePath = Arguments[0]
+let targetPath = Arguments[1]
+let apiToken = Environment[&quot;API_TOKEN&quot;]
+</code></pre>
+<p>虽然能够使用下标类型很酷，但重要的是不要将上下文特定的数据放到静态上下文中， 因为这样做可以极大地减少代码中的可测试性和关注点分离——这也是单例方法经常导致的问题。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift的许多特性(包括下标)之所以如此强大，是因为它不只是将有限数量的用例硬编码到编译器或标准库中，任何类型的用例都可以采用它们。</p>
+<p>特别是在构建自定义集合或处理任何其他值组时，使用下标可以让我们设计出真正简洁和轻量级的api。但是，重要的是要仔细考虑基于下标的API是否在每个给定的情况下提供了足够的上下文——如果不能，一个方法可能是更好的选择。</p>
+<p><a href="https://www.swiftbysundell.com/articles/the-power-of-subscripts-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/BM1jB8jnlS/" class="tag">
+                    subscripts
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/FWhLREbekA/" class="tag">
+                    the power of
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/computed-properties-in-swift/">
+                  <h3 class="post-title">
+                    Computed properties in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

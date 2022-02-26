@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>A guide to the SwiftUI layout system - Part 2 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="让我们从上周结束的地方开始，继续探索SwiftUI布局系统以及它的各种api和概念是如何工作的。本周，我们将看看一些更高级的技术——比如我们如何将视图与动态尺寸对齐，以及如何读取视图周围的几何图形以构建完全自定义的布局。
+Handling ..." />
+    <meta name="keywords" content="layout,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">A guide to the SwiftUI layout system - Part 2</h2>
+            <div class="post-date">2020-03-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>让我们从上周结束的地方开始，继续探索SwiftUI布局系统以及它的各种api和概念是如何工作的。本周，我们将看看一些更高级的技术——比如我们如何将视图与动态尺寸对齐，以及如何读取视图周围的几何图形以构建完全自定义的布局。</p>
+<h2 id="handling-dynamic-content">Handling dynamic content</h2>
+<p>尽管应用程序UI的某些部分可能是相对静态的，在内容方面是可预测的，但我们将在任何给定应用程序中显示的大多数视图都将是高度动态的。</p>
+<p>我们不仅要考虑编译时不知道的内容(例如从服务器下载的文本和图像)，我们还必须确保我们的视图能够根据本地化字符串和其他资源很好地伸缩，这些资源可能会因应用运行的环境而不同。</p>
+<p>值得庆幸的是，SwiftUI是围绕着这样一个事实设计的:大多数现代应用都是动态的，并且会根据内容自动调整我们声明的视图，它们的环境(考虑到当前设备大小和配色方案等因素)和其他因素。然而，有时我们可能需要做一些微调和调整，使SwiftUI缩放和定位我们的视图完全符合我们的要求。</p>
+<p>作为一个例子，让我们继续处理上周的事件视图，在屏幕底部添加一行“信息徽章”——它将向用户显示当前事件的特定信息。 首先，我们将编写一个简单的EventInfoBadge视图，使用一些在第一部分中讨论过的布局技术——例如使用VStack垂直分组两个视图，以及渲染一个固定大小的系统图标:</p>
+<pre><code class="language-swift">struct EventInfoBadge: View {
+    var iconName: String
+    var text: String
+
+    var body: some View {
+        VStack {
+            Image(systemName: iconName)
+                .resizable()
+                .frame(width: 25, height: 25)
+            Text(text)
+        }
+    }
+}
+</code></pre>
+<p>单独来看，上面的实现看起来非常好。然而，如果我们现在尝试在ContentView的底部渲染一个由三个EventInfoBadge实例组成的水平行，事情看起来就不会像我们预期的那样好:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            Spacer()
+            HStack {
+                EventInfoBadge(
+                    iconName: &quot;video.circle.fill&quot;,
+                    text: &quot;Video call available&quot;
+                )
+                EventInfoBadge(
+                    iconName: &quot;doc.text.fill&quot;,
+                    text: &quot;Files are attached&quot;
+                )
+                EventInfoBadge(
+                    iconName: &quot;person.crop.circle.badge.plus&quot;,
+                    text: &quot;Invites allowed&quot;
+                )
+            }
+        }.padding()
+    }
+}
+</code></pre>
+<p>我们有两个主要的问题(你可以通过上面的预览按钮看到)-首先，我们的图标缩放使用了不正确的长宽比，使它们看起来拉伸。第二，因为我们的每个信息徽章都渲染不同的字符串，他们最终会得到不同的宽度-这使我们的UI看起来相当不均匀。</p>
+<p>让我们首先通过对图像应用aspectratio()修改器来解决图标拉伸的问题——告诉它在调整大小时将内容调整到边界，如下所示:</p>
+<pre><code class="language-swift">struct EventInfoBadge: View {
+    var iconName: String
+    var text: String
+
+    var body: some View {
+        VStack {
+            Image(systemName: iconName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 25, height: 25)
+            Text(text)
+        }
+    }
+}
+</code></pre>
+<p>接下来，为了让我们的三个信息徽章在ContentView中占据相同的水平空间，我们需要让每个徽章在它的容器中占据尽可能多的空间。这将迫使父视图(本例中是底部的HStack)在每个子视图之间平均分配可用空间，而不是将最大的空间分给文本最长的子视图。<br>
+为了实现这一点，让我们为EventInfoBadge中的文本设置一个无限的最大宽度——这将使布局系统在将其分割成多行之前尽可能地在水平轴上缩放它:</p>
+<pre><code class="language-swift">struct EventInfoBadge: View {
+    var iconName: String
+    var text: String
+
+    var body: some View {
+        VStack {
+            Image(systemName: iconName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 25, height: 25)
+            Text(text)
+                .frame(maxWidth: .infinity)
+        }
+    }
+}
+</code></pre>
+<p>有了上述两个修正，我们的视图现在看起来好多了——所以让我们把EventInfoBadge实现的文本居中对齐，并给它一些填充、背景颜色和圆角:</p>
+<pre><code class="language-swift">struct EventInfoBadge: View {
+    var iconName: String
+    var text: String
+
+    var body: some View {
+        VStack {
+            Image(systemName: iconName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 25, height: 25)
+            Text(text)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 5)
+        .background(Color.secondary)
+        .cornerRadius(10)
+    }
+}
+</code></pre>
+<p>最后，让我们再次遵循在第一部分中所做的相同的做法，将我们的信息徽章列表从我们的ContentView中移到一个新的独立组件中——以防止我们的内容视图变得庞大:</p>
+<pre><code class="language-swift">struct EventInfoList: View {
+    var body: some View {
+        HStack {
+            EventInfoBadge(
+                iconName: &quot;video.circle.fill&quot;,
+                text: &quot;Video call available&quot;
+            )
+            EventInfoBadge(
+                iconName: &quot;doc.text.fill&quot;,
+                text: &quot;Files are attached&quot;
+            )
+            EventInfoBadge(
+                iconName: &quot;person.crop.circle.badge.plus&quot;,
+                text: &quot;Invites enabled&quot;
+            )
+        }
+    }
+}
+</code></pre>
+<p>我们现在可以简单地初始化EventInfoList的一个实例，而不是在我们的ContentView中内联创建上面的HStack，这样就可以了:</p>
+<pre><code class="language-swift">struct ContentView: View {
+    var body: some View {
+        VStack {
+            EventHeader()
+            Spacer()
+            EventInfoList()
+        }.padding()
+    }
+}
+</code></pre>
+<p>另外，如果我们想在应用程序的其他地方渲染相同类型的列表，我们现在可以很容易地做到这一点。</p>
+<h2 id="geometry-preferences-and-layout-dependencies">Geometry, preferences, and layout dependencies</h2>
+<p>然而，我们的EventInfoBadge仍然存在一个问题。虽然我们目前的实现在宽度方面处理动态文本长度，但我们仍然需要解决的事实是，我们的徽章可能会以不同的高度结束——例如，如果我们让我们的文本稍微长一点:</p>
+<pre><code class="language-swift">struct EventInfoList: View {
+    var body: some View {
+        HStack {
+            EventInfoBadge(
+                iconName: &quot;video.circle.fill&quot;,
+                text: &quot;Video call available&quot;
+            )
+            EventInfoBadge(
+                iconName: &quot;doc.text.fill&quot;,
+                text: &quot;Files are attached&quot;
+            )
+            EventInfoBadge(
+                iconName: &quot;person.crop.circle.badge.plus&quot;,
+                text: &quot;Invites enabled, 5 people maximum&quot;
+            )
+        }
+    }
+}
+</code></pre>
+<p>上面的结果可能不是什么坏事，但如果我们能够给每个徽章相同的高度，我们的UI看起来会更好。 为了实现这一点，我们必须想出一种方法来通知EventInfoList它的子视图的最大高度，这样它就可以调整剩余子视图的大小，使其也占据相同的垂直空间。</p>
+<p>因为这是一个我们可能想要在应用程序的不同部分(甚至在项目之间)重用的功能，让我们将其作为一个名为HeightSyncedRow的新独立视图来实现。首先，我们将使用@ViewBuilder函数builder属性，使我们的新视图能够使用SwiftUI内置容器和Stack使用的类似dsl的语法。然后，我们将为该DSL表达式的结果赋值一个childHeight，如下所示:</p>
+<pre><code class="language-swift">struct HeightSyncedRow&lt;Content: View&gt;: View {
+    private let content: Content
+    @State private var childHeight: CGFloat?
+
+    init(@ViewBuilder content: () -&gt; Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        HStack {
+            content.frame(height: childHeight)
+        }
+    }
+}
+</code></pre>
+<p>使用与swift内置视图相同的@ViewBuilder属性的好处是，我们现在可以回到EventInfoList，简单地用新的HeightSyncedRow替换它的HStack，而不需要做任何额外的更改:</p>
+<pre><code class="language-swift">struct EventInfoList: View {
+    var body: some View {
+        HeightSyncedRow {
+            EventInfoBadge(
+                iconName: &quot;video.circle.fill&quot;,
+                text: &quot;Video call available&quot;
+            )
+            EventInfoBadge(
+                iconName: &quot;doc.text.fill&quot;,
+                text: &quot;Files are attached&quot;
+            )
+            EventInfoBadge(
+                iconName: &quot;person.crop.circle.badge.plus&quot;,
+                text: &quot;Invites enabled, 5 people maximum&quot;
+            )
+        }
+    }
+}
+</code></pre>
+<p>接下来，让我们计算highsyncedrow将分配给它的每个子节点的childHeight值。为了做到这一点，我们将通过使用SwiftUI的Preferences system，让每个子节点在视图层次结构中向上报告当前的高度 — 这使我们能够将给定的值与子视图中的preference键关联起来，之后可以在父视图中读取该值。</p>
+<p>这样做首先需要我们实现一个PreferenceKey，它既包括首选项的defaultValue，也包括一个将两个值(前一个值和后一个值)减少为一个值的方法——像这样:</p>
+<pre><code class="language-swift">private struct HeightPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat,
+                       nextValue: () -&gt; CGFloat) {
+        value = nextValue()
+    }
+}
+</code></pre>
+<p>接下来，我们将使用SwiftUI的GeometryReader类型——这是一个视图，它使我们能够读取当前视图容器的大小。通过嵌入一个GeometryReader作为给定视图的背景，我们可以在不影响视图布局的情况下进行这种读取 — 因为背景视图总是会占用与它所附加的视图相同的帧。</p>
+<p>最后，我们将把所有这些功能打包到一个视图扩展中，使我们能够将任何视图的高度同步到给定的绑定属性包装器中——这给了我们以下实现:</p>
+<pre><code class="language-swift">extension View {
+    func syncingHeightIfLarger(than height: Binding&lt;CGFloat?&gt;) -&gt; some View {
+        background(GeometryReader { proxy in
+            // We have to attach our preference assignment to
+            // some form of view, so we just use a clear color
+            // here to make that view completely transparent:
+            Color.clear.preference(
+                key: HeightPreferenceKey.self,
+                value: proxy.size.height
+            )
+        })
+        .onPreferenceChange(HeightPreferenceKey.self) {
+            height.wrappedValue = max(height.wrappedValue ?? 0, $0)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的步骤，我们现在可以回到我们的HeightSyncedRow，让它把我们新的syncingheight flarger修改器应用到它的内容视图 — 这又会使它的每个子节点都采用完全相同的高度:</p>
+<pre><code class="language-swift">struct HeightSyncedRow&lt;Content: View&gt;: View {
+    private let content: Content
+    @State private var childHeight: CGFloat?
+
+    init(@ViewBuilder content: () -&gt; Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        HStack {
+            content.syncingHeightIfLarger(than: $childHeight)
+                   .frame(height: childHeight)
+        }
+    }
+}
+</code></pre>
+<p>然而，如果我们现在再次渲染我们的主ContentView，我们实际上不能告诉我们所有的信息徽章有相同的高度 ,因为我们在给每个信息徽章的背景颜色之后应用了.frame()修饰器。为了说明这个问题，我们可以再次使用经典的“红色背景颜色技巧”，就像我们在第一部分中所做的那样:</p>
+<pre><code class="language-swift">struct HeightSyncedRow&lt;Content: View&gt;: View {
+    private let content: Content
+    @State private var childHeight: CGFloat?
+
+    init(@ViewBuilder content: () -&gt; Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        HStack {
+            content.syncingHeightIfLarger(than: $childHeight)
+                   .frame(height: childHeight)
+                   .background(Color.red)
+        }
+    }
+}
+</code></pre>
+<p>现在，为了解决这个问题，让我们把background 赋值从EventInfoBadge移到HeightSyncedRow中。这样，我们将能够首先分配每个视图的帧，然后添加它的背景-这将给我们所有的背景视图正确的大小。为了让HeightSyncedRow仍然是一个可重用的组件，让我们在初始化器中添加一个Background视图的支持，然后把它赋值给每一个子组件，就像这样:</p>
+<pre><code class="language-swift">struct HeightSyncedRow&lt;Background: View, Content: View&gt;: View {
+    private let background: Background
+    private let content: Content
+    @State private var childHeight: CGFloat?
+
+    init(background: Background,
+         @ViewBuilder content: () -&gt; Content) {
+        self.background = background
+        self.content = content()
+    }
+
+    var body: some View {
+        HStack {
+            content.syncingHeightIfLarger(than: $childHeight)
+                   .frame(height: childHeight)
+                   .background(background)
+        }
+    }
+}
+</code></pre>
+<p>有了上面的内容，现在让我们回到EventInfoList，并在创建它的HeightSyncedRow时从EventInfoBadge传递后台视图——像这样：</p>
+<pre><code class="language-swift">struct EventInfoList: View {
+    var body: some View {
+        HeightSyncedRow(background: Color.secondary.cornerRadius(10)) {
+            EventInfoBadge(
+                iconName: &quot;video.circle.fill&quot;,
+                text: &quot;Video call available&quot;
+            )
+            EventInfoBadge(
+                iconName: &quot;doc.text.fill&quot;,
+                text: &quot;Files are attached&quot;
+            )
+            EventInfoBadge(
+                iconName: &quot;person.crop.circle.badge.plus&quot;,
+                text: &quot;Invites enabled, 5 people maximum&quot;
+            )
+        }
+    }
+}
+</code></pre>
+<p>现在剩下的就是从EventInfoBadge中删除backGround赋值，我们的实现就完成了:</p>
+<pre><code class="language-swift">struct EventInfoBadge: View {
+    var iconName: String
+    var text: String
+
+    var body: some View {
+        VStack {
+            Image(systemName: iconName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 25, height: 25)
+            Text(text)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 5)
+    }
+}
+</code></pre>
+<p>在整个练习过程中，我们本质上必须处理的是布局依赖关系——当一个视图的布局以某种方式依赖于另一个视图。在我们的例子中，我们不能确定每个EventInfoBadge的最终帧之前，首先知道它们之间的最大高度。</p>
+<p>尽管布局依赖关系应该尽可能避免(因为它们会使我们的视图非常紧密地耦合)，但有时有必要在一组子视图和它们的父视图之间建立一个通信链 —— 如果我们能够通过通用抽象(如我们构建的HeightSyncedRow)做到这一点，那么我们通常能够找到一种方法来管理我们的布局依赖关系，使我们的代码模块化并易于更改。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>这就是SwiftUI布局系统指南的第二部分。下周，我们将通过看一看如何让我们的视图在多个屏幕大小之间更好地缩放，以及如何定义布局优先级和更多自定义布局来结束这个系列。但现在，让我们总结一下这部分内容:</p>
+<p>aspectratio()修饰符让我们可以在视图调整大小时调整视图内容的缩放方式。它对图像特别有用。<br>
+使用.frame(maxWidth: .infinity)(或它的高度等效值)可以告诉视图在给定的维度内占用尽可能多的空间，这反过来可以用来“强制”父视图将所有可用的空间平均分配给子视图。<br>
+GeometryReader是一个特殊的视图，它可以读取周围的几何图形，并让我们相应地构建定制的布局。<br>
+使用SwiftUI的Preferences system，我们可以通过一个视图层次结构向上通信，例如为了通知父视图的计算大小。</p>
+<p><a href="https://www.swiftbysundell.com/articles/swiftui-layout-system-guide-part-2/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ql06Ez80-/" class="tag">
+                    layout
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/inline-wrapping-of-uikit-or-appkit-views-within-swiftui/">
+                  <h3 class="post-title">
+                    Inline wrapping of UIKit or AppKit views within SwiftUI
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

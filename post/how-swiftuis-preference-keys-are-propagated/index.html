@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>How SwiftUI&#39;s Preference Keys are propagated | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Official definition
+
+
+
+
+NumericPreferenceKey
+
+
+
+
+When is reduce invoked
+
+
+3.1. No child alters/sets the preference k..." />
+    <meta name="keywords" content="preference-keys,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">How SwiftUI&#39;s Preference Keys are propagated</h2>
+            <div class="post-date">2021-10-12</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Officialdefinition">Official definition</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#NumericPreferenceKey">NumericPreferenceKey</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Whenisreduceinvoked">When is reduce invoked</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#Nochildalterssetsthepreferencekey">No child alters/sets the preference key</a></li>
+<li>3.2. <a href="#Onechildalterssetsthepreferencekey">One child alters/sets the preference key</a></li>
+<li>3.3. <a href="#Multiplechildrenaltersetthepreferencekey">Multiple children alter/set the preference key</a></li>
+</ul>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Reducecallorder">Reduce call order</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Commonreduceimplementations">Common reduce implementations</a></li>
+</ol>
+<ul>
+<li>5.1. <a href="#valuenextValue">value = nextValue()</a></li>
+<li>5.2. <a href="#Emptyimplementation">Empty implementation</a></li>
+<li>5.3. <a href="#valuenextValue-1">value += nextValue()</a></li>
+<li>5.4. <a href="#Andmanymore">And many more</a></li>
+</ul>
+</li>
+<li>
+<ol start="6">
+<li><a href="#PreferenceKeyisafunctionofthecurrentstate">PreferenceKey is a function of the current state</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Whenisthepreferencekeycomputed">When is the preference key computed?</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#WhyisreducesnextValueafunction">Why is reduce's nextValue a function?</a></li>
+</ol>
+</li>
+<li>
+<ol start="9">
+<li><a href="#Conclusions">Conclusions</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # How SwiftUI's Preference Keys are propagated -->
+<p>SwiftUI的<em>PreferenceKey</em>声明如下:</p>
+<pre><code class="language-swift">public protocol PreferenceKey {
+  associatedtype Value
+  static var defaultValue: Self.Value { get }
+  static func reduce(value: inout Self.Value, nextValue: () -&gt; Self.Value)
+}
+</code></pre>
+<p>虽然很清楚Value和defaultValue是什么和做什么，但对于*reduce(Value: nextValue:)*却不能这样说: 让我们来深入研究一下这个神秘的方法。</p>
+<h2 id="1-a-nameofficialdefinitionaofficial-definition">1. <a name='Officialdefinition'></a>Official definition</h2>
+<p>以下是reduce的当前文档:</p>
+<pre><code class="language-swift">/// Combines a sequence of values by modifying the previously-accumulated
+/// value with the result of a closure that provides the next value.
+///
+/// This method receives its values in view-tree order. Conceptually, this
+/// combines the preference value from one tree with that of its next
+/// sibling.
+///
+/// - Parameters:
+///   - value: The value accumulated through previous calls to this method.
+///     The implementation should modify this value.
+///   - nextValue: A closure that returns the next value in the sequence.
+static func reduce(value: inout Self.Value, nextValue: () -&gt; Self.Value)
+</code></pre>
+<p>让我们举个例子。</p>
+<h2 id="2-a-namenumericpreferencekeyanumericpreferencekey">2. <a name='NumericPreferenceKey'></a>NumericPreferenceKey</h2>
+<p>下面是一个简单的<strong>preference</strong>定义，拥有一个整数作为其值:</p>
+<pre><code class="language-swift">struct NumericPreferenceKey: PreferenceKey {
+  static var defaultValue: Int = 0
+  static func reduce(value: inout Int, nextValue: () -&gt; Int) { ... }
+}
+</code></pre>
+<p>从现在开始，任何视图层次结构中的每个视图对于<strong>NumericPreferenceKey</strong>都有一个默认值为0，而不管reduce实现如何。</p>
+<h2 id="3-a-namewhenisreduceinvokedawhen-is-reduce-invoked">3. <a name='Whenisreduceinvoked'></a>When is reduce invoked</h2>
+<p>想象一个小的视图层次结构，有一个根，两个叶子，中间没有任何东西:</p>
+<pre><code class="language-swift">VStack {
+  Text(&quot;A&quot;)
+  Text(&quot;B&quot;)
+}
+</code></pre>
+<blockquote>
+<p>为了清晰起见:VStack是根，而两个text是叶。</p>
+</blockquote>
+<p>我们将在不同的场景中使用这个层次结构。</p>
+<h3 id="31-a-namenochildalterssetsthepreferencekeyano-child-alterssets-the-preference-key">3.1. <a name='Nochildalterssetsthepreferencekey'></a>No child alters/sets the preference key</h3>
+<pre><code class="language-swift">VStack {
+  Text(&quot;A&quot;)
+  Text(&quot;B&quot;)
+}
+</code></pre>
+<p>由于没有视图设置<em>NumericPreferenceKey</em>值，所以所有视图都有一个<em>NumericPreferenceKey. defaultvalue</em>的<em>NumericPreferenceKey value</em>，按照我们的定义，该值为0。</p>
+<p><strong>NumericPreferenceKey.reduce</strong>永远不会在text上调用，因为没有人可以将值传递给叶节点。</p>
+<p><strong>reduce</strong>在VStack上也没有调用，因为它的子节点没有设置/传递<em>NumericPreferenceKey</em>值给父节点。</p>
+<h3 id="32-a-nameonechildalterssetsthepreferencekeyaone-child-alterssets-the-preference-key">3.2. <a name='Onechildalterssetsthepreferencekey'></a>One child alters/sets the preference key</h3>
+<pre><code class="language-swift">VStack {
+  Text(&quot;A&quot;)
+    .preference(key: NumericPreferenceKey.self, value: 1)
+  Text(&quot;B&quot;)
+}
+</code></pre>
+<p>In this case:</p>
+<ul>
+<li>Text(&quot;A&quot;) sets its NumericPreferenceKey value to 1 and pass it to its parent</li>
+<li>Text(&quot;B&quot;) defaults NumericPreferenceKey to defaultValue, and not pass anything to its parent</li>
+</ul>
+<p>VStack呢? 让我们再来看看reduce定义:通过修改之前积累的值和提供下一个值的闭包的结果来组合一系列值。</p>
+<p>因为只有设置/更改了<em>NumericPreferenceKey</em>值的子节点才会将其传递给父节点，所以VStack只会从Text(&quot;A&quot;)中积累一个值:1。</p>
+<p>再一次,VStack上没有调用<strong>NumericPreferenceKey.reduce</strong>，与VStack关联的<strong>NumericPreferenceKey</strong>值现在是1。</p>
+<h3 id="33-a-namemultiplechildrenaltersetthepreferencekeyamultiple-children-alterset-the-preference-key">3.3. <a name='Multiplechildrenaltersetthepreferencekey'></a>Multiple children alter/set the preference key</h3>
+<pre><code class="language-swift">VStack {
+  Text(&quot;A&quot;)
+    .preference(key: NumericPreferenceKey.self, value: 1)
+  Text(&quot;B&quot;)
+    .preference(key: NumericPreferenceKey.self, value: 3)
+}
+</code></pre>
+<p>In this example:</p>
+<ul>
+<li>both <em>Texts</em> set and pass to their parent a <em>NumericPreferenceKey</em> value of 1 and 3, respectively</li>
+<li><em>VStack</em> accumulates two <em>NumericPreferenceKey</em> values</li>
+</ul>
+<p>SwiftUI不知道该给VStack分配哪个<em>NumericPreferenceKey</em>值，因为它的子节点会给出多个值:这就是我们的<em>NumericPreferenceKey.reduce</em>起到了拯救作用的时候,帮助SwiftUI将这些多个值合并为一个，然后将其分配给<em>VStack</em>。</p>
+<blockquote>
+<p>即使所有传递的值都是相同的，也会调用<strong>NumericPreferenceKey.Reduce</strong>。</p>
+</blockquote>
+<p>那么VStack的value是什么呢? 在回答这个问题之前，我们需要知道值以什么顺序传递给VStack。</p>
+<h2 id="4-a-namereducecallorderareduce-call-order">4. <a name='Reducecallorder'></a>Reduce call order</h2>
+<p><em>PreferenceKey</em>的reduce方法总是包含两个参数:当前<em>value</em>和要合并的下一个<em>value</em>。</p>
+<p>回到我们的例子:</p>
+<ol>
+<li>VStack first receives the value 1 from Text(&quot;A&quot;). As no other value was previously accumulated, this becomes the current value of VStack</li>
+<li>then VStack receives the value 3 from Text(&quot;B&quot;), now SwiftUI needs to combine this value with the current value, therefore calling NumericPreferenceKey.reduce with 1 as the value parameter, and 3 as the nextValue</li>
+</ol>
+<p>这就是SwiftUI header 所说的<em>This method receives its values in view-tree order.</em> 总是通过按照声明顺序从头到尾遍历视图的子对象来调用:<strong>reduce</strong>。</p>
+<p>如果我们的VStack有从“A”到“Z”的文本，所有设置它们的<em>NumericPreferenceKey</em>值，reduce将首先用当前值调用，继承自Text(“A”)和Text(“B”)，然后用新的当前值和Text(“C”)，等等。</p>
+<p><strong>reduce</strong>只在兄弟级中累积的值之间调用:如果VStack子级有自己的子级，则递归应用相同的概念，然后该子级将传递给VStack它的最终值，不管它是如何获得的。</p>
+<p>最后是计算VStack的<em>NumericPreferenceKey</em>值的时候了: 要做到这一点，我们需要看看<strong>NumericPreferenceKey.reduce</strong>实现。</p>
+<h2 id="5-a-namecommonreduceimplementationsacommon-reduce-implementations">5. <a name='Commonreduceimplementations'></a>Common reduce implementations</h2>
+<p>每个<em>preference key</em>声明都有自己的<em>reduce</em>实现: 在本节中，让我们介绍一些最常见的方法。</p>
+<h3 id="51-a-namevaluenextvalueavalue-nextvalue">5.1. <a name='valuenextValue'></a>value = nextValue()</h3>
+<p>最常见的定义是将<em>nextValue()<em>赋值给value，这也可以是</em>NumericPreferenceKey</em>的实现:</p>
+<pre><code class="language-swift">struct NumericPreferenceKey: PreferenceKey {
+  static var defaultValue: Int = 0
+
+  static func reduce(value: inout Int, nextValue: () -&gt; Int) { 
+    value = nextValue()
+  }
+}
+</code></pre>
+<p>我们回到我们的例子，其中Text(&quot;A&quot;)和Text(&quot;B&quot;)都传递一个值，并计算<em>VStack</em>的<em>NumericPreferenceKey</em>:</p>
+<ul>
+<li>first VStack takes in the value passed by Text(&quot;A&quot;), as there was no prior accumulated value, this is the new VStack current value</li>
+<li>then VStack gets the value passed by Text(&quot;B&quot;), as we have two values reduce is called, and the new VStack value will be whatever the new proposed value is (that's what value = nextValue() does).</li>
+</ul>
+<p>换句话说，在这个实现中，当多个子节点传递一个值时，reduce将丢弃除最后一个之外的所有子节点，这将成为我们视图的值。</p>
+<h3 id="52-a-nameemptyimplementationaempty-implementation">5.2. <a name='Emptyimplementation'></a>Empty implementation</h3>
+<p>在之前的文章中，我们用一个空的reduce实现定义了各种<em>preference keys</em>:</p>
+<pre><code class="language-swift">struct NumericPreferenceKey: PreferenceKey {
+  static var defaultValue: Int = 0
+
+  static func reduce(value: inout Int, nextValue: () -&gt; Int) { 
+  }
+}
+</code></pre>
+<p>再一次，让我们回到我们的例子，计算VStack的NumericPreferenceKey:</p>
+<ul>
+<li>first VStack takes in the value passed by Text(&quot;A&quot;), as there was no prior accumulated value, this is the new VStack current value</li>
+<li>then VStack gets the value passed by Text(&quot;B&quot;), as we have two values reduce is called, and nothing happens, as our reduce does nothing. VStack keeps the current value.</li>
+</ul>
+<p>这个实现与前一个相反:我们的视图将保留第一个收集的值，而忽略其余的值。</p>
+<h3 id="53-a-namevaluenextvalue-1avalue-nextvalue">5.3. <a name='valuenextValue-1'></a>value += nextValue()</h3>
+<p>其他常见的实现使用reduce将所有值与一些数学运算符(如sum)组合起来:</p>
+<pre><code class="language-swift">struct NumericPreferenceKey: PreferenceKey {
+  static var defaultValue: Int = 0
+
+  static func reduce(value: inout Int, nextValue: () -&gt; Int) { 
+    value += nextValue()
+  }
+}
+</code></pre>
+<p>现在应该很直观了，在这种情况下，我们的视图的值将是它的子视图传递的所有值的和。</p>
+<h3 id="54-a-nameandmanymoreaand-many-more">5.4. <a name='Andmanymore'></a>And many more</h3>
+<p>其他值得一提的实现包括Value是数组或字典的首选项，以及使用reduce方法将所有子值组合在一起(通过*append(contentsOf:)*或类似方法)。</p>
+<p>一旦我们理解了<em>preference key</em>的内部工作原理，阅读和理解<em>reduce</em>的效果就变得很直观了。</p>
+<h2 id="6-a-namepreferencekeyisafunctionofthecurrentstateapreferencekey-is-a-function-of-the-current-state">6. <a name='PreferenceKeyisafunctionofthecurrentstate'></a>PreferenceKey is a function of the current state</h2>
+<p>与SwiftUI视图一样， <em>preference key</em> 值是当前状态的结果，不会持久化。</p>
+<p>例如，如果我们看看<em>value += nextValue()<em>的reduce实现，当前视图的值就是当前传递的值的和: 如果一个子节点改变了传递的值，SwiftUI将从头开始重新计算视图</em>preference key</em>值。</p>
+<p>对于任何<em>preference key Value</em>也是如此:即使是数组或字典。我们总是从头开始，没有持久化。</p>
+<h2 id="7-a-namewhenisthepreferencekeycomputedawhen-is-the-preference-key-computed">7. <a name='Whenisthepreferencekeycomputed'></a>When is the preference key computed?</h2>
+<p>如果我们的应用程序中的完整视图是我们的VStack示例，则reduce实际上不会被调用:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    VStack {
+      Text(&quot;A&quot;)
+        .preference(key: NumericPreferenceKey.self, value: 1)
+      Text(&quot;B&quot;)
+        .preference(key: NumericPreferenceKey.self, value: 3)
+    }
+  }
+}
+</code></pre>
+<p>这是真的，尽管VStack有多个<em>NumericPreferenceKey</em>值传递:这篇文章欺骗了我们吗?</p>
+<p>SwiftUI总是尽可能少地将结果呈现给用户。 在这个示例中，没有人读取或使用 <strong>preference key</strong>;因此，SwiftUI将忽略它。</p>
+<p>我们的所有键都在那里，并在视图层次结构中的适当位置出现。它们只是没有被使用。因此，SwiftUI不会花任何时间来解决这些问题。</p>
+<p>如果我们想看到<strong>reduce</strong>被调用，我们需要以某种方式读取<em>NumericPreferenceKey</em>，一种方法是在VStack中添加*onPreferenceChange(_:perform:)*函数:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    VStack {
+      Text(&quot;A&quot;)
+        .preference(key: NumericPreferenceKey.self, value: 1)
+      Text(&quot;B&quot;)
+        .preference(key: NumericPreferenceKey.self, value: 3)
+    }
+    .onPreferenceChange(NumericPreferenceKey.self) { value in
+      print(&quot;VStack's NumericPreferenceKey value is now: \(value)&quot;)
+    }
+  }
+}
+</code></pre>
+<p><em>onPreferenceChange(_:perform:)<em>告诉SwiftUI我们想知道VStack的</em>VStack的NumericPreferenceKey</em>值以及它什么时候改变:这就是我们要看到reduce方法被调用所需要的所有设置。</p>
+<h2 id="8-a-namewhyisreducesnextvalueafunctionawhy-is-reduces-nextvalue-a-function">8. <a name='WhyisreducesnextValueafunction'></a>Why is reduce's nextValue a function?</h2>
+<pre><code class="language-swift">public protocol PreferenceKey {
+  associatedtype Value
+  static var defaultValue: Self.Value { get }
+  static func reduce(value: inout Self.Value, nextValue: () -&gt; Self.Value)
+}
+</code></pre>
+<p>当阅读<em>PreferenceKey</em>的定义时，可能会出现一些令人困惑的事情，即<em>reduce</em>的参数是一个值和一个函数:  我们合并了两个值。为什么SwiftUI不给我们两个值?</p>
+<p><em><strong>The answer is SwiftUI's laziness.</strong></em></p>
+<p>让我们以之前的reduce空实现为例，并在一个稍微复杂一点的示例中使用它:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var body: some View {
+    VStack {
+      Text(&quot;A&quot;)
+        .preference(key: NumericPreferenceKey.self, value: 1)
+
+      VStack {
+        Text(&quot;X&quot;)
+          .preference(key: NumericPreferenceKey.self, value: 5)
+        Text(&quot;Y&quot;)
+          .preference(key: NumericPreferenceKey.self, value: 6)
+      }
+    }.onPreferenceChange(NumericPreferenceKey.self) { value in
+      print(&quot;VStack's NumericPreferenceKey value is now: \(value)&quot;)
+    }
+  }
+}
+
+struct NumericPreferenceKey: PreferenceKey {
+  static var defaultValue: Int = 0
+  static func reduce(value: inout Int, nextValue: () -&gt; Int) { 
+  }
+}
+</code></pre>
+<p>这里我们有一个VStack作为我们的根，这个VStack包含两个孩子:一个文本(“a”)和另一个VStack，反过来，有两个文本作为孩子。</p>
+<p>视图中的所有文本设置它们的NumericPreferenceKey值，并在根上调用onPreferenceChange(_:perform:)。</p>
+<p>让我们计算根<em>NumericPreferenceKey</em>value:</p>
+<ul>
+<li>first VStack receives the value passed by Text(&quot;A&quot;), as there was no prior accumulated value, this is the new VStack current value</li>
+<li>then it receives another value from its other child, the inner VStack, and our reduce method gets called</li>
+</ul>
+<p>在这个例子中，<em>reduce</em>什么也不做。我们不需要知道内部VStack传递的确切值是什么。</p>
+<p>因为我们没有访问<em>nextValue</em>，所以SwiftUI不会计算它。</p>
+<p>这意味着根本不会计算内部VStack<strong>preference key</strong>，因为没有人读取它，因此我们只调用reduce一次，只解析根VStack<strong>preference key</strong>。</p>
+<p>这就是为什么reduce需要一个值和一个方法:nextValue()方法是SwiftUI检查该值是否需要的方法，如果不需要，则不会解析它。</p>
+<p>SwiftUI需要尽可能快速高效地解决整个视图层次结构，这是另一个优化。</p>
+<h2 id="9-a-nameconclusionsaconclusions">9. <a name='Conclusions'></a>Conclusions</h2>
+<p>SwiftUI的PreferenceKey是其中一个后台工具，虽然不是很流行，但对于获得某些结果来说却是必不可少的:<br>
+在本文中，我们探索了<em>PreferenceKey</em>的内部工作原理，并揭示了它的reduce方法是如何使用的以及它的用途，从而发现了更多的SwiftUI效率。</p>
+<p><a href="https://www.fivestars.blog/articles/preferencekey-reduce/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ZaYAd27g1/" class="tag">
+                    preference-keys
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/memorylayout-size-stride-alignment/">
+                  <h3 class="post-title">
+                    MemoryLayout: Size, Stride, Alignment
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

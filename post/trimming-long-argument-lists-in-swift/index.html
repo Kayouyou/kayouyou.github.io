@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Trimming long argument lists in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="向应用程序或框架添加新特性通常需要向现有函数添加新参数。我们可能需要一种新的方式来定制一个常见的操作，或者对某些东西的呈现方式做一些细微的调整，以便能够将我们的新功能与我们的代码库的其余部分集成在一起。
+虽然大多数这样的更改一开始可能看起来..." />
+    <meta name="keywords" content="code structure,functions" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Trimming long argument lists in Swift</h2>
+            <div class="post-date">2018-08-12</div>
+            
+            <div class="post-content" v-pre>
+              <p>向应用程序或框架添加新特性通常需要向现有函数添加新参数。我们可能需要一种新的方式来定制一个常见的操作，或者对某些东西的呈现方式做一些细微的调整，以便能够将我们的新功能与我们的代码库的其余部分集成在一起。</p>
+<p>虽然大多数这样的更改一开始可能看起来微不足道，但如果我们不小心，随着时间的推移，我们可能会显著地扩展函数或类型的作用域，远远超出了它最初设计的目的——留给我们的api有些不清楚，使用起来有些麻烦。</p>
+<p>这周，让我们看看如何处理这样的函数，以及如何通过减少它们所接受的参数数量来简化它们。</p>
+<h2 id="growing-pains">Growing pains</h2>
+<p>让我们从看一个例子开始。这里我们有一个函数，我们可以使用它在我们的应用程序中轻松地显示当前用户的配置文件——也可以使用一个动画:</p>
+<pre><code class="language-swift">func presentProfile(animated: Bool) {
+    ...
+}
+</code></pre>
+<p>很简单。然而，随着时间的推移，应用程序添加了新功能 - 我们可能会发现自己需要添加更多的自定义选项到上面的功能 - 把原本超级简单的东西变成更复杂的东西:</p>
+<pre><code class="language-swift">func presentProfile(animated: Bool,
+                    duration: TimeInterval = 0.3,
+                    curve: UIViewAnimationCurve = .easeInOut,
+                    completionHandler: (() -&gt; Void)? = nil) {
+    ...
+}
+</code></pre>
+<p>上面的功能并不一定是坏的(它遵循了大多数现代Swift API的设计惯例)，但它开始变得有点难以理解，而且缺乏原始版本的简单和优雅。这也很容易看出一个趋势——上面的功能不太可能停止增长，因为新功能肯定也需要类似的调整和新的选项。</p>
+<h2 id="reducing-ambiguity">Reducing ambiguity</h2>
+<p>具有长参数列表的函数可能更难理解的一个常见原因是，它们开始变得有点含糊。如果我们仔细看看上面的presentProfile示例，我们可以看到现在可以使用一些没有真正意义的参数组合来调用它。 例如，它可以告诉它禁用动画和使用特定的动画持续时间:</p>
+<pre><code class="language-swift">presentProfile(animated: false, duration: 2)
+</code></pre>
+<p>在这种情况下，我们并不清楚这个函数应该做什么。它应该尊重false动画标志，还是应该动画超过两秒，如duration参数所示?</p>
+<p>让我们试着通过减少函数参数列表的长度来减少一些歧义和困惑-不牺牲任何功能。我们将不再把所有的动画选项作为顶级参数，而是把它们打包到一个动画配置结构中——像这样:</p>
+<pre><code class="language-swift">struct Animation {
+    var duration: TimeInterval = 0.3
+    var curve = UIViewAnimationCurve.easeInOut
+    var completionHandler: (() -&gt; Void)? = nil
+}
+</code></pre>
+<p>有了上面的内容，我们就可以将前面的四个参数缩减为一个参数-使它有可能回到我们最初拥有的类似优雅和简单的函数签名:</p>
+<pre><code class="language-swift">func presentProfile(with animation: Animation? = nil) {
+    ...
+}
+</code></pre>
+<p>以上方法的美妙之处在于，它不再可能向我们的函数发送冲突参数——如果animation参数为nil，不会执行任何动画。不再有歧义，也不再有冗长的参数列表需要跟踪。</p>
+<p>为动画选项创建新类型的另一种方法是使用元组，就像我们上面所做的那样。要了解更多，请查看“在Swift中使用元组作为轻量级类型”。</p>
+<h2 id="composition">Composition</h2>
+<p>长参数列表的另一个常见问题是，我们最终会得到做太多事情的函数，使得它们的实现也很难阅读和维护。例如，这里有一个函数，加载一个用户的好友列表，该列表与搜索查询相匹配，同时还包含排序和过滤选项:</p>
+<pre><code class="language-swift">func loadFriends(matching query: String,
+                 limit: Int?,
+                 sorted: Bool,
+                 filteredByGroup group: Friend.Group?,
+                 handler: @escaping (Result&lt;[Friend]&gt;) -&gt; Void) {
+    ...
+}
+</code></pre>
+<p>虽然用一个函数来完成我们在加载好友时需要的所有工作可能真的很方便，但由于复杂的逻辑和许多不同的代码路径，这类函数变得混乱和错误是很常见的，这取决于传递的参数组合。</p>
+<p>相反，让我们减少loadFriends的范围，只包含好友的实际加载，不包含任何排序或过滤功能。这样它就可以变得更简单，更容易测试，并且我们可以防止它成为一个代码转储地。由于排序和过滤是非常特定于上下文的，所以我们将这些操作委托给函数的调用者，如下所示:</p>
+<pre><code class="language-swift">loadFriends(matching: query) { [weak self] result in
+    switch result {
+    case .success(let friends):
+        self?.render(friends.filtered(by: group).sorted())
+    case .failure(let error):
+        self?.render(error)
+    }
+}
+</code></pre>
+<p>我们在上面所做的实际上是把东西分开，以有利于合成。我们现在可以混合使用不同的函数来实现预期的结果，而不是让一个函数包含我们需要的所有功能-就像我们如何使用标准库的sorted() API和我们自己的filter (by:)实用函数一样。虽然这可能会导致一些轻微的代码重复，但我们通常最终会得到一个更灵活的解决方案，对于所有类型的半不相关逻辑，它不会依赖于一个中心点。</p>
+<p>如果你想阅读更多关于composition的内容，请查看“Swift中的composition类型”。我还将在以后的文章中更详细地介绍函数组合。</p>
+<h2 id="extraction">Extraction</h2>
+<p>最后，让我们看看如何将长参数列表提取到一个新的专用类型中。举个例子，假设我们在UIViewController上有一个扩展，它允许我们在应用程序的任何地方向用户呈现一个对话框——用户可以选择接受或拒绝一个提示:</p>
+<pre><code class="language-swift">extension UIViewController {
+    func presentDialog(withTitle title: String,
+                       message: String,
+                       acceptTitle: String,
+                       rejectTitle: String,
+                       handler: @escaping (DialogOutcome) -&gt; Void) {
+        ...
+    }
+}
+</code></pre>
+<p>同样，我们正在处理一个相当长的参数列表，它只能在我们可能需要呈现越来越复杂的对话框时继续增长。然我们可以重构上面的功能来使用多个UIViewController扩展，但随着时间的推移，我们会用大量的对话框显示功能来填充UIViewController API，这也会变得很混乱。</p>
+<p>相反，让我们尝试将上述功能移动到它自己的专用类型中。在本例中，我们将创建一个名为DialogPresenter的结构体，它将包含以前作为参数的所有选项的属性——像这样:</p>
+<pre><code class="language-swift">struct DialogPresenter {
+    typealias Handler = (DialogOutcome) -&gt; Void
+
+    let title: String
+    let message: String
+    let acceptTitle: String
+    let rejectTitle: String
+    let handler: Handler
+
+    func present(in viewController: UIViewController) {
+        ...
+    }
+}
+</code></pre>
+<p>虽然扩展很好，但当我们处理一个非常具体的任务时——比如显示对话框，如上所述——使用专用类型通常可以使代码更清晰，并改善关注点的分离。 它还使定义类型别名(就像我们对上面的Handler所做的那样)和直接在DialogPresenter类型上定义方便的api扩展变得更加容易-而不是不得不不断添加新的扩展到UIViewController:</p>
+<pre><code class="language-swift">extension DialogPresenter {
+    init(title: String, handler: @escaping Handler) {
+        self.title = title
+        self.handler = handler
+        message = &quot;&quot;
+        acceptTitle = &quot;Yes&quot;.localized
+        rejectTitle = &quot;No&quot;.localized
+    }
+}
+</code></pre>
+<p>虽然我们可能希望保持简单扩展的原有方式，但将具有长参数列表的扩展提取为专用类型是一个很好的选择。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>又长又复杂的参数列表通常是在很长一段时间内发生多次变化的结果，虽然每个原子变化在当时看起来都很好， 没有适当的维护，事情很容易变得失控。 就像代码结构一样，即使是设计得最完美的API，如果它的作用域太大，也会很快崩溃。</p>
+<p>那么何时应该将参数列表分解、裁剪或提取为专用类型呢?我通常做的是——每次我要给一个已有的函数添加一个新的参数时——我问自己: “如果我是今天从头开始写的，我还会给这个函数加上这个参数吗?”如果答案是“否”，重构通常是有序的。</p>
+<p><a href="https://www.swiftbysundell.com/articles/trimming-long-argument-lists-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Z107CQRlK/" class="tag">
+                    code structure
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/L76CX3exv/" class="tag">
+                    functions
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/type-inference-powered-serialization-in-swift/">
+                  <h3 class="post-title">
+                    Type inference-powered serialization in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

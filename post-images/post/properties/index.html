@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Properties | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="就像许多其他编程语言一样，Swift使我们能够通过将数据存储在属性中来组织内存中的数据——与给定类型、值或对象相关联的常量和变量。 在这篇基础文章中，让我们看一些关于各种属性及其特征的示例。
+可变属性使用var关键字来声明，以及属性要存储的..." />
+    <meta name="keywords" content="properties" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Properties</h2>
+            <div class="post-date">2020-05-22</div>
+            
+            <div class="post-content" v-pre>
+              <p>就像许多其他编程语言一样，Swift使我们能够通过将数据存储在属性中来组织内存中的数据——与给定类型、值或对象相关联的常量和变量。 在这篇基础文章中，让我们看一些关于各种属性及其特征的示例。</p>
+<p>可变属性使用var关键字来声明，以及属性要存储的值的类型 -除非后者可以被编译器推断出来。 例如，这里我们在Book类型中定义了三个属性——其中两个手动输入为String，而第三个类型(Int)将从其默认值推断出来:</p>
+<pre><code class="language-swift">struct Book {
+    var name: String
+    var author: String
+    var numberOfStars = 0
+}
+</code></pre>
+<p>另一方面，如果我们想防止某个属性在初始化后发生变化，那么我们可以使用let关键字将其改为常量属性，如下所示:</p>
+<pre><code class="language-swift">struct Book {
+    let id: UUID
+    var name: String
+    var author: String
+    var numberOfStars = 0
+}
+</code></pre>
+<p>上面的设置允许我们使用上述四个属性的任何值创建Book实例(尽管我们也可以省略numberOfStars，因为它有一个默认值)，但只有我们的可变属性可以在之后被修改:</p>
+<pre><code class="language-swift">var book = Book(
+    id: UUID(),
+    name: &quot;The Swift Programming Language&quot;,
+    author: &quot;Apple&quot;
+)
+
+book.id = UUID() // Compiler error
+book.name = &quot;New name&quot; // Allowed
+book.numberOfStars += 1 // Also allowed
+
+</code></pre>
+<p>上面所有这些都是存储属性的例子——这些属性的值一旦分配就会存储在内存中。另一方面，计算属性使我们能够以属性的形式定义方便的api，这些属性在每次访问时都要重新计算。</p>
+<p>例如，如果逻辑的不同部分要求我们检查给定的书名是否超过30个字符-我们可能想要将计算封装在一个已计算的hasLongName属性中，像这样:</p>
+<pre><code class="language-swift">extension Book {
+    var hasLongName: Bool {
+        name.count &gt; 30
+    }
+}
+</code></pre>
+<p>计算属性的好处是，我们不需要手动将它们与它们派生的底层状态同步，因为每次都要重新计算。然而，这也意味着我们必须小心不要在它们内部执行任何繁重的计算。有关该主题的更多信息，请查看“Swift中的计算属性”。</p>
+<p>虽然上面的计算属性是只读的，但我们也可以定义具有getter和setter的属性(使它们的行为与var相同，除了它们的值不存储之外)。例如，我们想修改Book类型的author属性，使其包含author值，而不是字符串:</p>
+<pre><code class="language-swift">struct Author {
+    var name: String
+    var country: String
+}
+
+struct Book {
+    let id: UUID
+    var name: String
+    var author: Author
+    var numberOfStars = 0
+}
+</code></pre>
+<p>为了仍然能够轻松地访问和修改给定书籍的作者名，我们可以添加一个具有getter和setter的计算属性，这样做:</p>
+<pre><code class="language-swift">extension Book {
+    var authorName: String {
+        get { author.name }
+        set { author.name = newValue }
+    }
+}
+</code></pre>
+<p>接下来，让我们看看惰性属性。 用lazy关键字标记的属性必须是可变的，并为其分配一个默认值——然而，该默认值直到第一次访问该属性时才会被计算。 这个特性让惰性属性充当计算属性和存储属性之间的“中间地带”，这在构建基于视图控制器的ui时非常方便。</p>
+<p>因为视图控制器不应该开始创建他们的子视图，直到viewDidLoad方法被系统调用，一个真正整洁的方法来避免不得不存储这样的子视图作为可选的是使他们懒惰代替 -这将推迟它们的创建，直到它们被访问(例如在viewDidLoad):</p>
+<pre><code class="language-swift">class BookViewController: UIViewController {
+    private lazy var nameLabel = UILabel()
+    private lazy var authorLabel = UILabel()
+    
+    ...
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        view.addSubview(nameLabel)
+        view.addSubview(authorLabel)
+    }
+}
+</code></pre>
+<p>上面的两个属性被标记为私有，以使它们只在我们的视图控制器中可见。要了解更多信息，请查看关于访问控制的基础文章。</p>
+<p>延迟属性的值也可以通过闭包或函数来计算。 例如，我们现在使用一个私有的makeNameLabel方法来为我们的nameLabel属性创建和设置UILabel:</p>
+<pre><code class="language-swift">class BookViewController: UIViewController {
+    private lazy var nameLabel = makeNameLabel()
+    private lazy var authorLabel = UILabel()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        view.addSubview(nameLabel)
+        view.addSubview(authorLabel)
+    }
+    
+    private func makeNameLabel() -&gt; UILabel {
+        let label = UILabel()
+        label.font = .preferredFont(forTextStyle: .largeTitle)
+        label.textColor = .orange
+        return label
+    }
+}
+</code></pre>
+<p>到目前为止，我们一直关注的是实例属性，它们都与一个类型的单个实例相关联。 但是我们也可以定义静态属性，即附加到类型本身而不是它的实例上的属性。当我们想要跨一个类型的所有实例共享一个给定对象时，这样的属性非常有用，以避免不得不多次重新创建它。</p>
+<p>例如，这里我们定义了一个静态的dateFormatter属性，它是通过一个自执行闭包计算出来的:</p>
+<pre><code class="language-swift">extension Book {
+    static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = &quot;yyyy-MM-dd&quot;
+        return formatter
+    }()
+}
+</code></pre>
+<p>静态属性也是隐式惰性的，因为它们只有在第一次被访问时才会被计算。</p>
+<p>现在，我们可以使用上面的日期格式化器来将与书籍相关的日期转换成字符串，反之亦然:</p>
+<pre><code class="language-swift">let string = Book.dateFormatter.string(from: date)
+</code></pre>
+<p>我们还可以将观察者附加到任何存储的属性上，这使我们能够在每次将值赋给(或将赋给)该属性时运行代码。例如，这里我们使用didSet属性观察者在numberOfStars属性发生变化时自动更新标签:</p>
+<pre><code class="language-swift">class RatingViewController: UIViewController {
+    var numberOfStars = 0 {
+        didSet { starCountLabel.text = String(numberOfStars) }
+    }
+
+    private lazy var starCountLabel = UILabel()
+    
+    ...
+}
+</code></pre>
+<p>还有一个willSet变量，它在属性的值被赋值之前触发，而不是在赋值之后触发。要了解更多信息，请查看“Swift房地产观察家”。</p>
+<p>属性观察者还可以用来验证或修改每个新值——例如，确保一个数值保持在一定的范围内，就像这样:</p>
+<pre><code class="language-swift">struct Book {
+    let id: UUID
+    var name: String
+    var author: Author
+    var numberOfStars = 0 {
+        didSet {
+            // If the new value was higher than 9999, we reduce
+            // it down to that value, which is our maximum:
+            numberOfStars = min(9999, numberOfStars)
+        }
+    }
+}
+</code></pre>
+<p>最后，还可以使用键路径以更动态的方式引用属性——这让我们可以将引用传递给属性本身，而不是它的值。</p>
+<p>键路径也可以自动转换为函数(Swift 5.2以来)，这意味着当我们想要从一个实例集合中提取给定属性的值时，键路径非常有用 -例如在数组上使用map，如下所示:</p>
+<pre><code class="language-swift">// Converting an array of books into an array of strings, by
+// extracting each book's name:
+let books = loadBooks() // [Book]
+let bookNames = books.map(\.name) // [String]
+</code></pre>
+<p>要了解更多关键路径及其与功能的关系，请查看这一集Swift Clips。</p>
+<p>这些只是Swift中使用属性的众多方法中的几个例子，但希望这篇文章能够让您对它们的一些基本功能有一个有用的概述，或者启发您进一步探索这些主题——例如使用这些文章，或者使用下面的链接下载本文的游乐场。</p>
+<p><a href="https://www.swiftbysundell.com/basics/properties/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/2-HyEvrbK/" class="tag">
+                    properties
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/avoiding-deeply-nested-swift-code/">
+                  <h3 class="post-title">
+                    Avoiding deeply nested Swift code
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

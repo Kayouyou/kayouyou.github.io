@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Mutating and non-mutating Swift contexts | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Mutating and non-mutating Swift contexts
+
+What can a mutating function do?
+Mutating protocol requirements
+Performing m..." />
+    <meta name="keywords" content="mutating,non-mutating" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Mutating and non-mutating Swift contexts</h2>
+            <div class="post-date">2021-08-09</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#mutating-and-non-mutating-swift-contexts">Mutating and non-mutating Swift contexts</a>
+<ul>
+<li><a href="#what-can-a-mutating-function-do">What can a mutating function do?</a></li>
+<li><a href="#mutating-protocol-requirements">Mutating protocol requirements</a></li>
+<li><a href="#performing-mutations-within-initializers">Performing mutations within initializers</a></li>
+<li><a href="#non-mutating-properties">Non-mutating properties</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="mutating-and-non-mutating-swift-contexts">Mutating and non-mutating Swift contexts</h1>
+<p>Swift帮助我们编写更健壮代码的方法之一是它的值类型概念，它限制了状态可以跨API边界共享的方式。这是因为，当使用值类型时，所有的<em>mutations</em>(默认情况下)只对我们正在处理的值的本地副本执行，并且实际执行<em>mutations</em> api必须清楚地标记为<strong>mutating</strong>。</p>
+<p>在本文中，让我们探讨这个关键字及<strong>nonmutating</strong>， 以及这些语言特性所提供的功能。</p>
+<h2 id="what-can-a-mutating-function-do">What can a mutating function do?</h2>
+<p>本质上，标记为mutating的函数可以更改其外围值中的任何属性。 <strong>mutating</strong>这个词在这里非常关键，因为Swift的结构化<strong>mutations</strong>概念只适用于值类型，而不适用于引用类型，如类和actor。</p>
+<p>例如，下面的Meeting类型的cancel方法正在发生变化，因为它修改了其外围类型的state和reminderDate属性:</p>
+<pre><code class="language-swift">struct Meeting {
+    var name: String
+    var state: MeetingState
+    var reminderDate: Date?
+    ...
+
+    mutating func cancel(withMessage message: String) {
+        state = .cancelled(message: message)
+        reminderDate = nil
+    }
+}
+</code></pre>
+<p>除了修改属性，可变上下文还可以给self分配一个全新的值，这在向枚举(不能包含任何存储的实例属性)添加一个改变方法时非常有用。 例如，这里我们创建了一个API，让添加一个操作到另一个操作变得容易:</p>
+<pre><code class="language-swift">enum Operation {
+    case add(Item)
+    case remove(Item)
+    case update(Item)
+    case group([Operation])
+}
+
+extension Operation {
+    mutating func append(_ operation: Operation) {
+        self = .group([self, operation])
+    }
+}
+</code></pre>
+<p>上面的技术也适用于其他类型的值，比如结构体，如果我们想要将一个值重设为它的默认属性集，或者如果我们想要整体地改变一个更复杂的值，这可能会非常有用——例如:</p>
+<pre><code class="language-swift">struct Canvas {
+    var backgroundColor: Color?
+    var foregroundColor: Color?
+    var shapes = [Shape]()
+    var images = [Image]()
+
+    mutating func reset() {
+        self = Canvas()
+    }
+}
+</code></pre>
+<p>事实上，我们可以在一个发生变化的函数中给self分配一个全新的值，这一事实最初可能看起来有点奇怪，但我们必须记住，Swift的<em>structs</em>实际上只是值 - 就像我们可以通过给一个Int值赋一个新数字来替换它一样，我们也可以对任何其他struct(或enum)做同样的事情。</p>
+<h2 id="mutating-protocol-requirements">Mutating protocol requirements</h2>
+<p>虽然区分mutatingapi和non-mutating的api的概念是值类型所特有的，但我们仍然可以将mutating函数作为协议的一部分，即使该协议最终可能被引用类型(如类)所采用。类在遵循这样的协议时可以简单地省略mutating关键字，因为它们本身是可变的。</p>
+<p>然而，非常有趣的是，如果我们用一个默认实现的 mutating 函数来扩展一个协议，那么我们就可以实现上面的reset API，而实际上不知道我们要重置的是什么类型的值——就像这样:</p>
+<pre><code class="language-swift">protocol Resettable {
+    init()
+    mutating func reset()
+}
+
+extension Resettable {
+    mutating func reset() {
+        self = Self()
+    }
+}
+
+struct Canvas: Resettable {
+    var backgroundColor: Color?
+    var foregroundColor: Color?
+    var shapes = [Shape]()
+    var images = [Image]()
+}
+</code></pre>
+<h2 id="performing-mutations-within-initializers">Performing mutations within initializers</h2>
+<p>当我们想要修改值类型的内部状态时(无论是属性还是整个值本身)，函数总是需要显式地标记为<strong>mutating</strong>，默认情况下初始化器总是在<strong>mutating</strong>。这意味着，除了给类型的属性赋初始值外，初始化器还可以调用突变方法来执行它的工作(只要self已经事先完全初始化)。</p>
+<p>例如,下面ProductGroup调用自己的添加方法,以将所有的产品传递到其初始化—— 这使得我们可以使用单一的代码路径来实现逻辑,无论它被作为初始化过程的一部分运行与否:</p>
+<pre><code class="language-swift">struct ProductGroup {
+    var name: String
+    private(set) var products = [Product]()
+    private(set) var totalPrice = 0
+    
+    init(name: String, products: [Product]) {
+        self.name = name
+        products.forEach { add($0) }
+    }
+
+    mutating func add(_ product: Product) {
+        products.append(product)
+        totalPrice += product.price
+    }
+}
+</code></pre>
+<h2 id="non-mutating-properties">Non-mutating properties</h2>
+<p>到目前为止，我们看到的所有示例都是关于可变上下文的，但Swift也提供了一种方法来标记某些上下文为明确的<strong>non-mutating</strong> 。 虽然与选择<strong>mutations</strong>相比，这样做的用例肯定更有限，但在某些情况下，它仍然是一个有用的工具。</p>
+<p>举个例子，让我们看看这个简单的SwiftUI视图，它在每次点击按钮时都会增加@ state标记的value属性:</p>
+<pre><code class="language-swift">struct Counter: View {
+    @State private var value = 0
+
+    var body: some View {
+        VStack {
+            Text(String(value)).font(.largeTitle)
+            Button(&quot;Increment&quot;) {
+                value += 1
+            }
+        }
+    }
+}
+</code></pre>
+<p>现在，如果我们不仅仅把上面的看作一个SwiftUI View，而是看作一个标准的Swift struct(它确实是)，那么我们的代码编译起来会很奇怪。 为什么我们可以在闭包中这样改变value属性，而不是在同步的，可变的上下文中调用?</p>
+<p>如果我们再看一下State属性包装器的声明，就会更加神秘，它也是一个结构体，就像我们的视图:</p>
+<pre><code class="language-swift">@frozen @propertyWrapper public struct State&lt;Value&gt;: DynamicProperty {
+    ...
+}
+</code></pre>
+<p>那么，在基于struct的视图中使用的基于struct的属性包装器，如何能够在<strong>non-mutating</strong>的上下文中发生变化呢? 答案就在State包装器的wrappedValue的声明中，该值已经用nonmutating关键字标记:</p>
+<pre><code class="language-swift">public var wrappedValue: Value { get nonmutating set }
+</code></pre>
+<p>尽管这是我们目前为止在没有访问SwiftUI源代码的情况下所能研究的，State很可能在内部使用了某种形式的基于引用的存储， 这反过来又使得它可以选择不使用Swift的标准值mutation 语义(使用nonmutating关键字)——因为当我们赋值一个新的属性值时，State包装器本身实际上并没有被改变。</p>
+<p>如果我们愿意，我们也可以将这个功能添加到我们自己的一些类型中。为了演示，下面的persistdflag包装器使用UserDefaults存储其底层的Bool值，这意味着当我们给它赋一个新值时(通过它的wrappedValue属性)，我们实际上也没有在这里执行任何基于值的更改。因此，该属性可以被标记为nonmutating，这给了persistdflag与State相同的变异能力:</p>
+<pre><code class="language-swift">@propertyWrapper struct PersistedFlag {
+    var wrappedValue: Bool {
+        get {
+            defaults.bool(forKey: key)
+        }
+        nonmutating set {
+            defaults.setValue(newValue, forKey: key)
+        }
+    }
+
+    var key: String
+    private let defaults = UserDefaults.standard
+}
+</code></pre>
+<p>因此，就像@State-marked属性一样，任何我们用@PersistedFlag标记的属性现在都可以被写入，即使是在<strong>non-mutating</strong>上下文中，比如在转义闭包中。 <strong>但是，需要注意的是，nonmutating</strong> 关键字可以让我们绕过Swift值语义的关键方面，所以它绝对应该只在非常特定的情况下使用。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>我希望这篇文章能让您对如何区分mutating上下文和nonmutating上下文、mutating上下文实际上具有什么样的功能以及Swift相对较新的nonmutating关键字做什么有一些了解。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Wmr9KwWlb/" class="tag">
+                    mutating
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/ddE-Do-1X_/" class="tag">
+                    non-mutating
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/rang-swiftui-de-shi-tu-refreshable/">
+                  <h3 class="post-title">
+                    让SwiftUI的视图refreshable
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

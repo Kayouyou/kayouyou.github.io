@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Defining custom patterns in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="作为一门语言，Swift最有趣的方面之一就是它的核心特性有多少是使用语言本身实现的，而不是硬编码到编译器中。 这不仅从理论的角度来看是优雅的，而且还提供了大量的实际灵活性，因为它让我们能够以真正强大的方式调整语言的工作和行为方式。
+其中一个..." />
+    <meta name="keywords" content="pattern matching" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Defining custom patterns in Swift</h2>
+            <div class="post-date">2019-11-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>作为一门语言，Swift最有趣的方面之一就是它的核心特性有多少是使用语言本身实现的，而不是硬编码到编译器中。 这不仅从理论的角度来看是优雅的，而且还提供了大量的实际灵活性，因为它让我们能够以真正强大的方式调整语言的工作和行为方式。</p>
+<p>其中一个例子就是模式匹配，它决定了诸如switch和case语句等控制流结构的计算方式。 本周，让我们深入到Swift的模式匹配世界——看看我们如何构建完全自定义的模式，以及通过这样做我们可以解锁的一些有趣的技术。</p>
+<h2 id="building-the-basics">Building the basics</h2>
+<p>顾名思义，模式匹配就是根据预定义的模式匹配给定的值，通常是为了找出要在哪个代码分支上继续执行程序。 例如，每次打开一个值时，我们都使用Swift的模式匹配特性:</p>
+<pre><code class="language-swift">func items(in section: Section) -&gt; [Item] {
+    switch section {
+    case .featured:
+        return dataSource.featuredItems
+    case .recent:
+        return dataSource.recentItems
+    }
+}
+</code></pre>
+<p>上面我们将一个Section enum值与两个由它的用例(特色的和最近的)组成的模式进行匹配，虽然这是Swift中使用模式匹配的一种非常常见的方式——它仅仅触及了该特性所能做的皮毛。</p>
+<p>为了更进一步，让我们先定义一个模式结构，我们将使用它来定义我们自己的基于闭包的模式。这些闭包只接受一个匹配的值，然后以Bool类型返回结果:</p>
+<pre><code class="language-swift">struct Pattern&lt;Value&gt; {
+    let closure: (Value) -&gt; Bool
+}
+</code></pre>
+<p>上面的结构可能很简单，但它实际上使我们现在能够定义各种定制模式，通过使用泛型类型约束来扩展它，以便添加创建模式的静态工厂方法。例如，下面是我们如何定义一个模式，让我们根据给定的候选集合匹配一个值:</p>
+<pre><code class="language-swift">extension Pattern where Value: Hashable {
+    static func any(of candidates: Set&lt;Value&gt;) -&gt; Pattern {
+        Pattern { candidates.contains($0) }
+    }
+}
+</code></pre>
+<p>然而，在我们能够在switch语句中使用我们的新模式结构之前，我们还需要告诉Swift如何在这样的上下文中实际计算它。</p>
+<p>Swift中所有形式的模式匹配都由<sub>=操作符提供支持，该操作符将要求值的模式作为其左侧参数，将被匹配的值作为其右侧参数。因此，为了将我们的模式类型挂钩到那个系统中，我们所要做的就是重载</sub>=，用一个函数重载我们的新结构的实例和一个要匹配的值——像这样:</p>
+<pre><code class="language-swift">func ~=&lt;T&gt;(lhs: Pattern&lt;T&gt;, rhs: T) -&gt; Bool {
+    lhs.closure(rhs)
+}
+</code></pre>
+<p>有了上面的内容，我们现在已经构建了定义我们自己的定制模式所需的所有基础设施——所以让我们开始吧!</p>
+<h2 id="mix-and-match">Mix and match</h2>
+<p>假设我们正在开发某种形式的社交网络应用程序，它使用一个LoggedInUser结构来跟踪当前登录的用户数据——例如用户的ID，以及他们使用我们的应用程序添加的朋友的ID:</p>
+<pre><code class="language-swift">struct LoggedInUser {
+    let id: Identifier&lt;User&gt;
+    var friendIDs: Set&lt;Identifier&lt;User&gt;&gt;
+    ...
+}
+</code></pre>
+<p>现在我们说我们正在构建一个视图控制器让我们以列表的形式显示任意数量的用户-我们想要根据我们显示的用户类型来呈现不同的图标。 现在，由于我们的新模式类型及其any(of:)变体，这个决定可以在一个switch语句中完全做出:</p>
+<pre><code class="language-swift">private extension UserListViewController {
+    func resolveIcon(for userID: Identifier&lt;User&gt;) -&gt; Icon {
+        switch userID {
+        case loggedInUser.id:
+            return .currentUser
+        case .any(of: loggedInUser.friendIDs):
+            return .friend
+        default:
+            return .anyUser
+        }
+    }
+}
+</code></pre>
+<p>与将逻辑写成一系列if和else语句相比，上面的代码乍一看可能没有什么不同，但它确实使我们的代码更具声明性 - 也使得userID成为我们所有可能的规则和结果的单一来源。</p>
+<h2 id="comparing-patterns">Comparing patterns</h2>
+<p>让我们用更多的功能继续扩展我们的模式类型——这一次是通过添加对比较一个值与另一个值的模式的支持。 为此，我们将编写一个受标准库可比协议约束的扩展(另一个使用标准Swift协议实现核心语言特性的例子)，它包含两个方法——一个用于匹配较低的值，另一个用于匹配较大的值:</p>
+<pre><code class="language-swift">extension Pattern where Value: Comparable {
+    static func lessThan(_ value: Value) -&gt; Pattern {
+        Pattern { $0 &lt; value }
+    }
+
+    static func greaterThan(_ value: Value) -&gt; Pattern {
+        Pattern { $0 &gt; value }
+    }
+}
+</code></pre>
+<p>当我们想要比较一个值的下界和上界的时候，上面的方法非常方便——就像在这个例子中，在这个过程中，我们将确定用户是否通过了游戏要求的分数门槛，或者他们是否获得了新的高分——所有这些都在一个switch语句中完成:</p>
+<pre><code class="language-swift">func levelFinished(withScore score: Int) {
+    switch score {
+    case .lessThan(50):
+        showGameOverScreen()
+    case .greaterThan(highscore):
+        showNewHighscore(score)
+    default:
+        goToNextLevel()
+    }
+}
+</code></pre>
+<p>switch语句中的case总是从上到下进行计算，这意味着上面的小于检查将在大于检查之前执行。</p>
+<p>我们现在开始发现Swift模式匹配能力的真正力量，因为我们已经不再仅仅匹配单个(或组)候选对象，并且现在正在构建更复杂的模式表达式——所有这些都不会使我们的调用站点变得更复杂。</p>
+<h2 id="converting-key-paths-into-patterns">Converting key paths into patterns</h2>
+<p>另一种形成非常有用的模式的方法是使用关键路径。因为键路径已经由一个具体的类型KeyPath表示了，我们只需要添加另一个~=重载，以便可以将任何键路径用作模式:</p>
+<pre><code class="language-swift">func ~=&lt;T&gt;(lhs: KeyPath&lt;T, Bool&gt;, rhs: T?) -&gt; Bool {
+    rhs?[keyPath: lhs] ?? false
+}
+</code></pre>
+<p>上面我们接受一个可选的T?，这将使我们能够将非可选的键路径与可选的值相匹配。</p>
+<p>有了上面的内容，我们现在可以自由地将键路径与其他类型的模式混合在一起，这将使我们能够仅使用一个switch语句来表达非常复杂的逻辑片段。</p>
+<p>例如，这里我们决定如何根据一行文本的第一个字符将其解析为列表项—通过使用字符类型的category属性来形成基于键路径的模式，结合匹配可选enum的两种情况的模式，以及where子句:</p>
+<pre><code class="language-swift">struct ListItemParser {
+    enum Kind {
+        case numbered
+        case unordered
+    }
+
+    let kind: Kind
+
+    func parseLine(_ line: String) throws -&gt; ListItem {
+        // Here we're switching on an optional Character, which is
+        // the type of values that Swift strings are made up of:
+        switch line.first {
+        case .none:
+            throw Error.emptyLine
+        case \.isNewline:
+            return .empty
+        case \.isNumber where kind == .numbered:
+            return parseLineAsNumberedItem(line)
+        case &quot;-&quot; where kind == .unordered:
+            return parseLineAsUnorderedItem(line)
+        case .some(let character):
+            throw Error.invalidFirstCharacter(character)
+        }
+    }
+}
+</code></pre>
+<p>上面用到的.none和.some是Swift的可选enum的两种情况，该类型用于为Swift程序中的所有可选值建模。</p>
+<p>如果上面的方法还不够酷，让我们看看如何将任何基于键路径的表达式与值比较结合起来-使我们能够组合两者，以形成更强大的模式。</p>
+<p>为了实现这一点，让我们再定义一个操作符重载，这次是== -，它将返回一个组合了键路径和常量值的模式，如下所示:</p>
+<pre><code class="language-swift">func ==&lt;T, V: Equatable&gt;(lhs: KeyPath&lt;T, V&gt;, rhs: V) -&gt; Pattern&lt;T&gt; {
+    return Pattern { $0[keyPath: lhs] == rhs }
+}
+</code></pre>
+<p>为了实现上述设想，假设我们现在正在开发一个购物应用程序，并且我们正在根据每个订单要发送到的目的地计算其运输成本。在这个例子中，我们的物流中心位于巴黎，这使得我们可以为居住在巴黎的每个人提供免费的运输，同时也降低了欧洲内部的运输成本。</p>
+<p>由于我们现在能够将关键路径与值结合起来形成模式，我们可以简单地实现计算与给定目的地相关的运输成本水平的方法，如下所示:</p>
+<pre><code class="language-swift">struct Destination {
+    var address: String
+    var city: String
+    var country: Country
+}
+
+extension Destination {
+    var shippingCost: ShippingCost {
+        switch self {
+        // Combining a key path with a constant value:
+        case \.city == &quot;Paris&quot;:
+            return .free
+        // Using a nested key path as a pattern:
+        case \.country.isInEurope:
+            return .reduced
+        default:
+            return .normal
+        }
+    }
+}
+</code></pre>
+<p>很酷!上面的内容不仅读起来很好，还使我们能够在需要的时候轻松地插入新规则，而这种方式不一定会增加代码的复杂性。我们还可以继续迭代我们的模式结构，以及它与键路径相结合的方式，以便能够创建更强大的组合。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Swift的模式匹配特性不仅是专门为少数硬编码类型实现的，而是一个完全动态的系统，它可以扩展和定制，为我们提供了一些难以置信的强大功能。</p>
+<p>然而，与任何强大的系统一样，重要的是要仔细考虑何时以及如何部署它-并且总是使用结果调用站点作为指导，我们想要能够构建什么样的模式。毕竟，使用强大的模式来使用single switch语句建模复杂逻辑的最终目标应该是让逻辑更容易理解，而不是反过来。</p>
+<p><a href="https://www.swiftbysundell.com/articles/defining-custom-patterns-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/JeEnYVYQc/" class="tag">
+                    pattern matching
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/combining-value-and-reference-types-in-swift/">
+                  <h3 class="post-title">
+                    Combining value and reference types in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

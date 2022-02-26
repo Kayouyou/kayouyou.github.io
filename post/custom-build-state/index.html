@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Custom build State | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Property wrapper
+
+
+
+
+nonmutating
+
+
+
+
+DynamicProperty
+
+
+
+
+Binding
+
+
+
+
+Conclusions
+
+
+
+
+
+@State是SwiftUI的众多支柱之一，一旦理解了，我们..." />
+    <meta name="keywords" content="state,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Custom build State</h2>
+            <div class="post-date">2021-10-12</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Propertywrapper">Property wrapper</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#nonmutating">nonmutating</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#DynamicProperty">DynamicProperty</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Binding">Binding</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Conclusions">Conclusions</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p><strong>@State</strong>是<em>SwiftUI</em>的众多支柱之一，一旦理解了，我们就会理所当然地在任何地方使用它。但是@State是什么?幕后发生了什么?</p>
+<p>本文中，让我们尝试通过重建@<strong>State</strong>等方法来回答这些问题。</p>
+<blockquote>
+<p>像往常一样，我无法访问实际的SwiftUI代码/实现:我们在这里找到的是对模仿原始@State行为的最佳猜测，在实际实现中可能会有更多的内容。</p>
+</blockquote>
+<h2 id="1-a-namepropertywrapperaproperty-wrapper">1. <a name='Propertywrapper'></a>Property wrapper</h2>
+<p>首先，<strong>@State</strong>是一个属性包装器，简而言之，它是一个漂亮的getter和setter，具有额外的逻辑和存储。让我们开始定义我们的状态如下:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState {
+
+}
+</code></pre>
+<p>属性包装器需要一个<strong>wrappedValue</strong>，允许我们读取/写入关联的值。<br>
+因为我们想要模拟@<strong>State</strong>，所以我们将属性包装器设置为<strong>V</strong>类型的泛型，并将原始值存储在一个内部<strong>value</strong>属性中:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState&lt;V&gt; {
+  // This is where our value is actually stored.
+  var value: V
+  
+  // And here are our getter/setters.
+  var wrappedValue: V {
+    get {
+      value
+    }
+    set {
+      value = newValue
+    }
+  }
+}
+</code></pre>
+<p>最后，如果我们想提供与@<strong>State</strong>和所有其他属性包装器相同的语法(例如@State var x = &quot;hello&quot;)，我们需要声明一个特殊的初始化式:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState&lt;V&gt; {
+  var value: V
+  
+  var wrappedValue: V {
+    ...
+  }
+
+  init(wrappedValue value: V) {
+    self.value = value
+  }
+}
+</code></pre>
+<p>有了这个定义，我们现在可以开始在视图中使用@<strong>FSState</strong>了，例如:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  @FSState var text = &quot;Hello Five Stars&quot;
+
+  var body: some View {
+    Text(text)
+  }
+}
+</code></pre>
+<h2 id="2-a-namenonmutatinganonmutating">2. <a name='nonmutating'></a>nonmutating</h2>
+<p>到目前为止，我们的定义与直接在视图中定义属性没有太大区别。如果我们从<strong>ContentView</strong>声明中删除@<strong>FSState</strong>，一切仍然工作得很好:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  var text = &quot;Hello Five Stars&quot;
+
+  var body: some View {
+    Text(text)
+  }
+}
+</code></pre>
+<p>现在让我们试着用一个按钮来改变文本:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  @FSState var text = &quot;Hello Five Stars&quot;
+
+  var body: some View {
+    VStack {
+      Text(text)
+
+      Button(&quot;Change text&quot;) {
+        text = [&quot;hello&quot;, &quot;five&quot;, &quot;stars&quot;].randomElement()!
+      }
+    }
+  }
+}
+</code></pre>
+<p>不幸的是，这无法构建: 我们得到一个<em>Cannot assign to property: 'self' is immutable error on the button action</em>。</p>
+<p>问题是给<strong>text</strong>赋值会改变<strong>ContentView</strong>。</p>
+<p>对于结构体，我们可以声明<em>mutating</em>方法，但不能声明<em>mutating</em>计算属性(比如<em>body</em>)，也不能在其中调用<em>mutating</em>方法。</p>
+<p>为了克服这个问题，我们不能改变<strong>ContentView</strong>，这意味着我们也不能改变<strong>FSState</strong>，因为我们的属性包装器只是另一个嵌套在我们视图中的值类型。</p>
+<p>首先，让我们声明我们的属性包装<em>setter</em>为<strong>nonmutating</strong>，这告诉Swift设置这个值不会改变我们的<strong>FSState</strong>实例:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState&lt;V&gt; {
+  var value: V
+  
+  var wrappedValue: V {
+    get { ... }
+    nonmutating set { // our setter is now nonmutating
+      value = newValue
+    }
+  }
+
+  ...
+}
+</code></pre>
+<p>我们现在已经将<em>Cannot assign to property: 'self' is immutable</em> build error移除。</p>
+<p>这是有意义的，因为我们承诺不改变结构体实例，但是我们设置了<strong>value = newValue</strong>，它在改变。</p>
+<p>这就是Swift引用类型的作用:如果我们用类类型替换FSState的value属性，然后更新setter中的类实例，我们实际上并没有改变FSState(因为FSState只包含对该类的引用，它总是保持不变)。</p>
+<p>让我们定义这个“容器”类类型:</p>
+<pre><code class="language-swift">final class Box&lt;V&gt; {
+  var value: V
+
+  init(_ value: V) {
+    self.value = value
+  }
+}
+</code></pre>
+<p><strong>Box</strong>是一个泛型类，只有一个函数:保持和更新我们的值。</p>
+<p>让我们让@<strong>FSState</strong>的声明利用这个类:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState&lt;V&gt; {
+  var box: Box&lt;V&gt;
+
+  var wrappedValue: V {
+    get {
+      box.value
+    }
+    nonmutating set {
+      box.value = newValue
+    }
+  }
+
+  init(wrappedValue value: V) {
+    self.box = Box(value)
+  }
+}
+</code></pre>
+<p>通过这个更新，我们可以构建并运行我们的应用程序!</p>
+<p>我们点击按钮，但看不到任何变化，如果我们设置断点，我们会看到一切正常:正确点击按钮设置和更新我们的状态，但新的挑战是让SwiftUI知道。</p>
+<h2 id="3-a-namedynamicpropertyadynamicproperty">3. <a name='DynamicProperty'></a>DynamicProperty</h2>
+<p>与SwiftUI有一组已知的视图原语类似，SwiftUI也有一组已知的发布者，每个视图都可以根据视图中定义的属性监听这些发布者。</p>
+<p>SwiftUI团队在隐藏SwiftUI大量使用Combine方面做得惊人:当我们将视图属性与@<strong>State， @ObservedObject</strong>等关联时，SwiftUI将监听所有连接到每个属性包装器的<em>publishers</em>，这反过来告诉SwiftUI什么时候该重绘。</p>
+<p>在我们的例子中，让我们通过使Box符合<em>ObservableObject</em>来使用@<strong>StateObject</strong>。 Combine将一个<em>objectWillChange</em>发布者关联到所有<em>ObservableObject</em>实例，然后我们可以通过调用*send()*将事件发送到SwiftUI:</p>
+<pre><code class="language-swift">final class Box&lt;V&gt;: ObservableObject {
+  var value: V {
+    willSet {
+      // This is where we send out our &quot;hey, something has changed!&quot; event
+      objectWillChange.send()
+    }
+  }
+
+  init(_ value: V) {
+    self.value = value
+  }
+}
+</code></pre>
+<blockquote>
+<p>有更简单的方法来声明这一点，但在本文中，我们试图通过删除尽可能多的“魔法”来了解事情是如何工作的。</p>
+</blockquote>
+<p>更新了Box的定义后，我们现在可以回到@<strong>FSState</strong>，并将@<strong>StateObject</strong>关联到<em>Box</em>属性:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState&lt;V&gt; {
+  @StateObject var box: Box&lt;V&gt;
+
+  var wrappedValue: V {
+    ...
+  }
+
+  init(wrappedValue value: V) {
+    self._box = StateObject(wrappedValue: Box(value))
+  }
+}
+</code></pre>
+<p>感谢这个更新，每次框的值变化:</p>
+<ul>
+<li>an objectWillChange event is fired</li>
+<li>and an observer (SwiftUI?) of box's publisher would know about it</li>
+</ul>
+<p>运行代码，不幸的是，我们还没到那一步。虽然当我们的值发生变化时，新的<em>publisher</em>会发送事件，但我们仍然需要告诉SwiftUI:</p>
+<p>从SwiftUI的角度来看，ContentView有一个类型为**FSState<String>**的文本属性，这是SwiftUI不需要注意的。</p>
+<p>要改变这一点，我们需要使<strong>FSState</strong>符合<strong>DynamicProperty</strong>，在文档中描述为更新视图外部属性的存储变量的接口（<em>An interface for a stored variable that updates an external property of a view.</em>）。</p>
+<p>现在，这是SwiftUI感兴趣的东西! 通过使<strong>FSState</strong>符合<strong>DynamicProperty</strong>, SwiftUI将监听它的事件(如果有的话)，并在需要时触发重绘。</p>
+<p><strong>DynamicProperty</strong>只需要一个<strong>update()<strong>函数的实现，然而SwiftUI已经提供了它的默认实现，我们需要做的就是添加</strong>DynamicProperty</strong>的一致性，然后我们就可以开始了:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState&lt;V&gt;: DynamicProperty {
+  ...
+}
+</code></pre>
+<p>有了这个最后的改变，让我们再次运行我们的应用程序:</p>
+<p>生效了!</p>
+<p>尽管添加了<strong>DynamicProperty</strong>一致性，我们仍然没有声明SwiftUI应该监听哪些属性:类似于<a href="https://www.fivestars.blog/articles/swift-protocols/">视图等价性</a>的工作方式，我怀疑SwiftUI使用Swift的反射遍历所有存储的属性，并寻找要订阅的已知属性包装器类型。</p>
+<blockquote>
+<p>关于如何以这种方式使用反射的开源示例，请参考我对Apple的<a href="https://www.fivestars.blog/articles/a-look-into-argument-parser/">ArgumentParser</a>实现的深入研究，其中使用了相同的方法来查找各种命令行参数。</p>
+</blockquote>
+<h2 id="4-a-namebindingabinding">4. <a name='Binding'></a>Binding</h2>
+<p>属性包装器的一个可选特性是公开一个投影值:<br>
+投影值（<strong>projected</strong>）是查看属性包装器中存储的值的另一种方法，以不同的方式公开。</p>
+<p>许多SwiftUI视图使用绑定来引用并可能更改其他地方拥有和存储的值。一个例子是TextField，它使用<strong>Binding<String></strong>:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  @FSState var text = &quot;&quot;
+
+  var body: some View {
+    VStack {
+      TextField(&quot;Write something&quot;, text: $text) // TextField's text is a binding
+    }
+  }
+}
+</code></pre>
+<p>如上所述，我们可以通过在属性名前面使用$调用关联属性来从@State获得绑定，这个符号真正做的是获取投影值而不是包装的值。</p>
+<p>因此@<strong>State</strong>的投影值是泛型的@<strong>Binding</strong>，我们在@<strong>FSState</strong>中添加相同的投影值:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState&lt;V&gt;: DynamicProperty {
+  @ObservedObject private var box: Box&lt;V&gt;
+
+  var wrappedValue: V {
+    ...
+  }
+
+  var projectedValue: Binding&lt;V&gt; {
+    Binding(
+      get: {
+        wrappedValue
+      },
+      set: {
+        wrappedValue = $0
+      }
+    )
+  }
+
+  ...
+}
+</code></pre>
+<p>现在，我们可以在绑定中使用@<strong>FSState</strong>了!</p>
+<p>下面是@<strong>FSState</strong>的最终定义:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct FSState&lt;V&gt;: DynamicProperty {
+  @StateObject private var box: Box&lt;V&gt;
+
+  var wrappedValue: V {
+    get {
+      box.value
+    }
+    nonmutating set {
+      box.value = newValue
+    }
+  }
+
+  var projectedValue: Binding&lt;V&gt; {
+    Binding(
+      get: {
+        wrappedValue
+      },
+      set: {
+        wrappedValue = $0
+      }
+    )
+  }
+
+  init(wrappedValue value: V) {
+    self._box = StateObject(wrappedValue: Box(value))
+  }
+}
+
+final class Box&lt;T&gt;: ObservableObject {
+  var value: T {
+    willSet {
+      objectWillChange.send()
+    }
+  }
+
+  init(_ value: T) {
+    self.value = value
+  }
+}
+</code></pre>
+<h2 id="5-a-nameconclusionsaconclusions">5. <a name='Conclusions'></a>Conclusions</h2>
+<p>我们越是深入研究SwiftUI，就越能发现一个简单、优雅的API中隐藏着多么复杂的东西。</p>
+<p>大多数开发人员都不需要担心幕后的工作方式，但是我不得不感谢为达到这个美丽的状态所做的所有努力。</p>
+<p>我确信@<strong>FSState</strong>不像真实的@<strong>State</strong>那么完整:如果有什么我错过的东西，或者如果你对我忽略的东西有更多的见解，我很想知道!</p>
+<p><a href="https://www.fivestars.blog/articles/lets-build-state/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4TsMfMGn4/" class="tag">
+                    state
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/how-swiftuis-preference-keys-are-propagated/">
+                  <h3 class="post-title">
+                    How SwiftUI&#39;s Preference Keys are propagated
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

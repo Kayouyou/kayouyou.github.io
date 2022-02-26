@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Codable synthesis for Swift enums | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Codable synthesis for Swift enums
+
+
+1.1. Raw representable enums
+1.2. Associated values
+1.3. Key customization
+
+
+
+
+C..." />
+    <meta name="keywords" content="codable,enums" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Codable synthesis for Swift enums</h2>
+            <div class="post-date">2021-09-11</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#CodablesynthesisforSwiftenums">Codable synthesis for Swift enums</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Rawrepresentableenums">Raw representable enums</a></li>
+<li>1.2. <a href="#Associatedvalues">Associated values</a></li>
+<li>1.3. <a href="#Keycustomization">Key customization</a></li>
+</ul>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namecodablesynthesisforswiftenumsacodable-synthesis-for-swift-enums">1. <a name='CodablesynthesisforSwiftenums'></a>Codable synthesis for Swift enums</h2>
+<p>Swift内置的可编码API的主要优势之一是，当使用它时，编译器能够自动合成许多不同的编码和解码实现。在许多情况下，要将Swift类型序列化为JSON之类的格式，我们所要做的就是将其标记为Codable，其余的由编译器负责。</p>
+<p>让我们看看自动合成是如何为枚举工作的，以及系统的这一部分是如何在Swift 5.5中升级的。</p>
+<h3 id="11-a-namerawrepresentableenumsaraw-representable-enums">1.1. <a name='Rawrepresentableenums'></a>Raw representable enums</h3>
+<p>枚举通常有两种变体——由原始值(如Int或String)支持的变体，以及包含关联值的变体。 自从在Swift 4.0中引入Codable后，属于前一类的枚举就一直支持编译器合成。</p>
+<p>例如，假设我们正在开发一个应用程序，其中包含以下支持字符串的enum，它符合<strong>Codable</strong>:</p>
+<pre><code class="language-swift">enum MediaType: String, Codable {
+    case article
+    case podcast
+    case video
+}
+</code></pre>
+<p>由于编译器能够自动合成用带原始值枚举的编码和解码所需的所有代码，我们通常不需要自己编写更多的代码-这意味着我们现在可以在其他Codable类型中自由使用上面的枚举，像这样:</p>
+<pre><code class="language-swift">struct Item: Codable {
+    var title: String
+    var url: URL
+    var mediaType: MediaType
+}
+</code></pre>
+<p>如果我们现在将上述Item类型的实例编码为JSON，那么我们将得到以下类型的输出(因为MediaType值将自动使用支持它们的原始字符串值进行编码和解码):</p>
+<pre><code class="language-swift">{
+    &quot;title&quot;: &quot;Swift by Sundell&quot;,
+    &quot;url&quot;: &quot;https://swiftbysundell.com/podcast&quot;,
+    &quot;mediaType&quot;: &quot;podcast&quot;
+}
+</code></pre>
+<p>到目前为止还好。但是，如果我们想要编码或解码一个支持关联值的enum呢? 接下来让我们来看一下。</p>
+<h3 id="12-a-nameassociatedvaluesaassociated-values">1.2. <a name='Associatedvalues'></a>Associated values</h3>
+<p>在Swift 5.5之前，如果我们想让包含相关值的枚举符合Codable，那么我们必须手动编写所有代码。但是，现在情况已经不同了，因为编译器已经进行了升级，现在可以为这些枚举自动合成序列化代码了。</p>
+<p>例如，下面的<strong>Video enum</strong>现在可以被设置为可编码的，而不需要任何自定义代码:</p>
+<pre><code class="language-swift">enum Video: Codable {
+    case youTube(id: String)
+    case vimeo(id: String)
+    case hosted(url: URL)
+}
+</code></pre>
+<p>要查看上面的类型编码时的样子，让我们创建一个VideoCollection实例，该实例存储一个Video值数组:</p>
+<pre><code class="language-swift">struct VideoCollection: Codable {
+    var name: String
+    var videos: [Video]
+}
+
+let collection = VideoCollection(
+    name: &quot;Conference talks&quot;,
+    videos: [
+        .youTube(id: &quot;ujOc3a7Hav0&quot;),
+        .vimeo(id: &quot;234961067&quot;)
+    ]
+)
+</code></pre>
+<p>如果我们将上面的集合值编码为JSON，那么我们将得到以下结果:</p>
+<pre><code class="language-swift">{
+    &quot;name&quot;: &quot;Conference talks&quot;,
+    &quot;videos&quot;: [
+        {
+            &quot;youTube&quot;: {
+                &quot;id&quot;: &quot;ujOc3a7Hav0&quot;
+            }
+        },
+        {
+            &quot;vimeo&quot;: {
+                &quot;id&quot;: &quot;234961067&quot;
+            }
+        }
+    ]
+}
+</code></pre>
+<p>因此，默认情况下，当我们让编译器自动为具有关联值的枚举合成可编码一致性时，在计算该类型的序列化格式时，将使用案例的名称和案例中关联值的标签。</p>
+<blockquote>
+<p>对于未标记的关联值，默认情况下将使用下划线数字键(如_0、_1等)。</p>
+</blockquote>
+<h3 id="13-a-namekeycustomizationakey-customization">1.3. <a name='Keycustomization'></a>Key customization</h3>
+<p>就像处理结构和类一样，我们可以自定义在编码或解码enum的case和相关值时使用的键，甚至可以使用该功能完全忽略某些case。</p>
+<p>例如，假设我们想扩展我们的Video enum以添加对本地视频的支持，但是我们没有合理的方法来序列化这些视频的数据。</p>
+<p>虽然我们总是可以创建一个完全独立的类型来表示这样的视频，但我们也可以使用嵌套的CodingKeys enum来告诉编译器在生成视频类型的可编码实现时忽略本地情况。</p>
+<p>在这里，我们已经做到了这一点，我们还定制了托管案例，因此当序列化时，它被称为自定义:</p>
+<pre><code class="language-swift">enum Video: Codable {
+    case youTube(id: String)
+    case vimeo(id: String)
+    case hosted(url: URL)
+    case local(LocalVideo)
+}
+
+extension Video {
+    enum CodingKeys: String, CodingKey {
+        case youTube
+        case vimeo
+        case hosted = &quot;custom&quot;
+    }
+}
+</code></pre>
+<p>如果需要，我们甚至可以自定义在特定情况下哪些键用于关联值。例如，下面是我们如何声明希望youTube案例的id值被序列化为youTubeID:</p>
+<pre><code class="language-swift">extension Video {
+    enum YouTubeCodingKeys: String, CodingKey {
+        case id = &quot;youTubeID&quot;
+    }
+}
+</code></pre>
+<p>上面的YouTubeCodingKeys枚举按名称匹配我们的youTube案例，所以如果我们也想定制vimeo案例，那么我们可以为此添加一个VimeoCodingKeys枚举。</p>
+<h2 id="2-a-nameconclusionaconclusion">2. <a name='Conclusion'></a>Conclusion</h2>
+<p>虽然codebable的自动合成确实有其局限性(特别是当处理与我们希望在Swift类型中组织数据的方式有很大不同的序列化格式时)，但它非常方便当处理本地存储的值时，例如在磁盘上缓存值或读取绑定的配置文件时，通常特别有用。</p>
+<p>无论如何，具有关联值的枚举现在可以加入自动合成的行列，这在一致性方面绝对是一件好事，并且应该被证明在许多不同的代码库中非常有用——包括我自己的代码库。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Q_Pnv_k3a/" class="tag">
+                    codable
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5CEvLT7HIN/" class="tag">
+                    enums
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/conditional-compilation-within-swift-expressions/">
+                  <h3 class="post-title">
+                    Conditional compilation within Swift expressions
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

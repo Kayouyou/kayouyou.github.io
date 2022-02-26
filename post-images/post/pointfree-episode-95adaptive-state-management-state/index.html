@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 95:Adaptive State Management: State | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+View models and view stores
+
+
+
+
+View store performance
+
+
+
+
+Counter view performance
+
+
+
+
+View store memory management..." />
+    <meta name="keywords" content="PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 95:Adaptive State Management: State</h2>
+            <div class="post-date">2021-12-18</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Viewmodelsandviewstores">View models and view stores</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Viewstoreperformance">View store performance</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Counterviewperformance">Counter view performance</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Viewstorememorymanagement">View store memory management</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Adaptingviewstores">Adapting view stores</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#conclution">conclution</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 95:Adaptive State Management: State -->
+<h2 id="1-a-nameviewmodelsandviewstoresaview-models-and-view-stores">1. <a name='Viewmodelsandviewstores'></a>View models and view stores</h2>
+<p>让我们从<strong>Store</strong>中删除与<strong>ObservableObject</strong>的一致性，这样我们就可以停止通知视图的状态变化。我们还将删除该值的公共访问权限，因为视图不应该使用它来呈现其UI:</p>
+<pre><code class="language-swift">public final class Store&lt;Value, Action&gt; /* : ObservableObject */ {
+  …
+  @Publisher private var value: Value
+</code></pre>
+<p>我们将属性保持为@<strong>Published</strong>，因为我们确实希望将对值所做的任何更改重放到所有派生子<strong>store</strong>中，而拥有一个值的发布者使得这一点非常容易实现。</p>
+<p>现在，让我们看看如何实现这个次要对象，它实际上负责通知状态变化的视图。我们应该给它起什么名字呢?我们将从iOS社区长期使用的术语中获得一些灵感，甚至苹果公司最近也开始在WWDC会议的SwiftUI上使用这个术语。术语“<strong>view model</strong>”长期以来被用作精确描述视图的领域的一种方法。它在业务逻辑和视图之间提供了一个很好的抽象。业务逻辑可能有一些不直接映射到UI的概念，比如正在运行的API请求的加载状态，而视图有一些非常具体的东西，用户可以看到，比如按钮的启用或禁用状态。</p>
+<p>因此，使用“<strong>view model</strong>”作为灵感，我们将把我们引入架构的新概念称为“<strong>view store</strong>”:</p>
+<pre><code class="language-swift">ViewStore {
+}
+</code></pre>
+<p>我们应该把它看作是一个可以直接使用视图的<strong>store</strong>。在<strong>stores</strong>保存我们应用程序所有混乱的业务逻辑的地方，因此可能包含比我们的视图所关心的更多的信息，而<strong>ViewStore</strong>将只保存这个视图所关心的领域。如果它不需要这些信息，它甚至不需要持有其子视图的域。</p>
+<p>我们希望这个对象与SwiftUI交互，这样它就可以触发视图的重渲染，因此它需要是一个类:</p>
+<pre><code class="language-swift">class ViewStore {
+}
+</code></pre>
+<p>它还需要是一个<strong>ObservableObject</strong>，以便SwiftUI能够接收到到它的通知:</p>
+<pre><code class="language-swift">public final class ViewStore: ObservableObject {
+}
+</code></pre>
+<p>要成为一个可观察对象，它需要持有一个发布者，该发布者在<strong>store</strong>中的值即将发生变化时发出。 SwiftUI提供了一种简单的方法，可以同时在类中声明存储的值，并在值发生变化时自动ping那个发行者:</p>
+<pre><code class="language-swift">final class ViewStore&lt;Value&gt;: ObservableObject {
+  @Published public fileprivate(set) var value: Value
+}
+</code></pre>
+<p>由于类在Swift中的工作方式，我们也必须提供一个初始化器:</p>
+<pre><code class="language-swift">public final class ViewStore&lt;Value&gt;: ObservableObject {
+  @Published public private(set) var value: Value
+
+  init(initialValue: Value) {
+    self.value = initialValue
+  }
+}
+</code></pre>
+<p>这是<strong>ViewStore</strong>的基础。它只是简单地将一些值包装在一个类中，并将其公开为一个可观察对象。</p>
+<p>使它成为我们架构中有用的概念的真正工作是实现从常规<strong>Stores</strong>创建<strong>ViewStores</strong>的方法。因此，给定一个理解值和操作的特定领域的<strong>store</strong>，我们希望能够从它派生一个<strong>ViewStore</strong>，以防止通知域外的状态变化。</p>
+<p>首先，让我们假设我们将通过一个计算属性从一个<em>store</em>派生一个<em>view store</em>:</p>
+<pre><code class="language-swift">extension Store {
+  var view: ViewStore&lt;Value&gt; {
+    ???
+  }
+}
+</code></pre>
+<p>在试图弄清楚如何实现这个属性之前，我们应该提到我们在<strong>Store</strong>上已经有了一个视图方法，它是我们用来从父视图传递到子视图的焦点<strong>Store</strong>的方法。我们在考虑<strong>ViewStore</strong>的概念之前就给这个方法命名了，所以回过头来看，同时拥有这两个名称似乎有点令人困惑。</p>
+<p>让我们重命名原始的<strong>view</strong>方法，以便我们可以为<strong>ViewStore</strong>转换释放该名称。但是，我们把它重命名为什么呢?<br>
+我们可以把它叫做<strong>focus</strong>，但这和视图很相似，所以看起来有点奇怪。我们也可以笼统地称之为“<strong>transform</strong>”，但这并不能说明我们是在把全局<strong>Store</strong>转变为本地<strong>Store</strong>。 因此，我们喜欢将其命名为<strong>scope</strong>，因为它不会与view相混淆，它有助于我们理解应用于我们的<strong>Store</strong>的某种限制过程:</p>
+<pre><code class="language-swift">public func scope&lt;LocalValue, LocalAction&gt;(
+  value toLocalValue: @escaping (Value) -&gt; LocalValue,
+  action toGlobalAction: @escaping (LocalAction) -&gt; Action
+) -&gt; Store&lt;LocalValue, LocalAction&gt; {
+  …
+}
+</code></pre>
+<p>现在我们可以将这种聚焦操作想象成不是“查看”商店，而是将商店“限定范围”到子域。</p>
+<p>我们来求一下<strong>view</strong>方法的签名:</p>
+<pre><code class="language-swift">extension Store {
+  var view: ViewStore&lt;Value&gt; {
+    ???
+  }
+}
+</code></pre>
+<p>构造<strong>ViewStore</strong>的方法是通过它的初始化器，它接受一个初始值:</p>
+<pre><code class="language-swift">extension Store {
+  var view: ViewStore&lt;Value&gt; {
+    ViewStore(initialValue: self.value)
+  }
+}
+</code></pre>
+<p>这样就可以编译，但这当然是不对的。因为现在<strong>ViewStore</strong>将永远不会更新它的值，因此它永远不会通知一个SwiftUI视图它需要重新渲染。</p>
+<p>我们需要做一些类似于我们在<strong>scope</strong>方法中所做的事情，也就是订阅<strong>store</strong>的值中的所有更改，并将它们重放到<strong>ViewStore</strong>中。</p>
+<pre><code class="language-swift">extension Store {
+  var view: ViewStore&lt;Value&gt; {
+    let viewStore = ViewStore(initialValue: self.value)
+
+    self.$value.sink(receiveValue: { value in
+      viewStore.value = value
+    })
+
+    return viewStore
+  }
+}
+</code></pre>
+<p>现在正在编译，但是我们收到了关于sink未使用返回值的警告。 此方法返回一个可取消的值，该值允许我们在需要时停止从发布者接收值。特别是，如果我们在<strong>ViewStore</strong>中存储一个可取消对象:</p>
+<pre><code class="language-swift">public final class ViewStore&lt;Value&gt;: ObservableObject {
+  …
+  fileprivate var cancellable: Cancellable?
+</code></pre>
+<p>并在调用sink时赋值:</p>
+<pre><code class="language-swift">viewStore.cancellable = self.$value.sink(receiveValue: { value in
+  viewStore.value = value
+})
+</code></pre>
+<p>然后我们保证，当<strong>ViewStore</strong>被释放时，我们将停止从这个发布者接收值。</p>
+<hr>
+<h2 id="2-a-nameviewstoreperformanceaview-store-performance">2. <a name='Viewstoreperformance'></a>View store performance</h2>
+<p>我们离这个方法的有用实现越来越近了，但是有些地方仍然不太对。我们仍然没有做任何工作来确保<strong>ViewStore</strong>不会向其视图过量释放值。就目前的情况而言，每次全局<strong>store</strong>改变时，它所有关联的<strong>view store</strong>也会改变，从而触发视图重新计算。</p>
+<p>幸运的是，我们可以使用Combine提供的一些机制来确保<strong>view store</strong>不会产生任何重复值。我们只需要使用<strong>removeduplicate</strong>方法:</p>
+<pre><code class="language-swift">viewStore.cancellable = self.$value
+  .removeDuplicates()
+  .sink(receiveValue: { value in
+    viewStore.value = value
+})
+</code></pre>
+<p>但这行不通，因为我们的值不一定相等。让我们约束这个扩展，使它这样:</p>
+<pre><code class="language-swift">extension Store where Value: Equatable {
+  var view: ViewStore&lt;Value&gt; {
+    …
+  }
+}
+</code></pre>
+<p>现在我们有了这个属性的实际实现。这允许我们从任何<strong>store</strong>中派生一个<strong>ViewStore</strong>，只要我们的状态是相等的。</p>
+<p>通常，当一个API要求某种类型是可衡平的，当我们不能使用一个可衡平的类型时，会提供一种与之密切相关但可替代的API形式。例如，<strong>removeDuplicates</strong>方法有一个重载，你可以显式地提供当副本被移除时的条件:</p>
+<pre><code class="language-swift">.removeDuplicates(by: &lt;#T##(Equatable, Equatable) -&gt; Bool#&gt;)
+</code></pre>
+<p>我们也希望这样做，因为我们有时会使用元组来表示特性的状态，但不幸的是，元组是不能相等的。因此，我们将创建一个重载视图，允许我们这样做:</p>
+<pre><code class="language-swift">extension Store {
+  public func view(
+    removeDuplicates predicate: @escaping (Value, Value) -&gt; Bool
+  ) -&gt; ViewStore&lt;Value&gt; {
+    let viewStore = ViewStore(initialValue: self.value)
+    viewStore.cancellable = self.$value
+      .removeDuplicates(by: predicate)
+      .sink { newValue in viewStore.value = newValue }
+    return viewStore
+  }
+}
+</code></pre>
+<p>甚至其他的实现也可以写成这个形式:</p>
+<pre><code class="language-swift">extension Store where Value: Equatable {
+  public var view: ViewStore&lt;Value&gt; {
+    self.view(removeDuplicates: ==)
+  }
+}
+</code></pre>
+<p>在继续之前，让我们先解决一个内存泄漏问题。现在可取消对象在这个闭包中持有<strong>viewStore</strong>，但<strong>viewStore</strong>本身也持有可取消对象作为属性。这和我们在确定存储范围时遇到的问题是一样的，修复方法是在闭包中弱保存<strong>viewStore</strong>:</p>
+<pre><code class="language-swift">.sink { [weak viewStore] newValue in viewStore?.value = newValue }
+</code></pre>
+<p>这是我们对<strong>stores view</strong>的实现。</p>
+<p>使用<strong>ViewStores</strong></p>
+<p>当我们试图从<strong>store</strong>中访问值时，这会导致编译器错误。我们希望通过用一个适当构造的<strong>ViewStore</strong>来替换所有这些<strong>store</strong>的使用，我们将避免不必要的重新计算和视图的渲染。</p>
+<p>让我们从最简单的特性开始，然后往回研究。我们想提一下我们在关于可组合架构的章节中多次提到的一些事情，即由于我们在模块化应用程序方面的努力，我们有机会增量地修复这些编译器错误。我们可以只专注于一个模块并独立地构建它，而不是试图一次性修复整个应用程序。这使得我们更容易对我们的架构和库进行这些类型的改变。这只能归功于我们的模块化能力，而可组合体系结构使模块化变得非常容易。</p>
+<p>在<strong>FavoritePrimes</strong>包中，我们有以下错误:</p>
+<pre><code class="language-swift">🛑 Property type ‘Store&lt;[Int], FavoritePrimesAction&gt;’ does not match that of the ‘wrappedValue’ property of its wrapper type ‘ObservedObject’
+</code></pre>
+<p>这是因为<strong>stores</strong>不再是可观察的。相反，我们需要一个<strong>view store</strong>。我们可以在视图中声明一个新字段:</p>
+<pre><code class="language-swift">public struct FavoritePrimesView: View {
+  let store: Store&lt;FavoritePrimesState, FavoritePrimesAction&gt;
+  @ObservedObject var viewStore: ViewStore&lt;FavoritePrimesState&gt;
+</code></pre>
+<p>现在，<strong>store and view store</strong>使用相同的状态，但这只是这个视图的巧合。它不需要这样，通常也不应该这样。</p>
+<p>在视图的主体中，我们现在需要通过<strong>view store</strong>来访问当前值，而不是从<strong>store</strong>中访问当前值:</p>
+<pre><code class="language-swift">ForEach(self.viewStore.value.favoritePrimes, id: \.self) { prime in
+  Text(&quot;\(prime)&quot;)
+}
+…
+.alert(item: .constant(self.viewStore.value.alertNthPrime)) {
+</code></pre>
+<p>这个文件中的最后一个错误与我们还没有创建<strong>view store</strong>有关:</p>
+<pre><code class="language-swift">🛑 Return from initializer without initializing all stored properties
+</code></pre>
+<p>要创建<strong>view store</strong>，我们只需要查看<strong>store</strong>来派生它的<strong>view store</strong>:</p>
+<pre><code class="language-swift">public init(store: Store&lt;FavoritePrimesState, FavoritePrimesAction&gt;) {
+  print(&quot;FavoritePrimesView.init&quot;)
+  self.store = store
+  self.viewStore = store.view
+}
+</code></pre>
+<p>这不能工作，因为<strong>FavoritePrimesState</strong>是一个元组，而在Swift中元组是不相等的。也许有一天这个问题会得到解决，但在那之前会有一个特别的解决方案。 Swift标准库为一些大小的元组定义了一个==操作符的重载，我相信最多有6个组件。 因此，我们可以使用重载<strong>view</strong>函数，它接受一个显式的等式函数:</p>
+<pre><code class="language-swift">self.viewStore = self.store.view(removeDuplicates: ==)
+</code></pre>
+<p>这将使内容进行编译，现在我们可以放心，这个视图只有在其局部状态发生变化时才会重新计算自己，特别是收藏的质数和alert。对全局应用程序状态的任何其他更改都不会对该视图产生影响。</p>
+<p>接下来，让我们看看<strong>PrimeModal</strong>。它有一个类似的错误，我们已经看到:</p>
+<pre><code class="language-swift">🛑 Property type ‘Store&lt;PrimeModalState, PrimeModalAction&gt;’ (aka ‘Store&lt;(count: Int, favoritePrimes: Array), PrimeModalAction&gt;’) does not match that of the ‘wrappedValue’ property of its wrapper type ‘ObservedObject’
+</code></pre>
+<p>这是因为<strong>Store</strong>不再是可观察的，所以我们需要使用一个<strong>ViewStore</strong>:</p>
+<pre><code class="language-swift">public struct IsPrimeModalView: View {
+  let store: Store&lt;PrimeModalState, PrimeModalAction&gt;
+  @ObservedObject var viewStore: ViewStore&lt;PrimeModalState&gt;
+</code></pre>
+<p>接下来，我们需要在初始化器中分配<strong>viewStore</strong>属性:</p>
+<pre><code class="language-swift">public init(store: Store&lt;PrimeModalState, PrimeModalAction&gt;) {
+  print(&quot;IsPrimeModalView.init&quot;)
+  self.store = store
+  self.viewStore = self.store.view(removeDuplicates: ==)
+}
+</code></pre>
+<p>然后，我们必须使用<strong>viewStore</strong>来代替从<strong>store</strong>中访问状态:</p>
+<pre><code class="language-swift">public var body: some View {
+  print(&quot;IsPrimeModalView.body&quot;)
+  return VStack {
+    if isPrime(self.viewStore.count) {
+      Text(&quot;\(self.viewStore.value.count) is prime 🎉&quot;)
+      if self.viewStore.favoritePrimes.contains(self.viewStore.count) {
+        Button(&quot;Remove from favorite primes&quot;) {
+          self.store.send(.removeFavoritePrimeTapped)
+        }
+      } else {
+        Button(&quot;Save to favorite primes&quot;) {
+          self.store.send(.saveFavoritePrimeTapped)
+        }
+      }
+    } else {
+      Text(&quot;\(self.viewStore.value.count) is not prime :(&quot;)
+    }
+  }
+}
+</code></pre>
+<p>现在我们的<strong>PrimeModal</strong>软件包正在构建中。</p>
+<p>切换到<strong>Counter</strong>，我们会看到所有相同的编译器错误。我们需要去掉 <strong>observable store</strong> ，而使用<strong>viewStore</strong>。</p>
+<pre><code class="language-swift">public struct CounterView: View {
+  let store: Store&lt;CounterViewState, CounterViewAction&gt;
+  @ObservedObject var viewStore: ViewStore&lt;CounterViewState&gt;
+</code></pre>
+<p>我们需要为这个视图构建视图存储:</p>
+<pre><code class="language-swift">public init(store: Store&lt;CounterViewState, CounterViewAction&gt;) {
+  print(&quot;CounterView.init&quot;)
+  self.store = store
+  self.viewStore = self.store.view
+}
+</code></pre>
+<p>这一次我们不需要使用<strong>removeDuplicates</strong>，因为CounterViewState遵循Equatable。</p>
+<p>最后有6个地方我们需要通过<strong>viewStore</strong>而不是<strong>store</strong>访问视图的状态。</p>
+<hr>
+<h2 id="3-a-namecounterviewperformanceacounter-view-performance">3. <a name='Counterviewperformance'></a>Counter view performance</h2>
+<p>但我们可以改进这一点。现在我们的视图不需要访问整个<strong>CounterViewState</strong>，它只使用其中的一个子集。为了精简这个视图的状态到它最基本的要素，也就是视图需要完成它的工作的最低限度，让我们在视图存储中放入一个空类型，然后慢慢地添加回它需要的属性:</p>
+<pre><code class="language-swift">public struct CounterView: View {
+  struct State: Equatable {
+  }
+  …
+  @ObservedObject var viewStore: ViewStore&lt;State&gt;
+</code></pre>
+<p>每当我们试图访问<strong>store</strong>中的某些状态时，这会立即给我们一个编译器错误。例如，我们可以看到我们需要访问<strong>isNthPrimeButtonDisabled</strong>布尔值，所以让我们把它添加到<strong>store</strong>的值类型中:</p>
+<pre><code class="language-swift">struct State: Equatable {
+  let isNthPrimeButtonDisabled: Bool
+}
+</code></pre>
+<p>接下来我们看到它需要<strong>isPrimeModalShown</strong>布尔值:</p>
+<pre><code class="language-swift">struct State: Equatable {
+  let isNthPrimeButtonDisabled: Bool
+  let isPrimeModalShown: Bool
+}
+</code></pre>
+<p>然后我们看到我们需要访问<strong>alertNthPrime</strong>:</p>
+<pre><code class="language-swift">struct State: Equatable {
+  let alertNthPrime: PrimeAlert?
+  let isNthPrimeButtonDisabled: Bool
+  let isPrimeModalShown: Bool
+}
+</code></pre>
+<p>然后我们看到我们需要<strong>count</strong>:</p>
+<pre><code class="language-swift">struct State: Equatable {
+  let alertNthPrime: PrimeAlert?
+  let count: Int
+  let isNthPrimeButtonDisabled: Bool
+  let isPrimeModalShown: Bool
+}
+</code></pre>
+<p>这就修复了视图主体中的编译器错误。因此，我们只需要访问四个字段:<strong>alertNthPrime、count、isNthPrimeButtonDisabled和isPrimeModalShown</strong>。</p>
+<p>值得注意的是，我们不需要访问<strong>favoritePrimes</strong>数组，该数组位于<strong>CounterViewState</strong>类型中。这意味着对应用程序状态的该字段所做的任何更改都不会触发视图重新计算自身。</p>
+<p>为了获得完整的视图编译，我们需要构造一个 <strong>view store</strong>来支持这个视图，我们首先将<strong>store</strong>限定为它所关心的状态的基本要素，然后将它转换为一个<strong>view store</strong>:</p>
+<pre><code class="language-swift">self.viewStore = self.store
+  .scope(
+    value: { counterViewState in
+      State(
+        alertNthPrime: counterViewState.alertNthPrime,
+        count: counterViewState.count,
+        isNthPrimeButtonDisabled: counterViewState.isNthPrimeButtonDisabled,
+        isPrimeModalShown: counterViewState.isPrimeModalShown
+      )
+  },
+    action: { $0 }
+)
+  .view
+</code></pre>
+<p>你可能不喜欢在初始化器中包含所有这些逻辑，所以我们可以做的一件简单的事情是在文件底部创建一个方便的初始化器:</p>
+<pre><code class="language-swift">extension CounterView.State {
+  init(counterViewState: CounterViewState) {
+    self.alertNthPrime = counterViewState.alertNthPrime
+    self.count = counterViewState.count
+    self.isNthPrimeButtonDisabled = counterViewState.isNthPrimeButtonDisabled
+    self.isPrimeModalShown = counterViewState.isPrimeModalShown
+  }
+}
+</code></pre>
+<p>哈，但这暴露了命名的一点尴尬。我们现在有一个<strong>CounterViewState和一个CounterView.State</strong>。状态:名称相同但状态不同。嵌套在<strong>CounterView</strong>内部的新<strong>State</strong>结构描述了<strong>CounterView</strong>需要观察的所有状态，而<strong>CounterViewState</strong>包含运行整个计数器特性所需的所有状态，其中包括主模态的状态。</p>
+<p>也许<strong>CounterViewState</strong>一开始就不是正确的名字。我们定义它来描述<strong>CounterState和PrimeModalState</strong>的联合，这是运行计数器特性所需的所有状态。所以也许<strong>CounterFeatureState</strong>更合适:</p>
+<pre><code class="language-swift">public struct CounterFeatureState: Equatable {
+</code></pre>
+<p>我们可以更新<strong>CounterView.State</strong>初始化参数:</p>
+<pre><code class="language-swift">extension CounterView.State {
+  init(counterFeatureState: CounterViewState) {
+    self.alertNthPrime = counterFeatureState.alertNthPrime
+    self.count = counterFeatureState.count
+    self.isNthPrimeButtonDisabled = counterFeatureState.isNthPrimeButtonDisabled
+    self.isPrimeModalShown = counterFeatureState.isPrimeModalShown
+</code></pre>
+<p>有了重命名，我们现在可以:</p>
+<pre><code class="language-swift">self.viewStore = self.store
+  .scope(value: State.init(counterFeatureState:), action: { $0 })
+  .view
+</code></pre>
+<p>当我们重命名东西时，我们也可以重命名<strong>CounterViewAction</strong>:</p>
+<pre><code class="language-swift">public enum CounterFeatureAction: Equatable {
+</code></pre>
+<hr>
+<h2 id="4-a-nameviewstorememorymanagementaview-store-memory-management">4. <a name='Viewstorememorymanagement'></a>View store memory management</h2>
+<p>现在计数器模块又开始构建了，但我们意外地引入了一个问题。如果我们在<strong>reducer</strong>中添加一些日志记录，我们会看到操作确实被发送到<strong>store</strong>和更新状态，但更改不会反映在UI中。</p>
+<p>控制UI渲染的东西是<strong>view store</strong>，因为它是可观察的东西，我们刚刚改变了<strong>view store</strong>的构造所以它首先作用域store，然后views:</p>
+<pre><code class="language-swift">self.viewStore = self.store
+  .scope(value: State.init(counterFeatureState:), action: { $0 })
+  .view
+</code></pre>
+<p>在这个转换链中，当调用.<strong>scope</strong>时，我们创建了一个中间存储。结果是中间存储中没有任何东西，因此它会立即被释放，因此视图存储不会被通知任何变化。</p>
+<p>为了让我们自己相信这一点，我们首先可以看到，通过查看<strong>scope</strong>实现中的这一行，<strong>scoped stores</strong>肯定会保留它们的<strong>parent stores</strong>:</p>
+<pre><code class="language-swift">let localStore = Store&lt;LocalValue, LocalAction&gt;(
+  initialValue: toLocalValue(self.value),
+  reducer: { localValue, localAction, _ in
+    self.send(toGlobalAction(localAction))
+    localValue = toLocalValue(self.value)
+    return []
+},
+  environment: self.environment
+)
+</code></pre>
+<p>在这里，我们通过在r<strong>educer</strong>闭包中引用<strong>self</strong>来确保派生的本地<strong>scoped store</strong>保持在父函数上。这是一件好事。这意味着如果我们在同一个<strong>store</strong>上多次调用.<strong>scope</strong>转换，我们将得到一个相互关联的连锁<strong>stores</strong>。</p>
+<p>然而，同样的情况不会发生在派生视图存储时:</p>
+<pre><code class="language-swift">public func view(
+  removeDuplicates predicate: @escaping (Value, Value) -&gt; Bool
+) -&gt; ViewStore&lt;Value&gt; {
+  let viewStore = ViewStore(initialValue: self.value)
+
+  viewStore.cancellable = self.$value
+    .removeDuplicates(by: predicate)
+    .sink { newValue in
+      viewStore.value = newValue
+  }
+
+  return viewStore
+}
+</code></pre>
+<p>我们需要派生<strong>view store</strong>来保存它的派生<strong>view store</strong>。我们很快就会有正确的方法来表达<strong>store和view store</strong>之间的关系，但现在，为了让事情正常工作，我们可以做一些简单的事情，通过在<strong>sink</strong>闭包中引用<strong>self</strong>:</p>
+<pre><code class="language-swift">viewStore.cancellable = self.$value
+  .removeDuplicates(by: predicate)
+  .sink { newValue in
+    viewStore.value = newValue
+    self
+}
+</code></pre>
+<p>只剩下一件事需要解决。在主要的<strong>PrimeTime</strong>应用目标中，我们使用一个<strong>store</strong>作为可观察对象，这不再是正确的做法。</p>
+<pre><code class="language-swift">struct ContentView: View {
+  let store: Store&lt;AppState, AppAction&gt;
+</code></pre>
+<p>在所有其他视图中，我们引入了一个可观察<strong>view store</strong>。但是<strong>view store</strong>应该保持什么状态呢?</p>
+<pre><code class="language-swift">struct ContentView: View {
+  let store: Store&lt;AppState, AppAction&gt;
+  @ObservedObject var viewStore: ViewStore&lt;???&gt;
+</code></pre>
+<p>如果我们看一下这个视图的<strong>body</strong>，它实际上不需要任何<strong>state</strong>来做它的工作。它只是一个静态视图层次结构。<br>
+意味着我们甚至根本不需要<strong>view store</strong>，我们可以删除它，让视图是静态的:</p>
+<pre><code class="language-swift">struct ContentView: View {
+  let store: Store&lt;AppState, AppAction&gt;
+//  @ObservedObject var viewStore: ViewStore&lt;???&gt;
+</code></pre>
+<p>如果我们检查日志，我们会看到只有当视图状态直接改变时，才会调用视图的body属性。添加最喜欢的元素不会导致counter视图重新呈现，当然也不会导致根内容视图重新呈现。事实上，在根内容视图第一次呈现之后，没有任何东西会导致它重新呈现。</p>
+<p>我们现在已经解决了我们打算解决的问题。通过为我们的每个视图构建一个<strong>view store</strong>，我们可以确保它们只观察到整个应用程序状态变化的基本要素，从而最小化发生的视图重新计算和重新呈现的数量。</p>
+<hr>
+<h2 id="5-a-nameadaptingviewstoresaadapting-view-stores">5. <a name='Adaptingviewstores'></a>Adapting view stores</h2>
+<p>因为我们已经解决了性能问题，所以我们可以就此歇一歇，但我们想要深入研究。<strong>view stores</strong>的东西比你看到的要多。它不仅仅是一种提高性能或防止意外重新呈现视图的方法。它能做的远不止这些。</p>
+<p>首先，它为我们提供了一个完美的位置来移动我们视图中的一些逻辑。例如，在PrimeModal模块中，我们有以下一行代码来决定我们想为最喜欢的素数显示保存按钮还是删除按钮:</p>
+<pre><code class="language-swift">if self.viewStore.value.favoritePrimes.contains(self.viewStore.value.count) {
+</code></pre>
+<p>这个逻辑现在还不算太坏，但如果我们能直接说:</p>
+<pre><code class="language-swift">if self.viewStore.value.isFavorite {
+</code></pre>
+<p><strong>view stores</strong>的概念为我们提供了一个完美的地方，将逻辑从我们的视图移到一个更孤立、更容易理解的地方。我们所要做的就是改变<strong>view stores</strong>所持有的状态使之完全符合视图的需要。特别是，它想知道当前的计数是多少，以及它是否是最受欢迎的:</p>
+<pre><code class="language-swift">public struct IsPrimeModalView: View {
+  struct State: Equatable {
+    let count: Int
+    let isFavorite: Bool
+  }
+  …
+  @ObservedObject var viewStore: ViewStore&lt;State&gt;
+</code></pre>
+<p>现在视图的主体是快乐的。但是当我们构造这个<strong>view store</strong>时，我们需要首先将它作用域限制到viewstate:</p>
+<pre><code class="language-swift">self.viewStore = self.store
+  .scope(
+    value: State(
+      count: $0.count,
+      isFavorite: $0.favoritePrimes.contains($0.count)
+ },
+    action: { $0 }
+)
+  .view
+</code></pre>
+<p>主模态模块正在构建，但在视图初始化器中有很多逻辑要管理，所以让我们把它移到本地State结构体的构造器中。</p>
+<pre><code class="language-swift">extension IsPrimeModalView.State {
+  init(primeModalState state: PrimeModalState) {
+    self.count = state.count
+    self.isFavorite = state.favoritePrimes.contains(state.count)
+  }
+}
+</code></pre>
+<p>然后我们可以更简单地使用它来界定我们的<strong>store</strong>，然后.<strong>view</strong></p>
+<pre><code class="language-swift">self.viewStore = self.store
+  .scope(value: State.init(primeModalState:), action: { $0 })
+  .view
+</code></pre>
+<p>这很好，我们可以把逻辑移出视图，移动到一个点，在那里我们只是做一个简单的转换从一个版本的状态到另一个版本的状态。更好的是，这让我们有更多的机会跳过不必要的屏幕重新渲染。目前，该视图只会在收藏状态发生变化时重新计算自己。这意味着应用程序的其他部分可能会对我们的收藏数组进行大量更改，但这些更改都不会触发重新计算，除非它碰巧改变了我们正在查看的当前计数。</p>
+<p>还有更多关于我们如何进行这些类型的<strong>view store</strong>转换的例子。例如，在计数器中，我们有当前状态结构体:</p>
+<pre><code class="language-swift">public struct CounterFeatureState: Equatable {
+  public var alertNthPrime: PrimeAlert?
+  public var count: Int
+  public var favoritePrimes: [Int]
+  public var isNthPrimeButtonDisabled: Bool
+  public var isPrimeModalShown: Bool
+}
+</code></pre>
+<p>这是我们的完美状态,但有些可能会觉得有点奇怪,我们有一个混合物的状态，它是我们应用程序的核心抽象表示(尤其是<strong>count</strong>和<strong>favoritePrimes</strong>字段),和一些内容显示在屏幕上更具描述性的<strong>state</strong>(像alertNthPrime,isNthPrimeButtonDisabled和isPrimeModalShown)。</p>
+<p>如果需要的话，我们可以使用<strong>view store</strong>的概念来更好地分离这两种状态。让我们对<strong>isNthPrimeButtonDisabled</strong>状态做这个，这样你就能看到它是如何运行的。现在，这个字段的命名非常清楚地与它在UI中表示的内容一致，这真的很方便，因为这意味着视图代码以最简单的方式使用它:</p>
+<pre><code class="language-swift">.disabled(self.viewStore.isNthPrimeButtonDisabled)
+</code></pre>
+<p>该字段的值取决于对“第n个素数”的API请求是否正在运行。当我们试图加载该信息时，我们禁用该按钮，一旦我们得到响应，我们就重新启用它。</p>
+<p>但是，如果在请求运行期间有更多的东西需要禁用呢? 也许我们甚至要禁用自增和自减按钮。也许我们还想在请求飞行时显示加载指示符。这些都是有效的事情，我们可以添加更多的状态来表示它们:</p>
+<pre><code class="language-swift">public struct CounterFeatureState: Equatable {
+  public var alertNthPrime: PrimeAlert?
+  public var count: Int
+  public var favoritePrimes: [Int]
+  public var isNthPrimeButtonDisabled: Bool
+  public var isPrimeModalShown: Bool
+
+  public var isIncrementButtonDisabled: Bool
+  public var isDecrementButtonDisabled: Bool
+  public var isLoadingIndicatorHidden: Bool
+}
+</code></pre>
+<p>或者，我们可以描述状态的基本单位，所有这些状态都可以从中得到。 特别地，我们真正关心的事情是网络请求正在运行，从那里我们可以推导出所有其他的东西。所以让我们去掉这些特定于ui的字段，用ui无关字段替换它:</p>
+<pre><code class="language-swift">public struct CounterFeatureState: Equatable {
+  public var alertNthPrime: PrimeAlert?
+  public var count: Int
+  public var favoritePrimes: [Int]
+  public var isNthPrimeRequestInFlight: Bool
+  public var isPrimeModalShown: Bool
+  …
+  public init(
+    alertNthPrime: PrimeAlert? = nil,
+    count: Int = 0,
+    favoritePrimes: [Int] = [],
+    isNthPrimeRequestInFlight: Bool = false,
+    isPrimeModalShown: Bool = false
+  ) {
+    self.alertNthPrime = alertNthPrime
+    self.count = count
+    self.favoritePrimes = favoritePrimes
+    self.isNthPrimeRequestInFlight = isNthPrimeRequestInFlight
+    self.isPrimeModalShown = isPrimeModalShown
+  }
+</code></pre>
+<p>这会破坏一些东西。我们首先看到的是<strong>CounterFeatureState</strong>上的<strong>counter</strong>属性，它负责切掉计数器特性所关心的唯一属性(与主要模态特性相反)。这个功能的<strong>reducer</strong>也应该停止担心按钮是否被禁用，而是使用更高级的概念，即网络请求是否在空中:</p>
+<pre><code class="language-swift">public typealias CounterState = (
+  alertNthPrime: PrimeAlert?,
+  count: Int,
+  isNthPrimeRequestInFlight: Bool,
+  isPrimeModalShown: Bool
+)
+…
+var counter: CounterState {
+  get { (self.alertNthPrime, self.count, self.isNthPrimeRequestInFlight, self.isPrimeModalShown) }
+  set { (self.alertNthPrime, self.count, self.isNthPrimeRequestInFlight, self.isPrimeModalShown) = newValue }
+}
+</code></pre>
+<p>然后<strong>reducer</strong>需要使用这个新属性:</p>
+<pre><code class="language-swift">case .nthPrimeButtonTapped:
+  state.isNthPrimeRequestInFlight = true
+  …
+
+case let .nthPrimeResponse(prime):
+  …
+  state.isNthPrimeRequestInFlight = false
+  …
+</code></pre>
+<p>最后我们要修复视图，这就是有趣的地方。<strong>view store</strong>当前准确地表达了我们的视图想要的状态，所以这里没有什么需要改变的:</p>
+<pre><code class="language-swift">struct State: Equatable {
+  let alertNthPrime: PrimeAlert?
+  let count: Int
+  let isNthPrimeButtonDisabled: Bool
+  let isPrimeModalShown: Bool
+}
+
+@ObservedObject var viewStore: ViewStore&lt;State&gt;
+</code></pre>
+<p>我们只需要更新转换为<strong>view store</strong>状态的初始化器:</p>
+<pre><code class="language-swift">extension CounterView.State {
+  init(counterFeatureState state: CounterFeatureState) {
+    self.alertNthPrime = state.alertNthPrime
+    self.count = state.count
+    self.isNthPrimeButtonDisabled = state.isNthPrimeRequestInFlight
+    self.isPrimeModalShown = state.isPrimeModalShown
+  }
+}
+</code></pre>
+<p>现在这个模块正在编译，我们已经成功地使该特性的状态对UI更加不可知，同时仍然允许视图使用特定于域的状态描述。特别是，我们可以创建更多的布尔值来控制递增和递减按钮的启用/禁用状态:</p>
+<pre><code class="language-swift">struct State: Equatable {
+  let alertNthPrime: PrimeAlert?
+  let count: Int
+  let isNthPrimeButtonDisabled: Bool
+  let isPrimeModalShown: Bool
+  let isIncrementButtonDisabled: Bool
+  let isDecrementButtonDisabled: Bool
+}
+…
+extension CounterView.State {
+  init(counterFeatureState state: CounterFeatureState) {
+    self.alertNthPrime = state.alertNthPrime
+    self.count = state.count
+    self.isNthPrimeButtonDisabled = state.isNthPrimeRequestInFlight
+    self.isPrimeModalShown = state.isPrimeModalShown
+    self.isIncrementButtonDisabled = state.isNthPrimeRequestInFlight
+    self.isDecrementButtonDisabled = state.isNthPrimeRequestInFlight
+  }
+}
+…
+Button(&quot;-&quot;) { self.store.send(.counter(.decrTapped)) }
+  .disabled(self.viewStore.value.isDecrementButtonDisabled)
+Text(&quot;\(self.viewStore.value.count)&quot;)
+Button(&quot;+&quot;) { self.store.send(.counter(.incrTapped)) }
+  .disabled(self.viewStore.value.isIncrementButtonDisabled)
+</code></pre>
+<p>最酷的是，我们可以将这些新特性和功能添加到我们的视图中，而不需要对我们的<strong>reducer</strong>或应用程序状态进行任何更改。这个逻辑纯粹是视图关心的问题，因为它是应用程序状态到视图状态的纯转换。</p>
+<p>我们现在已经看到<strong>ViewStore</strong>抽象比仅仅作为一个性能工具更有趣。这是我们塑造视图数据的一种方式，以便使我们的视图主体尽可能地简单和无逻辑。</p>
+<hr>
+<h2 id="6-a-nameconclutionaconclution">6. <a name='conclution'></a>conclution</h2>
+<p>目前我们的<strong>ViewStore</strong>有点不平衡，因为我们在使用<strong>ViewStore</strong>时只关注应用程序状态。这是可以理解的，因为<strong>ViewStore</strong>的整个动机是为了提高性能而最小化我们的视图所知道的状态，但我们的应用程序还有另外一面:<strong>actions</strong>!</p>
+<p>通过扩展<strong>ViewStore</strong>的概念来考虑视图所关心的操作，我们将能够进一步凿开视图所访问的域。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-94-adaptive-state-management-performance/">
+                  <h3 class="post-title">
+                    PointFree Episode 94: Adaptive State Management: Performance
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

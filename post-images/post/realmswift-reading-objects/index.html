@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>RealmSwift Reading Objects | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+RealmSwift Reading Objects
+
+Reading Objects
+
+Fetching all objects of a type
+Fetching an object by its primary key
+Acce..." />
+    <meta name="keywords" content="realm,reading" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">RealmSwift Reading Objects</h2>
+            <div class="post-date">2021-06-04</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#realmswift-reading-objects">RealmSwift Reading Objects</a>
+<ul>
+<li><a href="#reading-objects">Reading Objects</a>
+<ul>
+<li><a href="#fetching-all-objects-of-a-type">Fetching all objects of a type</a></li>
+<li><a href="#fetching-an-object-by-its-primary-key">Fetching an object by its primary key</a></li>
+<li><a href="#accessing-objects-in-a-result-set">Accessing objects in a result set</a></li>
+<li><a href="#results-indexes">Results indexes</a></li>
+<li><a href="#filtering-results">Filtering results</a></li>
+<li><a href="#more-advanced-predicates">More advanced predicates</a></li>
+<li><a href="#sub-query-predicates">Sub-query predicates</a></li>
+<li><a href="#predicates-cheat-sheet">Predicates cheat-sheet</a></li>
+<li><a href="#sorting-results">Sorting results</a></li>
+<li><a href="#live-results">Live results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="realmswift-reading-objects">RealmSwift Reading Objects</h1>
+<h2 id="reading-objects">Reading Objects</h2>
+<h3 id="fetching-all-objects-of-a-type">Fetching all objects of a type</h3>
+<ul>
+<li><em>Realm.objects(_)</em> 用于从Realm获取对象的API是Realm.objects(_)。它期望的参数是您想要获取的Realm对象的类型。</li>
+</ul>
+<pre><code class="language-swift">Example.of(&quot;Getting All Objects&quot;) {
+  let people = realm.objects(Person.self)
+  let articles = realm.objects(Article.self)
+
+  print(&quot;\(people.count) people and \(articles.count) articles&quot;)
+}
+</code></pre>
+<h3 id="fetching-an-object-by-its-primary-key">Fetching an object by its primary key</h3>
+<ul>
+<li><em>Realm.object(ofType:forPrimaryKey:)</em> 查找主键与提供的键匹配的对象，如果没有找到匹配，则返回nil。</li>
+</ul>
+<pre><code class="language-swift">Example.of(&quot;Getting an Object by Primary Key&quot;) {
+  let person = realm.object(ofType: Person.self,
+    forPrimaryKey: &quot;test-key&quot;)
+
+  if let person = person {
+    print(&quot;Person with Primary Key 'test-key': \(person.firstName)&quot;)
+  } else {
+    print(&quot;Not found&quot;)
+  }
+}
+</code></pre>
+<h3 id="accessing-objects-in-a-result-set">Accessing objects in a result set</h3>
+<ul>
+<li>realm.objects(T.self): return result set</li>
+</ul>
+<pre><code class="language-swift">Example.of(&quot;Accessing Results&quot;) {
+  let people = realm.objects(Person.self)
+}
+
+print(&quot;Realm contains \(people.count) people&quot;)
+print(&quot;First person is: \(people.first!.fullName)&quot;)
+print(&quot;Second person is: \(people[1].fullName)&quot;)
+print(&quot;Last person is: \(people.last!.fullName)&quot;)
+</code></pre>
+<ul>
+<li>Results还提供了更多访问元素的方法——例如，您可以使用集合方法，如<strong>map</strong>。在最后一个闭包中附加以下代码以打印每个人的名字:</li>
+</ul>
+<pre><code class="language-swift">let firstNames = people.map { $0.firstName }
+  .joined(separator: &quot;, &quot;)
+print(&quot;First names of all people are: \(firstNames)&quot;)
+</code></pre>
+<p>您还可以获得一个枚举器来遍历元素。在闭包中添加:</p>
+<pre><code class="language-swift">let namesAndIds = people.enumerated()
+  .map { &quot;\($0.offset): \($0.element.firstName)&quot; }
+  .joined(separator: &quot;, &quot;)
+print(&quot;People and indexes: \(namesAndIds)&quot;)
+
+//First names of all people are: Klark, John, Jane, Boe, Frank
+//People and indexes: 0: Klark, 1: John, 2: Jane, 3: Boe, 4: Frank
+</code></pre>
+<h3 id="results-indexes">Results indexes</h3>
+<p>如果在people集合中找到person, index(of:)返回其在集合中的索引;否则，它将返回nil。</p>
+<pre><code class="language-swift">Example.of(&quot;Results Indexes&quot;) {
+    let people = realm.objects(Person.self)
+    let person = people[1]
+    if let index1 = people.index(of: person) {
+        print(&quot;\(person.fullName) is at index \(index1)&quot;)
+    }
+}
+</code></pre>
+<p>此外，如果您需要找到匹配某些自定义需求的特定对象，您可以使用index(where:)来查找第一个匹配。添加:</p>
+<pre><code class="language-swift">if let index2 = people.index(where: { $0.firstName.starts(with: &quot;J&quot;) }) {
+  print(&quot;Name starts with J at index \(index2)&quot;)
+}
+</code></pre>
+<p><strong>index(where:)</strong> 提供了一个闭包，您可以在其中定义匹配条件。从这个意义上说，index(where:)是filter(_)的特化，不同之处在于它返回一个索引，并且只返回第一个匹配元素的索引。</p>
+<p>最后，您可以使用NSPredicate而不是自定义闭包。该方法有两种变体:前者，index(matching:)，接受一个<strong>NSPpredicate</strong> 参数，而后者接受一个 <strong>predicate</strong> 格式字符串和一个可变参数列表:。</p>
+<pre><code class="language-swift">if let index3 = people.index(matching: &quot;hairCount &lt; %d&quot;, 10000) {
+  print(&quot;Person with less than 10,000 hairs at index \(index3)&quot;)
+}
+
+ℹ️ Results indexes:
+—————————————————————
+John Smith is at index 1
+Name starts with J at index 1
+Person with less than 10,000 hairs at index 1
+</code></pre>
+<h3 id="filtering-results">Filtering results</h3>
+<p>与前面一样，people是保存在Realm中的所有Person对象的集合。</p>
+<p>但是，在访问其元素之前，集合不做任何事情。因此，您可以免费筛选集合——在访问数据之前，不会加载任何内容!</p>
+<pre><code class="language-swift">Example.of(&quot;Filtering&quot;) {
+  let people = realm.objects(Person.self)
+  print(&quot;All People: \(people.count)&quot;)
+  let living = realm.objects(Person.self).filter(&quot;deceased = nil&quot;)
+  print(&quot;Living People: \(living.count)&quot;)
+}
+
+ℹ️ Filtering:
+——————————————
+All People: 5
+Living People: 4
+</code></pre>
+<p>Looks like filter discarded one of the objects according to your predicate!</p>
+<p>还有一种filter(_)的变体，它不是格式化字符串，而是接受NSPredicate对象，提供更安全、更健壮的过滤。添加到最后一个例子中:</p>
+<pre><code class="language-swift">let predicate = NSPredicate(
+  format: &quot;hairCount &lt; %d AND deceased = nil&quot;, 1000)
+let balding = realm.objects(Person.self).filter(predicate)
+print(&quot;Likely balding living people: \(balding.count)&quot;)
+</code></pre>
+<p>您可以使用您所知道的大多数NSPredicate语法，但不幸的是，它并不支持所有语法。不用担心，下一节将提供一个方便的NSPredicate备忘单，您可以使用它作为快速参考。</p>
+<p>如果您以前使用过NSPredicate，或者您只是很自然地意识到代码的安全性，那么您可能已经感觉到使用字符串查询数据库是容易出错的。 您可能会输入错误的属性名称，或者无意中使用了错误的查询。</p>
+<p>您可以使用一个伟大的开放源码库，以一种语义的、类型安全的方式构建NSPredicate。然而，在本节中，您将把查询包装在一个方法中，以使代码更安全、更可读。</p>
+<p>就在当前示例代码之前，在Person对象上添加一个新的扩展:</p>
+<pre><code class="language-swift">extension Person {
+  static let fieldHairCount = &quot;hairCount&quot;
+  static let fieldDeceased = &quot;deceased&quot;
+
+  static func allAliveLikelyBalding(
+    `in` realm: Realm, hairThreshold: Int = 1000) -&gt; Results&lt;Person&gt; {
+
+    let predicate = NSPredicate(format: &quot;%K &lt; %d AND %K = nil&quot;,
+      Person.fieldHairCount, hairThreshold, Person.fieldDeceased)
+    return realm.objects(Person.self).filter(predicate)
+  }
+}
+</code></pre>
+<p>allAliveLikelyBalding(in:hairthreshold:)构建一个谓词并使用包含属性名的预定义常量。在后面的章节中，你会看到这些代码的一些变化;在任何情况下，您都应该尝试最适合您自己项目的安全样式。</p>
+<p>现在，您可以将此代码添加到示例中，以尝试新的方法:</p>
+<pre><code class="language-swift">let baldingStatic = Person.allAliveLikelyBalding(in: realm)
+print(&quot;Likely balding people (via static method): \(baldingStatic.count)&quot;)
+</code></pre>
+<h3 id="more-advanced-predicates">More advanced predicates</h3>
+<p>In this section, you’ll try some more complex predicates with filter(_). Add this code to try a predicate matching a list of values:</p>
+<pre><code class="language-swift">Example.of(&quot;More Predicates&quot;) {
+  let janesAndFranks = realm.objects(Person.self)
+    .filter(&quot;firstName IN %@&quot;, [&quot;Jane&quot;, &quot;Frank&quot;])
+  print(&quot;There are \(janesAndFranks.count) people named Jane or Frank&quot;)
+}
+</code></pre>
+<p>You just used the <strong>IN keyword to match firstName from a given list of values</strong> to find all people named Jane or Frank.</p>
+<p>Next, you’ll try <strong>BETWEEN to match values in a given range</strong>. Add:</p>
+<pre><code class="language-swift">let balding = realm.objects(Person.self)
+  .filter(&quot;hairCount BETWEEN {%d, %d}&quot;, 10, 10000)
+print(&quot;There are \(balding.count) people likely balding&quot;)
+</code></pre>
+<p>Now try some string matching. Add inside your example closure:</p>
+<pre><code class="language-swift">let search = realm.objects(Person.self)
+  .filter(&quot;&quot;&quot;
+          firstName BEGINSWITH %@ OR
+          (lastName CONTAINS %@ AND hairCount &gt; %d)
+          &quot;&quot;&quot;,
+          &quot;J&quot;, &quot;er&quot;, 10000)
+print(&quot;There are \(search.count) people matching our search&quot;)
+</code></pre>
+<p>Whoah, that one looks a bit scary. No worries, it’s pretty simple! You use a multi-line string literal to format your complex predicate format neatly. Everything between the opening and closing &quot;&quot;&quot; is considered a single piece of text.</p>
+<h3 id="sub-query-predicates">Sub-query predicates</h3>
+<p>对于更复杂的谓词，您可以使用SUBQUERY谓词函数，该函数允许您在每个匹配原始谓词的对象上运行单独的谓词。 这有点让人抓狂，但坚持住!</p>
+<pre><code class="language-swift">Example.of(&quot;Subqueries&quot;) {
+  let articlesAboutFrank = realm.objects(Article.self).filter(&quot;&quot;&quot;
+    title != nil AND
+    people.@count &gt; 0 AND
+    SUBQUERY(people, $person,
+      $person.firstName BEGINSWITH %@ AND
+      $person.born &gt; %@).@count &gt; 0
+    &quot;&quot;&quot;, &quot;Frank&quot;, Date.distantPast)
+  print(&quot;There are \(articlesAboutFrank.count) articles about frank&quot;)
+}
+</code></pre>
+<p>这个相当复杂的谓词的详细说明是:</p>
+<ol>
+<li>标题不应该是nil。</li>
+<li>人员列表上的聚合属性@count应该返回大于0的值，例如，人员列表不应该是空的。</li>
+<li>最后，对到目前为止匹配条件的每个对象运行子谓词。</li>
+</ol>
+<p>要执行子查询，可以使用SUBQUERY(people， <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>p</mi><mi>e</mi><mi>r</mi><mi>s</mi><mi>o</mi><mi>n</mi><mi mathvariant="normal">，</mi><mo>&lt;</mo><mi>p</mi><mi>r</mi><mi>e</mi><mi>d</mi><mi>i</mi><mi>c</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo>&gt;</mo><mo>)</mo><mi mathvariant="normal">。</mi><mi mathvariant="normal">第</mi><mi mathvariant="normal">一</mi><mi mathvariant="normal">个</mi><mi mathvariant="normal">参</mi><mi mathvariant="normal">数</mi><mi mathvariant="normal">指</mi><mi mathvariant="normal">定</mi><mi mathvariant="normal">您</mi><mi mathvariant="normal">在</mi><mi mathvariant="normal">上</mi><mi mathvariant="normal">面</mi><mi mathvariant="normal">运</mi><mi mathvariant="normal">行</mi><mi mathvariant="normal">谓</mi><mi mathvariant="normal">词</mi><mi mathvariant="normal">的</mi><mi>p</mi><mi>e</mi><mi>o</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi mathvariant="normal">集</mi><mi mathvariant="normal">合</mi><mi mathvariant="normal">，</mi><mi mathvariant="normal">第</mi><mi mathvariant="normal">二</mi><mi mathvariant="normal">个</mi><mi mathvariant="normal">参</mi><mi mathvariant="normal">数</mi><mi mathvariant="normal">指</mi><mi mathvariant="normal">定</mi><mi mathvariant="normal">一</mi><mi mathvariant="normal">个</mi><mi mathvariant="normal">变</mi><mi mathvariant="normal">量</mi><mi mathvariant="normal">名</mi></mrow><annotation encoding="application/x-tex">person， &lt;predicate&gt;)。第一个参数指定您在上面运行谓词的people集合，第二个参数指定一个变量名</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7335400000000001em;vertical-align:-0.19444em;"></span><span class="mord mathdefault">p</span><span class="mord mathdefault">e</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">s</span><span class="mord mathdefault">o</span><span class="mord mathdefault">n</span><span class="mord cjk_fallback">，</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">&lt;</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.8888799999999999em;vertical-align:-0.19444em;"></span><span class="mord mathdefault">p</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">e</span><span class="mord mathdefault">d</span><span class="mord mathdefault">i</span><span class="mord mathdefault">c</span><span class="mord mathdefault">a</span><span class="mord mathdefault">t</span><span class="mord mathdefault">e</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">&gt;</span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mclose">)</span><span class="mord cjk_fallback">。</span><span class="mord cjk_fallback">第</span><span class="mord cjk_fallback">一</span><span class="mord cjk_fallback">个</span><span class="mord cjk_fallback">参</span><span class="mord cjk_fallback">数</span><span class="mord cjk_fallback">指</span><span class="mord cjk_fallback">定</span><span class="mord cjk_fallback">您</span><span class="mord cjk_fallback">在</span><span class="mord cjk_fallback">上</span><span class="mord cjk_fallback">面</span><span class="mord cjk_fallback">运</span><span class="mord cjk_fallback">行</span><span class="mord cjk_fallback">谓</span><span class="mord cjk_fallback">词</span><span class="mord cjk_fallback">的</span><span class="mord mathdefault">p</span><span class="mord mathdefault">e</span><span class="mord mathdefault">o</span><span class="mord mathdefault">p</span><span class="mord mathdefault" style="margin-right:0.01968em;">l</span><span class="mord mathdefault">e</span><span class="mord cjk_fallback">集</span><span class="mord cjk_fallback">合</span><span class="mord cjk_fallback">，</span><span class="mord cjk_fallback">第</span><span class="mord cjk_fallback">二</span><span class="mord cjk_fallback">个</span><span class="mord cjk_fallback">参</span><span class="mord cjk_fallback">数</span><span class="mord cjk_fallback">指</span><span class="mord cjk_fallback">定</span><span class="mord cjk_fallback">一</span><span class="mord cjk_fallback">个</span><span class="mord cjk_fallback">变</span><span class="mord cjk_fallback">量</span><span class="mord cjk_fallback">名</span></span></span></span>person，以便在该集合上循环时使用，第三个参数是一个谓词。下面是子查询的分解:</p>
+<ol>
+<li>它匹配名字以弗兰克开头的人。</li>
+<li>它适用于出生于Date.distantPast之后的人。</li>
+<li>最后，通过对SUBQUERY(…)结果本身使用@count，它过滤掉了所有在子查询中没有任何匹配的对象。</li>
+</ol>
+<pre><code class="language-swift">ℹ️ Subqueries:
+———————————————
+There are 1 articles about frank
+</code></pre>
+<h3 id="predicates-cheat-sheet">Predicates cheat-sheet</h3>
+<ol>
+<li>Predicate replacements</li>
+</ol>
+<ul>
+<li><strong>[property == %d] filter(&quot;age == %d&quot;, 30)</strong> replaces %d with 30 and matches if column called 'property' is equal to 30.</li>
+<li><strong>[%K == %d] filter(&quot;%K == %d&quot;, &quot;age&quot;, 30)</strong> replaces %K with 'age' and %d with 30 and matches if column 'age' equals 30.</li>
+</ul>
+<ol start="2">
+<li>Comparison operators (abbrev.)</li>
+</ol>
+<ul>
+<li><strong>[==] filter(&quot;firstName == 'John'&quot;)</strong> matches values equal to.</li>
+<li><strong>[!=] filter(&quot;firstName != 'John'&quot;)</strong> matches values not equal to.</li>
+<li><strong>[&gt;, &gt;=] filter(&quot;age &gt; 30&quot;), filter(&quot;age &gt;= 30&quot;)</strong> matches values greater than (or equal) to .</li>
+<li><strong>[&lt;, &lt;=] filter(&quot;age &lt; 30&quot;), filter(&quot;age &lt;= 30&quot;)</strong> matches values less than (or equal) to.</li>
+<li><strong>[IN] filter(&quot;id IN [1, 2, 3]&quot;)</strong> matches value from a list of values.</li>
+<li><strong>[BETWEEN] filter(&quot;age BETWEEN {18, 68}&quot;)</strong> matches value in a range of values.</li>
+</ul>
+<ol start="3">
+<li>Logic operators (abbrev.)</li>
+</ol>
+<ul>
+<li><strong>[AND] filter(&quot;age == 26 AND firstName == 'John'&quot;)</strong> matches only if both conditions are fulfilled.</li>
+<li><strong>[OR] filter(&quot;age == 26 OR firstName == 'John'&quot;)</strong> matches if any of the conditions are fulfilled.</li>
+<li><strong>[NOT] filter(&quot;NOT firstName == 'John'&quot;)</strong> matches if the conditions is not fulfilled.</li>
+</ul>
+<ol start="4">
+<li>String operators</li>
+</ol>
+<ul>
+<li><strong>[BEGINSWITH] filter(&quot;firstName BEGINSWITH 'J'&quot;)</strong> matches if the firstName value starts with J.</li>
+<li><strong>[CONTAINS] filter(&quot;firstName CONTAINS 'J'&quot;)</strong> matches if the firstName value contains anywhere J.</li>
+<li><strong>[ENDSWITH] filter(&quot;lastName ENDSWITH 'er'&quot;)</strong> matches if the lastName value ends with er.</li>
+<li><strong>[LIKE] filter(&quot;lastName LIKE 'J*on'&quot;)</strong> matches if value starts with 'J', continues with any kind of sequence of symbols, and ends on 'on', e.g., Johnson and Johansson. In the search pattern a ? matches one symbol of any kind and * matches zero or more symbols.</li>
+</ul>
+<p>以上所有操作符都可以用[c]和[d]进行修改，方法如下:CONTAINS[c]不区分大小写，CONTAINS[d]忽略变号(即e， è， ê， ë都被认为是同一个字符)。</p>
+<ol start="5">
+<li>Aggregate operators and key-paths (abbrev.)</li>
+</ol>
+<ul>
+<li><strong>[ANY] filter(&quot;ANY people.firstName == 'Frank'&quot;)</strong> matches if at least one of the objects in the people list has a property firstName equal to 'Frank'.</li>
+<li><strong>[NONE] filter(&quot;NONE people.firstName == 'Frank'&quot;)</strong> matches if none of the objects in the people list has a property firstName equal to 'Frank'.</li>
+<li><strong>[@count] filter(&quot;people.@count == 2&quot;)</strong> matches objects whose people list contains exactly two elements.</li>
+</ul>
+<h3 id="sorting-results">Sorting results</h3>
+<p>唷!NSPredicate的高级语法确实让事情变得有些复杂。是时候回到Realm自己的api了，使用起来很有趣。</p>
+<p>在本节中，您将研究sorted()方法的一些变体，它允许您对查询的结果进行排序。添加到你的操场:</p>
+<pre><code class="language-swift">Example.of(&quot;Sorting&quot;) {
+  let sortedPeople = realm.objects(Person.self)
+    .filter(&quot;firstName BEGINSWITH %@&quot;, &quot;J&quot;)
+    .sorted(byKeyPath: &quot;firstName&quot;)
+
+  let names = sortedPeople.map { $0.firstName }.joined(separator: &quot;, &quot;)
+  print(&quot;Sorted people: \(names)&quot;)
+}
+</code></pre>
+<p>Providing a property name to sorted(byKeyPath:) sorts the result set by the values for the given property. Realm sorts string properties alphabetically, number properties numerically and dates chronologically.</p>
+<pre><code class="language-swift">ℹ️ Sorting:
+————————————
+Sorted people: Jane, John
+</code></pre>
+<p><strong>sorted()</strong> 接受第二个名为ascending的参数，该参数默认设置为true。这个订单的数量从小到大，日期从老到新等等。通过将ascending设置为false，可以将顺序颠倒为降序。在你现有的闭包中添加另一个例子来尝试一下:</p>
+<pre><code class="language-swift">let sortedPeopleDesc = realm.objects(Person.self)
+  .filter(&quot;firstName BEGINSWITH %@&quot;, &quot;J&quot;)
+  .sorted(byKeyPath: &quot;firstName&quot;, ascending: false)
+
+let revNames = sortedPeopleDesc.map { $0.firstName }.joined(separator: &quot;, &quot;)
+print(&quot;Reverse-sorted People: \(revNames)&quot;)
+
+//Reverse-sorted People: John, Jane
+</code></pre>
+<p>注意，第一个参数，而不是一个property名，可以是一个keypath-也就是说，它可以引用对象链接上的一个属性。要尝试这个方法，请添加到你当前的例子中:</p>
+<pre><code class="language-swift">let sortedArticles = realm.objects(Article.self)
+  .sorted(byKeyPath: &quot;author.firstName&quot;)
+
+print(&quot;Sorted articles by author: \n\(sortedArticles.map { &quot;- \($0.author!.fullName): \($0.title!)&quot; }.joined(separator: &quot;\n&quot;))&quot;)
+</code></pre>
+<p>这段代码对所有Article对象进行排序，不是根据它们自己的任何属性，而是根据链接作者的名字。</p>
+<p>The list of articles sorted by the author’s first name is:</p>
+<pre><code class="language-swift">Sorted articles by author: 
+- John Smith: Musem of Modern Art opens a Boe Carter retrospective curated by Jane Doe
+- Klark Kent: Jane Doe launches a successful new product
+</code></pre>
+<p>最后，sorted(by:)允许您按多个keypaths对结果集进行排序。添加到你的例子:</p>
+<pre><code class="language-swift">let sortedPeopleMultiple = realm.objects(Person.self)
+  .sorted(by: [
+    SortDescriptor(keyPath: &quot;firstName&quot;, ascending: true),
+    SortDescriptor(keyPath: &quot;born&quot;, ascending: false)
+  ])
+
+  print(sortedPeopleMultiple.map { &quot;\($0.firstName) @ \($0.born)&quot; }.joined(separator: &quot;, &quot;))
+</code></pre>
+<p><strong>sorted(by:)</strong> 接受单个参数，该参数是<strong>SortDescriptors</strong>的集合。SortDescriptor是一种简单的包装器类型，它设置要排序的属性名以及顺序是升序还是降序。</p>
+<p>The code above sorts the list of all Person objects:</p>
+<ul>
+<li>首先，他们的名字升序排列。</li>
+<li>然后，按他们的出生日期，同时保留按名字排序(例如，第二种排序规则只影响有相同名字的人)。</li>
+</ul>
+<pre><code class="language-swift">Boe @ 1970-01-01 13:53:20 +0000, Frank @ 1970-01-01 08:20:00 +0000, Jane @ 1970-01-01 13:53:20 +0000, John @ 2027-04-03 11:00:00 +0000, Klark @ 1970-01-01 00:00:00 +0000
+</code></pre>
+<h3 id="live-results">Live results</h3>
+<p>在继续编写事务和向Realm添加对象之前，还需要研究Results类的最后一个方面。Realm result sets 总是返回最新的数据。结果中的数据永远不会过时。</p>
+<p>这意味着您永远不必从磁盘重新加载结果或以某种方式手动刷新内存数据。这个概念对您来说可能不是很明显，所以让我们尝试一些示例，以很好地理解实时结果对您的代码意味着什么。</p>
+<p>Append to the bottom of your playground:</p>
+<pre><code class="language-swift">Example.of(&quot;Live Results&quot;) {
+  let people = realm.objects(Person.self).filter(&quot;key == 'key'&quot;)
+  print(&quot;Found \(people.count) people for key \&quot;key\&quot;&quot;)
+}
+</code></pre>
+<p>测试数据集不包括一个键等于“key”的人。因此，people不会包含任何结果，代码的输出将是:</p>
+<pre><code class="language-swift">ℹ️ Live Results:
+——————————————————
+Found 0 people for key &quot;key&quot;
+</code></pre>
+<p>创建一个新的Person实例并设置其键值，然后将其持久化到Realm实例中:</p>
+<pre><code class="language-swift">let newPerson1 = Person()
+newPerson1.key = &quot;key&quot;
+
+try! realm.write {
+  realm.add(newPerson1)
+}
+</code></pre>
+<p>此时，您知道people匹配了一个新对象，并且由于结果集总是最新的，您可以简单地检查people。数属性了。附加:</p>
+<pre><code class="language-swift">print(&quot;Found \(people.count) people for key \&quot;key\&quot;&quot;)
+
+//Found 1 people for key &quot;key”
+</code></pre>
+<p>您不需要刷新结果或要求Realm再次获取结果。每次你问people.count，您将获得与定义的结果集匹配的对象的计数</p>
+<p>Ready to experiment a bit further? Append:</p>
+<pre><code class="language-swift">let newPerson2 = Person()
+newPerson2.key = &quot;key&quot;
+newPerson2.firstName = &quot;Sher&quot;
+print(&quot;Found \(people.count) people for key \&quot;key\&quot;&quot;)
+</code></pre>
+<p>这段代码仍然显示只有一个人被找到。由于您没有向Realm添加newPerson2，因此该对象不是持久的Person集合的一部分，因此不在people结果集中。</p>
+<p>实际上，您甚至不能将newPerson2添加到相同的Realm，因为它的惟一主键与newPerson1具有相同的值，而newPerson1已经被持久化了。如果尝试添加newPerson2，将得到一个运行时异常，表明具有给定主键值的对象已经存在。</p>
+<p>实时结果是一个方便的特性，您将经常在本书的其余部分和您的“真实生活”代码中使用它。 所有努力显示实时数据的应用程序都可以利用实时的Realm结果，特别是当与内置的Realm更改通知相结合时，它不仅会让你知道什么时候，还会让你知道什么数据发生了更改。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hrFR-X3X2/" class="tag">
+                    realm
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Yzxl_8lQmD/" class="tag">
+                    reading
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/avoiding-problematic-cases-when-using-swift-enums/">
+                  <h3 class="post-title">
+                    Avoiding problematic cases when using Swift enums
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>PointFree Episode 14: Contravariance | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Variance in subtyping
+
+
+
+
+Variance in functional programming
+
+
+
+
+Positive and negative positions
+
+
+..." />
+    <meta name="keywords" content="Contravariance,PointFree" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">PointFree Episode 14: Contravariance</h2>
+            <div class="post-date">2021-11-07</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Varianceinsubtyping">Variance in subtyping</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Varianceinfunctionalprogramming">Variance in functional programming</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Positiveandnegativepositions">Positive and negative positions</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Whatsthepoint">What’s the point?</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#PredicateSet">PredicateSet</a></li>
+</ol>
+<ul>
+<li>6.1. <a href="#Setcannotholdinfinitelymanyvalues">Set cannot hold infinitely many values</a></li>
+<li>6.2. <a href="#PredicateSetcannotbeiteratedover">PredicateSet cannot be iterated over</a></li>
+<li>6.3. <a href="#Setcannotbeinverted">Set cannot be inverted</a></li>
+<li>6.4. <a href="#PredicateSetcannotconformtoEquatable">PredicateSet cannot conform to Equatable</a></li>
+</ul>
+</li>
+<li>
+<ol start="7">
+<li><a href="#Setdoesnothavemap">Set does not have map</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<!-- # PointFree Episode 14: Contravariance -->
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>上周我们深入研究了<strong>map</strong>函数。首先，我们看到数组上的<strong>map</strong>在所有转换数组并满足简单属性的函数中是唯一的。这有点令人惊讶，因为这表明<strong>map</strong>的发明不是因为它方便，而是它只是坐在那里等着我们去发现它。</p>
+<p>在今天的课程中，我们将探讨“<strong>contravariance</strong>（逆变性）”的概念。这是一种隐藏在编程世界中显而易见的组合，但无论出于什么原因，我们从来没有真正地与它面对面。所以我们想花些时间来真正研究它，并为它建立直觉，因为它将让我们发现新的方式来组成的东西，否则很难看到。</p>
+<h2 id="2-a-namevarianceinsubtypingavariance-in-subtyping">2. <a name='Varianceinsubtyping'></a>Variance in subtyping</h2>
+<p>如果你在编程中遇到过协方差和逆变性的概念，它很可能与子类型有关，你甚至可能听说过<a href="https://en.wikipedia.org/wiki/Liskov_substitution_principle">Liskov替换原理</a>。这是关于什么时候用更具体的类型(如子类)或更一般的类型(如超类)来替换类型是有意义的。在某些情况下，你可以做一种而不做另一种，或者反过来。</p>
+<p>Swift通过子类化实现了子类型。我们应该都很熟悉这个，因为UIKit是一个用非常深的子类层次结构构建的库。 只要考虑这个将<strong>UIButton</strong>连接到它的根基类<strong>NSObject</strong>的子类序列:</p>
+<pre><code class="language-swift">// NSObject &gt; UIResponder &gt; UIView &gt; UIControl &gt; UIButton
+</code></pre>
+<p>我们使用&gt;来显示超类型关系，我们还将使用&lt;来显示子类型关系。</p>
+<p>当与<strong>UIKit</strong>交互时，我们经常编写函数和方法，将UIKit组件作为输入或返回UIKit组件作为输出。 当我们这样做的时候，我们将不可避免地遇到需要为这些函数提供子类型或超类型，或者将函数的输出解释为子类型或超类型。 让我们来看一个例子:</p>
+<pre><code class="language-swift">func wrapView(padding: UIEdgeInsets) -&gt; (UIView) -&gt; UIView {
+  return { subview in
+    let wrapper = UIView()
+    subview.translatesAutoresizingMaskIntoConstraints = false
+    wrapper.addSubview(subview)
+    NSLayoutConstraint.activate([
+      subview.leadingAnchor.constraint(
+        equalTo: wrapper.leadingAnchor, constant: padding.left
+      ),
+      subview.rightAnchor.constraint(
+        equalTo: wrapper.rightAnchor, constant: -padding.right
+      ),
+      subview.topAnchor.constraint(
+        equalTo: wrapper.topAnchor, constant: padding.top
+      ),
+      subview.bottomAnchor.constraint(
+        equalTo: wrapper.bottomAnchor, constant: -padding.bottom
+      ),
+      ])
+    return wrapper
+  }
+}
+</code></pre>
+<p>这是一个帮助函数，用于将现有视图包装到新视图中并应用一些填充。这是一个方便的功能，因为<strong>UIView</strong>在其布局中没有填充的概念。我们的偏好是先配置后转换，这是一个<strong>curry</strong>过的函数，它首先获取填充，然后你得到一个(<strong>UIView) -&gt; UIView</strong>函数，它包装视图。</p>
+<p>下面是我们如何使用它:</p>
+<pre><code class="language-swift">let view = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+view.backgroundColor = .darkGray
+
+let padding = UIEdgeInsets(top: 10, left: 20, bottom: 30, right: 40)
+
+let wrapper = wrapView(padding: padding)(view)
+wrapper.frame.size = CGSize(width: 300, height: 300)
+wrapper.backgroundColor = .lightGray
+wrapper
+</code></pre>
+<p>这个函数为探索逆变性提供了完美的设置。下面是<strong>wrapView</strong>的特征:</p>
+<pre><code class="language-swift">wrapView(padding: padding) as (UIView) -&gt; UIView
+</code></pre>
+<p>没有惊喜。现在，让我们尝试调整输入类型。如果这个函数对我们提供它的<strong>UIView</strong>是满意的，那么它肯定对我们提供的，比如说一个<strong>UIButton</strong>也是满意的:</p>
+<pre><code class="language-swift">wrapView(padding: padding) as (UIButton) -&gt; UIView
+</code></pre>
+<p>确实如此! 我们可以使用<strong>UIView</strong>的任何子类:</p>
+<pre><code class="language-swift">wrapView(padding: padding) as (UIControl) -&gt; UIView
+wrapView(padding: padding) as (UISwitch) -&gt; UIView
+wrapView(padding: padding) as (UIStackView) -&gt; UIView
+</code></pre>
+<p>因此，我们看到的是，在输入上，我们可以自由地替换一个更具体的类型(即子类)，并且仍然得到一个有效的函数。 如果我们尝试在<strong>UIView</strong>的超类中输入会发生什么?</p>
+<pre><code class="language-swift">wrapView(padding: padding) as (UIResponder) -&gt; UIView
+</code></pre>
+<blockquote>
+<p>🛑 ‘(UIView) -&gt; UIView’ is not convertible to ‘(UIResponder) -&gt; UIView’</p>
+</blockquote>
+<p>当然这不起作用，因为函数至少需要一个<strong>UIView</strong>，而<strong>UIResponder</strong>没有添加到视图层次结构的概念。所以我们看到我们不能用超类来代替这个函数的输入。</p>
+<p>让我们在输出上试试。如果我们想返回一个<strong>UIButton</strong>而不是一个<strong>UIView</strong>呢:</p>
+<pre><code class="language-swift">wrapView(padding: padding) as (UIView) -&gt; UIButton
+</code></pre>
+<blockquote>
+<p>🛑 ‘(UIView) -&gt; UIView’ is not convertible to ‘(UIView) -&gt; UIButton’</p>
+</blockquote>
+<p>这并不能执行。这是有道理的，<strong>wrapView</strong>实例化并返回一个<strong>UIView</strong>，所以不抱希望将它解释为一个<strong>UIButton</strong>。然而，我们可能会忘记<strong>UIView</strong>的一些特性，而将其解释为更一般的东西，比如一个<strong>UIResponder</strong>:</p>
+<pre><code class="language-swift">wrapView(padding: padding) as (UIView) -&gt; UIResponder
+</code></pre>
+<p>或者回到NSObject</p>
+<pre><code class="language-swift">wrapView(padding: padding) as (UIView) -&gt; NSObject
+</code></pre>
+<p>我们甚至可以忘记更多关于这个类型的信息，并返回<strong>AnyObject</strong>!</p>
+<pre><code class="language-swift">wrapView(padding: padding) as (UIView) -&gt; AnyObject
+</code></pre>
+<p>我们在这里发现，函数有子类型关系，就像子类一样，它有微妙的不同，取决于你是改变函数的输入还是输出。例如，我们已经看到(<strong>UIView) -&gt; UIView</strong>是(<strong>UIButton) -&gt; UIView</strong>的一个子类型，因为你可以在任何使用前者的地方你可以使用后者。该函数只是忘记了我们有一个按钮，并将其视为一个普通视图。 另一方面，我们已经看到(<strong>UIView) &gt; UIView</strong>是(<strong>UIView) &gt; UIResponder</strong>的子类型因为在任何你可以使用前者的地方你可以只使用后者。我们只是忘了我们有一个视图，把它当作一个简单的响应器。</p>
+<blockquote>
+<p>Correction<br>
+在视频中，我们无意中说了与我们对函数输出的子类型定义相反的话。 我们说(UIView) &gt; UIResponder是(UIView) &gt; UIView的子类型，但我们实际上想说相反的:(UIView) -&gt; UIView是(UIView) -&gt; UIResponder的子类型。这是因为UIView是UIResponder的子类型。这是一个非常微妙的区别，可能很难在你的头脑中保持清楚。</p>
+</blockquote>
+<p>让我们将其一般化，以便我们能更好地看到结构，使用&lt;表示“**”的子类型:</p>
+<pre><code class="language-swift">/*
+  If A &lt; B, then
+
+  then (B -&gt; C) &lt; (A -&gt; C)
+
+  then (C -&gt; A) &lt; (C -&gt; B)
+*/
+</code></pre>
+<p>这里有些奇怪的东西，但现在还看不出来。要看到它，我们需要移动到一个二维图片!</p>
+<pre><code class="language-swift">/*
+  If A &lt; B
+
+  then B -&gt; C
+         &lt;
+       A -&gt; C
+
+  then C -&gt; A
+         &lt;
+       C -&gt; B
+ */
+</code></pre>
+<p><strong>C</strong>组总是分组在一起! 如果我们把它们排成一行，就会更明显!</p>
+<pre><code class="language-swift">/*
+  If A &lt; B
+
+  then B -&gt; C
+         &lt;
+       A -&gt; C
+
+  then      C -&gt; A
+              &lt;
+            C -&gt; B
+ */
+</code></pre>
+<p>在第一个关系中，A和B相对于“是一个子类型”关系的位置被翻转了。 它从&quot; A是B的子类型&quot;变成&quot;包含B的某物是包含A的某物的子类型&quot;。角色互换了。</p>
+<p>而在第二种关系中，角色没有互换。它从&quot; A是B的一个子类型&quot;变成&quot; 包含A的某物是包含B的某物的子类型&quot;</p>
+<p>这就是变异的本质。当一个关系的顺序保持不变时，我们称之为协变，当一个关系反过来时，我们称之为逆变。我们已经知道，根据函数的输出对函数进行分类是协变关系，而根据函数的输入对函数进行分类是逆变关系。</p>
+<pre><code class="language-swift">/*
+  If A &lt; B
+
+  then B -&gt; C
+         &lt;              contravariant
+       A -&gt; C
+
+  then      C -&gt; A
+              &lt;         covariant
+            C -&gt; B
+ */
+</code></pre>
+<p>这也是描述Liskov替换原则的一种非常简洁的方式，该原则表示“如果A是B的子类型，那么包含B类型对象的程序可以用A类型对象替换，而不改变其结果。”这似乎很合理! 但也许我们现在可以更清楚地看到，隐藏在这一陈述的简单地点是一种关系的逆转。你甚至可以看到这句话是如何提出的:“如果A是B的子类型，那么B类型的对象可以被A类型的对象替换”!很酷的东西!</p>
+<p>不幸的是，这是我们了解协方差和逆变性的唯一途径。 在编程中有很多这样的实例，但是如果您只熟悉Liskov替换原则，那么很难看到。这就是为什么我认为逆变的主题正好属于函数式编程领域(更普遍的是数学领域)，因为从函数的角度看它几乎是微不足道的。让我们探索这个!</p>
+<h2 id="3-a-namevarianceinfunctionalprogrammingavariance-in-functional-programming">3. <a name='Varianceinfunctionalprogramming'></a>Variance in functional programming</h2>
+<p>到目前为止，我们已经在这个系列中遇到过几次协变结构，但我们只是从来没有这样命名它们，因为我们还没有遇到逆变的东西来对比它们。协变关系的一个例子是我们的老朋友<strong>map</strong>:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: (A) -&gt; B) -&gt; ([A]) -&gt; [B] {
+  fatalError(&quot;Unimplemented&quot;)
+}
+</code></pre>
+<p>注意，我们有一个关系(<strong>A) -&gt; B</strong>被提升到一个关系(<strong>[A]) -&gt; [B]</strong>。A和B相对于-&gt;的顺序保持不变。事实上，我们遇到的所有<strong>map</strong>都是协变的:map在可选值上，map在<strong>Result</strong>上，以及所有我们在<strong>map</strong>和参数化章节中定义的奇怪<strong>map</strong>。</p>
+<p>我们在上一集中讨论过一种特殊类型。我们给它起了一个抽象的名字<strong>F2</strong>，但现在我们要给它一个正式的名字:</p>
+<pre><code class="language-swift">struct Func&lt;A, B&gt; {
+  let apply: (A) -&gt; B
+}
+</code></pre>
+<p>它只是一个从A到B的函数包装结构。我们在那一集中看到，这个类型在第二个类型参数B上支持一个类似于映射的函数:</p>
+<pre><code class="language-swift">func map&lt;A, B, C&gt;(_ f: @escaping (B) -&gt; C) -&gt; ((Func&lt;A, B&gt;) -&gt; Func&lt;A, C&gt;) {
+  return { g in
+    Func(apply: g.apply &gt;&gt;&gt; f)
+  }
+}
+</code></pre>
+<p>注意<strong>B和C</strong>之间的关系被保留了，因此这是一个协变运算。有趣的是，函数的输出<strong>map</strong>是协变的，就像输出的子类型是协变的一样!</p>
+<p>但是，我们故意没有考虑<strong>map</strong>到输入类型参数A意味着什么。 Let’s see what happens when we try:</p>
+<pre><code class="language-swift">func map&lt;A, B, C&gt;(_ f: @escaping (A) -&gt; B) -&gt; ((Func&lt;A, C&gt;) -&gt; Func&lt;B, C&gt;) {
+  return { g in
+    f as (A) -&gt; B
+    g.apply as (A) -&gt; C
+    // ???
+  }
+}
+</code></pre>
+<p>这些函数不匹配，所以没有办法组合它们。</p>
+<p>让我们尝试一些奇怪的东西把变换函数从(<strong>A) - &gt;B</strong>翻转到(<strong>B) - &gt;A</strong>。</p>
+<pre><code class="language-swift">func map&lt;A, B, C&gt;(_ f: @escaping (B) -&gt; A) -&gt; ((Func&lt;A, C&gt;) -&gt; Func&lt;B, C&gt;) {
+  return { g in
+    f as (B) -&gt; A
+    g.apply as (A) -&gt; C
+    return Func(apply: f &gt;&gt;&gt; g.apply)
+  }
+}
+</code></pre>
+<p>现在一切都匹配并编译了。但这并不是我们所熟知和喜爱的<strong>map</strong>，所以我们或许可以称之为<strong>fakeMap</strong>。</p>
+<p>这个<strong>fakeMap</strong>实际上是我们想要的东西，当它涉及到“转换”一个函数的输入，所以我们应该给它一个适当的名字。<br>
+如果<strong>map</strong>是协变的，那么也许我们应该叫它<strong>contramap</strong>。事实上，这是许多语言和库所使用的，尽管有些也使用<strong>cmap和comap</strong>。</p>
+<pre><code class="language-swift">func contramap&lt;A, B, C&gt;(_ f: @escaping (B) -&gt; A) -&gt; ((Func&lt;A, C&gt;) -&gt; Func&lt;B, C&gt;) {
+  return { g in
+    Func(apply: f &gt;&gt;&gt; g.call)
+  }
+}
+</code></pre>
+<blockquote>
+<p>Correction<br>
+Although <strong>contramap</strong> is a really nice name for this operation, we have since decided to go with a more intuitive name: <strong>pullback</strong>. The idea is that we can pull back structures on one type to structures on another type by performing function pre-composition. To find out more about why we did this, refer to our <a href="https://www.pointfree.co/blog/posts/22-some-news-about-contramap">blog post</a> on the topic.</p>
+</blockquote>
+<p>另一种箭头从map翻转的理解方式是，我们可以复制粘贴<strong>Func</strong>上<strong>map</strong>的实现，并字面上翻转&gt;&gt;&gt;箭头!</p>
+<pre><code class="language-swift">func contramap&lt;A, B, C&gt;(_ f: @escaping (B) -&gt; A) -&gt; ((Func&lt;A, C&gt;) -&gt; Func&lt;B, C&gt;) {
+  return { g in
+//    Func(apply: f &gt;&gt;&gt; g.call)
+    Func(apply: g.apply &lt;&lt;&lt; f)
+  }
+}
+</code></pre>
+<p>在关于setter的章节中，我们将&lt;&lt;&lt;定义为向后合成，以便将嵌套的setter组合在一起，向后合成有助于描述我们更深入地研究结构的直觉。 &lt;&lt;&lt;如何帮助我们显式地显示在这个类型上定义<strong>map和contramap</strong>的区别是很有趣的。</p>
+<p>现在我们已经看到了函数箭头-&gt;在其输出中是协变的，这意味着我们可以通过后合成对其输出进行“<strong>map</strong>”。我们还看到函数箭头-&gt;在其输入中是逆变的，这意味着我们可以通过预合成对其输入进行“反映射”。</p>
+<h2 id="4-a-namepositiveandnegativepositionsapositive-and-negative-positions">4. <a name='Positiveandnegativepositions'></a>Positive and negative positions</h2>
+<p>好了，既然我们理解了什么是逆变，从技术上讲，让我们做一点工作来适应它因为它看起来有点奇怪，和我们的直觉相悖。由于逆变性似乎很自然地从函数签名中跳出来，让我们看看在更复杂的函数中会发生什么。</p>
+<p>例如，在上一集关于<strong>map</strong>和参数化的内容中，我们遇到了以下奇怪的类型:</p>
+<pre><code class="language-swift">struct F3&lt;A&gt; {
+  let run: (@escaping (A) -&gt; Void) -&gt; Void
+}
+</code></pre>
+<p>我们注意到它有点像我们在Cocoa或其他库中可能遇到的回调。</p>
+<p>现在A出现在函数箭头-&gt;的左边，所以我们很自然地认为这是一个逆变结构。然而，在上一集中，我们定义了一个<strong>map</strong>操作，并说明了这是<strong>map</strong>的唯一实现:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (F3&lt;A&gt;) -&gt; F3&lt;B&gt; {
+  return { f3 in
+    return F3 { callback in
+      f3.run(f &gt;&gt;&gt; callback)
+    }
+  }
+}
+</code></pre>
+<p>这显然是协变的，这里发生了什么? 注意到A出现在-&gt;的左边两次。这是一种双逆变的，而且不知何故它们相互中和。 这类似于-1 * -1 = 1，或者如果你从几何上反映某物两次，你就会回到开始的地方，或者两个错误是如何得到一个正确的</p>
+<p>这个与数字负号的类比非常强大，我们可以使用它作为一个工具来解开构造中类型参数的方差。我们首先说，如果类型参数出现在-&gt;的右侧，则它处于“正”位置;如果它出现在-&gt;的左侧，则它处于“负”位置。</p>
+<pre><code class="language-swift">// (A) -&gt; B
+//  -1    +1
+</code></pre>
+<p>B在正位置，A在负位置。</p>
+<p>我们也可以用这个符号术语来表示整个表达式的符号。例如:</p>
+<pre><code class="language-swift">// ((A) -&gt; Void) -&gt; Void
+//  |_|    |__|
+//  -1      +1
+// |___________|    |__|
+//      -1           +1
+</code></pre>
+<p>在这里，**((A) -&gt; Void)**项处于负位置，然后(A)在其内部处于负位置。</p>
+<p>现在，要确定类型参数位置的符号，我们只需将从外层移动到内层时穿过的所有-1和+1相乘。在这个例子中，为了得到A，我们与-1交叉然后再与-1交叉，因此-1 * -1 = 1 A处于正位置。<br>
+让我们看一个更复杂的函数:</p>
+<pre><code class="language-swift">// (A) -&gt; ((B) -&gt; C) -&gt; D)
+</code></pre>
+<p>这是一个在A中接受一个值并返回一个函数的函数。</p>
+<p>在外层我们有两项</p>
+<pre><code class="language-swift">// (A) -&gt; ((B) -&gt; C) -&gt; D)
+// |_|    |______________|
+// -1           +1      
+</code></pre>
+<p>第二项有更多的层，深入研究一下，我们看到我们又多了两项:</p>
+<pre><code class="language-swift">// (A) -&gt; ((B) -&gt; C) -&gt; D)
+//         |_______|   |_|
+//            -1       +1
+// |_|    |______________|
+// -1           +1
+</code></pre>
+<p>中间还有一层，我们再来看看:</p>
+<pre><code class="language-swift">// (A) -&gt; ((B) -&gt; C) -&gt; D)
+//         |_|   |_|
+//         -1    +1
+//         |_______|   |_|
+//            -1       +1
+// |_|    |______________|
+// -1           +1
+</code></pre>
+<p>哇!让我们从外层到内层然后把所有的符号相乘看看A B C D的方差是多少</p>
+<ul>
+<li>对于A，我们只有一层-1，所以A在负位置，是逆变的。</li>
+<li>对于B，我们经过+1，然后-1，然后-1，所以B是正的，协变的。</li>
+<li>对于C，我们经过+1，然后-1，然后+1，所以C是负的，是逆变的。</li>
+<li>对于D，我们经过+1，然后+1，所以D是正的，是协变的。</li>
+</ul>
+<p>我们看到<strong>B和D</strong>是协变的，<strong>A和C</strong>是逆变的，因此你应该能够分别在这些类型参数上定义<strong>map和contramap</strong>。</p>
+<p>这是一个方便的工具，能够立即解开类型参数的方差。</p>
+<h2 id="5-a-namewhatsthepointawhats-the-point">5. <a name='Whatsthepoint'></a>What’s the point?</h2>
+<p>好吧，这很有趣，但也很紧张。现在我们看到了协方差和逆方差的概念由于分类的不同，我们可能已经对它们有点熟悉了。然后我们发现这只是函数方差的一种特殊情况，也就是函数的预合成和后合成，这使得它看起来非常简单尽管它的名字很吓人。</p>
+<p>但是，是时候问一问:这有什么意义?我们能在日常代码中使用它吗?</p>
+<p>是的!当然!逆变性是协方差的另一半，或者说对偶，协方差是我们经常遇到的对我们很有用的东西。所以我们可以很自然地找到逆变性的用处。这和代数数据类型的情况是一样的。很长一段时间以来，我们一直使用产品类型，结构体，因为我们只知道这些。然后有一天，我们被介绍到求和类型，枚举，它们起初看起来很奇怪，但我们发现它们有很多用处。</p>
+<p>让我们来看一个特定的例子。大家可能都很熟悉Swift中的Set类型。它是一种无序集合类型，最多保存一个值的实例:</p>
+<pre><code class="language-swift">// Set&lt;A&gt;
+let xs = Set&lt;Int&gt;([1, 2, 3, 4, 4, 4, 4])
+</code></pre>
+<p>关于这种类型的一个奇怪的事情是泛型被限制为<strong>Hashable</strong>，它继承自<strong>Equatable</strong>。所以你被限制在可以放入集合的值的类型上。这样做的原因是为了优化值的内部存储方式，它必须是某种哈希映射，比如[A: Bool]类型。它也有一个缺点，你不能有一个集合来保存A中的所有值，你也不能对一个集合进行反变换。</p>
+<h2 id="6-a-namepredicatesetapredicateset">6. <a name='PredicateSet'></a>PredicateSet</h2>
+<p>还有另一种表示集合的方法，它只是一个简单的谓词函数:</p>
+<pre><code class="language-swift">struct PredicateSet&lt;A&gt; {
+  let contains: (A) -&gt; Bool
+}
+</code></pre>
+<p>这完全跳过了如何在一个集合中存储值的问题，直接回答了这个问题:“这个集合是否包含一个特定的值”。</p>
+<p>Set的许多用法可以用<strong>PredicateSet</strong>代替，例如:</p>
+<pre><code class="language-swift">let ys = PredicateSet { [1, 2, 3, 4].contains($0) }
+</code></pre>
+<p>我们来玩个小游戏吧!对于我所宣称的Set的每一个缺点，我将证明<strong>PredicateSet</strong>可以弥补这个缺点，相反地，对于<strong>PredicateSet</strong>的每一个缺点，我们将看到Set在这方面优于。</p>
+<h3 id="61-a-namesetcannotholdinfinitelymanyvaluesaset-cannot-hold-infinitely-many-values">6.1. <a name='Setcannotholdinfinitelymanyvalues'></a>Set cannot hold infinitely many values</h3>
+<p>由于Set与存储值密切相关，所以它不可能存储无限多个值。Swift对“无限多个值”的回答通常是<strong>Sequence</strong>协议，但这对测试序列中是否包含一个值没有帮助。</p>
+<p>另一方面，<strong>PredicateSet</strong>在本质上只是一个<strong>contains</strong>函数，它擅长于建模包含无限多个值的集合:</p>
+<pre><code class="language-swift">let evens = PredicateSet { $0 % 2 == 0 }
+let allInts = PredicateSet&lt;Int&gt; { _ in true }
+let longStrings = PredicateSet&lt;String&gt; { $0.count &gt; 100 }
+</code></pre>
+<h3 id="62-a-namepredicatesetcannotbeiteratedoverapredicateset-cannot-be-iterated-over">6.2. <a name='PredicateSetcannotbeiteratedover'></a>PredicateSet cannot be iterated over</h3>
+<p>实际上，因为<strong>PredicateSet</strong>只是一个函数，所以没有办法遍历a: A中**contains(a)**为true的所有值。</p>
+<p>另一方面，Set当然可以很容易地做到这一点:</p>
+<pre><code class="language-swift">xs.forEach { print($0) }
+</code></pre>
+<h3 id="63-a-namesetcannotbeinvertedaset-cannot-be-inverted">6.3. <a name='Setcannotbeinverted'></a>Set cannot be inverted</h3>
+<p>因为集合不能包含无限多个值，所以它通常不能被反转。也就是说，不能将它转换为一个集合，该集合包含类型a中所有不在该集合中的值。</p>
+<p>另一方面，<strong>PredicateSet</strong>对此没有问题。例如，我们可以将<strong>xs</strong>集合反转，使其包含不包含在集合中的所有整数。</p>
+<pre><code class="language-swift">let allIntsNot1234 = PredicateSet { !ys.contains($0) }
+</code></pre>
+<p>我们甚至可以为所有谓词集创建一个更通用的函数，但我们把它留着作为练习!</p>
+<h3 id="64-a-namepredicatesetcannotconformtoequatableapredicateset-cannot-conform-to-equatable">6.4. <a name='PredicateSetcannotconformtoEquatable'></a>PredicateSet cannot conform to Equatable</h3>
+<p>一般来说，不能确定两个函数是否相等，即<strong>f:(A) -&gt; B和g:(A) -&gt; B</strong>，那么我们不能确定对于所有A: A, <strong>f(A) == g(A)</strong>。这意味着我们不能使<strong>PredicateSet: Equatable</strong>，因此永远无法知道两个集合是否相等，甚至一个是另一个的子集。这通常是非常重要的!</p>
+<h2 id="7-a-namesetdoesnothavemapaset-does-not-have-map">7. <a name='Setdoesnothavemap'></a>Set does not have map</h2>
+<p>这是一个很大的问题，可能会让我们的观众有点惊讶，但<strong>Set</strong>没有地图，至少不是我们期望的方式。根据我们在map和参数化的章节，我们期望Set上的map有以下形状:</p>
+<pre><code class="language-swift">func map&lt;A, B&gt;(_ f: @escaping (A) -&gt; B) -&gt; (Set&lt;A&gt;) -&gt; Set&lt;B&gt; {
+  fatalError(&quot;Unimplemented&quot;)
+}
+</code></pre>
+<p>首先，这是不正确的，因为A和B需要被限制为<strong>Hashable</strong>。现在，Swift不需要这个，因为它试图帮助你，推断它，因为它知道Set需要Hashable。</p>
+<p>所以在底层，它看起来像:</p>
+<pre><code class="language-swift">func map&lt;A: Hashable, B: Hashable&gt;(_ f: @escaping (A) -&gt; B) -&gt; (Set&lt;A&gt;) -&gt; Set&lt;B&gt; {
+  fatalError(&quot;Unimplemented&quot;)
+}
+</code></pre>
+<p>但是现在我们通过约束类型参数破坏了函数的泛型性。它不再被允许在所有类型上工作，这正是让我们能够将参数化应用于<strong>map</strong>，并给予我们“<strong>theorems for free</strong>”的原因。</p>
+<p>也不是所有类型都能符合<strong>Hashable</strong>，比如Func类型，所以这种形式的map肯定排除了一些有用的东西。</p>
+<p>这张<strong>map</strong>有更多的问题，让我们看看如何实现它:</p>
+<pre><code class="language-swift">func map&lt;A: Hashable, B: Hashable&gt;(
+  _ f: @escaping (A) -&gt; B
+  ) -&gt; (Set&lt;A&gt;) -&gt; Set&lt;B&gt; {
+
+  return { xs in
+    var ys = Set&lt;B&gt;()
+    for x in xs {
+      ys.insert(f(x))
+    }
+    return ys
+  }
+}
+</code></pre>
+<p>因为<strong>Set</strong>中的值是唯一的，因为它们符合<strong>Equatable</strong>，我们可以很明显的看出 map一个集合并得到更小的结果是可能的:</p>
+<pre><code class="language-swift">let zs: Set&lt;Int&gt; = [-1, 0, 1]
+zs
+  |&gt; map(square)
+// {0, 1}
+</code></pre>
+<p>这似乎很奇怪。到目前为止，我们的<strong>map</strong>还没有一幅具有这种破坏性。也许这看起来不是什么大问题，但这个问题表现出了一个更大的问题，那就是它打破了我们对<strong>map</strong>的构图直觉。回想一下，我们经常说“构图的构图是构图的构图”。这意味着:</p>
+<pre><code class="language-swift">// map(f &gt;&gt;&gt; g) == map(f) &gt;&gt;&gt; map(g)
+</code></pre>
+<p>我们已经看到这个属性对许多<strong>map</strong>都是正确的，包括数组、可选项、结果、元组上的第一个和第二个函数等等。我们还看到，它可以带来实际的性能提升，因为它允许我们一次对包含的值应用两个转换，而不是使用一个转换创建一个中间容器。</p>
+<p>不幸的是，我们在Set上定义的映射完全打破了这一点。最快的方法是定义一个新的泛型类型和一个简单的Hashable实现:</p>
+<pre><code class="language-swift">struct Trivial&lt;A&gt;: Hashable {
+  let value: A
+
+  static func == (lhs: Trivial, rhs: Trivial) -&gt; Bool {
+    return true
+  }
+
+  var hashValue: Int {
+    return 1
+  }
+}
+</code></pre>
+<p>那么这种类型会有什么问题呢?</p>
+<pre><code class="language-swift">zs
+  |&gt; map(Trivial.init &gt;&gt;&gt; ^\.value)
+// {-1, 0, 1}
+
+zs
+  |&gt; map(Trivial.init)
+  |&gt; map(^\.value)
+// {-1}
+</code></pre>
+<p>哎呀，真糟糕!这个问题可以在实际代码中体现出来!例如，您可能有一个等价的一致性，只测试字段的子集，比如可能只测试用户的id字段。然后，当您以各种方式转换一组用户时，您可能(甚至是临时)有两个彼此相等的用户，然后set将它们合并为单个值。</p>
+<p>我们在这里看到的是，如果我们想从其他地图中得到所有相同的直觉，那么Set上的map就没有意义。</p>
+<p>很不幸的是，Swift确实在Set中有一个<strong>map</strong>，但这只是因为Set符合序列协议。 幸运的是，Swift的类型系统不够强，无法表示map转换到同一个容器中，因此该函数实际上返回的是数组，而不是set:</p>
+<pre><code class="language-swift">zs.map(Trivial.init).map(^\.value)
+// [-1, 0, 1]
+</code></pre>
+<p>然而，我们仍然不能依赖结果数组的顺序，但至少我们没有丢失值。 如果这个方法有不同于map的名字就好了因为它不共享其他<strong>map</strong>的任何属性。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5yrqTP-dy/" class="tag">
+                    Contravariance
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/i-r9uoo_2N/" class="tag">
+                    PointFree
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/pointfree-episode-13-the-many-faces-of-map/">
+                  <h3 class="post-title">
+                    PointFree Episode 13: The Many Faces of Map
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

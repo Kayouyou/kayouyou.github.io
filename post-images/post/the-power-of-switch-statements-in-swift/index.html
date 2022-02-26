@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>The power of switch statements in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="虽然switch语句几乎不是Swift发明的(事实上，根据维基百科，这个概念可以追溯到1952年)，但当与Swift的type系统相结合时，它们变得更加强大。
+关于switch语句，我最喜欢的一点是，它们使您能够使用单个语句轻松地处理给定表..." />
+    <meta name="keywords" content="pattern matching,enums" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">The power of switch statements in Swift</h2>
+            <div class="post-date">2017-09-24</div>
+            
+            <div class="post-content" v-pre>
+              <p>虽然switch语句几乎不是Swift发明的(事实上，根据维基百科，这个概念可以追溯到1952年)，但当与Swift的type系统相结合时，它们变得更加强大。</p>
+<p>关于switch语句，我最喜欢的一点是，它们使您能够使用单个语句轻松地处理给定表达式的不同结果。这不仅能使代码更容易阅读和调试，还能使我们的控制流更具声明性，并绑定到单一的真相来源。</p>
+<p>作为一个例子，让我们看看如何在一个应用程序中处理用户的登录状态。使用链接的if和else语句，我们可以构造一个像这样的过程控制流:</p>
+<pre><code class="language-swift">if user.isLoggedIn {
+    showMainUI()
+} else if let credentials = user.savedCredentials {
+    performLogin(with: credentials)
+} else {
+    showLoginUI()
+}
+</code></pre>
+<p>然而，如果我们采用“Swift状态建模”中的一种技术，并使用enum来建模我们的用户登录状态，我们可以简单地使用switch语句将不同的动作绑定到不同的状态，就像这样:</p>
+<pre><code class="language-swift">switch user.loginState {
+case .loggedIn:
+    showMainUI()
+case .loggedOutWithSavedCredentials(let credentials):
+    performLogin(with: credentials)
+case .loggedOut:
+    showLoginUI()
+}
+</code></pre>
+<p>这种方法的主要优点是，我们得到了一个编译时保证，即给定表达式的所有状态和结果都得到了处理。当引入新状态时，还需要定义与之匹配的新操作。</p>
+<p>而类似于上面的——打开单enum值——是switch语句到目前为止最常见的用法，本周-让我们更进一步，看看switch语句在Swift中提供的更多强大功能。</p>
+<h2 id="switching-on-tuples">Switching on tuples</h2>
+<p>一种在Swift中非常流行的技术是使用Result类型来表示operation的各种结果。 例如，我们可以在我们的应用程序中定义一个通用的结果枚举，它可以保存在执行操作时发生的值或错误:</p>
+<pre><code class="language-swift">enum Result&lt;Value: Equatable, Error: Swift.Error &amp; Equatable&gt; {
+    case success(Value)
+    case error(Error)
+}
+</code></pre>
+<p>现在让我们说我们想让我们的结果类型符合等式。有很多方法可以实现这一点，包括嵌套的switch语句，或者为实例创建某种形式的 hash value 或标识符，并进行比较。然而，有一种非常简单的方法可以使用单个switch语句完成此操作，即将等式操作符的两边合并成一个元组，如下所示:</p>
+<pre><code class="language-swift">extension Result: Equatable {
+    static func ==(lhs: Result, rhs: Result) -&gt; Bool {
+        switch (lhs, rhs) {
+        case (.success(let valueA), .success(let valueB)):
+            return valueA == valueB
+        case (.error(let errorA), .error(let errorB)):
+            return errorA == errorB
+        case (.success, .error):
+            return false
+        case (.error, .success):
+            return false
+        }
+    }
+}
+</code></pre>
+<p>就像使用登录状态处理代码的初始示例一样，上面的示例也有一个优点，那就是非常有前瞻性 - 如果添加了一个新的结果情况，编译器会强制我们更新Equatable实现。</p>
+<h2 id="using-pattern-matching">Using pattern matching</h2>
+<p>Swift的一个鲜为人知的方面是它的模式匹配能力有多么强大。 假设我们在一个网络请求中使用前一节的结果类型，该请求可能产生数据或错误。</p>
+<p>我们已经设置了后台，当当前用户被注销或停用时，都会返回401:未授权错误，我们希望在代码中显式地处理这个问题，以便在收到这样的响应时，也能够将用户注销到客户端。</p>
+<p>与使用多个if语句和if let条件类型转换不同，我们可以对遇到的任何错误使用模式匹配，并使用单个switch语句处理所有情况，如下所示:</p>
+<pre><code class="language-swift">switch result {
+case .success(let data):
+    handle(data)
+case .error(let error as HTTPError) where error == .unauthorized:
+    logout()
+case .error(let error):
+    handle(error)
+}
+</code></pre>
+<p>正如你在上面看到的，我们对HTTPError类型进行模式匹配，这让我们可以以一种非常类型安全的方式直接与它的情况进行比较，而不必使用任何形式的强制转换。使用这样的模式匹配时，用从上到下的级联方式评估用例，这就是为什么我们将“catch all”错误处理用例放在底部的原因。</p>
+<h2 id="switching-on-a-set">Switching on a set</h2>
+<p>不久前，我发现了switch语句的一个新的有趣用例，当我在Twitter上分享它时，对很多人来说似乎也是新的。事实证明，您可以打开更多类型的值，而不仅仅是枚举情况或原语，如String和Int。</p>
+<p>例如，假设我们正在创建一款游戏或地图视图，其中道路可以使用网格中的贴图连接。我们可以使用RoadTile类来建模这样的贴图，通过维护一个带有贴图与其他道路贴图连接方向的集合，我们可以通过直接切换这个集合来编写非常声明性的渲染代码，就像这样:</p>
+<pre><code class="language-swift">class RoadTile: Tile {
+    var connectedDirections = Set&lt;Direction&gt;()
+
+    func render() {
+        switch connectedDirections {
+        case [.up, .down]:
+            image = UIImage(named: &quot;road-vertical&quot;)
+        case [.left, .right]:
+            image = UIImage(named: &quot;road-horizontal&quot;)
+        default:
+            image = UIImage(named: &quot;road&quot;)
+        }
+    }
+}
+</code></pre>
+<p>将上面的方法与使用链式if语句编写相同控制流的过程方式进行比较:</p>
+<pre><code class="language-swift">func render() {
+    if connectedDirections.contains(.up) &amp;&amp; connectedDirections.contains(.down) {
+        image = UIImage(named: &quot;road-vertical&quot;)
+    } else if connectedDirections.contains(.left) &amp;&amp; connectedDirections.contains(.right) {
+        image = UIImage(named: &quot;road-horizontal&quot;)
+    } else {
+        image = UIImage(named: &quot;road&quot;)
+    }
+}
+</code></pre>
+<p>我个人更喜欢switch版本👍</p>
+<h2 id="switching-on-a-comparison">Switching on a comparison</h2>
+<p>在这篇文章的最后一个例子中，让我们看看如何使用switch语句使处理运算符结果更简洁。假设我们正在创建一款双人游戏，玩家将通过战斗获得最高分数。为了表明本地玩家是否领先，我们需要显示一个基于比较两个玩家分数的文本。</p>
+<p>让我们再来看看如何使用if和else语句链接:</p>
+<pre><code class="language-swift">if player.score &lt; opponent.score {
+    infoLabel.text = &quot;You're losing 😢&quot;
+} else if player.score &gt; opponent.score {
+    infoLabel.text = &quot;You're winning 🎉&quot;
+} else {
+    infoLabel.text = &quot;You're tied 😬&quot;
+}
+</code></pre>
+<p>就像其他例子一样，上面的方法完全有效，但如果能够对单个表达式的结果做出反应，就会非常好，就像这样:</p>
+<pre><code class="language-swift">switch player.score.compare(to: opponent.score) {
+case .equal:
+    infoLabel.text = &quot;You're tied 😬&quot;
+case .greater:
+    infoLabel.text = &quot;You're winning 🎉&quot;
+case .less:
+    infoLabel.text = &quot;You're losing 😢&quot;
+}
+</code></pre>
+<p>为了实现上述目标，我们可以将链接的比较操作移动到Int的扩展中——这使我们能够定义一种可重用的方式，方便地处理各种比较结果。这样的扩展应该是这样的:</p>
+<pre><code class="language-swift">extension Int {
+    enum ComparisonOutcome {
+        case equal
+        case greater
+        case less
+    }
+
+    func compare(to otherInt: Int) -&gt; ComparisonOutcome {
+        if self &lt; otherInt {
+            return .less
+        }
+
+        if self &gt; otherInt {
+            return .greater
+        }
+
+        return .equal
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>Switch语句在许多不同的情况下都非常强大，尤其是与使用枚举、集合和元组定义的类型结合使用时。虽然我不是说所有的if和else语句都应该用switch语句替换， 在很多情况下，使用后者可以让你的代码更容易阅读和推理，也可以成为未来的证据。</p>
+<p><a href="https://www.swiftbysundell.com/articles/the-power-of-switch-statements-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/JeEnYVYQc/" class="tag">
+                    pattern matching
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/5CEvLT7HIN/" class="tag">
+                    enums
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/creating-custom-collections-in-swift/">
+                  <h3 class="post-title">
+                    Creating custom collections in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Conditional conformances in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Swift最令人兴奋的方面之一是它如何不断地演进，添加越来越强大的功能和——通过演进过程——处理来自开发人员社区的反馈和请求。本周，Swift 4.1作为Xcode 9.3的一部分公开发布——尽管只是一个小版本，但它带来了一些非常有趣的新特..." />
+    <meta name="keywords" content="generics,protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Conditional conformances in Swift</h2>
+            <div class="post-date">2018-04-01</div>
+            
+            <div class="post-content" v-pre>
+              <p>Swift最令人兴奋的方面之一是它如何不断地演进，添加越来越强大的功能和——通过演进过程——处理来自开发人员社区的反馈和请求。本周，Swift 4.1作为Xcode 9.3的一部分公开发布——尽管只是一个小版本，但它带来了一些非常有趣的新特性。</p>
+<p>一个这样的特性是条件一致性，它使类型只在特定的约束集下符合协议。就像Swift的许多更高级的功能一样，乍一看它可能不是特别有用——但对于某些任务来说，这个新功能被证明是一个相当强大的工具。</p>
+<p>这周，让我们来看看条件一致性是如何工作的——以及这个新特性如何使我们能够以一种更加递归的方式设计代码，使其更加灵活，同时也减少了重复。</p>
+<h2 id="the-basics">The basics</h2>
+<p>让我们从基础开始——如何声明协议的条件一致性。假设我们正在创造一款包含多种类型的游戏，这些类型可以转化为分数(游戏邦注:包括关卡、收集品、敌人等)。为了以统一的方式处理所有这些类型，我们定义了一个ScoreConvertible协议:</p>
+<pre><code class="language-swift">protocol ScoreConvertible {
+    func computeScore() -&gt; Int
+}
+</code></pre>
+<p>在处理上述协议时，很常见的一件事是要处理值数组。在本例中，我们希望能够轻松地汇总包含ScoreConvertible值的数组中所有元素的总分。 启用该功能的一种方法是在数组的元素类型符合ScoreConvertible时添加扩展，如下所示:</p>
+<pre><code class="language-swift">extension Array where Element: ScoreConvertible {
+    func computeScore() -&gt; Int {
+        return reduce(0) { result, element in
+            result + element.computeScore()
+        }
+    }
+}
+</code></pre>
+<p>以上方法适用于一维数组，例如总结关卡对象数组的总分:</p>
+<pre><code class="language-swift">let levels = [Level(id: &quot;water-0&quot;), Level(id: &quot;water-1&quot;)]
+let score = levels.computeScore()
+</code></pre>
+<p>然而，当我们开始处理更复杂的数组时(如我们使用嵌套数组将关卡分组到世界中)，我们便开始遇到问题。因为数组本身实际上并不符合ScoreConvertible，所以我们无法将数组的数组计算为总分。我们也不希望所有的数组都符合ScoreConvertible，因为这对[String]或[UIView]这样的变量没有意义。</p>
+<p>这是条件一致性特征旨在解决的核心问题。现在，在Swift 4.1中，只有当Array包含ScoreConvertible元素时，才可以使其符合ScoreConvertible，如下所示:</p>
+<pre><code class="language-swift">extension Array: ScoreConvertible where Element: ScoreConvertible {
+    func computeScore() -&gt; Int {
+        return reduce(0) { result, element in
+            result + element.computeScore()
+        }
+    }
+}
+</code></pre>
+<p>这样我们就可以计算任意数量的包含可转换分数类型的嵌套数组的总分:</p>
+<pre><code class="language-swift">let worlds = [
+    [Level(id: &quot;water-0&quot;), Level(id: &quot;water-1&quot;)],
+    [Level(id: &quot;sand-0&quot;), Level(id: &quot;sand-1&quot;)],
+    [Level(id: &quot;lava-0&quot;), Level(id: &quot;lava-1&quot;)]
+]
+let totalScore = worlds.computeScore()
+
+</code></pre>
+<p>当我们在代码基础上进行迭代时，拥有这种级别的灵活性真是太棒了!🍭</p>
+<h2 id="recursive-design">Recursive design</h2>
+<p>条件一致性的最大好处是，它允许我们以一种更递归的方式设计代码和系统。通过能够嵌套类型和集合(如上面的例子)，我们可以以更灵活的方式自由地构造对象和值。</p>
+<p>Swift标准库中这种递归设计最明显的好处之一是，包含可平等性类型的集合现在本身也是可平等性的。与上面的ScoreConvertible示例类似，我们现在可以自由检查嵌套集合是否相等，而不需要编写任何额外的代码:</p>
+<pre><code class="language-swift">func didLoadArticles(_ articles: [String : [Article]]) {
+    // We can now compare nested collections containing Equatable
+    // types simply by using the == or != operators.
+    guard articles != currentArticles else {
+        return
+    }
+
+    currentArticles = articles
+    notifyObservers()
+    render()
+}
+</code></pre>
+<p>虽然能够完成上面的工作是非常简洁的，但是同样重要的是要记住这样的等式检查可以隐藏复杂性——因为检查两个集合是否相等是一个O(n)操作。</p>
+<h2 id="multipart-requests">Multipart requests</h2>
+<p>现在让我们看一个更高级的例子，在这个例子中，我们将使用条件一致性来创建一个很好的API来处理多个网络请求。我们首先为请求定义一个协议，它可以返回一个包含任何响应的结果类型，如下所示:</p>
+<pre><code class="language-swift">protocol Request {
+    associatedtype Response
+
+    typealias Handler = (Result&lt;Response&gt;) -&gt; Void
+
+    func perform(then handler: @escaping Handler)
+}
+</code></pre>
+<p>假设我们正在为一本杂志创建一个应用程序，让我们的用户可以阅读不同类别的文章。 为了能够加载给定类别的文章数组，我们定义了一个符合上述请求协议的ArticleRequest类型:</p>
+<pre><code class="language-swift">struct ArticleRequest: Request {
+    typealias Response = [Article]
+
+    let dataLoader: DataLoader
+    let category: Category
+
+    func perform(then handler: @escaping Handler) {
+        let endpoint = Endpoint.articles(category)
+        dataLoader.load(from: endpoint) { result in
+            // Here we decode a Result&lt;Data&gt; value to either
+            // produce an error or an array of models.
+            handler(result.decode())
+        }
+    }
+}
+</code></pre>
+<p>就像我们希望能够在前面的示例中汇总多个ScoreConvertible值的总得分一样，假设我们希望有一种简单的方法以同步的方式执行多个请求。例如，我们可能想一次加载多个类别的文章，并获得包含所有组合结果的字典。</p>
+<p>你也许能猜到它的走向😉。 通过让Dictionary在包含自身符合Request的值时有条件地符合Request，我们可以用一种非常好的递归方式解决这个问题。</p>
+<p>就像我们在“deep dive into Grand Central Dispatch in Swift”中看到的那样，我们将使用GCD的DispatchGroup来同步我们的请求组并产生一个聚合的结果，如下所示:</p>
+<pre><code class="language-swift">extension Dictionary: Request where Value: Request {
+    typealias Response = [Key : Value.Response]
+
+    func perform(then handler: @escaping Handler) {
+        var responses = [Key : Value.Response]()
+        let group = DispatchGroup()
+
+        for (key, request) in self {
+            group.enter()
+
+            request.perform { response in
+                switch response {
+                case .success(let value):
+                    responses[key] = value
+                    group.leave()
+                case .error(let error):
+                    handler(.error(error))
+                }
+            }
+        }
+
+        group.notify(queue: .main) {
+            handler(.success(responses))
+        }
+    }
+}
+</code></pre>
+<p>有了上述扩展，我们现在可以简单地使用字典字面量来创建请求组:</p>
+<pre><code class="language-swift">extension TopArticlesViewController {
+    func loadArticles() {
+        let requests: [Category : ArticleRequest] = [
+            .news: ArticleRequest(dataLoader: dataLoader, category: .news),
+            .sports: ArticleRequest(dataLoader: dataLoader, category: .sports)
+        ]
+        requests.perform { [weak self] result in
+            switch result {
+            case .success(let articles):
+                for (category, articles) in articles {
+                    self?.render(articles, in: category)
+                }
+            case .error(let error):
+                self?.handle(error)
+            }
+        }
+    }
+}
+</code></pre>
+<p>我们现在可以使用单一的、统一的实现来组合多个请求，而不必为各种请求和集合的组合编写单独的实现👍。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>条件一致性使我们能够以新的方式专门化泛型，这反过来又使我们能够以更递归的方式设计系统。虽然使用这个特性也会增加复杂性，特别是当这些类型的一致性扩展分散在代码基础上时，当适当地使用它可以帮助我们减少代码重复，使我们的代码更灵活。</p>
+<p>由于这是一个全新的Swift特性，我相信我们在未来会再次回到条件一致性，并看看它们可以用不同的方式来解决其他类型的问题。现在，我鼓励您尝试一下这个新特性，并尝试一下它如何能够使您自己的代码更具递归性和灵活性。</p>
+<p><a href="https://www.swiftbysundell.com/articles/conditional-conformances-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/rXydJalIp/" class="tag">
+                    generics
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/feature-flags-in-swift/">
+                  <h3 class="post-title">
+                    Feature flags in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

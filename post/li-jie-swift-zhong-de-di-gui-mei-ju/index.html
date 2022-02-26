@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>理解Swift中的递归枚举 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Understanding Recursive Enumerations in Swift
+
+
+1.1. Example
+1.2. Why the indirect Keyword Is Necessary
+1.3. Conclus..." />
+    <meta name="keywords" content="recursive,enum" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">理解Swift中的递归枚举</h2>
+            <div class="post-date">2021-05-17</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#UnderstandingRecursiveEnumerationsinSwift">Understanding Recursive Enumerations in Swift</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#Example">Example</a></li>
+<li>1.2. <a href="#WhytheindirectKeywordIsNecessary">Why the indirect Keyword Is Necessary</a></li>
+<li>1.3. <a href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-nameunderstandingrecursiveenumerationsinswiftaunderstanding-recursive-enumerations-in-swift">1. <a name='UnderstandingRecursiveEnumerationsinSwift'></a>Understanding Recursive Enumerations in Swift</h2>
+<p><em>什么是递归枚举?“间接”关键字做什么?</em></p>
+<p>递归枚举只不过是一种枚举，其case指向枚举本身。</p>
+<p>要创建一个，您需要使用indirect关键字。例如:</p>
+<pre><code class="language-swift">enum Test {
+    indirect case value(Test)
+}
+</code></pre>
+<p>你也可以把间接关键字放在枚举声明的前面:</p>
+<pre><code class="language-swift">indirect enum Test {
+    case value(Test)
+}
+</code></pre>
+<p>***indirect***关键字用于告诉Swift以一种允许其增长的方式存储这种特殊类型的枚举。</p>
+<hr>
+<h3 id="11-a-nameexampleaexample">1.1. <a name='Example'></a>Example</h3>
+<p>让我们创建一个递归枚举示例。在本例中，您将使用形状。</p>
+<p>点是最简单的形状。如果你把两个点连起来，你会得到一条同样是形状的直线。 所以两个形状可以用来构造一个新形状。因此，形状需要是递归构造。</p>
+<p>有很多方法可以将其转换为代码，但让我们使用递归枚举:</p>
+<pre><code class="language-swift">enum Shape {
+    case Point(Double, Double)
+    indirect case Line(Shape, Shape)
+    
+    func info() -&gt; String {
+        switch self {
+        case .Point(let x, let y):
+            return &quot;(\(x), \(y))&quot;
+        case .Line(let p1, let p2):
+            return p1.info() + &quot; &lt;---&gt; &quot; + p2.info()
+        }
+    }
+}
+</code></pre>
+<p>让我们仔细看看代码:</p>
+<ul>
+<li>
+<p>关键是Shape枚举同时表示点和线。 但由于Line也是Shape，它需要递归地引用Shape。这是通过间接案例Line(Shape, Shape)实现的。</p>
+</li>
+<li>
+<p>info()方法只是创建形状的字符串表示。 让我们通过创建三个形状来测试以上内容:两个点和由这些点连接的一条线。</p>
+</li>
+</ul>
+<pre><code class="language-swift">let pStart: Shape = Shape.Point(3.08, 4.23)
+
+let pEnd: Shape = Shape.Point(7.12, 9.32)
+let line: Shape = Shape.Line(pStart, pEnd)
+
+print(line.info())
+</code></pre>
+<p>输出是一个从点&quot;(3.0,4.23)&quot;到&quot;(7.12,9.32)&quot;的&quot;行&quot;，以字符串形式表示:</p>
+<pre><code class="language-swift">(3.0, 4.23) &lt;---&gt; (7.12, 9.32)
+</code></pre>
+<hr>
+<h3 id="12-a-namewhytheindirectkeywordisnecessaryawhy-the-indirect-keyword-is-necessary">1.2. <a name='WhytheindirectKeywordIsNecessary'></a>Why the indirect Keyword Is Necessary</h3>
+<p>如果创建一个没有indirect关键字的递归枚举:</p>
+<pre><code class="language-swift">enum Test {
+    case value(Test)
+}
+</code></pre>
+<p>你会得到一个编译错误:recursive enum <em>'Test' is not marked 'indirect'</em>。</p>
+<p>在Swift中，枚举本质上是值类型。这意味着必须在编译期间对它们的内存进行管理。简单地说，必须事先知道枚举所需的确切内存大小。</p>
+<p>记住这一点，如果您创建一个递归枚举(即在它内部引用枚举本身)，那么您创建的递归是不可能说出枚举需要多少内存的。</p>
+<p>这个问题可以通过间接关键字来解决。通过这样做，您告诉Swift更改存储枚举的方式，以允许它的大小增长。</p>
+<hr>
+<h3 id="13-a-nameconclusionaconclusion">1.3. <a name='Conclusion'></a>Conclusion</h3>
+<p>递归枚举是一种特殊类型的枚举，它可以引用自身。你可以像普通枚举一样创建一个，但是由于Swift的内存管理原因，你需要使用indirect关键字。</p>
+<p>For example:</p>
+<pre><code class="language-swift">enum Test {
+    indirect case value(Test)
+}
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/3f81Te1-b/" class="tag">
+                    recursive
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/-9Hl-FY4wo/" class="tag">
+                    enum
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/ru-he-zai-ni-de-ios-kuang-jia-nei-shi-yong-cocoapods/">
+                  <h3 class="post-title">
+                    如何在你的iOS框架内使用CocoaPods
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

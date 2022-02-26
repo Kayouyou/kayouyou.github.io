@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Method swizzling in iOS swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+Method swizzling in iOS swift
+
+What is method swizzling?
+How to do method swizzling in swift 4?
+Let’s swizzle!!
+Drawba..." />
+    <meta name="keywords" content="method swizzling" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Method swizzling in iOS swift</h2>
+            <div class="post-date">2021-05-28</div>
+            
+            <div class="post-content" v-pre>
+              <!-- TOC -->
+<ul>
+<li><a href="#method-swizzling-in-ios-swift">Method swizzling in iOS swift</a>
+<ul>
+<li><a href="#what-is-method-swizzling">What is method swizzling?</a></li>
+<li><a href="#how-to-do-method-swizzling-in-swift-4">How to do method swizzling in swift 4?</a></li>
+<li><a href="#lets-swizzle">Let’s swizzle!!</a></li>
+<li><a href="#drawbacks-of-method-swizzling">Drawbacks of method swizzling</a></li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h2 id="method-swizzling-in-ios-swift">Method swizzling in iOS swift</h2>
+<h3 id="what-is-method-swizzling">What is method swizzling?</h3>
+<p>Method swizzling 是在运行时更改现有选择器的实现的过程。简单地说，我们可以在运行时更改方法的功能。</p>
+<blockquote>
+<p>Note: 这是一个Objective-C运行时特性。</p>
+</blockquote>
+<p>例如:如果你想跟踪添加到UserDefaults中的键和值，并在所有键之前添加一个前缀字符串，你可以用你自己的方法切换setValue:forKey方法的实现。因此，所有对setValue:forKey方法的调用都将被路由到新的选择器方法。您可以创建添加了前缀的新键字符串，并使用新键调用setValue:forKey方法的原始实现。你会困惑它是否会以无限循环结束。但事实并非如此。(注意:你可以通过在Objc或swift扩展中使用category来做同样的事情。只需创建一个新方法，并从这个新方法调用超级setValue:forKey方法。但是，如果导入的第三方库和框架直接使用setValue:forKey方法怎么办? 这些库不知道新的自定义方法，也不知道我们需要向键添加前缀。这就是<strong>method swizzling</strong>发挥作用的时候了). 我把这个例子从以下文章👇🏻👇🏻👇🏻👇🏻👇🏻👇🏻。</p>
+<p>在继续之前请阅读Michael Mavris的<a href="https://medium.com/rocknnull/ios-to-swizzle-or-not-to-swizzle-f8b0ed4a1ce6">文章</a>。看看stackoverflow上关于如何在swift 3和4中做<a href="https://stackoverflow.com/questions/39562887/how-to-implement-method-swizzling-swift-3-0">method swizzling</a>的帖子。</p>
+<h3 id="how-to-do-method-swizzling-in-swift-4">How to do method swizzling in swift 4?</h3>
+<p>Well, its easy:</p>
+<ul>
+<li>Create a new method with your custom implementation for a method that you want to swizzle.</li>
+<li>Get the class representation.</li>
+<li>Get the old method selector reference.</li>
+<li>Get the new method selector reference.</li>
+<li>Ask the objective-C runtime to switch the selectors.</li>
+<li>Take a deep breath and relax.!! 😂.</li>
+</ul>
+<h3 id="lets-swizzle">Let’s swizzle!!</h3>
+<p>让我们为UIColor类的description方法创建一个交换方法。</p>
+<p>如果你尝试打印一个UIColor对象，它会像这样打印RGBA值:</p>
+<pre><code class="language-swift">print(UIColor.red) // prints UIExtendedSRGBColorSpace 1 0 0 1
+</code></pre>
+<p>我们可以打印颜色，因为UIColor有一个描述方法，它将返回颜色的字符串表示。让我们试试这种方法。</p>
+<pre><code class="language-swift">import Foundation
+import UIKit
+public extension UIColor {
+    @objc func colorDescription() -&gt; String {
+        return &quot;Printing rainbow colours.&quot;
+    }
+    private static let swizzleDesriptionImplementation: Void = {
+        let instance: UIColor = UIColor.red
+        let aClass: AnyClass! = object_getClass(instance)
+        let originalMethod = class_getInstanceMethod(aClass, #selector(description))
+        let swizzledMethod = class_getInstanceMethod(aClass, #selector(colorDescription))
+        if let originalMethod = originalMethod, let swizzledMethod = swizzledMethod {
+        // switch implementation..
+        method_exchangeImplementations(originalMethod, swizzledMethod)
+        }
+    }()
+    public static func swizzleDesription() {
+        _ = self.swizzleDesriptionImplementation
+    }
+}
+</code></pre>
+<p>我认为上面的代码很容易解释。在我的视图控制器中，我添加了以下代码。</p>
+<pre><code class="language-swift">override func viewDidLoad() {
+    super.viewDidLoad()
+    print(UIColor.red)
+    print(UIColor.green)
+    UIColor.swizzleDesription()
+    print(“\nswizzled\n”)
+    print(UIColor.red)
+    print(UIColor.red)
+    UIColor.swizzleDesription()
+    print(“\nTrying to swizzle again\n”)
+    print(UIColor.red)
+    print(UIColor.red)
+}
+</code></pre>
+<p><strong>Output</strong></p>
+<pre><code class="language-swift">UIExtendedSRGBColorSpace 1 0 0 1
+UIExtendedSRGBColorSpace 0 1 0 1
+swizzled
+Printing rainbow colours.
+Printing rainbow colours.
+Trying to swizzle again
+Printing rainbow colours.
+Printing rainbow colours.
+</code></pre>
+<p><strong>Swift的静态成员是隐式惰性(lazy)的</strong>。这就是为什么swizzledescriptionimplementation没有被再次调用，也没有再次发生swizzledescriptionimplementation的原因。 将修改方法的所有操作封闭在计算的全局常量的惰性初始化块中，可以确保该过程只执行一次(因为这些变量或常量的初始化在后台使用dispatch_once)。</p>
+<h3 id="drawbacks-of-method-swizzling">Drawbacks of method swizzling</h3>
+<ul>
+<li>
+<p>如果您正在使用任何标准类方法进行交换，那么最好确保交换成功，并调用新的交换方法。 如果你使用的框架(例如Firebase)使用了交换，请确保你没有混合他们已经交换的一些方法。如果交换发生多次，要么您的代码不能工作，要么firebase(或任何其他框架混合相同的方法)不能工作。</p>
+</li>
+<li>
+<p>当更新的iOS版本发布时，交换有可能失败。你可能每次都要反复核对。</p>
+</li>
+<li>
+<p>如果你发行的框架(例如一些分析框架)被数百款应用所使用，那么最好不要在这种情况下使用交换功能。如果你想使用交换，请确保应用程序开发人员知道框架所做的交换。确保将其添加到文档中。</p>
+</li>
+<li>
+<p>在子类中进行混合将是一个头痛的事。可能会发生意想不到的事情。</p>
+</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/hR9JIjWsI/" class="tag">
+                    method swizzling
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/method-swizzling/">
+                  <h3 class="post-title">
+                    iOS黑魔法：Method Swizzling
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

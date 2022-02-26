@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Annotating properties with default decoding values | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="毫无疑问，2017年coable的推出是Swift的一大飞跃。尽管当时社区已经建立了多种用于编码和解码原生Swift值到JSON之间的工具，可编码提供了前所未有的便利，因为它与Swift编译器本身进行了集成——使我们能够通过使可解码类型采用..." />
+    <meta name="keywords" content="codable" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Annotating properties with default decoding values</h2>
+            <div class="post-date">2020-06-10</div>
+            
+            <div class="post-content" v-pre>
+              <p>毫无疑问，2017年coable的推出是Swift的一大飞跃。尽管当时社区已经建立了多种用于编码和解码原生Swift值到JSON之间的工具，可编码提供了前所未有的便利，因为它与Swift编译器本身进行了集成——使我们能够通过使可解码类型采用可解码协议来定义可解码类型，就像这样:</p>
+<pre><code class="language-swift">struct Article: Decodable {
+    var title: String
+    var body: String
+    var isFeatured: Bool
+}
+</code></pre>
+<p>然而，自codeable引入以来一直缺少的一个特性是向某些属性添加默认值的选项(而不必使它们成为可选的)。例如，假设上面的isfeatures属性并不总是出现在我们解码文章实例的JSON数据中，我们希望在这种情况下它默认为false。</p>
+<p>即使我们将默认值添加到我们的属性声明本身，默认解码过程仍然会失败，如果我们的基础JSON数据中没有该值:</p>
+<pre><code class="language-swift">struct Article: Decodable {
+    var title: String
+    var body: String
+    var isFeatured: Bool = false // This value isn't used when decoding
+}
+</code></pre>
+<p>现在,我们总是可以编写自己的解码代码(通过重写默认执行init(来自:解码器)),但是这需要我们来接管整个解码过程-这在某种程度上破坏了coable的整个便利性，并且要求我们在模型属性发生任何变化时不断更新代码。</p>
+<p>好消息是我们还有另一条路可以走，那就是使用Swift的属性包装器特性，它使我们能够将自定义逻辑附加到任何存储的属性上。例如，我们可以使用该特性来实现一个decoodablebool包装器，其默认值为false:</p>
+<pre><code class="language-swift">@propertyWrapper
+struct DecodableBool {
+    var wrappedValue = false
+}
+</code></pre>
+<p>然后，我们可以使我们的新属性包装符合可解码的，使它能够“接管”它所附加的任何属性的解码过程。在这种情况下，我们确实想使用手动解码实现，因为这样可以让我们直接从Bool值解码实例——像这样:</p>
+<pre><code class="language-swift">extension DecodableBool: Decodable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        wrappedValue = try container.decode(Bool.self)
+    }
+}
+</code></pre>
+<p>遵循可通过扩展解码的原因是为了不重写类型的memberwise初始化式。</p>
+<p>最后，我们还需要在解码过程中将上述属性包装器的可编码的treat实例设置为可选的，这可以通过扩展KeyedDecodingContainer类型，并使用重载来解码decoodablebool来实现——只有在给定键存在值的情况下，我们才继续解码，否则我们将返回到包装器的空实例:</p>
+<pre><code class="language-swift">extension KeyedDecodingContainer {
+    func decode(_ type: DecodableBool.Type,
+                forKey key: Key) throws -&gt; DecodableBool {
+        try decodeIfPresent(type, forKey: key) ?? .init()
+    }
+}
+</code></pre>
+<p>有了上面的内容，我们现在可以简单地用我们新的decoodablebool属性来注释任何Bool属性——当它被解码时，它将默认为false:</p>
+<pre><code class="language-swift">struct Article: Decodable {
+    var title: String
+    var body: String
+    @DecodableBool var isFeatured: Bool
+}
+</code></pre>
+<p>真的很不错。然而，虽然我们现在已经解决了这个特定的问题，但我们的解决方案并不是很灵活。如果我们想在某些情况下将true作为默认值，如果我们也想为非bool属性提供默认解码值，该怎么办?</p>
+<p>我们来看看能否将solution推广到更大范围的情况下。 为了做到这一点，让我们先为默认值源创建一个通用协议——这将使我们能够定义所有类型的默认值，而不仅仅是布尔值:</p>
+<pre><code class="language-swift">protocol DecodableDefaultSource {
+    associatedtype Value: Decodable
+    static var defaultValue: Value { get }
+}
+</code></pre>
+<p>然后，让我们使用enum来为我们将要编写的解码代码创建一个命名空间——这将给我们提供一个非常好的语法，同时也提供了一个整洁的代码封装:</p>
+<pre><code class="language-swift">enum DecodableDefault {}
+</code></pre>
+<p>使用case-less 枚举来实现名称空间的优点是它们不能被初始化，这使得它们充当纯粹的包装器，而不是可以实例化的独立类型。</p>
+<p>我们要添加到新命名空间的第一个类型是之前的decoodablebool属性包装器的泛型变体——它现在使用decoodabledefaultsource来检索它的默认包装值，如下所示:</p>
+<pre><code class="language-swift">extension DecodableDefault {
+    @propertyWrapper
+    struct Wrapper&lt;Source: DecodableDefaultSource&gt; {
+        typealias Value = Source.Value
+        var wrappedValue = Source.defaultValue
+    }
+}
+</code></pre>
+<p>接下来，让我们使上面的属性包装符合可解码的要求，我们还将实现另一个KeyedDecodingContainer重载，这是针对我们的新类型的:</p>
+<pre><code class="language-swift">extension DecodableDefault.Wrapper: Decodable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        wrappedValue = try container.decode(Value.self)
+    }
+}
+
+extension KeyedDecodingContainer {
+    func decode&lt;T&gt;(_ type: DecodableDefault.Wrapper&lt;T&gt;.Type,
+                   forKey key: Key) throws -&gt; DecodableDefault.Wrapper&lt;T&gt; {
+        try decodeIfPresent(type, forKey: key) ?? .init()
+    }
+}
+</code></pre>
+<p>有了上述基本基础设施，现在让我们继续实现几个默认值源。</p>
+<p>们将再次使用enum为我们的源代码提供额外的命名空间(就像Combine为它的发布者所做的那样)，我们还将添加一些类型别名，使我们的代码更容易阅读:</p>
+<pre><code class="language-swift">extension DecodableDefault {
+    typealias Source = DecodableDefaultSource
+    typealias List = Decodable &amp; ExpressibleByArrayLiteral
+    typealias Map = Decodable &amp; ExpressibleByDictionaryLiteral
+
+    enum Sources {
+        enum True: Source {
+            static var defaultValue: Bool { true }
+        }
+
+        enum False: Source {
+            static var defaultValue: Bool { false }
+        }
+
+        enum EmptyString: Source {
+            static var defaultValue: String { &quot;&quot; }
+        }
+
+        enum EmptyList&lt;T: List&gt;: Source {
+            static var defaultValue: T { [] }
+        }
+
+        enum EmptyMap&lt;T: Map&gt;: Source {
+            static var defaultValue: T { [:] }
+        }
+    }
+}
+</code></pre>
+<p>通过将EmptyList和EmptyMap类型限制为Swift的两种文字协议，而不是像Array和Dictionary这样的具体类型，我们可以涵盖更多的内容——因为许多不同的类型都采用了这些协议，包括Set、IndexPath等等。</p>
+<p>为了把事情包装起来，让我们也定义一系列方便的类型别名，让我们可以引用上面的源作为我们的属性包装类型的特殊版本-像这样:</p>
+<pre><code class="language-swift">extension DecodableDefault {
+    typealias True = Wrapper&lt;Sources.True&gt;
+    typealias False = Wrapper&lt;Sources.False&gt;
+    typealias EmptyString = Wrapper&lt;Sources.EmptyString&gt;
+    typealias EmptyList&lt;T: List&gt; = Wrapper&lt;Sources.EmptyList&lt;T&gt;&gt;
+    typealias EmptyMap&lt;T: Map&gt; = Wrapper&lt;Sources.EmptyMap&lt;T&gt;&gt;
+}
+</code></pre>
+<p>最后一段给了我们一个非常好的语法，可以用可解码的默认值来注释属性，现在可以简单地这样做:</p>
+<pre><code class="language-swift">struct Article: Decodable {
+    var title: String
+    @DecodableDefault.EmptyString var body: String
+    @DecodableDefault.False var isFeatured: Bool
+    @DecodableDefault.True var isActive: Bool
+    @DecodableDefault.EmptyList var comments: [Comment]
+    @DecodableDefault.EmptyMap var flags: [String : Bool]
+}
+</code></pre>
+<p>真正整洁的，也许最好的部分是我们的解决方案现在是真正通用的——我们可以在任何需要的时候轻松地添加新的源，同时保持我们的调用站点尽可能干净。</p>
+<p>作为一系列的收尾工作，让我们也使用Swift的条件一致性特性来使我们的属性包装符合公共协议 -例如Equatable, Hashable和Encodable -当它的包装值类型可以:</p>
+<pre><code class="language-swift">extension DecodableDefault.Wrapper: Equatable where Value: Equatable {}
+extension DecodableDefault.Wrapper: Hashable where Value: Hashable {}
+
+extension DecodableDefault.Wrapper: Encodable where Value: Encodable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(wrappedValue)
+    }
+}
+</code></pre>
+<p>有了这些，我们现在就有了一个用默认解码值注释属性的完整解决方案——所有这些都不需要对正在解码的属性类型进行任何更改，而且由于我们的decoodabledefault枚举，我们有了一个整洁的封装实现。</p>
+<p><a href="https://www.swiftbysundell.com/tips/default-decoding-values/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/Q_Pnv_k3a/" class="tag">
+                    codable
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/handling-model-variants-in-swift/">
+                  <h3 class="post-title">
+                    Handling model variants in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

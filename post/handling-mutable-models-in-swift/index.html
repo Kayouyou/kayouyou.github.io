@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Handling mutable models in Swift | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="任何应用架构最重要的方面之一就是如何处理数据和模型。 构建健壮的模型结构并建立定义良好的数据流确实可以帮助我们避免大量的bug和问题，但同时我们也需要使我们的模型代码易于使用和维护。
+在处理可变模型时，事情变得特别棘手。如何处理可变性，代码..." />
+    <meta name="keywords" content="models,architecture" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Handling mutable models in Swift</h2>
+            <div class="post-date">2018-06-24</div>
+            
+            <div class="post-content" v-pre>
+              <p>任何应用架构最重要的方面之一就是如何处理数据和模型。 构建健壮的模型结构并建立定义良好的数据流确实可以帮助我们避免大量的bug和问题，但同时我们也需要使我们的模型代码易于使用和维护。</p>
+<p>在处理可变模型时，事情变得特别棘手。如何处理可变性，代码库的哪些部分应该允许执行突变，以及如何在整个应用程序中传播更改，这些问题有时很难找到好的答案。</p>
+<p>本周，让我们来看看一些不同的技术，它们可以帮助我们回答这类问题，并使处理可变模型的代码更容易预测。</p>
+<h2 id="partial-models">Partial models</h2>
+<p>有时，我们需要在没有所有所需信息的情况下创建模型。例如，我们的应用程序可能有一个注册流程，在这个流程中，我们要求用户通过一系列独立的屏幕提供创建账户所需的信息， 我们需要在流中的每个视图控制器之间传递某种形式的部分用户模型。</p>
+<p>在这种情况下，一种非常常见的解决方案是为创建模型时不能直接使用的数据使用可选选项。在这种情况下，我们可能首先要求用户创建一个用户名，而我们在后面的阶段要求用户的地区和电子邮件地址-所以我们这样建立我们的用户模型:</p>
+<pre><code class="language-swift">struct User {
+    let id: UUID
+    let name: String
+    var region: Region?
+    var email: String?
+}
+</code></pre>
+<p>虽然上述设置在构建注册流程时非常方便(我们可以简单地随着用户在流程中的进展填充新数据)，但它使我们使用用户所在区域或电子邮件的所有其他地方变得更加复杂。由于它们都是非可选可选的，我们可能会以这样的很多保护语句结束:</p>
+<pre><code class="language-swift">guard let region = user.region else {
+    preconditionFailure(&quot;Not supposed to happen&quot;)
+}
+</code></pre>
+<p>上面保护中的else子句本质上是不应该被输入的，但它仍然是我们必须保存和维护的代码。每当我们必须创建这种控制流，它只是为了让编译器满意，这通常是一个相当强烈的迹象，表明我们的模型设置是有缺陷的。</p>
+<p>让我们为每个用例创建专用的模型，而不是像上面那样引入可选的。对于我们的注册流程，我们将创建一个只包含我们实际可用数据的用户模型的部分版本，然后我们将添加一个方法来完成模型，一旦我们能够:</p>
+<pre><code class="language-swift">struct PartialUser {
+    let id: UUID
+    let name: String
+}
+extension PartialUser {
+    typealias CompletionInfo = (region: Region, email: String)
+    func completed(with info: CompletionInfo) -&gt; User {
+        return User(
+            id: id,
+            name: name,
+            region: info.region,
+            email: info.email
+        )
+    }
+}
+</code></pre>
+<p>有了上面的PartialUser模型，我们的注册流现在有了一个简单的模型，并且可以在准备就绪时轻松创建最终的用户模型——它可以是一个明确定义的类型，而不需要任何不必要的可选参数:</p>
+<pre><code class="language-swift">struct User {
+    let id: UUID
+    let name: String
+    var region: Region
+    var email: String
+}
+</code></pre>
+<p>我们现在可以摆脱所有这些笨拙的保护语句，只维护我们实际希望使用的代码。👍</p>
+<h2 id="partial-immutability">Partial immutability</h2>
+<p>虽然Swift结构通常非常适合模型代码，因为我们可以免费获得许多很棒的特性(比如值语义、内置的可变处理等)，但它们也带来了一系列挑战。 由于struct是值类型，所以我们需要小心存储模型的方式，以免在原始的更改时引用过时。</p>
+<p>然而，很少有模型属性是可变的，所以我们不需要让所有处理模型的代码都对更新和变化做出响应。 真正好的做法是，清晰地定义给定模型的哪些部分可以安全地视为不可变的，以及哪些部分需要以更动态的方式使用。</p>
+<p>值得庆幸的是，我们可以很容易地使用协议来做到这一点。看看我们之前的用户模型，我们有两个不可变属性——id和name。让我们创建一个包含这两个属性的ImmutableUser协议，如下所示:</p>
+<pre><code class="language-swift">protocol ImmutableUser {
+    var id: UUID { get }
+    var name: String { get }
+}
+
+extension User: ImmutableUser {}
+</code></pre>
+<p>这样我们就可以很容易地强制将用户视为不可变的类型只能访问不可变的信息:</p>
+<pre><code class="language-swift">class MessageViewController: UIViewController {
+    // It's safe for this view controller to store a copy of
+    // the user, since it's guaranteed to be immutable.
+    private let user: ImmutableUser
+
+    init(user: ImmutableUser) {
+        self.user = user
+        ...
+    }
+}
+</code></pre>
+<p>上述方法不仅使我们非常清楚哪些类型只需要不可变数据，而且还改进了我们模型层中的关注点分离。 就像我们在“Swift中使用协议的关注点分离”中创建用于读取和写入数据库的独立api一样，通过这种技术，我们可以限制某些类型对模型的访问，这通常会使事情更容易预测。</p>
+<h2 id="observing-mutations">Observing mutations</h2>
+<p>然而，我们可能无法完全避免突变，所以我们还需要设置一种很好的方式来处理模型更新。我们的用户模型包含两个可变属性—region和email，理想情况下，我们希望有一个专门的API来处理这些属性的更改，就像我们对不可变属性所做的那样。</p>
+<p>为了实现这一点，让我们从函数式响应式编程中获得一些灵感——这通常涉及到使用专用的可观察对象类型来对事件和值流做出反应-并创建一个简单的可观察对象类型，我们可以把观察者附加到它上面。我们将使用Swift中观察者的观察处理代码，并添加一个方法来更新被观察的值，如下所示:</p>
+<pre><code class="language-swift">class Observable&lt;Value&gt; {
+    private var value: Value
+    private var observations = [UUID : (Value) -&gt; Void]()
+
+    init(value: Value) {
+        self.value = value
+    }
+
+    func update(with value: Value) {
+        self.value = value
+
+        for observation in observations.values {
+            observation(value)
+        }
+    }
+
+    func addObserver&lt;O: AnyObject&gt;(_ observer: O,
+                                   using closure: @escaping (O, Value) -&gt; Void) {
+        let id = UUID()
+
+        observations[id] = { [weak self, weak observer] value in
+            // If the observer has been deallocated, we can safely remove
+            // the observation.
+            guard let observer = observer else {
+                self?.observations[id] = nil
+                return
+            }
+
+            closure(observer, value)
+        }
+
+        // Directly call the observation closure with the
+        // current value.
+        closure(observer, value)
+    }
+}
+</code></pre>
+<p>请注意，我们没有直接公开底层的observable值，而是要求使用闭包来观察它，以便访问它。这样我们就可以保证读取可变值的所有代码也包括更新处理，因为一旦模型发生变化，我们总是能够再次调用闭包。</p>
+<h2 id="exclusive-access">Exclusive access</h2>
+<p>有了上述两种机制——一个协议用于访问用户模型的不可变版本，一个可观察类型用于访问其可变属性-我们可以使很多模型处理代码更加明确。我们现在所需要的是某种类型来同时保存模型的不可变和可变版本，然后我们可以将其作为依赖项传递。</p>
+<p>一种方法是简单地创建一个专用的holder类型，它为模型的每个变体都有一个属性，如下所示:</p>
+<pre><code class="language-swift">class UserHolder {
+    let immutable: ImmutableUser
+    let mutable: Observable&lt;User&gt;
+
+    init(user: User) {
+        immutable = user
+        mutable = Observable(value: user)
+    }
+}
+</code></pre>
+<p>拥有这种holder类型的好处是，在处理不可变和可变数据时，可以很容易地做“正确的事情”。由于任何对读取可变数据感兴趣的类型都必须成为观察者，因此我们得到了一个很好的保证，即过时的数据不会被使用，同时仍然可以简化读取不可变数据。作为一个例子，下面是ProfileViewController如何同时使用可变和不可变API来设置它的UI:</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Immutable data can be read directly in a simple way
+        nameLabel.text = userHolder.immutable.name
+
+        // Reading mutable data requires an observation, which
+        // lets us guarantee that the view controller gets
+        // updated whenever the underlying model changes.
+        userHolder.mutable.addObserver(self) { (vc, user) in
+            vc.regionLabel.text = user.region.string
+            vc.emailLabel.text = user.email
+        }
+    }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>以一种简单和可预测的方式设计api，使不可变和可变模型数据的使用变得容易，这可能非常困难。通常这要在正确性和便利性之间做出权衡，但是为不可变和可变处理创建专用的api是实现代码的良好混合的好方法，既易于操作又易于维护。</p>
+<p>受到函数式响应式编程等范例的启发，也可以引导我们找到解决方案，使我们能够轻松地设置值的观察值，即使我们不把整个应用切换到使用RxSwift或ReactiveCocoa这样的FRP框架。 我们还将在以后的博文中继续探索其它FRP技术和概念。</p>
+<p><a href="https://www.swiftbysundell.com/articles/handling-mutable-models-in-swift/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/nDwRYvQYce/" class="tag">
+                    models
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/8qZG0_WaL/" class="tag">
+                    architecture
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/the-power-of-result-types-in-swift/">
+                  <h3 class="post-title">
+                    The power of Result types in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

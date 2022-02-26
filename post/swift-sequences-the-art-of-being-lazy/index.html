@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift sequences: The art of being lazy | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/favicon.ico?v=1645866598831">
+<link rel="stylesheet" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在Swift中创建对象的列表和序列时，大多数时候我们使用数组数据结构。虽然数组在易于使用方面有很大的好处，而且地球上的每个程序员或多或少都知道这一点，但它们确实要求您预先创建所有元素。
+当处理较小的数据集时，每个成员的构造成本不是很高，这不..." />
+    <meta name="keywords" content="sequences,state management" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git">
+        <img src="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/images/avatar.png?v=1645866598831" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift sequences: The art of being lazy</h2>
+            <div class="post-date">2017-03-03</div>
+            
+            <div class="post-content" v-pre>
+              <p>在Swift中创建对象的列表和序列时，大多数时候我们使用数组数据结构。虽然数组在易于使用方面有很大的好处，而且地球上的每个程序员或多或少都知道这一点，但它们确实要求您预先创建所有元素。</p>
+<p>当处理较小的数据集时，每个成员的构造成本不是很高，这不是问题。 然而，如果这不是真的，那么您可以通过实现自己的延迟计算序列而不是使用数组来获得一些相当大的性能好处。</p>
+<p>假设我们想从本地数据库加载一系列模型:</p>
+<pre><code class="language-swift">class ModelLoader {
+    func loadAllModels() -&gt; [Model] { … }
+}
+</code></pre>
+<p>我们的数据库可能包含大量的记录，对于每个模型，我们都需要访问磁盘才能实际加载它的数据，所以我们不希望一次加载所有的数据。为了实现这一点，我们将用我们自己的自定义序列替换数组返回类型。</p>
+<p>由于Swift面向协议的特性，定义自己的序列非常容易。它还——多亏了协议扩展——让您可以访问标准库提供的序列(如Array、Set或Dictionary)上使用的所有api，而无需为其编写任何代码。</p>
+<p>我们首先为序列创建一个结构体，并使其符合序列协议:</p>
+<pre><code class="language-swift">struct ModelSequence: Sequence {
+    func makeIterator() -&gt; ModelIterator {
+        return ModelIterator()
+    }
+}
+</code></pre>
+<p>如您所见，要符合序列，我们所需要做的就是能够充当创建迭代器的工厂。Swift实际上使用迭代器来遍历序列，就像在for循环或forEach()调用中一样。</p>
+<p>对于我们的迭代器，我们会一直从磁盘加载模型，直到找不到模型为止，在这种情况下，我们会返回nil。 从迭代器的next()方法返回nil向Swift发送序列已经结束的信号，迭代将停止。</p>
+<p>用数据库初始化迭代器，我们将使用该数据库加载每个模型。我们默认使用数据库的共享实例，但是为了方便测试，我们也启用了它的依赖注入。</p>
+<pre><code class="language-swift">struct ModelIterator: IteratorProtocol {
+    private let database: Database
+    private var index = 0
+
+    init(database: Database = .shared) {
+        self.database = database
+    }
+
+    mutating func next() -&gt; Model? {
+        let model = database.model(at: index)
+        index += 1
+        return model
+    }
+}
+</code></pre>
+<p>就是这样!现在我们有了一个惰性评估序列，在需要时加载每个模型🎉。 现在，只要想要遍历数据库中的所有模型，我们就可以轻松地使用序列。 例如，我们现在可以搜索我们的数据库，而不必预先加载所有的记录:</p>
+<pre><code class="language-swift">func searchForModel(matching query: String) -&gt; Model? {
+    for model in ModelSequence() {
+        if model.title.contains(query) {
+            return model
+        }
+    }
+
+    return nil
+}
+</code></pre>
+<p>上面代码的好处在于，一旦找到匹配项，我们就可以通过返回退出迭代，从而防止进一步的数据库记录被加载。</p>
+<p>好了，奖金环节到了!正如我们刚刚看到的，在Swift中实现您自己的自定义序列和迭代器非常容易。但是当你真的很懒的时候，标准库的AnySequence类型有一个基于闭包的API，你可以用它来快速实现简单的序列，像这样:</p>
+<pre><code class="language-swift">class ModelLoader {
+    func loadAllModels() -&gt; AnySequence&lt;Model&gt; {
+        return AnySequence { () -&gt; AnyIterator&lt;Model&gt; in
+            var index = 0
+            
+            return AnyIterator {
+                let model = database.model(at: index)
+                index += 1
+                return model
+            }
+        }
+    }
+}
+</code></pre>
+<p>在我的代码中，我个人已经开始在很多不同的情况下使用自定义序列。我发现，在上述情况下，它不仅性能更好，而且更容易调试，因为您可以简单地一步一步地遍历迭代代码以发现任何问题。</p>
+<p>你怎么看?你觉得在Swift中定义序列的能力有用吗?</p>
+<p><a href="https://www.swiftbysundell.com/articles/swift-sequences-the-art-of-being-lazy/">原文链接</a></p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/4Y-jgrPFi/" class="tag">
+                    sequences
+                  </a>
+                
+                  <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/tag/EWN51MbzW/" class="tag">
+                    state management
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://e.coding.net/kayouyou/kayouyoublog/KayouyouBlog.git/post/type-erasure-using-closures-in-swift/">
+                  <h3 class="post-title">
+                    Type erasure using closures in Swift
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
