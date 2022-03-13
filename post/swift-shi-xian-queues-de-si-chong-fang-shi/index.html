@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift实现Queues的四种方式 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1647167519050">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Common operations
+
+
+
+
+1. Array-based implementation
+
+
+
+
+2. Doubly linked list implementation
+
+
+
+
+Ring buffer impleme..." />
+    <meta name="keywords" content="queues" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1647167519050" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift实现Queues的四种方式</h2>
+            <div class="post-date">2022-03-13</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Commonoperations">Common operations</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Array-basedimplementation">1. Array-based implementation</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Doublylinkedlistimplementation">2. Doubly linked list implementation</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Ringbufferimplementation">Ring buffer implementation</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Double-stackimplementation"> Double-stack implementation</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h2 id="1-a-namecommonoperationsacommon-operations">1. <a name='Commonoperations'></a>Common operations</h2>
+<pre><code class="language-swift">public protocol Queue {
+  
+  associatedtype Element
+  mutating func enqueue(_ element: Element) -&gt; Bool
+  mutating func dequeue() -&gt; Element?
+  var isEmpty: Bool { get }
+  var peek: Element? { get }
+}
+</code></pre>
+<ul>
+<li>enqueue: 在队列后面插入一个元素。如果操作成功，则返回true。</li>
+<li>dequeue: 移除队列前面的元素并将其返回。</li>
+<li>isEmpty: 检查队列是否为空。</li>
+<li>peek: 返回队列前面的元素，但不删除它。</li>
+</ul>
+<h2 id="2-a-namearray-basedimplementationa1-array-based-implementation">2. <a name='Array-basedimplementation'></a>1. Array-based implementation</h2>
+<pre><code class="language-swift">public struct QueueArray&lt;T&gt;: Queue {
+  
+  private var array: [T] = []
+  public init() {}
+
+  // O(1)
+  public var isEmpty: Bool {
+    array.isEmpty
+  }
+  // O(1)
+  public var peek: T? {
+    array.first
+  }
+  // O(1)
+  /*
+  您可能会发现，enqueueing是一个O（1）操作，尽管大小调整是一个O（n）操作，这一点令人惊讶。
+  关键是这种情况并不经常发生。这是因为每次空间耗尽时，容量都会翻倍。
+  因此，如果计算出操作的摊余成本（平均成本），排队仅为O（1）。
+  */
+  public mutating func enqueue(_ element: T) -&gt; Bool {
+    array.append(element)
+    return true
+  }
+  // O(n)
+  //这始终是一个线性时间操作，因为它要求数组中的所有剩余元素在内存中移位。
+  public mutating func dequeue() -&gt; T? {
+    isEmpty ? nil : array.removeFirst()
+  }
+}
+
+extension QueueArray: CustomStringConvertible {
+  
+  public var description: String {
+    String(describing: array)
+  }
+}
+
+var queue = QueueArray&lt;String&gt;()
+queue.enqueue(&quot;Ray&quot;)
+queue.enqueue(&quot;Brian&quot;)
+queue.enqueue(&quot;Eric&quot;)
+queue
+queue.dequeue()
+queue
+queue.peek
+</code></pre>
+<p>除了需要线性时间的dequeue()之外，大多数操作都是固定时间。存储空间也是线性的。</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h08bk9mlx7j20fy06vjrm.jpg" alt="avatar" loading="lazy"></figure>
+<p>这个实现还存在一些缺陷。从队列前面移除项目可能效率低下，因为移除会导致所有元素上移一个。一旦数组满了，它就必须调整大小，并且可能有未使用的空间。随着时间的推移，这可能会增加内存占用。有可能解决这些缺点吗？让我们看看基于链表的实现，并将其与QueueArray进行比较。</p>
+<hr>
+<h2 id="3-a-namedoublylinkedlistimplementationa2-doubly-linked-list-implementation">3. <a name='Doublylinkedlistimplementation'></a>2. Doubly linked list implementation</h2>
+<pre><code class="language-swift">public class QueueLinkedList&lt;T&gt;: Queue {
+  
+  // 可以参考下面的链表实现
+  private var list = DoublyLinkedList&lt;T&gt;()
+  public init() {}
+
+  public var peek: T? {
+    list.first?.value
+  }
+  
+  public var isEmpty: Bool {
+    list.isEmpty
+  }
+  //在幕后，双链接列表将更新其尾部节点对新节点的上一个和下一个引用。这是一个O（1）操作。
+  public func enqueue(_ element: T) -&gt; Bool {
+    list.append(element)
+    return true
+  }
+  // 此代码检查列表是否为空，以及队列的第一个元素是否存在。如果没有，则返回零。否则，它将删除并返回队列前面的元素。
+  // 从列表的前面删除也是一个O（1）操作。与数组实现相比，不需要逐个移动元素。
+  // 相反，只需更新链表前两个节点之间的下一个和上一个指针。
+  public func dequeue() -&gt; T? {
+    guard !list.isEmpty, let element = list.first else {
+      return nil
+    }
+    return list.remove(element)
+  }
+}
+
+extension QueueLinkedList: CustomStringConvertible {
+
+  public var description: String {
+    String(describing: list)
+  }
+}
+
+var queue = QueueLinkedList&lt;String&gt;()
+queue.enqueue(&quot;Ray&quot;)
+queue.enqueue(&quot;Brian&quot;)
+queue.enqueue(&quot;Eric&quot;)
+queue
+queue.dequeue()
+queue
+queue.peek
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h08c0iqhjlj20fp06vdg2.jpg" alt="avatar" loading="lazy"></figure>
+<p><strong>QueueArray</strong>的一个主要问题是，一个项目的出列需要线性时间。通过链表实现，您将其简化为一个常量操作O（1）。您所需要做的就是更新节点的上一个和下一个指针。</p>
+<p>从表中看，<strong>QueueLinkedList</strong>的主要缺点并不明显。尽管有O（1）性能，但它的开销很高。每个元素都必须有额外的存储空间用于前向和后向引用。此外，每次创建新元素时，都需要相对昂贵的动态分配。相比之下，<strong>QueueArray</strong>的批量分配速度更快。</p>
+<p><strong>DoublyLinkedList</strong></p>
+<pre><code class="language-swift">public class Node&lt;T&gt; {
+  
+  public var value: T
+  public var next: Node&lt;T&gt;?
+  public var previous: Node&lt;T&gt;?
+  
+  public init(value: T) {
+    self.value = value
+  }
+}
+
+extension Node: CustomStringConvertible {
+  
+  public var description: String {
+    String(describing: value)
+  }
+}
+
+public class DoublyLinkedList&lt;T&gt; {
+  
+  private var head: Node&lt;T&gt;?
+  private var tail: Node&lt;T&gt;?
+  
+  public init() { }
+  
+  public var isEmpty: Bool {
+    head == nil
+  }
+  
+  public var first: Node&lt;T&gt;? {
+    head
+  }
+  
+  public func append(_ value: T) {
+    let newNode = Node(value: value)
+    
+    guard let tailNode = tail else {
+      head = newNode
+      tail = newNode
+      return
+    }
+    
+    newNode.previous = tailNode
+    tailNode.next = newNode
+    tail = newNode
+  }
+  
+  public func remove(_ node: Node&lt;T&gt;) -&gt; T {
+    let prev = node.previous
+    let next = node.next
+    
+    if let prev = prev {
+      prev.next = next
+    } else {
+      head = next
+    }
+    
+    next?.previous = prev
+    
+    if next == nil {
+      tail = prev
+    }
+    
+    node.previous = nil
+    node.next = nil
+    
+    return node.value
+  }
+}
+
+extension DoublyLinkedList: CustomStringConvertible {
+  
+  public var description: String {
+    var string = &quot;&quot;
+    var current = head
+    while let node = current {
+      string.append(&quot;\(node.value) -&gt; &quot;)
+      current = node.next
+    }
+    return string + &quot;end&quot;
+  }
+}
+
+public class LinkedListIterator&lt;T&gt;: IteratorProtocol {
+  
+  private var current: Node&lt;T&gt;?
+  
+  init(node: Node&lt;T&gt;?) {
+    current = node
+  }
+  
+  public func next() -&gt; Node&lt;T&gt;? {
+    defer { current = current?.next }
+    return current
+  }
+}
+
+extension DoublyLinkedList: Sequence {
+  
+  public func makeIterator() -&gt; LinkedListIterator&lt;T&gt; {
+    LinkedListIterator(node: head)
+  }
+}
+
+</code></pre>
+<hr>
+<h2 id="4-a-nameringbufferimplementationaring-buffer-implementation">4. <a name='Ringbufferimplementation'></a>Ring buffer implementation</h2>
+<p>环形缓冲区也称为循环缓冲区，是一个固定大小的数组。当末尾没有要删除的项目时，这种数据结构战略性地绕到开始。</p>
+<pre><code class="language-swift">public struct QueueRingBuffer&lt;T&gt;: Queue {
+  
+  
+  private var ringBuffer: RingBuffer&lt;T&gt;
+  
+  //在这里，您定义了一个通用的QueueRingBuffer。请注意，由于环形缓冲区的大小是固定的，因此必须包含count参数。
+  public init(count: Int) {
+    ringBuffer = RingBuffer&lt;T&gt;(count: count)
+  }
+  
+  //您没有公开ringBuffer，而是提供了帮助器变量来访问队列前端并检查队列是否为空。这两个都是O（1）操作。
+  public var isEmpty: Bool {
+    ringBuffer.isEmpty
+  }
+  
+  public var peek: T? {
+    ringBuffer.first
+  }
+  
+  //要将元素附加到队列中，您只需在ringBuffer上调用write(_:)。这会将写入指针增加一个。
+  //由于队列具有固定的大小，您现在必须返回true或false来指示元素是否已成功添加。enqueue(_:)仍然是一个O(1)操作。
+  public mutating func enqueue(_ element: T) -&gt; Bool {
+    ringBuffer.write(element)
+  }
+  
+  //要从队列前面删除项目，您只需在ringBuffer上调用read()即可。在幕后，它检查ringBuffer是否为空，如果是，则返回零。如果没有，它会从缓冲区前面返回一个项目，并将读取指针增加一个。
+  public mutating func dequeue() -&gt; T? {
+    ringBuffer.read()
+  }
+}
+
+extension QueueRingBuffer: CustomStringConvertible {
+  
+  public var description: String {
+    String(describing: ringBuffer)
+  }
+}
+
+var queue = QueueRingBuffer&lt;String&gt;(count: 10)
+queue.enqueue(&quot;Ray&quot;)
+queue.enqueue(&quot;Brian&quot;)
+queue.enqueue(&quot;Eric&quot;)
+queue
+queue.dequeue()
+queue
+queue.peek
+
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h08cwl7rldj20fx06sdg3.jpg" alt="avatar" loading="lazy"></figure>
+<p>基于环缓冲区的队列与链接列表实现具有相同的入队和出队时间复杂性。唯一的区别是空间复杂性。环形缓冲区具有固定大小，这意味着队列可能会失败。</p>
+<p><strong>RingBuffer的实现👇🏻</strong></p>
+<pre><code class="language-swift">public struct RingBuffer&lt;T&gt; {
+  
+  private var array: [T?]
+  private var readIndex = 0
+  private var writeIndex = 0
+  
+  public init(count: Int) {
+    array = Array&lt;T?&gt;(repeating: nil, count: count)
+  }
+  
+  public var first: T? {
+    array[readIndex]
+  }
+  
+  public mutating func write(_ element: T) -&gt; Bool {
+    if !isFull {
+      array[writeIndex % array.count] = element
+      writeIndex += 1
+      return true
+    } else {
+      return false
+    }
+  }
+  
+  public mutating func read() -&gt; T? {
+    if !isEmpty {
+      let element = array[readIndex % array.count]
+      readIndex += 1
+      return element
+    } else {
+      return nil
+    }
+  }
+  
+  private var availableSpaceForReading: Int {
+    writeIndex - readIndex
+  }
+  
+  public var isEmpty: Bool {
+    availableSpaceForReading == 0
+  }
+  
+  private var availableSpaceForWriting: Int {
+    array.count - availableSpaceForReading
+  }
+  
+  public var isFull: Bool {
+    availableSpaceForWriting == 0
+  }
+}
+
+extension RingBuffer: CustomStringConvertible {
+  public var description: String {
+    let values = (0..&lt;availableSpaceForReading).map {
+      String(describing: array[($0 + readIndex) % array.count]!)
+    }
+    return &quot;[&quot; + values.joined(separator: &quot;, &quot;) + &quot;]&quot;
+  }
+}
+
+</code></pre>
+<p><a href="https://github.com/raywenderlich/swift-algorithm-club/tree/master/Ring%20Buffer.">更多关于RingBuffer的资料</a></p>
+<hr>
+<h2 id="5-a-namedouble-stackimplementationa-double-stack-implementation">5. <a name='Double-stackimplementation'></a> Double-stack implementation</h2>
+<p>到目前为止，您已经看到了三个实现：一个简单的数组、双链接列表和环形缓冲区。</p>
+<p>虽然它们似乎非常有用，但接下来您将查看使用两个堆栈实现的队列。您将看到其空间位置如何远远优于链接列表。它也不需要像环形缓冲器那样的固定尺寸。</p>
+<p>使用两个堆栈背后的想法很简单。每当您对元素入队列时，它都会出现在右侧的堆栈中。</p>
+<p>当您需要元素出队列时，您可以反向查找右侧堆栈并将其放置在左侧堆栈中，以便使用<strong>FIFO</strong>顺序检索元素。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h08d3m4kogj20gt08fgls.jpg" alt="avatar" loading="lazy"></figure>
+<pre><code class="language-swift">public struct QueueStack&lt;T&gt; : Queue {
+  
+  private var leftStack: [T] = []
+  private var rightStack: [T] = []
+  public init() {}
+  
+  public var isEmpty: Bool {
+    leftStack.isEmpty &amp;&amp; rightStack.isEmpty
+  }
+  
+  public var peek: T? {
+    !leftStack.isEmpty ? leftStack.last : rightStack.first
+  }
+  
+  public mutating func enqueue(_ element: T) -&gt; Bool {
+    rightStack.append(element)
+    return true
+  }
+  
+  public mutating func dequeue() -&gt; T? {
+      // 记住，只有当左堆栈为空时，才能传输右堆栈中的元素！
+    if leftStack.isEmpty {// 检查左侧堆栈是否为空。
+      leftStack = rightStack.reversed()// 如果左堆栈为空，则将其设置为右堆栈的相反方向。
+      rightStack.removeAll()// 使你的右堆栈无效。既然你已经把所有的东西都移到左边了，就把它清理掉。
+    }
+    return leftStack.popLast()// 从左堆栈中删除最后一个元素。
+  }
+}
+
+extension QueueStack: CustomStringConvertible {
+  
+  public var description: String {
+    String(describing: leftStack.reversed() + rightStack)
+  }
+}
+
+var queue = QueueStack&lt;String&gt;()
+queue.enqueue(&quot;Ray&quot;)
+queue.enqueue(&quot;Brian&quot;)
+queue.enqueue(&quot;Eric&quot;)
+queue
+queue.dequeue()
+queue
+queue.peek
+
+</code></pre>
+<blockquote>
+<p>是的，反转数组的内容是一个O（n）操作。整体出列成本仍按O（1）摊销。想象一下，左右堆栈中都有大量物品。如果将所有元素出列，首先它将从左堆栈中删除所有元素，然后只反向复制右堆栈一次，然后继续从左堆栈中删除元素。</p>
+</blockquote>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h08dbm7cjhj20ga06pwer.jpg" alt="avatar" loading="lazy"></figure>
+<p>与基于数组的实现相比，通过利用两个堆栈，您可以将**dequeue(_😃**转换为摊销O(1)操作。</p>
+<p>此外，双栈实现是完全动态的，没有基于环形缓冲区的队列实现所具有的固定大小限制。当正确的队列需要反转或耗尽容量时，最坏情况下的性能为O（n）。由于每次容量增加一倍，容量不足的情况并不经常发生。</p>
+<p>最后，它在空间位置上胜过链表。这是因为数组元素在内存块中彼此相邻。因此，在第一次访问时，大量元素将加载到内存中。尽管数组需要O（n），但对于简单的复制操作，O（n）的速度非常快，接近内存带宽。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/0sl6Ap-WC/" class="tag">
+                    queues
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/pointfree-episode-58what-is-a-parser-part-3/">
+                  <h3 class="post-title">
+                    PointFree Episode 58:What Is a Parser?: Part 3
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
