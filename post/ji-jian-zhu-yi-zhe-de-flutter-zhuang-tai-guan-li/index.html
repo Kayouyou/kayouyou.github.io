@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>极简主义者的Flutter状态管理 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1648434939268">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+应用程序架构概述
+
+
+
+
+UI层
+
+
+
+
+状态管理层
+
+
+
+
+服务层
+
+
+
+
+极简的实现
+
+
+5.1. 为UI层提供对状态管理层的引用
+5.2. 将UI事件通知状态管理层
+5.3. 给UI层一种监听状态变化的方法
+5.4. 状态更改..." />
+    <meta name="keywords" content="flutter" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1648434939268" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">极简主义者的Flutter状态管理</h2>
+            <div class="post-date">2022-03-28</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#">应用程序架构概述</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#UI">UI层</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#-1">状态管理层</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#-1">服务层</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#-1">极简的实现</a></li>
+</ol>
+<ul>
+<li>5.1. <a href="#UI-1">为UI层提供对状态管理层的引用</a></li>
+<li>5.2. <a href="#UI-1">将UI事件通知状态管理层</a></li>
+<li>5.3. <a href="#UI-1">给UI层一种监听状态变化的方法</a></li>
+<li>5.4. <a href="#-1">状态更改后重建用户界面</a></li>
+</ul>
+</li>
+<li>
+<ol start="6">
+<li><a href="#app">计时器app示例项目</a></li>
+</ol>
+<ul>
+<li>6.1. <a href="#UI-1">UI层</a></li>
+<li>6.2. <a href="#-1">状态管理类</a>
+<ul>
+<li>6.2.1. <a href="#UI-1">为UI层提供状态管理层的引用</a></li>
+<li>6.2.2. <a href="#UI-1">通知状态管理层有关UI事件</a></li>
+<li>6.2.3. <a href="#UI-1">为UI层提供一种监听状态更改的方法</a></li>
+<li>6.2.4. <a href="#-1">状态更改后重建用户界面</a></li>
+<li>6.2.5. <a href="#-1">服务层</a></li>
+<li>6.2.6. <a href="#locators">关于服务locators与依赖项注入的说明</a></li>
+</ul>
+</li>
+<li>6.3. <a href="#-1">关于初始化的说明</a></li>
+<li>6.4. <a href="#-1">关于重建的说明</a></li>
+<li>6.5. <a href="#Summary">Summary</a></li>
+</ul>
+</li>
+<li>
+<ol start="7">
+<li><a href="#-1">结论</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>来到Flutter时，我面临的最大挑战是学习状态管理。人们说<strong>Provider和Bloc、ScopedModel、Redux和MobX</strong>......我不知道他们在说什么。随着时间的推移，状态管理解决方案的清单继续增加。</p>
+<p>在我的学习旅程中，我写了<strong>Stacked</strong>（<a href="https://medium.com/flutter-community/a-beginners-guide-to-architecting-a-flutter-app-1e9053211a74">这里</a>）和<strong>Provider</strong>（<a href="https://www.raywenderlich.com/6373413-state-management-with-provider">这里</a>）以及<strong>Riverpod</strong>（<a href="https://medium.com/flutter-community/flutter-riverpod-tutorial-counter-app-ed3aa758f02f">这里</a>和<a href="https://medium.com/flutter-community/flutter-riverpod-tutorial-timer-app-186d04637775">这里</a>）的文章。我浏览了<a href="https://www.raywenderlich.com/4074597-getting-started-with-the-bloc-pattern">Bloc</a><strong>模式和</strong><a href="https://bloclibrary.dev/#/">BlocLibrary</a><strong>教程，查看了</strong><a href="https://blog.flutterando.com.br/cubit-a-simple-solution-for-app-state-management-in-flutter-66ab5279ef73">Cubits</a>和<a href="https://pub.dev/packages/get">GetX</a><strong>，并观看了有关</strong><a href="https://pub.dev/packages/flutter_redux">Redux</a>、<a href="https://pub.dev/packages/flutter_mobx">MobX</a>和<a href="https://pub.dev/packages/flutter_command">Command</a>的视频。但对于每一个，总有一些我无法完全包裹我的大脑的东西。幕后要么有太多的选择，要么有太多的魔法。我的大脑需要简单易懂。它需要最低限度。</p>
+<p>这就是这篇文章的来源。我将介绍一种管理您的应用程序状态的方法，该方法不使用任何第三方状态管理解决方案。它使用的唯一第三方软件包是<a href="https://pub.dev/packages/get_it">GetIt</a>，不是为了管理状态，而是为了提供对普通<strong>Dart</strong>类的引用，您将在那里管理自己的状态。要在状态更改时重建用户界面，您将使用<strong>Flutter</strong>自己的内置<strong>ValueNotifier和ValueListenableBuilder</strong>类。</p>
+<p>本文的目的不是说服您放弃使用您当前可能使用的任何状态管理解决方案。如果它对你有用，那么就没有理由改变。相反，这篇文章是像我这样不了解状态管理的人的指南，他们只是想得到直截了当的解释，以至于可以让他们可以全神贯注。</p>
+<hr>
+<h2 id="1-a-namea应用程序架构概述">1. <a name=''></a>应用程序架构概述</h2>
+<p>虽然可以在一个大文件中构建一个Flutter应用程序，并将所有UI和逻辑混合在一起，但这真的很难理解该应用程序的工作原理。对于大多数应用程序，您会希望给自己设计一点结构。</p>
+<p>首先，让我们来看看典型应用程序的架构概述。下面的每个彩色框代表一个类或一个文件，甚至可能代表一个文件夹。此应用程序中的两个页面作为示例，可以表示您在完整应用程序中可能有的10或20页</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0oqurghpbj20jn0fjjs4.jpg" alt="avatar" loading="lazy"></figure>
+<p>有三个层：UI层、state management层和service层。我们将在以下部分更详细地研究其中的每一部分。</p>
+<hr>
+<h2 id="2-a-nameuiaui层">2. <a name='UI'></a>UI层</h2>
+<p>用户界面层是<strong>Flutter</strong>所在的位置。这些是您在编写用户看到的应用程序布局时使用的所有<strong>scaffolds, buttons, columns, 和 text widgets</strong></p>
+<figure data-type="image" tabindex="2"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0oqxmti2oj20jf0gbq3f.jpg" alt="avatar" loading="lazy"></figure>
+<p>UI层的逻辑应该尽可能少。您在这里所做的只是获取应用程序的当前状态，使其对用户来说看起来不错。</p>
+<blockquote>
+<p>注意：当我谈论状态时，我只是指您的应用程序中可能有所变化的部分。也就是说，我说的是变量。如果应用程序背景颜色为蓝色，但用户将其更改为红色，则该颜色为状态。如果用户向下滚动列表一半，则该滚动量为状态。如果您从互联网加载图像，则该图像为状态。</p>
+</blockquote>
+<p>再说一遍，UI层的唯一工作是向用户显示应用程序状态。不要在这里解析或格式化字符串。那是逻辑。它属于不同的层。不要在这里完成所有Firebase初始化和登录工作。那是逻辑。它属于不同的层。不要将数据保存到此处的<strong>shared preferences</strong>中。那是逻辑。它属于不同的层。</p>
+<p>在UI层中，您应该看到的唯一逻辑是<strong>if或switch</strong>语句，用于选择为当前应用程序状态显示的正确小部件。</p>
+<blockquote>
+<p>Caveat: 当您制作自包含的小部件时，可以将逻辑包含在小部件中（这意味着如果您愿意，您可以将其作为自己的软件包发布）。整个Flutter框架充满了这些。这可以是<a href="https://www.raywenderlich.com/10126984-creating-reusable-custom-widgets-in-flutter">一个简单的有状态小部件</a>或<a href="https://medium.com/flutter-community/creating-a-flutter-widget-from-scratch-a9c01c47c630">自定义渲染对象小部件</a>。然而，关键是状态在小部件内是自包含的。 文档称这种短暂状态(<a href="https://docs.flutter.dev/development/data-and-backend/state-mgmt/ephemeral-vs-app">ephemeral state</a>)。 与此相反的是<strong>app state</strong>，该应用程序在小部件本身之外使用。我想说的是，应用程序状态和准备演示所需的逻辑应该排除在UI层之外。</p>
+</blockquote>
+<p>为了知道何时显示新的更新，UI层应该监听<strong>app state</strong>的变化。监听状态并在更改时重建的小部件通常称为<strong>builder widgets</strong>。</p>
+<p>需要注意的另一件重要事情是，尽管上面的例子是登录页面和主页，但您也可以用表单或文本区域等小得多的UI小部件替换单词页面。毕竟，一切都只是一个<strong>widget</strong>，甚至是一个页面。</p>
+<p>您在UI层中想做的所有逻辑，您都应该放在<strong>state management</strong>层中。</p>
+<hr>
+<h2 id="3-a-name-1a状态管理层">3. <a name='-1'></a>状态管理层</h2>
+<p>这个层有一百万个名字。有些人称它为<strong>ViewModel</strong>。其他人称它为<strong>Controller</strong>。还有一些人称它为<strong>Bloc、Model、Ceducor或ChangeNotifier</strong>。不过，这个想法基本上是一样的。此状态管理层是根据UI事件执行逻辑，然后更新应用程序状态的地方。</p>
+<figure data-type="image" tabindex="3"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0oraoan6bj20jl0gb0tb.jpg" alt="avatar" loading="lazy"></figure>
+<p><strong>event</strong>只是应用程序中发生的事情。通常，这是一种用户操作，例如按下按钮或滑动以刷新或点击图像或输入文本。UI层的工作是将发生的事件通知状态管理层。在极简主义方法中，这只需在状态管理类上调用方法即可完成。</p>
+<p>一旦状态管理层从UI层收到有关事件的通知，它就会处理该事件。例如，如果用户在您的计算器应用程序中按下平方根按钮，那么状态管理层的工作就是实际计算当前数字的平方根。该数字是应用程序状态，并作为变量存储在状态管理类中。在状态管理类完成平方根的计算工作后，它会用新值更新变量。</p>
+<blockquote>
+<p>Note: 在上面的示例中，状态管理不仅应该进行平方根计算，还应该进行所有字符串格式化，以便仅以UI需要显示的形式。 例如，2的平方根是1.41421356237，但如果UI只需要小数点后四位，那么状态管理类的工作就是将该数字转换为字符串“1.4142”。当然，有些人可能不同意我的观点，但我只是说，你写入状态管理层的逻辑越多越好。其中一个原因是，状态管理层比UI层更容易测试。</p>
+</blockquote>
+<p>状态管理层为UI提供了一种监听应用程序状态更改的方式，但对展示的实际UI一无所知。由于状态管理层对UI层一无所知，您可以随时重构UI，而不会破坏状态管理层中的代码。这是构建灵活且可维护的应用程序的关键优势。</p>
+<p>虽然状态管理层是执行逻辑的好地方，但并非所有应用程序逻辑都应该在那里完成。一些逻辑应该转移到service上。</p>
+<hr>
+<h2 id="4-a-name-1a服务层">4. <a name='-1'></a>服务层</h2>
+<p>服务层有时被称为<strong>data repository</strong>，是执行逻辑并提供应用程序周围多个地方可能需要的数据的地方。这也是在应用程序逻辑与您用于I/O任务（如读取数据库或联系远程服务器）的第三方代码之间添加一层保护的方法。该保护层允许您在不破坏应用程序代码其余部分的情况下交换服务实现。</p>
+<figure data-type="image" tabindex="4"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0os6fj60qj20kg0h83z5.jpg" alt="avatar" loading="lazy"></figure>
+<p>如上图所示，存储服务从状态管理层的两个不同页面调用。拥有一项服务可以防止您在应用程序周围的许多地方复制相同的代码。这也为您提供了一个位置，以便在您需要时进行更新。</p>
+<p>从状态管理层的角度来看，该服务只是一个接口，即定义您可以调用它的方法的抽象Dart类。定义了接口API后，您必须使用具体方法实现抽象方法。例如，存储服务接口可以通过从远程服务器或本地数据库保存和检索数据来实现。无论哪种选择都可以，状态管理层也不在乎。有时，制作一个只返回虚假数据的服务实现甚至是有用的。这允许您在开始构建真正的服务实现之前拥有应用程序其余部分的工作原型。</p>
+<p>虽然上面的示例仅显示存储服务，但您的应用程序很可能有多个不同的服务。例如，您可能还需要登录页面的身份验证服务。</p>
+<blockquote>
+<p>Note: 如果您在应用程序的一个地方只需要服务，您可以将其代码直接放在状态管理层中。但是，如果您想做一些事情，例如交换数据库实现或身份验证提供商，解开代码将需要做很多工作。不过，有时你可能只有经历过痛苦的经历才能更好的吸取教训。</p>
+</blockquote>
+<p>这是一个高层次的概述。在下一节中，我将更详细地写下如何实现我上面描述的架构模式——所有这些都不使用复杂的第三方状态管理包。</p>
+<hr>
+<h2 id="5-a-name-1a极简的实现">5. <a name='-1'></a>极简的实现</h2>
+<p>状态管理解决方案需要能够做以下事情：</p>
+<ol>
+<li>为UI层提供对状态管理层的引用</li>
+<li>将UI事件通知状态管理层</li>
+<li>给UI层一种监听状态变化的方法</li>
+<li>状态更改后重建用户界面</li>
+</ol>
+<h3 id="51-a-nameui-1a为ui层提供对状态管理层的引用">5.1. <a name='UI-1'></a>为UI层提供对状态管理层的引用</h3>
+<p>当您将逻辑从UI移动到另一个类时，您需要向UI提供该状态管理类的引用。许多状态管理解决方案的方式是使用基于<strong>InheritedWidget</strong>构建的<strong>provider package</strong>。</p>
+<p>然而，我发现使用<strong>GetIt</strong>来引用状态管理类要简单得多：</p>
+<pre><code class="language-dart">final homePageManager = getIt&lt;HomePageManager&gt;();
+</code></pre>
+<p><strong>GetIt</strong>没有任何复杂之处。它只是创建状态管理类的单个实例（如果您将其注册为单例），然后随时随地为您提供。</p>
+<p>有些人可能会对此感到不舒服，因为从本质上讲，您有一个全局变量，您可以从应用程序的任何地方访问。就我个人而言，只要我遵循以下准则，我就不会遇到麻烦：</p>
+<ul>
+<li>不要直接从UI层修改状态管理中的状态。相反，在状态管理类上调用方法，并让该类修改自己的状态。</li>
+</ul>
+<p>其他人担心测试，因为单例是众所周知的很难测试。然而，<strong>GetIt</strong>提供了一种<a href="https://pub.dev/packages/get_it#testing-with-getit">测试这些类</a>的方法，因此这并不是一个真正的问题。</p>
+<p>这里的另一个简单优势是，您可以使用<strong>GetIt</strong>以同样的方式设置服务层。稍后再详细讨论。</p>
+<h3 id="52-a-nameui-1a将ui事件通知状态管理层">5.2. <a name='UI-1'></a>将UI事件通知状态管理层</h3>
+<p>一旦UI引用了状态管理类，您只需调用方法即可通知状态管理类UI事件。</p>
+<p>以下是用户按下登录按钮时如何做到这一点的示例：</p>
+<pre><code class="language-dart">loginPageManager.submitUserInfo(username, password);
+</code></pre>
+<p>现在，状态管理层可以使用用户名和密码做任何需要做的事情</p>
+<h3 id="53-a-nameui-1a给ui层一种监听状态变化的方法">5.3. <a name='UI-1'></a>给UI层一种监听状态变化的方法</h3>
+<p>如果您在状态管理类中有一些状态，例如：</p>
+<pre><code class="language-dart">var myState = 1;
+</code></pre>
+<p>UI无法直接知道<strong>myState</strong>的值何时发生变化。</p>
+<p>但是，如果您使用<strong>ValueNotifier或ChangeNotifier</strong>，您可以将状态更改通知UI。这两个类都是Flutter自带的，因此您不需要任何第三方软件包。</p>
+<p>我更喜欢使用<strong>ValueNotifier</strong>，因为它支持不可变状态，并且是仅隔离实际变化状态的好方法。我发现，当我使用<strong>ChangeNotifier</strong>时，我倾向于构建非常大的状态管理类。<br>
+此外，当我通知监听者状态更改时，重建的用户界面个数将超过必要的个数。</p>
+<p>以下是您将如何使该整数示例可观察：</p>
+<pre><code class="language-dart">final myStateNotifier = ValueNotifier&lt;int&gt;(1);
+</code></pre>
+<p>1只是<strong>notifier</strong>的初始值。每当您在通知符中更改值时，它都会通知任何正在收听它的对象。以下是您将如何更改值：</p>
+<pre><code class="language-swift">myStateNotifier.value = 2;
+</code></pre>
+<p><strong>value</strong>属性存储状态。</p>
+<p>上面的例子是一个简单的int。当我有更复杂的状态时，我会创建一个扩展<strong>ValueNotifier</strong>的新类。这样做的另一个好处是保持主状态管理类的清洁，并将逻辑隔离到实际使用的地方。</p>
+<p>以下是扩展<strong>ValueNotifier</strong>的示例：</p>
+<pre><code class="language-dart">class FavoriteNotifier extends ValueNotifier&lt;bool&gt; {
+  // set initial value to false
+  FavoriteNotifier() : super(false);
+  // get reference to service layer
+  final _storageService = getIt&lt;StorageService&gt;();
+  // a method to call from the outside
+  void toggleFavoriteStatus(Song song) {
+    value = !value;
+    _storageService.updateFavoriteSong(song, value);
+  }
+}
+</code></pre>
+<p>虽然状态本身，是一个布尔值，足够简单，但每当<strong>toggleFavoriteStatus</strong>被调用时，它都需要一些额外的逻辑来保存歌曲最喜欢的状态。请注意，保存状态的实际工作由服务层完成。value变量属于<strong>ValueNotifier</strong>，每当value发生变化时，任何监听此<strong>ValueNotifier</strong>的对象都将收到有关新值的通知。</p>
+<p>您在上面的<strong>FavoriteNotifier</strong>类中看到的所有逻辑都是不需要扰乱页面主状态管理类的逻辑。在页面的状态管理类中，您只有以下内容。</p>
+<pre><code class="language-dart">final favoriteNotifier = FavoriteNotifier();
+</code></pre>
+<p>将逻辑提取到这样的离散类中，使您的状态管理变得简单明了。</p>
+<p>除了<strong>ValueNotifier</strong>或<strong>ChangeNotifier</strong>外，您的状态管理类还可以将<strong>future或stream</strong>暴露到UI层。原因是UI层有<strong>builder widget</strong>，可以直接收听Future或Stream的更新。根据我自己的经验，我倾向于将<strong>futures</strong>隐藏在<strong>ValueNotifier</strong>后面，有些人也喜欢用<strong>streams</strong>这样做，但这完全取决于你。</p>
+<p>这把我们带到了最后一步。</p>
+<h3 id="54-a-name-1a状态更改后重建用户界面">5.4. <a name='-1'></a>状态更改后重建用户界面</h3>
+<p>Flutter附带的小部件，可以监听状态变化，并在发生改变时重建自己。</p>
+<p>如果UI需要监听<strong>ValueNotifier</strong>中的状态（这是我推荐的方法），那么您应该使用<strong>ValueListenableBuilder</strong>小部件。这个长名字相当不幸，因为它的工作很简单。只需使用新值重建一小部分用户界面。以下是官方视频：</p>
+<p>您所要做的就是用<strong>ValueListenableBuilder</strong>小部件包装要重建的小部件。例如，以下是上面<strong>FavoriteNotifier</strong>的UI小部件：</p>
+<pre><code class="language-dart">class FavoriteButton extends StatelessWidget {
+  const FavoriteButton({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    final playPage = getIt&lt;PlayPageManager&gt;();
+    return ValueListenableBuilder&lt;bool&gt;(
+      valueListenable: playPage.favoriteNotifier,
+      builder: (context, value, child) {
+        return IconButton(
+          icon: Icon(
+            (value) 
+              ? Icons.favorite 
+              : Icons.favorite_border,
+          ),
+          onPressed: playPage.onFavoritePressed,
+        );
+      },
+    );
+  }
+}
+</code></pre>
+<p>注意以下事项：</p>
+<ul>
+<li><strong>getIt</strong>：如上一节所述，您可以使用<strong>GetIt</strong>获取此页面状态管理类的引用。</li>
+<li><strong>ValueListenableBuilder</strong>：此小部件需要两个参数：<strong>valueListenable和builder</strong>。</li>
+<li><strong>valueListenable</strong>：这是您从状态管理类中给它<strong>ValueNotifier</strong>的地方。</li>
+<li><strong>builder</strong>：此参数接受一个函数，每当状态值发生变化时，该函数都会被调用。该功能返回新的UI小部件，在这种情况下，根据最喜欢的状态，一个带有不同图标的按钮。构建器函数有三个参数：context、value和child。</li>
+<li><strong>context</strong>：构建器函数的上下文只是当前的<strong>BuildContext</strong></li>
+<li><strong>value</strong>：这是<strong>ValueNotifier</strong>的新值。由于<strong>ValueNotifier</strong>在本例中包装了一个布尔值，因此值类型为布尔值。我通常将值重命名为更具描述性的东西，在这种情况下可能是<strong>isFavorite</strong>。</li>
+<li><strong>child</strong>：如果您在此构建器功能中重建的小部件有一个子小部件，并且该子小部件不受状态变化的影响（即它不需要自己重建），那么您可以将子小部件放在这里。例如，如果您正在使用新颜色重建容器，但容器的子容器是一个没有变化的Text小部件，则适用。在构建器函数中使用子函数只是一个优化。如果您不需要它，您可以将子项替换为_（如果您将_用于未使用的上下文，则将其替换为__）。</li>
+</ul>
+<pre><code class="language-dart">builder: (_, value, __) {...}
+</code></pre>
+<blockquote>
+<p><strong>Tip</strong>：有时用<strong>ValueListenableBuilder</strong>包装小部件很痛苦。但是，如果您使用VS Code或Android Studio中的快捷键来显示上下文菜单，您可以选择用<strong>StreamBuilder</strong>包装。然后只需将<strong>StreamBuilder修改为ValueListenableBuilder</strong>。</p>
+</blockquote>
+<figure data-type="image" tabindex="5"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ouo2lzaej20c909j3yw.jpg" alt="avatar" loading="lazy"></figure>
+<p>我建议保持简单，并在所有事情上都使用<strong>ValueNotifier和ValueListenableBuilder</strong>。但是，如果您决定公开<strong>Stream、Future或ChangeNotifier</strong>，它们也有构建器小部件：</p>
+<ul>
+<li><strong>Stream</strong>: Use a <a href="https://www.youtube.com/watch?v=MkKEWHfy99Y">StreamBuilder</a>.</li>
+<li><strong>Future</strong>: Use a <a href="https://www.youtube.com/watch?v=ek8ZPdWj4Qo">FutureBuilder</a>.</li>
+<li><strong>ChangeNotifier</strong>: Use an <a href="https://www.youtube.com/watch?v=N-RiyZlv8v8">AnimatedBuilder</a>. (Yes, AnimatedBuilder is normally used for animation, but it takes a ChangeNotifier, too.) Here is a minimal example.</li>
+</ul>
+<p>同样，如果您选择极简主义和简单，则不需要<strong>StreamBuilder、FutureBuilder或ChangeNotifier</strong>。只需使用<strong>ValueNotifier和ValueListenableBuilder</strong></p>
+<p>这涵盖了极简主义状态管理方法背后的理论。然而，看到一个真实的例子对许多人来说是有帮助的。</p>
+<hr>
+<h2 id="6-a-nameappa计时器app示例项目">6. <a name='app'></a>计时器app示例项目</h2>
+<p>在本文的初稿中，我开始编写一个完整的教程，介绍如何像我之前为<strong>Riverpod</strong>所做的那样创建计时器应用程序（这反过来又受到Bloc库计时器教程的启发）。然而，我决定更清楚地指出相关部分，然后为您提供完整的源代码供您自己探索。</p>
+<figure data-type="image" tabindex="6"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ouwajo67j20ad08laa3.jpg" alt="avatar" loading="lazy"></figure>
+<p>它只是一个简单的10秒计时器，您可以启动、暂停和重置。然而，为了演示服务层，我还添加了本地存储，如果您关闭应用程序并恢复下次打开应用程序的时间，则可以节省剩余时间。</p>
+<p>以下是应用程序的架构：</p>
+<figure data-type="image" tabindex="7"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ouy3mzf8j20k30a0gm0.jpg" alt="avatar" loading="lazy"></figure>
+<p>这是我用来匹配该架构的文件结构：</p>
+<figure data-type="image" tabindex="8"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ouyxna0dj20cp09fgls.jpg" alt="avatar" loading="lazy"></figure>
+<p>在一个普通的应用程序中，我会有多个页面和服务，这就是为什么我制作了一个页面文件夹和一个服务文件夹。</p>
+<p>现在让我们看看与您在文章前面学到的理论相关的一些关键领域</p>
+<h3 id="61-a-nameui-1aui层">6.1. <a name='UI-1'></a>UI层</h3>
+<p>文件中<strong>main.dart</strong>中几乎没有什么。保持此文件的干净性并使用它来启动您的应用程序是件好事。页面的所有小部件都保存在<strong>pages</strong>文件夹中。</p>
+<p><strong>pages</strong>文件夹中的文件<strong>timer_page.dart</strong>具有UI布局代码。</p>
+<figure data-type="image" tabindex="9"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ov1v99yyj20cl09h74k.jpg" alt="avatar" loading="lazy"></figure>
+<p>这里有一个浓缩的摘要：</p>
+<pre><code class="language-dart">class TimerPage extends StatefulWidget {...}
+class _TimerPageState extends State&lt;TimerPage&gt; {
+  @override
+  void initState() {
+    ...
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('My Timer App')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: &lt;Widget&gt;[
+            TimerTextWidget(),
+            SizedBox(height: 20),
+            ButtonsContainer(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class TimerTextWidget extends StatelessWidget {...}
+class ButtonsContainer extends StatelessWidget {...}
+class StartButton extends StatelessWidget {...}
+class PauseButton extends StatelessWidget {...}
+class ResetButton extends StatelessWidget {...}
+</code></pre>
+<p>以下是一些要点：</p>
+<ul>
+<li>您应该将用户界面分解为许多小型独立小部件。这使您的UI代码更容易阅读，因为您可以给每个组件一个有意义的名称，而不仅仅是看到一堆容器和填充物。</li>
+<li>这里的小部件在一个文件中，但没有什么能阻止你把它们放在自己的文件中并把它们整理在文件夹中。如果您这样做，您只需将小部件导入任何需要的地方。这带来了从UI中提取小部件的另一个优势：小部件是可重用的，并减少了代码重复。</li>
+<li>您无法从上面的代码中分辨出来，但所有这些无状态小部件也是<strong>const</strong>小部件。尽可能让你的小部件保持不变。Flutter不需要重建常量小部件，因此这是一个性能优化。注意<strong>StartButton</strong>构造函数中的<strong>const</strong>关键字，例如：</li>
+</ul>
+<pre><code class="language-dart">class StartButton extends StatelessWidget {
+  const StartButton({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {...}
+}
+</code></pre>
+<ul>
+<li>最后，每当您需要在页面首次加载时初始化某些内容时，请使用有状态小部件。有状态小部件的状态类具有<strong>initState</strong>方法。许多其他状态管理解决方案都有特殊的方法来做到这一点，但我发现这些方法令人困惑或太神奇了。<strong>initState</strong>很容易。它首次创建小部件状态时运行一次，然后就不再运行。这是在状态管理类上调用方法的好地方。稍后再详细讨论。</li>
+</ul>
+<h3 id="62-a-name-1a状态管理类">6.2. <a name='-1'></a>状态管理类</h3>
+<p>我喜欢把我的状态管理文件放在我的UI文件旁边。在这种情况下，我调用了文件<strong>timer_page_logic.dart</strong>：</p>
+<figure data-type="image" tabindex="10"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ov9picz9j20b904vq2w.jpg" alt="avatar" loading="lazy"></figure>
+<p>或者，你可以叫它别的东西</p>
+<ul>
+<li>timer_page_model.dart</li>
+<li>timer_page_controller.dart</li>
+<li>timer_page_manager.dart</li>
+</ul>
+<p>或者别的什么。</p>
+<p>在这个状态管理文件中，我添加了一个普通的Dart类：</p>
+<pre><code class="language-dart">class TimerPageManager {
+  
+}
+</code></pre>
+<p>然后，我查看用户界面，并分析用户界面的哪些部分可能会独立于其他部分更改。对于计时器应用程序，我可以看到两个不同的状态单元。一个是剩余时间，另一个是按钮配置。</p>
+<figure data-type="image" tabindex="11"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ovdf22ehj20ca09o3ys.jpg" alt="avatar" loading="lazy"></figure>
+<p>剩下的时间是一个字符串，按钮配置可以用具有以下四个值的枚举表示：</p>
+<figure data-type="image" tabindex="12"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ovej25mvj20ha02j74b.jpg" alt="avatar" loading="lazy"></figure>
+<p>由于UI需要一种方法来监听这两种状态的变化，下一步是为每个状态添加一个<strong>ValueNotifier</strong>。要做到这一点，只需在状态管理类中添加两个变量：</p>
+<pre><code class="language-swift">class TimerPageManager {
+  final timeLeftNotifier = TimeLeftNotifier();
+  final buttonNotifier = 
+    ValueNotifier&lt;ButtonState&gt;(ButtonState.initial);
+}
+enum ButtonState {
+  initial,
+  started,
+  paused,
+  finished,
+}
+</code></pre>
+<p>您可以在页面的状态管理类中执行所有逻辑，但当逻辑复杂时，最好将<strong>ValueNotifier</strong>分解为一个单独的类。在这种情况下，这就是我为<strong>TimeLeftNotifier</strong>所做的，因为它必须管理由<strong>stream</strong>控制的计时器。不过，按钮<strong>notifier</strong>逻辑非常简单，所以我直接使用<strong>ValueNotifier</strong>。</p>
+<p>提取时间<strong>left notifier</strong>逻辑后，文件结构如下所示：</p>
+<figure data-type="image" tabindex="13"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ovijs62nj20cm0770su.jpg" alt="avatar" loading="lazy"></figure>
+<p>页面状态管理类的工作是管理<strong>notifiers</strong>，而<strong>notifiers</strong>的工作是处理自己的状态。您越能将状态管理隔离到小的离散块中，您的工作就越容易。</p>
+<p>我已经单独讨论了UI层和状态管理层，但现在让我们看看它们是如何相互作用的。我将再次回顾我在理论部分涵盖的四点。</p>
+<h4 id="621-a-nameui-1a为ui层提供状态管理层的引用">6.2.1. <a name='UI-1'></a>为UI层提供状态管理层的引用</h4>
+<p>如前所述，这里的答案是使用<strong>GetIt</strong>。我在<strong>pubspec.yaml</strong>中添加了该软件包：</p>
+<pre><code class="language-dart">dependencies:
+  get_it: ^6.0.0
+</code></pre>
+<p>然后在<strong>service_locator.dart</strong>中注册了状态管理页面：</p>
+<pre><code class="language-dart">final getIt = GetIt.instance;
+void setupGetIt() {
+  getIt.registerLazySingleton&lt;TimerPageManager&gt;(
+    () =&gt; TimerPageManager()
+  );
+}
+</code></pre>
+<p>在应用程序运行之前，在<strong>main.dart</strong>中调用<strong>setupGetIt</strong>方法。</p>
+<pre><code class="language-dart">void main() {
+  setupGetIt();
+  runApp(MyApp());
+}
+</code></pre>
+<p>设置<strong>GetIt</strong>后，我可以从<strong>timer_page.dart</strong>的UI端访问计时器页面状态管理类：</p>
+<pre><code class="language-swift">final stateManager = getIt&lt;TimerPageManager&gt;();
+</code></pre>
+<p>我不仅在主**_TimerPageState<strong>类中这样做，而且在</strong>StartButton和PauseButton**等较小的小部件中也这样做。由于它被注册为懒惰的单例，它只会在您第一次收到它时创建一个新对象。之后，它只会返回与以前相同的对象。</p>
+<h4 id="622-a-nameui-1a通知状态管理层有关ui事件">6.2.2. <a name='UI-1'></a>通知状态管理层有关UI事件</h4>
+<p>一旦UI引用了状态管理类，当发生某些事件时，UI可以在状态管理类上调用方法（例如点击开始计时器按钮）。这意味着您必须向状态管理类添加适当的方法。我在<strong>timer_page_logic.dart</strong>中向<strong>TimerPageManager</strong>添加了以下方法：</p>
+<pre><code class="language-dart">class TimerPageManager {
+  final timeLeftNotifier = ...
+  final buttonNotifier = ...
+  void initTimerState() {...}
+  void start() {...}
+  void pause() {...}
+  void reset() {...}
+  void dispose() {...}
+}
+</code></pre>
+<p>然后，我可以在<strong>timer_page.dart</strong>中从UI端调用方法，如下所示：</p>
+<pre><code class="language-swift">onPressed: () {
+  final stateManager = getIt&lt;TimerPageManager&gt;();
+  stateManager.pause();
+},
+</code></pre>
+<p>那是在<strong>PauseButton</strong>小部件里面。</p>
+<h4 id="623-a-nameui-1a为ui层提供一种监听状态更改的方法">6.2.3. <a name='UI-1'></a>为UI层提供一种监听状态更改的方法</h4>
+<p>当您将两个<strong>ValueNotifier</strong>变量添加到状态管理类时，您已经为UI层提供了监听状态更改的方法：</p>
+<pre><code class="language-swift">class TimerPageManager {
+  final timeLeftNotifier = ...
+  final buttonNotifier = ...
+  
+  ...
+}
+</code></pre>
+<p>使这些<strong>notifiers</strong>通知任何侦听器的方法是更改其值。以下是暂停方法的实现：</p>
+<pre><code class="language-dart">class TimerPageManager {
+  final timeLeftNotifier = ...
+  final buttonNotifier = ...
+  
+  void pause() {
+    timeLeftNotifier.pause();
+    buttonNotifier.value = ButtonState.paused;
+  }
+  ...
+}
+</code></pre>
+<p><strong>buttonNotifier</strong>会直接地更新值，而 <strong>timeLeftNotifier</strong> 将调用转发到自己的<a href="https://github.com/suragch/minimalist_state_management_timer_app/blob/master/lib/pages/timer_page/notifiers/time_left_notifier.dart">notifier</a>类以自行处理。</p>
+<p>下一步是UI监听和响应这些状态更改。</p>
+<h4 id="624-a-name-1a状态更改后重建用户界面">6.2.4. <a name='-1'></a>状态更改后重建用户界面</h4>
+<p>由于状态管理器类有两个值<strong>notifiers</strong>：</p>
+<pre><code class="language-dart">class TimerPageManager {
+  final timeLeftNotifier = ...
+  final buttonNotifier = ...
+  ...
+}
+</code></pre>
+<p>您可以使用<strong>ValueListenableBuilder</strong>小部件收听它们。计时器应用程序UI使用其中两个，一个用于<strong>TimerTextWidget</strong>，一个用于<strong>ButtonContainer</strong>。这是<strong>TimerTextWidget</strong>的构建方法</p>
+<pre><code class="language-swift">Widget build(BuildContext context) {
+  final stateManager = getIt&lt;TimerPageManager&gt;();
+  return ValueListenableBuilder&lt;String&gt;(
+    valueListenable: stateManager.timeLeftNotifier,
+    builder: (context, timeLeft, child) {
+      return Text(
+        timeLeft,
+        style: Theme.of(context).textTheme.headline2,
+      );
+    },
+  );
+}
+</code></pre>
+<p>这些是重要的部分：</p>
+<ul>
+<li>当您设置<strong>valueListenable</strong>参数时，<strong>ValueListenableBuilder</strong>会监听状态管理类中的<strong>notifier</strong>。</li>
+<li><strong>timeLeft</strong>是<strong>stateManager.timeLeftNotifier</strong>中的当前值。这是一条以'00:10'、'00:09'、'00:08'等形式出现的字符串。</li>
+<li>每当<strong>stateManager.timeLeftNotifier</strong>中的值发生变化时，此小部件（仅此小部件）都会重建。由于<strong>TimeLeftNotifier</strong>的内部实现在计时器滴答时每秒更新一次值，因此此小部件将每秒显示一个新的时间字符串</li>
+</ul>
+<p>这就是UI和状态管理层交互，但让我也涵盖服务层。</p>
+<h4 id="625-a-name-1a服务层">6.2.5. <a name='-1'></a>服务层</h4>
+<p>当用户离开应用程序时，计时器需要将其状态保存到本地存储，所以我创建了一个<strong>StorageService</strong>界面来定义状态管理层可以使用的API。它在<strong>storage_service.dart</strong>中：</p>
+<figure data-type="image" tabindex="14"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0ow1n09l2j20by0ag74k.jpg" alt="avatar" loading="lazy"></figure>
+<pre><code class="language-dart">abstract class StorageService {
+  Future&lt;int?&gt; getTimeLeft();
+  Future&lt;void&gt; saveTimeLeft(int seconds);
+}
+</code></pre>
+<p>虽然该接口可以通过数据库或Web API实现，但我决定使用共享首选项实现它。它在<strong>shared_preferences_storage.dart</strong>中：</p>
+<pre><code class="language-swift">import 'package:shared_preferences/shared_preferences.dart';
+import 'storage_service.dart';
+class SharedPreferencesStorage extends StorageService {
+  static const time_left_key = 'time_left';
+  @override
+  Future&lt;int?&gt; getTimeLeft() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(time_left_key);
+  }
+  @override
+  Future&lt;void&gt; saveTimeLeft(int seconds) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setInt(time_left_key, seconds);
+  }
+}
+</code></pre>
+<p>然后，我通过将其添加到<strong>service_locator.dart</strong>中的<strong>setupGetIt</strong>方法，在<strong>GetIt</strong>中注册了<strong>SharedPreferencesStorage</strong>：</p>
+<pre><code class="language-swift">void setupGetIt() {
+  ...
+  getIt.registerLazySingleton&lt;StorageService&gt;(
+    () =&gt; SharedPreferencesStorage()
+  );
+}
+</code></pre>
+<p>之后，我可以在<strong>time_left_notifier.dart</strong>的<strong>TimeLeftNotifier</strong>类中访问和使用它：</p>
+<pre><code class="language-dart">class TimeLeftNotifier extends ValueNotifier&lt;String&gt; {
+  final _storageService = getIt&lt;StorageService&gt;();
+  
+  void pause() {
+    ...
+    _storageService.saveTimeLeft(_currentTimeLeft);
+  }
+  ...
+}
+</code></pre>
+<p>由于<strong>TimeLeftNotifier</strong>对<strong>shared preferences</strong>一无所知，我可以用<strong>SQLite</strong>或其他方式交换存储服务实现，而<strong>TimeLeftNotifier</strong>甚至不知道。</p>
+<h4 id="626-a-namelocatorsa关于服务locators与依赖项注入的说明">6.2.6. <a name='locators'></a>关于服务locators与依赖项注入的说明</h4>
+<p>我在本文中使用了服务<strong>locator</strong>模式（尽管有些人称之为“反模式”）。另一种选择是使用依赖注入。</p>
+<p>这是服务locator模式：</p>
+<pre><code class="language-dart">class MyStateManager {
+  final myService = getIt&lt;MyService&gt;();
+}
+</code></pre>
+<p>这是依赖注入模式：</p>
+<pre><code class="language-dart">class MyStateManager {
+  MyStateManager(this.myService);
+  final MyService myService;
+}
+</code></pre>
+<p>通过依赖注入，您可以为状态管理类提供作为构造函数参数所需的任何服务。依赖注入的支持者认为，这使得依赖性更加明确。我可以同意这一点。如果你愿意，欢迎你走那条路。在<strong>StorageService</strong>中作为参数传递给<strong>TimerPageManager和TimeLeftNotifier</strong>，只需对计时器应用程序进行小幅调整。但是，如果您想在UI小部件树中注入<strong>TimerPageManager</strong>，则必须修改许多小部件构造函数。那将是一种痛苦。这就是<strong>InheritedWidget</strong>要解决的问题。如果您想使用<strong>InheritedWidget</strong>，那么您应该使用<strong>Provider或Riverpod</strong>。</p>
+<p>不过，我不相信服务locators是Flutter应用程序的反模式。到目前为止，我发现它们易于使用且有帮助。服务locators和依赖注入都解决了抽象服务与其具体实现脱钩的更大问题。此时此刻，这对我来说已经足够了。不过，你必须自己做决定。以下是Martin Fowler关于该主题的<a href="https://martinfowler.com/articles/injection.html">一篇有用的文章</a>（请参阅标题为服务定位器与依赖注入的部分）。</p>
+<h3 id="63-a-name-1a关于初始化的说明">6.3. <a name='-1'></a>关于初始化的说明</h3>
+<p>有状态小部件的状态类是执行初始化任务的好地方。对于计时器应用程序，我需要在页面首次加载时获得保存的剩余时间值。为此，我在<strong>timer_page.dart</strong>中向<strong>initState</strong>方法添加了初始化调用：</p>
+<pre><code class="language-dart">class _TimerPageState extends State&lt;TimerPage&gt; {
+  final stateManager = getIt&lt;TimerPageManager&gt;();
+  @override
+  void initState() {
+    stateManager.initTimerState();
+    super.initState();
+  }
+  @override
+  void dispose() {
+    stateManager.dispose();
+    super.dispose();
+  }
+  ...
+}
+</code></pre>
+<p>如您所见，还有一个<strong>dispose</strong>方法。这对于取消计时器中的流非常有用。不过，请注意，我不会在用户界面中直接从这里访问流。我只是在状态管理类上调用一种方法，该类又在计时器流所在的notifier类上调用一个方法。</p>
+<p>如果您想更早地开始一些初始化（例如联系Web服务器），您可以在主函数中的runApp之前添加它。</p>
+<pre><code class="language-swift">void main() {
+  setupGetIt();
+  //             &lt;-- add here
+  runApp(MyApp());
+}
+</code></pre>
+<p>在这种情况下，您希望有一个处理应用程序范围状态的状态管理类（例如用户的登录状态）</p>
+<h3 id="64-a-name-1a关于重建的说明">6.4. <a name='-1'></a>关于重建的说明</h3>
+<p>运行计时器应用程序，并在倒计时中途按下暂停和开始按钮。观察小部件重建时显示的打印语句</p>
+<pre><code class="language-dart">building MyHomePage
+building time left state: 00:10
+building button state: ButtonState.initial
+building button state: ButtonState.started
+building time left state: 00:09
+building time left state: 00:08
+building time left state: 00:07
+building time left state: 00:06
+building time left state: 00:05
+building button state: ButtonState.paused
+building button state: ButtonState.started
+building time left state: 00:04
+building time left state: 00:03
+building time left state: 00:02
+building time left state: 00:01
+building time left state: 00:00
+building button state: ButtonState.finished
+</code></pre>
+<p>由于<strong>timer_page.dart</strong>中的<strong>ValueListenableBuilder</strong>小部件只包装需要重建的小部件，因此您无需重新构建UI树中不必要的部分。您可以从上面的打印语句中看到，计时器更新没有导致按钮配置被重建。同样，按下按钮不会导致文本小部件被重建。</p>
+<p>要点：隔离你的状态！</p>
+<hr>
+<h3 id="65-a-namesummaryasummary">6.5. <a name='Summary'></a>Summary</h3>
+<p>以下是基于我上面描述的计时器应用程序的更详细的架构模型：</p>
+<figure data-type="image" tabindex="15"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h0owle2alqj20hv097mxl.jpg" alt="avatar" loading="lazy"></figure>
+<p>Notes:</p>
+<ul>
+<li>用户界面层中有两个独立的状态单元可以更改：剩余时间和按钮配置。</li>
+<li>在状态管理层中将状态映射更改为两个值<strong>notifiers</strong>的两种方法。</li>
+<li>在这两个<strong>notifiers</strong>中，只有剩余时间的<strong>notifier</strong>需要访问存储服务，该服务是通过<strong>shared preferences</strong>实现的。</li>
+<li>事件来自用户按下按钮，来自时间左侧<strong>notifier</strong>内的计时器，以及从存储服务中获取保存值的结果</li>
+<li>状态管理层处理这些事件并更新状态。</li>
+<li>用户界面正在监听状态更改，并在发生这种情况时重建自己。</li>
+</ul>
+<h2 id="7-a-name-1a结论">7. <a name='-1'></a>结论</h2>
+<p>到目前为止，我所看到的所有状态管理解决方案（<strong>setState</strong>除外）的工作方式基本相同。他们采用应用程序状态和逻辑，并通过将其放入新类将其与UI分离。除此之外，它们还为状态变化时的UI提供了重建方式。我在这里介绍的极简主义方法做到了这一切，但没有第三方状态管理包。<strong>GetIt</strong>是一个第三方软件包，但我不称它为状态管理解决方案，因为您仅使用它来获取Dart类的引用。如果你愿意，你甚至可以用单例替换<strong>GetIt</strong>。然而，与单例相比，GetIt的一个优势是<strong>GetIt</strong>更容易测试。</p>
+<p>正如我在文章开头所说（没有双关语），如果您理解它并可以让它做您需要做的事情，就没有理由放弃您当前正在使用的任何状态管理解决方案。然而，如果你对这一切的复杂性感到困惑，那么也许这种极简主义方法适合你。</p>
+<p>然而，仅仅因为这种方法是“极简主义的”，并不意味着你不能用它构建一个大型应用程序。关键是将状态和逻辑隔离到只担心自己的小值的<strong>notifiers and services</strong>中。</p>
+<ul>
+<li>
+<p><a href="https://kislayverma.com/programming/how-to-organize-your-code/">How to organize your code?</a></p>
+</li>
+<li>
+<p><a href="https://phauer.com/2020/package-by-feature/">Package by Feature</a></p>
+</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/5fBZFO1h8/" class="tag">
+                    flutter
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/swift-shi-xian-queues-de-si-chong-fang-shi/">
+                  <h3 class="post-title">
+                    Swift实现Queues的四种方式
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
