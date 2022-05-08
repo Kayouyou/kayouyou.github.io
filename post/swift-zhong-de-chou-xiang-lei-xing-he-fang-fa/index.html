@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift中的抽象类型和方法 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1652020609222">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="在面向对象编程中，抽象类型提供了其他类型可以继承的基本实现，以便访问某种共享的公共功能。将抽象类型与常规类型区分开来的是，它们从未按原样使用（事实上，一些编程语言甚至阻止直接实例化抽象类型），因为它们的唯一目的是作为一组相关类型的共同父类型..." />
+    <meta name="keywords" content="protocols" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1652020609222" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift中的抽象类型和方法</h2>
+            <div class="post-date">2022-05-08</div>
+            
+              <div class="feature-container" style="background-image: url('https://tva1.sinaimg.cn/large/e6c9d24egy1h21dganzkvj20m80dcabt.jpg')">
+              </div>
+            
+            <div class="post-content" v-pre>
+              <p>在面向对象编程中，抽象类型提供了其他类型可以继承的基本实现，以便访问某种共享的公共功能。将抽象类型与常规类型区分开来的是，它们从未按原样使用（事实上，一些编程语言甚至阻止直接实例化抽象类型），因为它们的唯一目的是作为一组相关类型的共同父类型。</p>
+<p>例如，假设我们希望通过提供共享API来统一我们在网络上加载某些类型模型的方式，我们将能够使用它来分离问题，提升依赖项注入和模拟，并在整个项目中保持方法名称的一致性。</p>
+<p>一种基于类型的抽象方法是使用一个基类，作为我们所有模型加载类型的共享统一接口。由于我们不希望该类被直接使用，如果其基本实现被错误调用，我们将使其触发致命错误：</p>
+<pre><code class="language-swift">class Loadable&lt;Model&gt; {
+    func load(from url: URL) async throws -&gt; Model {
+        fatalError(&quot;load(from:) has not been implemented&quot;)
+    }
+}
+</code></pre>
+<p>然后，每个可加载子类将覆盖上述加载方法，以提供其加载功能——如下所示：</p>
+<pre><code class="language-swift">class UserLoader: Loadable&lt;User&gt; {
+    override func load(from url: URL) async throws -&gt; User {
+        ...
+    }
+}
+</code></pre>
+<p>如果上述模式看起来很熟悉，这可能是因为它本质上与我们在Swift中通常使用协议的多态性完全相同。也就是说，当我们想定义一个接口，一个合同时，多个类型可以通过不同的实现来遵守。</p>
+<p>然而，与抽象类相比，协议确实具有重大优势，因为编译器将强制要求正确实现——这意味着我们不再依赖运行时错误（如fatalError）来防止不当使用，因为没有办法单独实例化协议。</p>
+<p>因此，如果我们走面向协议的路线，而不是使用抽象的基类，那么我们之前的<strong>Loadable</strong>和<strong>UserLoader</strong>类型可能会是什么样子：</p>
+<pre><code class="language-swift">protocol Loadable {
+    associatedtype Model
+    func load(from url: URL) async throws -&gt; Model
+}
+
+class UserLoader: Loadable {
+    func load(from url: URL) async throws -&gt; User {
+        ...
+    }
+}
+</code></pre>
+<p>请注意，我们现在如何使用关联类型使每个<strong>Loadable</strong>实现能够决定要加载的确切模型——这使我们能够在全类型安全性和极大的灵活性之间很好地结合。</p>
+<p>因此，一般来说，<strong>protocols</strong>绝对是在Swift中声明抽象类型的首选方式，但这并不意味着它们是完美的。事实上，我们基于协议的<strong>Loadable</strong>实现目前有两个主要缺点：</p>
+<ul>
+<li>首先，由于我们必须在协议中添加关联类型，以保持我们的设置通用性和类型安全，这意味着Loadable不能再直接引用。</li>
+<li>其次，由于协议不能包含任何形式的存储，如果我们想添加所有可加载实现都可以使用的任何存储属性，我们必须在每个具体实现中重新声明这些属性。</li>
+</ul>
+<p>这种存储属性确实是我们之前基于类的抽象设置的巨大优势。因此，如果我们将<strong>Loadable</strong>恢复回类，那么我们将能够将子类所需的所有对象存储在我们的基类本身中——无需在多种类型上复制这些属性：</p>
+<pre><code class="language-swift">class Loadable&lt;Model&gt; {
+    let networking: Networking
+let cache: Cache&lt;URL, Model&gt;
+
+    init(networking: Networking, cache: Cache&lt;URL, Model&gt;) {
+        self.networking = networking
+        self.cache = cache
+    }
+
+    func load(from url: URL) async throws -&gt; Model {
+        fatalError(&quot;load(from:) has not been implemented&quot;)
+    }
+}
+
+class UserLoader: Loadable&lt;User&gt; {
+    override func load(from url: URL) async throws -&gt; User {
+        if let cachedUser = cache.value(forKey: url) {
+            return cachedUser
+        }
+
+        let data = try await networking.data(from: url)
+        ...
+    }
+}
+</code></pre>
+<p>因此，我们在这里处理的本质上是一个经典的权衡场景，这两种方法（<strong>abstract classes vs protocols</strong>）都给了我们不同的利弊。但是，如果我们能将两者结合起来，以充分利用这两个世界呢？</p>
+<p>如果我们仔细想想，基于抽象类的方法的唯一真正问题是，我们必须在每个子类需要实现的方法中添加<strong>fatalError</strong>，那么如果我们只为该特定方法使用协议呢？然后，我们仍然可以将<strong>networking</strong>和<strong>cache</strong>属性保留在基类中——如下所示：</p>
+<pre><code class="language-swift">protocol LoadableProtocol {
+    associatedtype Model
+    func load(from url: URL) async throws -&gt; Model
+}
+
+class LoadableBase&lt;Model&gt; {
+    let networking: Networking
+let cache: Cache&lt;URL, Model&gt;
+
+    init(networking: Networking, cache: Cache&lt;URL, Model&gt;) {
+        self.networking = networking
+        self.cache = cache
+    }
+}
+</code></pre>
+<p>然而，这种方法的主要缺点是，所有具体实现现在都必须同时对<strong>LoadableBase</strong>进行子类化，并声明它们符合我们新的<strong>LoadableProtocol</strong>：</p>
+<pre><code class="language-swift">class UserLoader: LoadableBase&lt;User&gt;, LoadableProtocol {
+    ...
+}
+</code></pre>
+<p>这可能不是一个大问题，但它确实可以说使我们的代码不那么优雅。然而，好消息是，我们实际上可以通过使用通用<strong>type alias</strong>来解决这个问题。由于Swift的组合运算符&amp;支持将类与协议相结合，我们可以重新引入我们的<strong>Loadable</strong>类型，作为<strong>LoadableBase和LoadableProtocol</strong>之间的组合：</p>
+<pre><code class="language-swift">typealias Loadable&lt;Model&gt; = LoadableBase&lt;Model&gt; &amp; LoadableProtocol
+</code></pre>
+<p>这样，具体类型（如<strong>UserLoader</strong>）可以简单地声明它们是基于<strong>Loadable</strong>，编译器将确保所有这些类型都实现我们协议的加载方法——同时仍然允许这些类型也使用在我们的基类中声明的属性：</p>
+<pre><code class="language-swift">class UserLoader: Loadable&lt;User&gt; {
+    func load(from url: URL) async throws -&gt; User {
+        if let cachedUser = cache.value(forKey: url) {
+            return cachedUser
+        }
+
+        let data = try await networking.data(from: url)
+        ...
+    }
+}
+</code></pre>
+<p>很不错呢！上述方法的唯一真正缺点是，<strong>Loadable</strong>仍然不能直接引用，因为它仍然是底层的通用协议。然而，这实际上可能不是一个问题——如果情况确实如此，那么我们总是可以使用<strong>type erasure</strong> 等技术来解决这些问题。</p>
+<p>关于我们基于类型别名的<strong>Loadable</strong>的另一个轻微警告是，此类组合类型别名无法扩展，如果我们想提供一些我们不想（或不能）直接在LoadableBase类中实现的便利API，这可能会成为一个问题。</p>
+<p>然而，解决这个问题的一种方法是在我们的协议中声明实现这些方便API所需的一切，这将使我们能够自行扩展该协议：</p>
+<pre><code class="language-swift">protocol LoadableProtocol {
+    associatedtype Model
+
+    var networking: Networking { get }
+var cache: Cache&lt;URL, Model&gt; { get }
+
+    func load(from url: URL) async throws -&gt; Model
+}
+
+extension LoadableProtocol {
+    func loadWithCaching(from url: URL) async throws -&gt; Model {
+        if let cachedModel = cache.value(forKey: url) {
+            return cachedModel
+        }
+
+        let model = try await load(from: url)
+        cache.insert(model, forKey: url)
+        return model
+    }
+}
+</code></pre>
+<p>因此，这是在Swift中使用抽象类型和方法的几种不同方式。子类化目前可能不像以前那么流行（仍然在其他编程语言中），但我仍然认为这些技术在我们的整体Swift开发工具箱中非常有用。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/_qqECQ7kWd/" class="tag">
+                    protocols
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/ji-jian-zhu-yi-zhe-de-flutter-zhuang-tai-guan-li/">
+                  <h3 class="post-title">
+                    极简主义者的Flutter状态管理
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
