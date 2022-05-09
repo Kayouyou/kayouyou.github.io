@@ -8,8 +8,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1652020609222">
-<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+<link rel="shortcut icon" href="http://localhost:4000/favicon.ico?v=1652020986569">
+<link rel="stylesheet" href="http://localhost:4000/styles/main.css">
 
 
 
@@ -28,8 +28,8 @@
       <div class="sidebar" :class="{ 'full-height': menuVisible }">
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
-      <a class="site-title-container" href="https://kayouyou.github.io">
-        <img src="https://kayouyou.github.io/images/avatar.png?v=1652020609222" class="site-logo">
+      <a class="site-title-container" href="http://localhost:4000">
+        <img src="http://localhost:4000/images/avatar.png?v=1652020986569" class="site-logo">
         <h1 class="site-title">Kayouyou&#39;s Den</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -82,7 +82,7 @@
       The wise build bridges, while the foolish build barriers.
     </div>
     <div class="site-footer">
-      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+      豫ICP备2021012281号-1  | <a class="rss" href="http://localhost:4000/atom.xml" target="_blank">RSS</a>
     </div>
   </div>
 </div>
@@ -103,7 +103,7 @@
 <p>CAReplicatorLayer专门以一种高效(硬件加速)的方式绘制原始层的多个副本(因此它是一个“复制器”)。在绘制平铺背景、图案或其他需要重复多次的东西时，它非常有用。我甚至用它来实现我即将推出的开源Swift游戏引擎的纹理平铺功能。</p>
 <p><em>Can your UIColor do this?</em></p>
 <p>实现重复图像背景的一种常见方式是使用UIColor，它有一个以patternImage为参数的初始化器。它可以让你把重复的图像序列当作一种颜色，并把它用作背景，像这样:<br>
-<img src="https://kayouyou.github.io/post-images/1618752363314.png" alt="" loading="lazy"></p>
+<img src="http://localhost:4000/post-images/1618752363314.png" alt="" loading="lazy"></p>
 <pre><code class="language-swift">view.backgroundColor = UIColor(patternImage: image)
 </code></pre>
 <p>虽然在某些情况下，这种绘制重复图像的方式正是您想要的，但在其他情况下，您可能想要做一些更复杂的事情-这就是使用CAReplicatorLayer的原因。</p>
@@ -145,7 +145,7 @@ replicatorLayer.instanceGreenOffset = colorOffset
 <p>这样，我们就有了一个水平重复的梯度图案!🎉但是让我们更进一步，好吗? 😉</p>
 <h2 id="replicatorception">Replicatorception</h2>
 <p>因为CAReplicatorLayer是CALayer的子类，所以可以将它们嵌套在一起。这使您能够在多个维度中创建更复杂的模式。例如，我们想扩展我们原来的图案，也使用另一种色调梯度垂直重复，像这样:<br>
-<img src="https://kayouyou.github.io/post-images/1618752379684.png" alt="" loading="lazy"><br>
+<img src="http://localhost:4000/post-images/1618752379684.png" alt="" loading="lazy"><br>
 我们所要做的只是简单地将原始的复制器层包装到另一个层中，这将垂直地偏移每个实例并减少每个实例的蓝色组件:</p>
 <pre><code class="language-swift">let verticalReplicatorLayer = CAReplicatorLayer()
 verticalReplicatorLayer.frame.size = view.frame.size
@@ -188,11 +188,11 @@ imageLayer.add(animation, forKey: &quot;hypnoscale&quot;)
             
               <div class="tag-container">
                 
-                  <a href="https://kayouyou.github.io/tag/VXXvOQLSHR/" class="tag">
+                  <a href="http://localhost:4000/tag/VXXvOQLSHR/" class="tag">
                     core animation
                   </a>
                 
-                  <a href="https://kayouyou.github.io/tag/nk7gw0vRGQ/" class="tag">
+                  <a href="http://localhost:4000/tag/nk7gw0vRGQ/" class="tag">
                     animations
                   </a>
                 
@@ -201,7 +201,7 @@ imageLayer.add(animation, forKey: &quot;hypnoscale&quot;)
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://kayouyou.github.io/post/replacing-legacy-code-using-swift-protocols/">
+                <a href="http://localhost:4000/post/replacing-legacy-code-using-swift-protocols/">
                   <h3 class="post-title">
                     Replacing legacy code using Swift protocols
                   </h3>
