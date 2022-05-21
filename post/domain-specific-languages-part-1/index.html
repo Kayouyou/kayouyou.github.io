@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Domain‑Specific Languages: Part 1 | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1653141457723">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Introduction
+
+
+
+
+Definitions
+
+
+
+
+An arithmetic expression DSL
+
+
+
+
+Adding multiplication to our DSL
+
+
+
+
+Transforming ..." />
+    <meta name="keywords" content="DSL" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1653141457723" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Domain‑Specific Languages: Part 1</h2>
+            <div class="post-date">2022-05-21</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Introduction">Introduction</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Definitions">Definitions</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#AnarithmeticexpressionDSL">An arithmetic expression DSL</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#AddingmultiplicationtoourDSL">Adding multiplication to our DSL</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#TransformingourDSL">Transforming our DSL</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#AddingavariabletoourDSL">Adding a variable to our DSL</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc --># Domain‑Specific Languages: Part 1
+<h2 id="1-a-nameintroductionaintroduction">1. <a name='Introduction'></a>Introduction</h2>
+<p>今天，我们将讨论一个被称为“<strong>domain-specific languages</strong>”的概念，特别是“<strong>embedded domain-specific languages</strong>”。这听起来可能是一个行话术语，但它肯定是您遇到过的东西，您甚至可以每天使用它。</p>
+<p>在给出前期定义以便我们都了解什么是特定于域的语言后，我们将在Swift中创建一个，并逐步为其添加越来越多的高级功能。这是一个玩具的例子，但它包含许多核心想法，玩起来会很有趣。</p>
+<hr>
+<h2 id="2-a-namedefinitionsadefinitions">2. <a name='Definitions'></a>Definitions</h2>
+<p>首先，我们来了解一些定义。“特定域语言”，简称DSL，是为服务特定域而构建的语言。这与Swift等语言形成鲜明对比，Swift是一种非常通用的语言，能够制作iOS应用程序、服务器端应用程序、CLI工具、脚本等。</p>
+<p>如果您以前写过数据库SQL查询，那么您使用的是DSL。SQL是一个DSL，用于描述如何与数据库交互：</p>
+<pre><code class="language-sql">SELECT id, name
+FROM users
+WHERE email = 'blob@pointfree.co'
+</code></pre>
+<p>此外，如果您曾经编写过HTML，那么您使用的是DSL。HTML是一个DSL，用于描述如何布局文档：</p>
+<pre><code class="language-html">&lt;html&gt;
+  &lt;body&gt;
+    &lt;p&gt;Hello World!&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<p>此外，如果您曾经使用过CocoaPods或Carthage，那么您使用的是DSL。</p>
+<pre><code class="language-swift">// Cocoapods
+platform :ios, '8.0'
+use_frameworks!
+
+target 'MyApp' do
+  pod 'NonEmpty', '~&gt; 0.2'
+  pod 'Overture', '~&gt; 0.1'
+end
+
+// Carthage
+github &quot;pointfreeco/NonEmpty&quot; ~&gt; 0.2
+github &quot;pointfreeco/Overture&quot; ~&gt; 0.1
+</code></pre>
+<p>您不一定用这些语言进行任何应用程序，但它们都很好地服务于他们的域，这正是它们被称为“特定领域语言”的原因。</p>
+<p>一旦你理解了DSL的概念，这是理解“嵌入式特定领域语言”（简称EDSL）的一小步。这些是嵌入在其他语言中的DSL。在上述示例中，SQL、HTML和Carthage都是非嵌入式DSL。因为从技术上讲，Podfile是一个Ruby文件，您编写诚实的Ruby代码来描述您的依赖项。</p>
+<p>因此，这是我们今天将讨论的两种DSL口味。我们已熟悉DSL，这是一个特定域语言的广泛概念，我们也熟悉了嵌入式DSLS，这些DSLS是托管在Ruby等另一种语言或我们今天将使用的DSL：Swift。</p>
+<hr>
+<h2 id="3-a-nameanarithmeticexpressiondslaan-arithmetic-expression-dsl">3. <a name='AnarithmeticexpressionDSL'></a>An arithmetic expression DSL</h2>
+<p>让我们从一个非常著名的DSL玩具示例开始：建模一种可以表示一些非常简单的算术运算的表达式类型。</p>
+<p>考虑只允许整数和加法的算术表达式：</p>
+<pre><code class="language-swift">3 + (4 + 5)
+(3 + 4) + 5
+</code></pre>
+<p>构成这个表达式的单位是什么？这个表达式的特定部分似乎要么是整数文字，要么是两个表达式的总和+。这直接转化为枚举描述：</p>
+<pre><code class="language-swift">enum Expr {
+  case int(Int)
+  indirect case add(Expr, Expr)
+}
+</code></pre>
+<p>请注意，此枚举是递归的，因为加法可以将可以构造的任何其他两个表达式加在一起。</p>
+<p>我们可以很容易地构造这个表达式的值：</p>
+<pre><code class="language-swift">Expr.int(3)
+Expr.add(.int(3), .int(4))
+Expr.add(.add(.int(3), .int(4)), .int(5))
+Expr.add(.add(.int(3), .int(4)), .add(.int(5), .int(6)))
+</code></pre>
+<p>如果我们添加大量的换行符和缩进，我们将看到我们正在制作一个树状结构：</p>
+<pre><code class="language-swift">Expr.add(
+  .add(
+    .int(2),
+    .int(3)
+  ),
+  .add(
+    .int(4),
+    .int(5)
+  )
+)
+</code></pre>
+<p>因此，我们现在提升了所有仅涉及整数和加号的算术表达式集未Swift类型和值。</p>
+<p>让我们也快速使Expr符合<strong>ExpressibleByIntegerLiteral</strong>，以便更容易构建这些值：</p>
+<pre><code class="language-swift">extension Expr: ExpressibleByIntegerLiteral {
+  init(integerLiteral value: Int) {
+    self = .int(value)
+  }
+}
+
+Expr.add(.add(2, 3), .add(4, 5))
+</code></pre>
+<p>好吧，这很酷：我们开始研究仅涉及整数和加法的算术表达式，并且能够通过将其直接转换为枚举来描述这些表达式的所有部分，然后使用该枚举，我们可以制作表示加法和整数的Swift值，而无需内联执行这些表达式。</p>
+<p>我们能用这个东西做什么？我们可以开始为它编写<strong>evaluators</strong>。例如，如果我们想计算一个表达式来计算它所代表的最终整数，该怎么办：</p>
+<pre><code class="language-swift">func eval(_ expr: Expr) -&gt; Int {
+  switch expr {
+  case let .int(value):
+    return value
+  case let .add(lhs, rhs):
+    return eval(lhs) + eval(rhs)
+  }
+}
+</code></pre>
+<p>现在我们可以评估我们上面定义的表达式</p>
+<pre><code class="language-swift">eval(.add(.add(3, 4), .add(5, 6)))
+// 18
+</code></pre>
+<p>好的，那很有趣。但除了纯数字评估外，我们还可以定义对这种DSL的解释。例如，我们可以将表达式打印到字符串中：</p>
+<pre><code class="language-swift">func print(_ expr: Expr) -&gt; String {
+  switch expr {
+  case let .int(value):
+    return &quot;\(value)&quot;
+  case let .add(lhs, rhs):
+    return &quot;\(print(lhs)) + \(print(rhs))&quot;
+  }
+}
+</code></pre>
+<p>这是一个非常天真的打印，但它有效：</p>
+<pre><code class="language-swift">print(.add(.add(2, 3), .add(4, 5)))
+// &quot;3 + 4 + 5 + 6&quot;
+</code></pre>
+<p>我们现在有两种不同的方法来评估或解释这个DSL：我们可以将其完全计算成它所代表的整数，或者我们可以将其渲染成一个可以显示给用户的字符串。</p>
+<p>DSL就是这样发展的。您定义DSL的数据类型表示形式，然后定义将其映射到不同表示的不同方式。在这种情况下，我们将算术表达式映射到整数和字符串，具体取决于我们是否要计算或打印。</p>
+<h2 id="4-a-nameaddingmultiplicationtoourdslaadding-multiplication-to-our-dsl">4. <a name='AddingmultiplicationtoourDSL'></a>Adding multiplication to our DSL</h2>
+<p>这种表达式类型现在非常简单，所以让我们试着通过支持更多的算术运算来加强它。让我们尝试乘法。</p>
+<p>让我们以我们最初的例子为例，让它复杂化。</p>
+<pre><code class="language-swift">3 * (4 + 5)
+(3 * 4) + 5
+</code></pre>
+<p>现在我们要么有一个整数，一个加号，要么一个时间要处理。</p>
+<p>这又是一个需要添加到我们原始数据类型的案例。</p>
+<pre><code class="language-swift">enum Expr {
+  case int(Int)
+  indirect case add(Expr, Expr)
+  indirect case mul(Expr, Expr)
+}
+</code></pre>
+<p>我们收到几个编译器错误，所以让我们修复它们，看看我们还剩下什么。首先，让我们修复<strong>eval</strong>函数。</p>
+<pre><code class="language-swift">func eval(_ expr: Expr) -&gt; Int {
+  switch expr {
+  case let .int(value):
+    return value
+  case let .add(lhs, rhs):
+    return eval(lhs) + eval(rhs)
+  case let .mul(lhs, rhs):
+    return eval(lhs) * eval(rhs)
+  }
+}
+</code></pre>
+<p>我们还需要更新<strong>print</strong>函数。</p>
+<pre><code class="language-swift">func print(_ expr: Expr) -&gt; String {
+  switch expr {
+  case let .int(value):
+    return &quot;\(value)&quot;
+  case let .add(lhs, rhs):
+    return &quot;\(print(lhs)) + \(print(rhs))&quot;
+  case let .mul(lhs, rhs):
+    return &quot;\(print(lhs)) * \(print(rhs))&quot;
+  }
+}
+</code></pre>
+<p>让我们通过调整我们刚才评估的表达式来进行旋转：</p>
+<pre><code class="language-swift">eval(.mul(.add(3, 4), .add(5, 6)))
+// 77
+</code></pre>
+<p>准确计算出来了，看起来不错。</p>
+<p>让我们对<strong>print</strong>做同样的事情：</p>
+<pre><code class="language-swift">print(.mul(.add(3, 4), .add(5, 6)))
+// 3 + 4 * 5 + 6
+</code></pre>
+<p>啊，好吧，这不太对。我们真的想要（2 + 3）*（4 + 5）。事实证明，我们的打印功能不太正确。</p>
+<p>要修复它，我们需要添加一些括号：</p>
+<pre><code class="language-swift">func print(_ expr: Expr) -&gt; String {
+  switch expr {
+  case let .add(lhs, rhs):
+    return &quot;(\(print(lhs)) + \(print(rhs)))&quot;
+  case let .int(value):
+    return &quot;\(value)&quot;
+  case let .mul(lhs, rhs):
+    return &quot;(\(print(lhs)) * \(print(rhs)))&quot;
+  }
+}
+
+print(.mul(.add(2, 3), .add(4, 5)))
+// &quot;((3 + 4) * (5 + 6))&quot;
+</code></pre>
+<p>很好，现在我们的<strong>print</strong>输出的字符串在算术上是正确的。</p>
+<h2 id="5-a-nametransformingourdslatransforming-our-dsl">5. <a name='TransformingourDSL'></a>Transforming our DSL</h2>
+<p>将这种DSL作为简单的Swift类型感觉真的很好。我们可以在类型级别为它添加功能，Swift确保我们在每个evaluator和interpreter中处理此功能。</p>
+<p>接下来我们可以用DSL做什么？好吧，因为它只是一种Swift数据类型，我们可以在非常高的水平上转换它！就像我们转换数组和字典一样，我们可以转换DSL，而不必担心eval、print或其他功能。</p>
+<p>让我们考虑一些愚蠢的事情，只是为了让我们热身：让我们将所有加法实例换成乘法，反之亦然：</p>
+<pre><code class="language-swift">func swap(_ expr: Expr) -&gt; Expr {
+  switch expr {
+  case .int:
+    return expr
+  case let .add(lhs, rhs):
+    return .mul(lhs, rhs)
+  case let .mul(lhs, rhs):
+    return .add(lhs, rhs)
+  }
+}
+</code></pre>
+<p>现在，让我们用一个表达方式来交换它。</p>
+<p>这看起来不太对。虽然外部乘法已换成加法，但内部加法没有换成乘法。</p>
+<p>我们忘了进一步交换嵌套表达式。</p>
+<pre><code class="language-swift">func swap(_ expr: Expr) -&gt; Expr {
+  switch expr {
+  case .int:
+    return expr
+  case let .add(lhs, rhs):
+    return .mul(swap(lhs), swap(rhs))
+  case let .mul(lhs, rhs):
+    return .add(swap(lhs), swap(rhs))
+  }
+}
+
+print(swap(.mul(.add(3, 4), .add(5, 6))))
+// &quot;((3 * 4) + (5 * 6))&quot;
+</code></pre>
+<p>现在它起作用了：我们深入所有子表达式并交换了它们。</p>
+<p>这是一个愚蠢的例子，所以让我们尝试一些更有力量的东西。</p>
+<p>让我们考虑一些更严肃的事情：优化。现在很容易建立可以相当简化的表达式了。例如，这个表达式：</p>
+<pre><code class="language-swift">print(Expr.add(.mul(2, 3), .mul(2, 4)))
+// ((2 * 3) + (2 * 4))
+</code></pre>
+<p>在数字上等同于此：</p>
+<pre><code class="language-swift">print(.mul(2, .add(3, 4)))
+// (2 * (3 + 4))
+</code></pre>
+<p>因为我们将这些表达式描述为Swift值，所以抽象地执行此转换。</p>
+<p>让我们尝试将此优化作为DSL的转换来实现。</p>
+<pre><code class="language-swift">func simplify(_ expr: Expr) -&gt; Expr {
+  switch expr {
+  case .int:
+    return expr
+  case let .add(.mul(a, b), .mul(c, d)) where a == c:
+
+  case .mult:
+    return expr
+  }
+}
+</code></pre>
+<p>现在，where子句要求我们使Expr equatable，但Swift免费给了我们。</p>
+<pre><code class="language-swift">enum Expr: Equatable {
+</code></pre>
+<p>我们现在可以把它变成我们正在寻找的形状。</p>
+<pre><code class="language-swift">func simplify(_ expr: Expr) -&gt; Expr {
+  switch expr {
+  case .int:
+    return expr
+  case let .add(.mul(a, b), .mul(c, d)) where a == c:
+    return .mul(a, .add(b, d))
+  case .mult:
+    return expr
+  }
+}
+</code></pre>
+<p>我们的<strong>switch</strong>需要exhaustive，所以让我们传入所有其他add案例。</p>
+<pre><code class="language-swift">func simplify(_ expr: Expr) -&gt; Expr {
+  switch expr {
+  case .int:
+    return expr
+  case let .add(.mul(a, b), .mul(c, d)) where a == c:
+    return .mul(a, .add(b, d))
+  case .add:
+    return expr
+  case .mult:
+    return expr
+  }
+}
+</code></pre>
+<p>让我们试一试：</p>
+<pre><code class="language-swift">print(simplify(Expr.add(.mul(2, 3), .mul(2, 4))))
+// (2 * (3 + 4))
+</code></pre>
+<p>太棒了，它奏效了！我们使用 Swift 强大的模式匹配来推动整个过程。在switch中，我们字面上匹配了添加两个乘法的形状，在这种情况下，我们被允许将4个项简化为仅3个。</p>
+<p>对于这个特定的DSL来说，这似乎不是一个巨大的胜利，因为eval和print功能非常简单。然而，有一些DSL描述了非常昂贵的操作，在这种情况下，以高层次的方式简化DSL值可能会节省相当多的工作。</p>
+<p>它的功能甚至可以改进。一个简单的胜利是识别形式a * c + b * c的模式，并将其分解为（a + b）* c。我们也可以将1 *任何东西简化为任何东西，并折叠该乘法。</p>
+<h2 id="6-a-nameaddingavariabletoourdslaadding-a-variable-to-our-dsl">6. <a name='AddingavariabletoourDSL'></a>Adding a variable to our DSL</h2>
+<p>让我们在DSL中添加一个高级功能，看看它如何改变我们迄今为止所做的所有工作。我们将添加引入变量的能力，该变量的值在创建DSL值时未知，但仅在尝试eval DSL时。让我们用我们的示例表达式来描述它。</p>
+<pre><code class="language-swift">//x * (4 + 5)
+//(x * 4) + 5
+</code></pre>
+<p>这允许我们创建参数化的算术表达式，我们可以稍后提供这些数据。让我们从更改DSL枚举开始：</p>
+<pre><code class="language-swift">enum Expr: Equatable {
+  case int(Int)
+  indirect case add(Expr, Expr)
+  indirect case mul(Expr, Expr)
+  case `var`
+}
+</code></pre>
+<p>好吧，这打破了我们现有的很多代码。<strong>eval, print, swap and simplify</strong>函数都需要修复。看看我们需要做些什么来修复它们。</p>
+<p>对于eval，我们必须确定评估变量var意味着什么：</p>
+<pre><code class="language-swift">func eval(_ expr: Expr) -&gt; Int {
+  switch expr {
+  case let .int(value):
+    return value
+  case let .add(lhs, rhs):
+    return eval(lhs) + eval(rhs)
+  case let .mul(lhs, rhs):
+    return eval(lhs) * eval(rhs)
+  case let .var:
+
+  }
+}
+</code></pre>
+<p>我们需要返回一个整数，但我们没有整数可以使用。我们能做什么？好吧，我们需要调整<strong>eval</strong>函数，以便我们被迫在特定值下计算表达式。这意味着我们需要更改签名以获得额外的参数：</p>
+<pre><code class="language-swift">func eval(_ expr: Expr, with value: Int) -&gt; Int {
+  switch expr {
+  case let .int(value):
+    return value
+  case let .add(lhs, rhs):
+    return eval(lhs, with: value) + eval(rhs, with: value)
+  case let .mul(lhs, rhs):
+    return eval(lhs, with: value) * eval(rhs, with: value)
+  case let .var:
+    return value
+  }
+}
+</code></pre>
+<p>让我们也更新<strong>print</strong>。要打印这个新表达式，我们必须知道如何将变量打印到字符串中。好吧，我们可以自由选择任何我们想要的东西。我们可以使用问号?，像<strong>unknown</strong>这样的单词，像**_**这样的符号或任何东西。但是，我喜欢数学，数学喜欢x，所以让我们用它来：</p>
+<pre><code class="language-swift">func print(_ expr: Expr) -&gt; String {
+  switch expr {
+  case let .int(value):
+    return &quot;\(value)&quot;
+  case let .add(lhs, rhs):
+    return &quot;(\(print(lhs)) + \(print(rhs)))&quot;
+  case let .mul(lhs, rhs):
+    return &quot;\(print(lhs)) * \(print(rhs))&quot;
+  case .var:
+    return &quot;x&quot;
+  }
+}
+
+print(.add(.var, 2))
+// &quot;x + 2&quot;
+</code></pre>
+<p><strong>swap</strong>函数只想交换加法和乘法，因此它真的不需要对变量做任何事情：</p>
+<pre><code class="language-swift">func swap(_ expr: Expr) -&gt; Expr {
+  switch expr {
+  case .int:
+    return expr
+  case let .add(lhs, rhs):
+    return .mul(swap(lhs), swap(rhs))
+  case let .mul(lhs, rhs):
+    return .add(swap(lhs), swap(rhs))
+  case .var:
+    return expr
+  }
+}
+</code></pre>
+<p>最后更新<strong>simplify</strong>。没有办法进一步简化单个变量：</p>
+<pre><code class="language-swift">func simplify(_ expr: Expr) -&gt; Expr {
+  switch expr {
+  case let .add(.mul(a, b), .mul(c, d)) where a == c:
+    return simplify(.mul(a, .add(b, d)))
+  case .int:
+    return expr
+  case .add:
+    return expr
+  case .mult:
+    return expr
+  case .var:
+    return expr
+  }
+}
+</code></pre>
+<p>现在编译器很高兴，我们可以玩弄我们的新表达式了。</p>
+<p>从<strong>eval</strong>开始，我们可以用<strong>var</strong>替换<strong>int</strong>。</p>
+<pre><code class="language-swift">eval(.mul(.add(.var, 4), .add(5, 6)), with: 3)
+// 77
+</code></pre>
+<p><strong>print</strong>怎么样？当我们用var替换int时，我们可以看到变量是如何打印的。</p>
+<pre><code class="language-swift">print(.mult(.add(3, .var), .add(5, 6)))
+// &quot;((3 + x) * (5 + 6))&quot;
+</code></pre>
+<p>我们可以在整个过程中不断添加vars，并按我们的预期打印内容。</p>
+<pre><code class="language-swift">print(.mult(.add(3, .var), .add(5, .var)))
+// &quot;((3 + x) * (5 + x))&quot;
+</code></pre>
+<p>让我们确保simplify仍然适用于我们的vars。</p>
+<pre><code class="language-swift">print(simplify(Expr.add(.mul(.var, 3), .mul(.var, 4))))
+// (x * (3 + 4))
+</code></pre>
+<p>这是一个非常强大的想法：拥有高度可转换的数据类型，然后具有各种解释，当数据类型发生变化时，我们可以以小的方式进行修改，以保持工作。</p>
+<p>在函数式编程社区中，这是一个众所周知的想法：DSL-解释器模式。您创建DSL，并将其与任何解释问题完全分开，然后您可以用在各种解释中，如eval和print。这是一种非常有趣的方式来消除这些担忧。DSL在Swift社区中还不是超级常见，也不是Swift中解决问题的常见思维方式。但是，令人惊讶的是，我们在日常编程生活中遇到的许多问题可以重塑为创建DSL的想法，以纯粹面向数据、无副作用的方式建模域问题，然后提供解释，以各种方式评估该DSL。</p>
+<p>下次，我们将在这个DSL中添加两个高级功能，这可能看起来有点令人惊讶，我们最终会回答：“这有什么意义？”</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/WVaWt6se_/" class="tag">
+                    DSL
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/swift-zhong-de-chou-xiang-lei-xing-he-fang-fa/">
+                  <h3 class="post-title">
+                    Swift中的抽象类型和方法
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
