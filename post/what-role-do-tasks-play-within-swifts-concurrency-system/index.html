@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>What role do Tasks play within Swift’s concurrency system? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1653207772604">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Bridging the gap between synchronous and asynchronous code
+
+
+
+
+Referencing and cancelling a task
+
+
+
+
+Context inherit..." />
+    <meta name="keywords" content="task,async/await" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1653207772604" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">What role do Tasks play within Swift’s concurrency system?</h2>
+            <div class="post-date">2022-05-22</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Bridgingthegapbetweensynchronousandasynchronouscode">Bridging the gap between synchronous and asynchronous code</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Referencingandcancellingatask">Referencing and cancelling a task</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Contextinheritance">Context inheritance</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Awaitingtheresultofatask">Awaiting the result of a task</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="what-role-do-tasks-play-within-swifts-concurrency-system">What role do Tasks play within Swift’s concurrency system?</h1>
+<p>在使用Swift新的内置并发系统编写异步代码时，创建<strong>a Task</strong>使我们能够访问新的异步上下文，在该上下文中，我们可以自由调用异步标记的API，并在后台执行工作。</p>
+<p>但除了使我们能够封装一段异步代码外，<strong>Task</strong>类型还允许我们控制此类代码的运行、管理和潜在取消方式。</p>
+<hr>
+<h2 id="1-a-namebridgingthegapbetweensynchronousandasynchronouscodeabridging-the-gap-between-synchronous-and-asynchronous-code">1. <a name='Bridgingthegapbetweensynchronousandasynchronouscode'></a>Bridging the gap between synchronous and asynchronous code</h2>
+<p>在基于UI的应用程序中使用<strong>Task</strong>的最常见方式可能是让它充当同步、主线程绑定UI代码和用于获取或处理UI呈现的数据的任何后台操作之间的桥梁。</p>
+<p>例如，在这里，我们使用基于UIKit的<strong>ProfileViewController</strong>中的<strong>Task</strong>，以便能够使用异步标记的API加载视图控制器应该呈现的用户模型：</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let userID: User.ID
+    private let loader: UserLoader
+    private var user: User?
+    ...
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        Task {
+            do {
+                let user = try await loader.loadUser(withID: userID)
+                userDidLoad(user)
+            } catch {
+                handleError(error)
+            }
+        }
+    }
+    
+    ...
+
+    private func handleError(_ error: Error) {
+        // Show an error view
+        ...
+    }
+
+    private func userDidLoad(_ user: User) {
+        // Render the user's profile
+        ...
+    }
+}
+</code></pre>
+<p>上述代码中真正有趣的一点是，没有捕获<strong>self</strong>，也没有<strong>DispatchQueue.main.async</strong>调用，无需保留的令牌或可取消项，或使用闭包或<strong>Combine</strong>等工具执行异步操作时通常必须执行的任何其他类型的“账本”。</p>
+<p>那么，我们究竟如何才能执行一个网络调用（它肯定会在后台线程上执行），然后直接调用用户界面更新方法，如<strong>userDidLoad</strong>和<strong>handleError</strong>，而不必首先使用<strong>DispatchQueue.main</strong>手动调度这些调用呢</p>
+<p>这就是Swift新的<strong>MainActor</strong>属性的用武之地，它可以自动确保与UI相关的api（如UIView或UIViewController中定义的api）在主线程上正确调度。因此，只要我们使用Swift的新并发系统编写异步代码，并且在这样一个标记了<strong>MainActor</strong>的上下文中，我们就不再需要担心在后台队列上意外执行UI更新。整洁的</p>
+<p>上述实现的另一个有趣之处是，我们不需要手动保留加载任务来完成它。这是因为<strong>异步任务在释放相应的任务句柄时不会自动取消，它们只是在后台继续执行</strong>。</p>
+<hr>
+<h2 id="2-a-namereferencingandcancellingataskareferencing-and-cancelling-a-task">2. <a name='Referencingandcancellingatask'></a>Referencing and cancelling a task</h2>
+<p>但是，在这种特殊情况下，我们可能确实希望保留对加载任务的引用，因为我们可能希望在视图控制器消失时取消它，并且我们可能还希望防止在任务已在进行时出现系统调用视图时执行重复的任务：</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let userID: User.ID
+    private let loader: UserLoader
+    private var user: User?
+    private var loadingTask: Task&lt;Void, Never&gt;?
+    ...
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        guard loadingTask == nil else {
+            return
+        }
+
+        loadingTask = Task {
+            do {
+                let user = try await loader.loadUser(withID: userID)
+                userDidLoad(user)
+            } catch {
+                handleError(error)
+            }
+
+            loadingTask = nil
+        }
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        loadingTask?.cancel()
+        loadingTask = nil
+    }
+
+    ...
+}
+</code></pre>
+<blockquote>
+<p>请注意一个任务如何有两种通用类型-第一种表示它返回的输出类型（在我们的例子中这是无效的，因为我们的任务只是将其加载的用户模型转发到视图控制器的方法上），第二个是它的错误类型（因为我们处理任务本身中的所有错误，所以在这种情况下错误类型是<strong>Never</strong>）。</p>
+</blockquote>
+<p>对<strong>Task</strong>调用<strong>cancel</strong>方法也会将其所有子任务标记为已取消。因此，通过取消视图控制器中的顶级<strong>loadingTask</strong>，我们同时也隐式取消了它的底层网络操作。</p>
+<p>但是，请注意，由每个单独的task来实现取消其特定操作所需的实际取消处理代码。因此，即使系统将根据标记自动管理和传播取消，也由每个任务决定如何实际处理该取消（例如，通过在其闭包中调用<strong>task.checkCancellation</strong>）。</p>
+<hr>
+<h2 id="3-a-namecontextinheritanceacontext-inheritance">3. <a name='Contextinheritance'></a>Context inheritance</h2>
+<p>给定任务与其父任务之间的关系可能非常重要，至少在@<strong>MainActor</strong>标记的类中是如此，如视图和视图控制器。这是因为子任务不仅在取消方面与其父任务相连接，它们还自动继承父任务使用的相同执行上下文。</p>
+<p>为了说明这种行为何时会出现一些问题，让我们假设<strong>ProfileViewController</strong>是从本地数据库而不是通过网络加载其用户模型，并且我们的数据库API当前是完全同步的。</p>
+<p>乍一看，以下实现似乎完全可以，因为我们可能期望异步工作仍将在后台线程上执行（即使我们不再在任务中执行任何基于等待的调用）：</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let userID: User.ID
+    private let database: Database
+    private var user: User?
+    private var loadingTask: Task&lt;Void, Never&gt;?
+    ...
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        guard loadingTask == nil else {
+            return
+        }
+
+        loadingTask = Task {
+            do {
+                let user = try database.loadModel(withID: userID)
+                userDidLoad(user)
+            } catch {
+                handleError(error)
+            }
+
+            loadingTask = nil
+        }
+    }
+
+    ...
+}
+</code></pre>
+<p>但是，尽管上述任务确实是异步执行的，但它仍将在主线程上执行，因为它是使用<strong>MainActor</strong>调度的（它从创建它的ViewWillAppear方法继承了该上下文）。因此，从本质上讲，我们上面的任务或多或少相当于在<strong>DispachQueue.main.async</strong>中执行相同的数据库调用。</p>
+<p>由于我们可能希望将数据库调用从主线程移开（以防止该调用干扰UI的响应），因此我们可以使用<strong>detached task</strong>，该任务将在其自己的独立上下文中执行。执行此操作时，在回调视图控制器的方法时，我们还必须使用<strong>await</strong>，因为这些方法是由<strong>MainActor</strong>隔离的（我们也不能在任务中直接将<strong>loadingTask</strong>属性设置为nil）：</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    ...
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        guard loadingTask == nil else {
+            return
+        }
+
+        loadingTask = Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+
+            do {
+                let user = try self.database.loadModel(withID: self.userID)
+                await self.userDidLoad(user)
+            } catch {
+                await self.handleError(error)
+            }
+
+            await self.loadingTaskDidFinish()
+        }
+    }
+
+    ...
+
+    private func loadingTaskDidFinish() {
+        loadingTask = nil
+    }
+}
+</code></pre>
+<p>通常，当我们显式地想要创建一个使用自己的执行上下文的新顶级任务时，建议只使用<strong>detached tasks</strong>。在其他情况下，建议只使用**Task{}**封装异步代码。</p>
+<hr>
+<h2 id="4-a-nameawaitingtheresultofataskaawaiting-the-result-of-a-task">4. <a name='Awaitingtheresultofatask'></a>Awaiting the result of a task</h2>
+<p>最后，让我们看看如何等待给定<strong>Task</strong>实例的结果。例如，假设我们希望扩展上述基于数据库的视图控制器实现，支持通过网络加载当前用户的图像。</p>
+<p>为此，我们将分离的任务包装到另一个任务实例中，然后使用wait关键字等待数据库加载操作完成，然后再继续图像下载-如下所示：</p>
+<pre><code class="language-swift">class ProfileViewController: UIViewController {
+    private let userID: User.ID
+    private let database: Database
+    private let imageLoader: ImageLoader
+    private var user: User?
+    private var loadingTask: Task&lt;Void, Never&gt;?
+    ...
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        guard loadingTask == nil else {
+            return
+        }
+
+        loadingTask = Task {
+            let databaseTask = Task.detached(
+                priority: .userInitiated,
+                operation: { [database, userID] in
+                    try database.loadModel(withID: userID)
+                }
+            )
+
+            do {
+                let user = try await databaseTask.value
+                let image = try await imageLoader.loadImage(from: user.imageURL)
+                userDidLoad(user, image: image)
+            } catch {
+                handleError(error)
+            }
+
+            loadingTask = nil
+        }
+    }
+
+    ...
+
+    private func userDidLoad(_ user: User, image: UIImage) {
+        // Render the user's profile
+        ...
+    }
+}
+</code></pre>
+<p>请注意，我们如何再次在顶级任务中直接调用视图控制器的方法，因为它现在是<strong>MainActor</strong>绑定的，就像以前一样。这说明了我们现在可以多么顺利地混合在主队列上和主队列下执行的工作，而不必担心在错误的线程上意外执行UI更新。</p>
+<hr>
+<h2 id="5-a-nameconclusionaconclusion">5. <a name='Conclusion'></a>Conclusion</h2>
+<p>Swift的新<strong>Task</strong>类型使我们能够封装、观察和控制一个异步工作单元，从而允许我们调用异步标记的API，并执行后台工作，即使在完全同步的代码中也是如此。这样，我们就可以逐步引入异步函数和Swift新并发系统的其余部分，即使在没有考虑这些新功能的应用程序中也是如此。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/zG1xWD6Vz/" class="tag">
+                    task
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/rKVwHAq49U/" class="tag">
+                    async/await
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/swift-actors-how-do-they-work-and-what-kinds-of-problems-do-they-solve/">
+                  <h3 class="post-title">
+                    Swift actors: How do they work, and what kinds of problems do they solve?
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

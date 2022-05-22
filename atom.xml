@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://kayouyou.github.io</id>
     <title>Kayouyou&apos;s Den</title>
-    <updated>2022-05-21T13:57:43.558Z</updated>
+    <updated>2022-05-22T08:24:46.757Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://kayouyou.github.io"/>
     <link rel="self" href="https://kayouyou.github.io/atom.xml"/>
@@ -10,6 +10,62 @@
     <logo>https://kayouyou.github.io/images/avatar.png</logo>
     <icon>https://kayouyou.github.io/favicon.ico</icon>
     <rights>All rights reserved 2022, Kayouyou&apos;s Den</rights>
+    <entry>
+        <title type="html"><![CDATA[Equality]]></title>
+        <id>https://kayouyou.github.io/post/equality/</id>
+        <link href="https://kayouyou.github.io/post/equality/">
+        </link>
+        <updated>2022-05-22T08:22:25.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Creating Combine-compatible versions of async/await-based APIs]]></title>
+        <id>https://kayouyou.github.io/post/creating-combine-compatible-versions-of-asyncawait-based-apis/</id>
+        <link href="https://kayouyou.github.io/post/creating-combine-compatible-versions-of-asyncawait-based-apis/">
+        </link>
+        <updated>2022-05-22T08:21:43.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Lightweight dependency injection and unit testing using async functions]]></title>
+        <id>https://kayouyou.github.io/post/lightweight-dependency-injection-and-unit-testing-using-async-functions/</id>
+        <link href="https://kayouyou.github.io/post/lightweight-dependency-injection-and-unit-testing-using-async-functions/">
+        </link>
+        <updated>2022-05-22T08:20:43.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[What role do Tasks play within Swift’s concurrency system?]]></title>
+        <id>https://kayouyou.github.io/post/what-role-do-tasks-play-within-swifts-concurrency-system/</id>
+        <link href="https://kayouyou.github.io/post/what-role-do-tasks-play-within-swifts-concurrency-system/">
+        </link>
+        <updated>2022-05-22T08:20:00.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Swift actors: How do they work, and what kinds of problems do they solve?]]></title>
+        <id>https://kayouyou.github.io/post/swift-actors-how-do-they-work-and-what-kinds-of-problems-do-they-solve/</id>
+        <link href="https://kayouyou.github.io/post/swift-actors-how-do-they-work-and-what-kinds-of-problems-do-they-solve/">
+        </link>
+        <updated>2022-05-22T08:18:47.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Building async and concurrent versions of forEach and map]]></title>
+        <id>https://kayouyou.github.io/post/building-async-and-concurrent-versions-of-foreach-and-map/</id>
+        <link href="https://kayouyou.github.io/post/building-async-and-concurrent-versions-of-foreach-and-map/">
+        </link>
+        <updated>2022-05-22T08:16:54.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Using Swift’s concurrency system to run multiple tasks in parallel]]></title>
+        <id>https://kayouyou.github.io/post/using-swifts-concurrency-system-to-run-multiple-tasks-in-parallel/</id>
+        <link href="https://kayouyou.github.io/post/using-swifts-concurrency-system-to-run-multiple-tasks-in-parallel/">
+        </link>
+        <updated>2022-05-22T08:16:25.000Z</updated>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[SwiftUI view's refreshable]]></title>
+        <id>https://kayouyou.github.io/post/swiftui-views-refreshable/</id>
+        <link href="https://kayouyou.github.io/post/swiftui-views-refreshable/">
+        </link>
+        <updated>2022-05-22T08:14:09.000Z</updated>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Domain‑Specific Languages: Part 1]]></title>
         <id>https://kayouyou.github.io/post/domain-specific-languages-part-1/</id>
@@ -23,61 +79,5 @@
         <link href="https://kayouyou.github.io/post/swift-zhong-de-chou-xiang-lei-xing-he-fang-fa/">
         </link>
         <updated>2022-05-08T14:34:35.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[极简主义者的Flutter状态管理]]></title>
-        <id>https://kayouyou.github.io/post/ji-jian-zhu-yi-zhe-de-flutter-zhuang-tai-guan-li/</id>
-        <link href="https://kayouyou.github.io/post/ji-jian-zhu-yi-zhe-de-flutter-zhuang-tai-guan-li/">
-        </link>
-        <updated>2022-03-28T02:34:50.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Swift实现Queues的四种方式]]></title>
-        <id>https://kayouyou.github.io/post/swift-shi-xian-queues-de-si-chong-fang-shi/</id>
-        <link href="https://kayouyou.github.io/post/swift-shi-xian-queues-de-si-chong-fang-shi/">
-        </link>
-        <updated>2022-03-13T10:30:57.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[PointFree Episode 58:What Is a Parser?: Part 3]]></title>
-        <id>https://kayouyou.github.io/post/pointfree-episode-58what-is-a-parser-part-3/</id>
-        <link href="https://kayouyou.github.io/post/pointfree-episode-58what-is-a-parser-part-3/">
-        </link>
-        <updated>2022-01-16T11:35:32.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[PointFree Episode 57:What Is a Parser?: Part 2]]></title>
-        <id>https://kayouyou.github.io/post/pointfree-episode-57what-is-a-parser-part-2/</id>
-        <link href="https://kayouyou.github.io/post/pointfree-episode-57what-is-a-parser-part-2/">
-        </link>
-        <updated>2022-01-15T11:34:38.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[PointFree Episode 56:What Is a Parser?: Part 1]]></title>
-        <id>https://kayouyou.github.io/post/pointfree-episode-56what-is-a-parser-part-1/</id>
-        <link href="https://kayouyou.github.io/post/pointfree-episode-56what-is-a-parser-part-1/">
-        </link>
-        <updated>2022-01-15T11:33:50.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[PointFree Episode 108:Composable SwiftUI Bindings: Case Paths]]></title>
-        <id>https://kayouyou.github.io/post/pointfree-episode-108composable-swiftui-bindings-case-paths/</id>
-        <link href="https://kayouyou.github.io/post/pointfree-episode-108composable-swiftui-bindings-case-paths/">
-        </link>
-        <updated>2022-01-11T11:30:51.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[PointFree Episode 109:Composable SwiftUI Bindings: The Point]]></title>
-        <id>https://kayouyou.github.io/post/pointfree-episode-109composable-swiftui-bindings-the-point/</id>
-        <link href="https://kayouyou.github.io/post/pointfree-episode-109composable-swiftui-bindings-the-point/">
-        </link>
-        <updated>2022-01-10T11:32:04.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[PointFree Episode 107:Composable SwiftUI Bindings: The Problem]]></title>
-        <id>https://kayouyou.github.io/post/pointfree-episode-107composable-swiftui-bindings-the-problem/</id>
-        <link href="https://kayouyou.github.io/post/pointfree-episode-107composable-swiftui-bindings-the-problem/">
-        </link>
-        <updated>2021-12-18T04:23:37.000Z</updated>
     </entry>
 </feed>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Creating Combine-compatible versions of async/await-based APIs | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1653207772604">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Async futures
+
+
+
+
+Reactive async sequences
+
+
+
+
+Conclusion
+
+
+
+
+
+Creating Combine-compatible versions of async/await-b..." />
+    <meta name="keywords" content="async/await,combine" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1653207772604" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Creating Combine-compatible versions of async/await-based APIs</h2>
+            <div class="post-date">2022-05-22</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Asyncfutures">Async futures</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Reactiveasyncsequences">Reactive async sequences</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="creating-combine-compatible-versions-of-asyncawait-based-apis">Creating Combine-compatible versions of async/await-based APIs</h1>
+<p>随着时间的推移，许多开发人员在维护各种代码库时面临的一个挑战是如何以正确遵守每项相关技术约定的方式整齐地连接不同的框架和API。</p>
+<p>例如，随着世界各地的团队开始采用Swift 5.5的<strong>async/await</strong>并发系统，我们可能会发现自己需要创建与其他异步编程技术（如Combine）兼容的异步标记API版本。</p>
+<p>让我们探索如何轻松创建任何异步API的基于Combine的变体，无论它是由我们定义的、苹果定义的，还是作为第三方依赖项的一部分。</p>
+<hr>
+<h2 id="1-a-nameasyncfuturesaasync-futures">1. <a name='Asyncfutures'></a>Async futures</h2>
+<p>假设我们正在开发的应用程序包含以下<strong>ModelLoader</strong>，可用于通过网络加载任何可解码模型。它通过如下所示的异步函数执行其工作：</p>
+<pre><code class="language-swift">class ModelLoader&lt;Model: Decodable&gt; {
+    ...
+
+    func loadModel(from url: URL) async throws -&gt; Model {
+        ...
+    }
+}
+</code></pre>
+<p>现在，假设我们还想创建一个基于Combine的上述loadModel API版本，例如，以便能够在我们代码库的特定部分中调用它，这些部分可能使用Combine框架以更被动的风格编写。</p>
+<p>当然，我们可以选择专门为我们的ModelLoader类型编写这种兼容性代码，但由于这是一个我们在使用基于Combine的代码时可能会多次遇到的一般性问题，因此让我们创建一个更通用的解决方案，以便能够在代码库中轻松重用。</p>
+<p>由于我们正在处理返回单个值或抛出错误的异步函数，让我们使用Combine的Future发布器来包装这些调用。该publisher类型是专门为此类用例构建的，因为它为我们提供了一个闭包，可用于将单个Result报告回框架。</p>
+<p>因此，让我们继续使用方便的初始化器扩展Future类型，该初始化器可以使用异步闭包初始化实例：</p>
+<pre><code class="language-swift">extension Future where Failure == Error {
+    convenience init(operation: @escaping () async throws -&gt; Output) {
+        self.init { promise in
+            Task {
+                do {
+                    let output = try await operation()
+                    promise(.success(output))
+                } catch {
+                    promise(.failure(error))
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p>创建与任何特定用例无关的抽象的强大功能是，我们现在能够将其应用于我们想要使Combine兼容的任何异步API。只需要几行代码来调用API，我们希望在传递给我们新的Future初始化器的闭包中桥接API——如下所示：</p>
+<pre><code class="language-swift">extension ModelLoader {
+    func modelPublisher(for url: URL) -&gt; Future&lt;Model, Error&gt; {
+        Future {
+            try await self.loadModel(from: url)
+        }
+    }
+}
+</code></pre>
+<p>整洁！请注意，我们如何选择为基于Combine的版本提供与我们异步驱动的版本相同的loadModel名称（因为Swift支持方法重载）。然而，在这种情况下，明确区分两者可能是一个好主意，这就是为什么上述新API的名称明确包括“Publisher”一词。</p>
+<hr>
+<h2 id="2-a-namereactiveasyncsequencesareactive-async-sequences">2. <a name='Reactiveasyncsequences'></a>Reactive async sequences</h2>
+<p>异步序列和流可能是Swift标准库有史以来最接近采用响应式编程的序列和流，这反过来又使这些API的行为与Combine非常相似——因为它们使我们能够随着时间的推移发出值。</p>
+<p>如果我们想将异步序列（或流）转换为publisher怎么办？</p>
+<p>继续之前的ModelLoader示例，假设我们的加载程序类还提供以下API，它允许我们创建一个AsyncThrowingStream，发出从URL数组加载的一系列模型：</p>
+<pre><code class="language-swift">class ModelLoader&lt;Model: Decodable&gt; {
+    ...
+
+    func loadModels(from urls: [URL]) -&gt; AsyncThrowingStream&lt;Model, Error&gt; {
+        ...
+    }
+}
+</code></pre>
+<p>就像以前一样，与其匆忙编写专门将上述loadModels API转换为Combine publisher的代码，不如尝试想出一个通用抽象，每当我们想在项目中的其他地方编写类似的桥接代码时，我们都可以重用。</p>
+<p>这一次，我们将扩展Combine的PassthroughSubject类型，该类型使我们能够完全控制其值何时发射，以及何时以及如何终止。然而，我们不会将此API建模为方便的初始化器，因为我们想明确表示，调用此API实际上将使创建的subject立即开始发出值。因此，让我们把它改成静态工厂方法——如下所示：</p>
+<pre><code class="language-swift">extension PassthroughSubject where Failure == Error {
+    static func emittingValues&lt;T: AsyncSequence&gt;(
+        from sequence: T
+    ) -&gt; Self where T.Element == Output {
+        let subject = Self()
+
+        Task {
+            do {
+                for try await value in sequence {
+                    subject.send(value)
+                }
+
+                subject.send(completion: .finished)
+            } catch {
+                subject.send(completion: .failure(error))
+            }
+        }
+
+        return subject
+    }
+}
+</code></pre>
+<p>有了上述规定，我们现在几乎可以像之前异步标记API一样轻松地包装基于异步流的loadModels API——在这种情况下，唯一需要的额外步骤是将我们的PassthroughSubject实例键入到AnyPublisher中，以防止任何其他代码能够向我们的主题发送新值：</p>
+<pre><code class="language-swift">extension ModelLoader {
+    func modelPublisher(for urls: [URL]) -&gt; AnyPublisher&lt;Model, Error&gt; {
+        let subject = PassthroughSubject.emittingValues(
+            from: loadModels(from: urls)
+        )
+        
+        return subject.eraseToAnyPublisher()
+    }
+}
+</code></pre>
+<p>就像这样，我们现在创建了两个方便的API，使我们非常简单地使用Swift的并发系统与Combine向后兼容——当使用Combine的代码库时，这应该是非常方便的。</p>
+<hr>
+<h2 id="3-a-nameconclusionaconclusion">3. <a name='Conclusion'></a>Conclusion</h2>
+<p>尽管Swift现在确实有一个内置并发系统，其覆盖范围与Combine大致相同，但我认为这两种技术在未来几年将继续非常有用——因此我们越能在它们之间建立更平坦的桥梁，就越好。</p>
+<p>虽然一些开发人员可能会选择使用Swift并发完全重写基于Combine-based的代码，但好消息是，我们不必这样做。只需几个方便的API，我们就可以使在这两种技术之间传递数据和事件变得微不足道，这反过来又将使我们能够继续使用基于Combine的代码，即使我们开始采用<strong>async/await</strong>和Swift并发系统的其余部分。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/rKVwHAq49U/" class="tag">
+                    async/await
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/pWBp0_XTT/" class="tag">
+                    combine
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/lightweight-dependency-injection-and-unit-testing-using-async-functions/">
+                  <h3 class="post-title">
+                    Lightweight dependency injection and unit testing using async functions
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

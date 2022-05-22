@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Lightweight dependency injection and unit testing using async functions | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1653207772604">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Injected networking
+
+
+
+
+Protocol-based mocking
+
+
+
+
+Adding a bit of functional programming
+
+
+
+
+Scaling things up
+
+
+
+
+..." />
+    <meta name="keywords" content="async/await,dependency injection" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1653207772604" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Lightweight dependency injection and unit testing using async functions</h2>
+            <div class="post-date">2022-05-22</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Injectednetworking">Injected networking</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Protocol-basedmocking">Protocol-based mocking</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Addingabitoffunctionalprogramming">Adding a bit of functional programming</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Scalingthingsup">Scaling things up</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="lightweight-dependency-injection-and-unit-testing-using-async-functions">Lightweight dependency injection and unit testing using async functions</h1>
+<p>通常，使代码易于单元测试往往与改进代码的关注点分离、状态管理和总体架构密切相关。一般来说，代码的抽象和组织得越好，就越容易以自动化的方式进行测试。</p>
+<p>然而，为了使代码更易于测试，我们经常会发现自己引入了大量新的协议和其他类型的抽象，最终会使我们的代码在这个过程中变得更加复杂——特别是在测试依赖于某种形式的网络的异步代码时。</p>
+<p>但真的必须这样吗？如果我们能够以一种不需要引入任何新协议、模拟类型或复杂抽象的方式使代码完全可测试，那会怎么样？让我们探讨如何利用Swift新的<strong>async/await</strong>功能来实现这一点。</p>
+<hr>
+<h2 id="1-a-nameinjectednetworkingainjected-networking">1. <a name='Injectednetworking'></a>Injected networking</h2>
+<p>假设我们正在开发一个包含以下<strong>ProductViewModel</strong>的应用程序，该应用程序使用非常常见的模式通过其初始值设定项注入<strong>URLSession</strong>（用于执行网络调用）：</p>
+<pre><code class="language-swift">class ProductViewModel {
+    var title: String { product.name }
+    var detailText: String { product.description }
+    var price: Price { product.price(in: localUser.currency) }
+    ...
+
+    private var product: Product
+    private let localUser: User
+    private let urlSession: URLSession
+
+⭕️  init(product: Product, localUser: User, urlSession: URLSession = .shared) {
+        self.product = product
+        self.localUser = localUser
+        self.urlSession = urlSession
+    }
+
+    func reload() async throws {
+        let url = URL.forLoadingProduct(withID: product.id)
+⭕️      let (data, _) = try await urlSession.data(from: url)
+        let decoder = JSONDecoder()
+        product = try decoder.decode(Product.self, from: data)
+    }
+}
+</code></pre>
+<p>现在，上面的代码没有什么问题。它可以工作，并且使用依赖项注入来避免访问直接作为单例的<strong>URLSession.shared</strong>（在测试和总体架构方面已经有了巨大的好处），为了方便起见即使它默认使用该<strong>shared</strong>实例。</p>
+<p>然而，可以肯定的是，在视图模型和视图控制器等类型中内联原始网络调用是理想情况下应该避免的事情-因为这将在我们的项目中更好地分离关注点，并允许我们在需要在其他地方执行类似请求时重用该网络代码。</p>
+<p>因此，为了继续迭代上述示例，让我们将视图模型的产品加载代码提取到专用的<strong>ProductLoader</strong>类型中：</p>
+<pre><code class="language-swift">class ProductLoader {
+    private let urlSession: URLSession
+
+    init(urlSession: URLSession = .shared) {
+        self.urlSession = urlSession
+    }
+
+    func loadProduct(withID id: Product.ID) async throws -&gt; Product {
+        let url = URL.forLoadingProduct(withID: id)
+        let (data, _) = try await urlSession.data(from: url)
+        let decoder = JSONDecoder()
+        return try decoder.decode(Product.self, from: data)
+    }
+}
+</code></pre>
+<p>如果我们让视图模型使用新的<strong>ProductLoader</strong>，而不是直接与<strong>URLSession</strong>交互，然后，我们可以大大简化它的实现，因为现在只要在要求它重新加载其底层数据模型时调用<strong>loadProduct</strong>即可：</p>
+<pre><code class="language-swift">class ProductViewModel {
+    ...
+    private var product: Product
+    private let localUser: User
+    private let loader: ProductLoader
+
+    init(product: Product, localUser: User, loader: ProductLoader) {
+        self.product = product
+        self.localUser = localUser
+        self.loader = loader
+    }
+
+    func reload() async throws {
+⭕️      product = try await loader.loadProduct(withID: product.id)
+    }
+}
+</code></pre>
+<p>这已经是相当大的进步了。但是，如果我们现在想要实现一些单元测试，以确保视图模型的行为符合我们的预期，该怎么办？<br>
+要做到这一点，我们需要以这样或那样的方式模拟我们的应用程序的网络，因为我们绝对不希望在单元测试中执行任何真正的网络调用（因为这可能会增加延迟等，并且要求我们在处理代码库时始终在线）。</p>
+<hr>
+<h2 id="2-a-nameprotocol-basedmockingaprotocol-based-mocking">2. <a name='Protocol-basedmocking'></a>Protocol-based mocking</h2>
+<p>建立这种模拟的一种方法是创建基于协议的<strong>Networking</strong>抽象，这基本上只需要我们复制<strong>URLSession.data</strong>函数的签名到该协议中，然后通过扩展使<strong>URLSession</strong>符合我们的新协议-如下所示：</p>
+<pre><code class="language-swift">protocol Networking {
+    func data(
+    from url: URL,
+    delegate: URLSessionTaskDelegate?
+    ) async throws -&gt; (Data, URLResponse)
+}
+
+extension Networking {
+    // If we want to avoid having to always pass 'delegate: nil'
+    // at call sites where we're not interested in using a delegate,
+    // we also have to add the following convenience API (which
+    // URLSession itself provides when using it directly):
+    func data(from url: URL) async throws -&gt; (Data, URLResponse) {
+        try await data(from: url, delegate: nil)
+    }
+}
+
+extension URLSession: Networking {}
+</code></pre>
+<p>有了上述功能，我们现在可以让<strong>ProductLoader</strong>接受符合新<strong>Networking</strong>协议的任何对象，不总是使用具体的<strong>URLSession</strong>实例（为了方便起见，我们仍然默认使用<strong>URLSession.shared</strong>）：</p>
+<pre><code class="language-swift">class ProductLoader {
+    private let networking: Networking
+
+    init(networking: Networking = URLSession.shared) {
+        self.networking = networking
+    }
+
+    func loadProduct(withID id: Product.ID) async throws -&gt; Product {
+        let url = URL.forLoadingProduct(withID: id)
+        let (data, _) = try await networking.data(from: url)
+        let decoder = JSONDecoder()
+        return try decoder.decode(Product.self, from: data)
+    }
+}
+</code></pre>
+<p>完成所有准备工作后，我们现在终于可以开始编写测试了。为此，我们将首先创建一个<strong>Networking</strong>协议的模拟实现，然后，我们将设置一个<strong>ProductLoader</strong>和<strong>ProductViewModel</strong>，在执行所有网络调用时使用该模拟实现-这反过来又使我们能够像这样编写测试：</p>
+<pre><code class="language-swift">class NetworkingMock: Networking {
+    var result = Result&lt;Data, Error&gt;.success(Data())
+
+    func data(
+        from url: URL,
+        delegate: URLSessionTaskDelegate?
+    ) async throws -&gt; (Data, URLResponse) {
+        try (result.get(), URLResponse())
+    }
+}
+
+class ProductViewModelTests: XCTestCase {
+    private var product: Product!
+    private var networking: NetworkingMock!
+    private var viewModel: ProductViewModel!
+
+    override func setUp() {
+        super.setUp()
+
+        product = .stub()
+        networking = NetworkingMock()
+        viewModel = ProductViewModel(
+            product: product,
+            localUser: .stub(),
+            loader: ProductLoader(networking: networking)
+        )
+    }
+
+    func testReloadingProductUpdatesTitle() async throws {
+        product.name = &quot;Reloaded product&quot;
+        networking.result = try .success(JSONEncoder().encode(product))
+        XCTAssertNotEqual(viewModel.title, product.name)
+
+        try await viewModel.reload()
+        XCTAssertEqual(viewModel.title, product.name)
+    }
+    
+    ...
+}
+</code></pre>
+<p>好吧，我们现在已经成功地重构了所有与<strong>ProductViewModel</strong>相关的代码，使之成为完全可测试的，并且我们已经开始用单元测试来覆盖它。很不错的。</p>
+<p>但是，如果我们仔细看一下上面的测试用例，我们会发现我们的<strong>ProductLoader</strong>根本没有真正参与我们的测试代码。这是因为在这种情况下，我们真正感兴趣的只是模仿我们实际的网络代码，因为这是我们代码的一部分，在测试上下文中运行会有问题。</p>
+<p>现在，可以肯定的是，我们还应该为<strong>ProductLoader</strong>添加一个附加的协议和模拟层-这将让我们直接模拟它，而不是使用模拟网络实例的真实实现。您甚至可以争辩说，上面的单元测试实际上根本不是一个单元测试，而是一个集成测试，因为它集成了多个单元（我们的视图模型、产品加载器和网络）。</p>
+<p>但是，如果我们按照书本的方式进行单元测试，并引入另一种协议和模拟类型，然后我们可能很快就会走下坡路，代码库中的每个对象都有相关的协议和模拟类型，这将导致大量代码重复并增加复杂性（即使使用代码生成工具自动生成这些类型）。</p>
+<p>让我们看看是否可以将上面的测试用例作为一个单元来验证<strong>ProductViewModel</strong>，同时也要在这个过程中摆脱那些模拟和测试特定的协议。</p>
+<hr>
+<h2 id="3-a-nameaddingabitoffunctionalprogrammingaadding-a-bit-of-functional-programming">3. <a name='Addingabitoffunctionalprogramming'></a>Adding a bit of functional programming</h2>
+<p>如果我们不再从面向对象的结构（如类和协议）的角度来考虑产品加载代码，而是从更具面向函数的角度来看待它，然后，我们可以使用以下函数签名对视图模型的加载代码进行建模：</p>
+<pre><code class="language-swift">typealias Loading&lt;T&gt; = () async throws -&gt; T
+</code></pre>
+<p>也就是说，函数以异步方式加载某种形式的值，并返回该值或抛出错误。</p>
+<p>接下来，让我们再次更改<strong>ProductViewModel</strong>，现在接受与上述签名匹配的函数（使用我们的产品模型进行专门化），而不是直接接受<strong>ProductLoader</strong>实例：</p>
+<pre><code class="language-swift">class ProductViewModel {
+    ...
+
+    private var product: Product
+    private let localUser: User
+    private let reloading: Loading&lt;Product&gt;
+
+    init(product: Product,
+         localUser: User,
+         reloading: @escaping Loading&lt;Product&gt;) {
+        self.product = product
+        self.localUser = localUser
+        self.reloading = reloading
+    }
+
+    func reload() async throws {
+        product = try await reloading()
+    }
+}
+</code></pre>
+<p>上述模式的一个优点是，它仍然允许我们像以前一样继续使用现有的<strong>Networking</strong>和<strong>ProductLoader</strong>代码-我们所要做的就是在创建<strong>ProductViewModel</strong>时传递到它的<strong>reloading</strong> 函数/闭包中调用该代码：</p>
+<pre><code class="language-swift">func makeProductViewModel(
+    for product: Product,
+    localUser: User,
+    networking: Networking
+) -&gt; ProductViewModel {
+    let loader = ProductLoader(networking: networking)
+
+    return ProductViewModel(
+        product: product,
+        localUser: localUser,
+        reloading: {
+            try await loader.loadProduct(withID: product.id)
+        }
+    )
+}
+</code></pre>
+<p>但这里的事情变得非常有趣。现在，当单元测试<strong>ProductViewModel</strong>时，我们不再需要担心模拟我们的网络，甚至不必创建<strong>ProductLoader</strong>实例-我们所要做的就是注入一个内联闭包，该闭包返回一个特定的产品值，我们可以在任何时候以任何方式更改我们的<strong>reloading</strong>响应：</p>
+<pre><code class="language-swift">class ProductViewModelTests: XCTestCase {
+    private var product: Product!
+    private var viewModel: ProductViewModel!
+
+    override func setUp() {
+        super.setUp()
+
+        product = .stub()
+        viewModel = ProductViewModel(
+            product: product,
+            localUser: .stub(),
+            reloading: { [unowned self] in self.product }
+        )
+    }
+
+    func testReloadingProductUpdatesTitle() async throws {
+        product.name = &quot;Reloaded product&quot;
+        XCTAssertNotEqual(viewModel.title, product.name)
+
+        try await viewModel.reload()
+        XCTAssertEqual(viewModel.title, product.name)
+    }
+    
+    ...
+}
+</code></pre>
+<p>请注意，我们的整个测试用例中不再涉及任何协议或模拟类型！因为我们现在已经将<strong>ProductViewModel</strong>与网络代码完全分离，所以我们可以完全隔离地对该类进行单元测试——因为就它而言，它只访问从某处加载产品值的闭包。</p>
+<hr>
+<h2 id="4-a-namescalingthingsupascaling-things-up">4. <a name='Scalingthingsup'></a>Scaling things up</h2>
+<p>但是现在一个大问题变成了——如果我们需要在一个给定类型中执行多种加载操作，那么这个模式如何扩展？为了探索这一点，我们首先介绍第二种异步函数签名，它允许我们使用给定的值执行操作</p>
+<pre><code class="language-swift">typealias AsyncAction&lt;T&gt; = (T) async throws -&gt; Void
+</code></pre>
+<p>然后，假设我们希望扩展<strong>ProductViewModel</strong>，支持将给定产品标记为收藏，并能够将该产品添加到用户定义的列表中。<br>
+为了实现这一点，我们可以将这两个新功能作为单独的闭包注入—如下所示：</p>
+<pre><code class="language-swift">class ProductViewModel {
+    ...
+    private let reloading: Loading&lt;Product&gt;
+    private let favoriteToggling: Loading&lt;Product&gt;
+    private let listAdding: AsyncAction&lt;List.ID&gt;
+
+    init(product: Product,
+         localUser: User,
+         reloading: @escaping Loading&lt;Product&gt;,
+         favoriteToggling: @escaping Loading&lt;Product&gt;,
+         listAdding: @escaping AsyncAction&lt;List.ID&gt;) {
+        self.product = product
+        self.localUser = localUser
+        self.reloading = reloading
+        self.favoriteToggling = favoriteToggling
+        self.listAdding = listAdding
+    }
+
+    func reload() async throws {
+        product = try await reloading()
+    }
+
+    func toggleProductFavoriteStatus() async throws {
+        product = try await favoriteToggling()
+    }
+
+    func addProductToList(withID listID: List.ID) async throws {
+        try await listAdding(listID)
+    }
+}
+</code></pre>
+<p>上述方法仍然有效，但我们的实现可能开始变得有点混乱，因为我们现在必须在初始化视图模型时处理多个闭包。</p>
+<p>让我们从结构体中汲取一些灵感，将上述三个闭包组合成一个Actions结构体，在实现和初始化<strong>ProductViewModel</strong>时，这将为我们增加一点结构（没有双关语）：</p>
+<pre><code class="language-swift">class ProductViewModel {
+    ...
+    private let actions: Actions
+
+    init(product: Product, localUser: User, actions: Actions) {
+        self.product = product
+        self.localUser = localUser
+        self.actions = actions
+    }
+
+    func reload() async throws {
+        product = try await actions.reload()
+    }
+
+    func toggleProductFavoriteStatus() async throws {
+        product = try await actions.toggleFavorite()
+    }
+
+    func addProductToList(withID listID: List.ID) async throws {
+        try await actions.addToList(listID)
+    }
+}
+
+extension ProductViewModel {
+    struct Actions {
+        var reload: Loading&lt;Product&gt;
+        var toggleFavorite: Loading&lt;Product&gt;
+        var addToList: AsyncAction&lt;List.ID&gt;
+    }
+}
+
+func makeProductViewModel(
+    for product: Product,
+    localUser: User,
+    networking: Networking,
+    listManager: ListManager
+) -&gt; ProductViewModel {
+    let loader = ProductLoader(networking: networking)
+
+    return ProductViewModel(
+        product: product,
+        localUser: localUser,
+        actions: ProductViewModel.Actions(
+            reload: {
+                try await loader.loadProduct(withID: product.id)
+            },
+            toggleFavorite: {
+                try await loader.toggleFavoriteStatusForProduct(
+                    withID: product.id
+                )
+            },
+            addToList: { listID in
+                try await listManager.addProduct(
+                    withID: product.id,
+                    toListWithID: listID
+                )
+            }
+        )
+    )
+}
+</code></pre>
+<p>有了上述更改，我们仍然可以在测试中使用简单的闭包来模拟上述三个操作，同时现在也可以轻松地管理这些操作，特别是如果我们将来继续添加新操作的话。当然，上述模式可能无法很好地扩展到具有10、15、20个动作的类型-但在这一点上，也许值得一问的是，这种类型的人是否一开始就有太多的责任。</p>
+<p>然而，对上述模式的一个合理批评是，它最终会将<strong>ProductViewModel</strong>的一些内部实现细节推送到创建其实例的调用站点。例如，我们的<strong>makeProductViewModel</strong>函数现在必须确切地知道它应该在每个视图模型的动作闭包中放置什么逻辑。</p>
+<p>解决这个问题的一种方法是使用我们的生产代码理想情况下应该使用的底层对象提供这些闭包的默认实现-可以使用与<strong>ProductViewModel</strong>本身位于同一文件中的扩展名来完成：</p>
+<pre><code class="language-swift">extension ProductViewModel.Actions {
+    init(productID: Product.ID,
+         loader: ProductLoader,
+         listManager: ListManager) {
+        reload = {
+            try await loader.loadProduct(withID: productID)
+        }
+        toggleFavorite = {
+            try await loader.toggleFavoriteStatusForProduct(
+                withID: productID
+            )
+        }
+        addToList = {
+            try await listManager.addProduct(
+                withID: productID,
+                toListWithID: $0
+            )
+        }
+    }
+}
+</code></pre>
+<p>有了最后的调整，我们的<strong>makeProductViewModel</strong>现在可以简单地注入视图模型的依赖项，或多或少与使用早期基于协议的设置时的操作方式完全相同：</p>
+<pre><code class="language-swift">func makeProductViewModel(
+    for product: Product,
+    localUser: User,
+    networking: Networking,
+    listManager: ListManager
+) -&gt; ProductViewModel {
+    ProductViewModel(
+        product: product,
+        localUser: localUser,
+        actions: ProductViewModel.Actions(
+            productID: product.id,
+            loader: ProductLoader(networking: networking),
+            listManager: listManager
+        )
+    )
+}
+</code></pre>
+<p>通过这种方法，我们可以说在能够通过一组非常轻量级的抽象对我们的视图模型进行单元测试之间取得了相当好的平衡，同时，也不会将任何实现细节泄露给在生产代码中初始化该视图模型的调用站点。</p>
+<hr>
+<h2 id="5-a-nameconclusionaconclusion">5. <a name='Conclusion'></a>Conclusion</h2>
+<p>虽然可能没有完美的依赖注入设置，但通过试验不同的技术，我们通常可以在代码库的组织方式、测试需求和开发人员的个人偏好之间找到一个完美的平衡点。</p>
+<p>希望您觉得本文有趣且有用，尽管我并不是说任何人都应该用上述功能设置替换所有协议，我认为这是一种至少值得探索的方法——特别是现在我们拥有<strong>async/await</strong>的能力。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/rKVwHAq49U/" class="tag">
+                    async/await
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/SI7Eu5Vqu/" class="tag">
+                    dependency injection
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/what-role-do-tasks-play-within-swifts-concurrency-system/">
+                  <h3 class="post-title">
+                    What role do Tasks play within Swift’s concurrency system?
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

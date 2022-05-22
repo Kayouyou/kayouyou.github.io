@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Equality | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1653207772604">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+Equality
+检查两个对象或值是否被视为equal绝对是所有编程中最常用的操作之一。因此，在本文中，让我们看看Swift如何建模平等概念，以及该模型在值和引用类型之间如何变化。
+Swift实现equality的一个最有趣的方面是，..." />
+    <meta name="keywords" content="Equatable" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1653207772604" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Equality</h2>
+            <div class="post-date">2022-05-22</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="equality">Equality</h1>
+<p>检查两个对象或值是否被视为<strong>equal</strong>绝对是所有编程中最常用的操作之一。因此，在本文中，让我们看看Swift如何建模平等概念，以及该模型在值和引用类型之间如何变化。</p>
+<p>Swift实现<strong>equality</strong>的一个最有趣的方面是，这一切都是以非常面向协议的方式完成的——这意味着任何类型都可以通过遵守<strong>Equatable</strong>协议而变得可等：</p>
+<pre><code class="language-swift">struct Article: Equatable {
+    static func ==(lhs: Self, rhs: Self) -&gt; Bool {
+        lhs.title == rhs.title &amp;&amp; lhs.body == rhs.body
+    }
+
+    var title: String
+    var body: String
+}
+</code></pre>
+<p>在上述示例中，我们遵守<strong>Equatable</strong>的方式是通过实现==运算符的重载，该运算符接受要比较的两个值（lhs，左侧值和rhs，右侧值），然后它返回一个布尔结果，说明这两个值是否应被视为相等。</p>
+<p>然而，好消息是，我们通常不必自己编写此类==运算符重载，因为每当类型的存储属性本身都是<strong>Equatable</strong>时，编译器就能够自动合成此类实现。因此，在上述<strong>Article</strong>类型的情况下，我们实际上可以删除我们的手动平等检查代码，并简单地使该类型看起来像这样：</p>
+<pre><code class="language-swift">struct Article: Equatable {
+    var title: String
+    var body: String
+}
+</code></pre>
+<p>Swift的等式检查如此面向协议，这一事实也给了我们在处理通用类型时强大的力量。例如，符合<strong>Equatable</strong>的值（如数组或集合）的集合也会自动被视为equatable值——而不需要我们提供任何额外的代码：</p>
+<pre><code class="language-swift">let latestArticles = [
+    Article(
+        title: &quot;Writing testable code when using SwiftUI&quot;,
+        body: &quot;...&quot;
+    ),
+    Article(title: &quot;Combining protocols in Swift&quot;, body: &quot;...&quot;)
+]
+
+let basicsArticles = [
+    Article(title: &quot;Loops&quot;, body: &quot;...&quot;),
+    Article(title: &quot;Availability checks&quot;, body: &quot;...&quot;)
+]
+
+if latestArticles == basicsArticles {
+    ...
+}
+</code></pre>
+<p>这些类型的集合等式检查的工作方式是通过Swift的条件一致性功能，该功能使类型只有在满足某些条件时才能符合特定协议。例如，以下是只有当存储在给定数组中的元素也符合<strong>Equatable</strong>时，Swift的数组类型才符合<strong>Equatable</strong>——这使我们能够检查两个Article数组是否被认为是相等的原因：</p>
+<pre><code class="language-swift">extension Array where Element: Equatable {
+    ...
+}
+</code></pre>
+<p>由于上述逻辑都没有硬编码到编译器本身中，如果我们也想使自己的通用类型有条件地等同，我们也可以使用完全相同的基于条件一致性的技术。例如，我们的代码库可能包括某种形式的<strong>Group</strong>类型，可用于标记一组相关值：</p>
+<pre><code class="language-swift">struct Group&lt;Value&gt; {
+    var label: String
+    var values: [Value]
+}
+</code></pre>
+<p>为了使该组类型在用于存储可等值时符合<strong>Equatable</strong>，我们只需要编写以下空扩展，它看起来与我们上面查看的数组扩展几乎相同：</p>
+<pre><code class="language-swift">extension Group: Equatable where Value: Equatable {}
+</code></pre>
+<p>有了上述内容，我们现在可以检查两个基于文章的组值是否相等，就像我们在使用数组时一样：</p>
+<pre><code class="language-swift">let latestArticles = Group(
+    label: &quot;Latest&quot;,
+    values: [
+        Article(
+            title: &quot;Writing testable code when using SwiftUI&quot;,
+            body: &quot;...&quot;
+        ),
+        Article(title: &quot;Combining protocols in Swift&quot;, body: &quot;...&quot;)
+    ]
+)
+
+let basicsArticles = Group(
+    label: &quot;Basics&quot;,
+    values: [
+        Article(title: &quot;Loops&quot;, body: &quot;...&quot;),
+        Article(title: &quot;Availability checks&quot;, body: &quot;...&quot;)
+    ]
+)
+
+if latestArticles == basicsArticles {
+    ...
+}
+</code></pre>
+<p>就像集合一样，每当Swift元组的存储值都符合<strong>Equatable</strong>时，也可以检查其相等性：</p>
+<pre><code class="language-swift">let latestArticles = (
+    first: Article(
+        title: &quot;Writing testable code when using SwiftUI&quot;,
+        body: &quot;...&quot;
+    ),
+    second: Article(title: &quot;Combining protocols in Swift&quot;, body: &quot;...&quot;)
+)
+
+let basicsArticles = (
+    first: Article(title: &quot;Loops&quot;, body: &quot;...&quot;),
+    second: Article(title: &quot;Availability checks&quot;, body: &quot;...&quot;)
+)
+
+if latestArticles == basicsArticles {
+    ...
+}
+</code></pre>
+<p>然而，包含上述可等元组的集合不会自动符合<strong>Equatable</strong>。因此，如果我们将上述两个元组放入两个相同的数组中，那么它们将不被视为可等的：</p>
+<pre><code class="language-swift">let firstArray = [latestArticles, basicsArticles]
+let secondArray = [latestArticles, basicsArticles]
+
+// Compiler error: Type '(first: Article, second: Article)'
+// cannot conform to 'Equatable':
+if firstArray == secondArray {
+    ...
+}
+</code></pre>
+<p>上述功能不起作用（至少不是开箱即用）的原因是——正如发布的编译器消息所暗示的那样——元组不符合协议，这意味着我们之前查看的符合可等的数组扩展将不会生效。</p>
+<p>然而，有一种方法可以使上述内容发挥作用——因为它说明了Swift的等式检查有多灵活，而且我们不仅仅是为了符合Equatable而实现单个==重载。</p>
+<p>因此，如果我们添加另一个，自定义==重载，特别是对于包含<strong>equatable</strong>的双元素元组的数组，那么上面的代码示例实际上将成功编译：</p>
+<pre><code class="language-swift">extension Array {
+    // This '==' overload will be used specifically when two
+    // arrays containing two-element tuples are being compared:
+    static func ==&lt;A: Equatable, B: Equatable&gt;(
+        lhs: Self,
+        rhs: Self
+    ) -&gt; Bool where Element == (A, B) {
+        // First, we verify that the two arrays that are being
+        // compared contain the same amount of elements:
+        guard lhs.count == rhs.count else {
+            return false
+        }
+
+        // We then &quot;zip&quot; the two arrays, which will give us
+        // a collection where each element contains one element
+        // from each array, and we then check that each of those
+        // elements pass a standard equality check:
+        return zip(lhs, rhs).allSatisfy(==)
+    }
+}
+</code></pre>
+<blockquote>
+<p>在上面，我们还可以看到如何将Swift运算符作为函数传递，因为我们能够将==直接传递给allSatisfy的调用。</p>
+</blockquote>
+<p>到目前为止，我们一直在关注值类型（如结构体）在检查相等时的行为，但引用类型呢？例如，假设我们现在决定将之前的文章结构体转换为类，这将如何影响其<strong>Equatable</strong>实现？</p>
+<pre><code class="language-swift">class Article: Equatable {
+    var title: String
+    var body: String
+    
+    init(title: String, body: String) {
+        self.title = title
+        self.body = body
+    }
+}
+</code></pre>
+<p>在执行上述更改时，我们会注意到的第一件事是，编译器不再能够自动合成我们类型的<strong>Equatable</strong>——因为该功能仅限于值类型。因此，如果我们希望我们的文章类型用一个类实现，那么我们必须手动实现<strong>Equatable</strong>所需的==重载，就像我们在本文开头所做的那样：</p>
+<pre><code class="language-swift">class Article: Equatable {
+    static func ==(lhs: Article, rhs: Article) -&gt; Bool {
+    lhs.title == rhs.title &amp;&amp; lhs.body == rhs.body
+}
+
+    var title: String
+    var body: String
+
+    init(title: String, body: String) {
+        self.title = title
+        self.body = body
+    }
+}
+</code></pre>
+<p>然而，任何类型的基于Objective-C类的子类都会从<strong>NSObject</strong>（这是几乎所有Objective-C类的根基类）继承默认的<strong>Equatable</strong>实现。因此，如果我们要将文章类作为<strong>NSObject</strong>子类，那么它实际上会变得可等，而不会严格要求我们实现自定义==重载：</p>
+<pre><code class="language-swift">class Article: NSObject {
+    var title: String
+    var body: String
+
+    init(title: String, body: String) {
+        self.title = title
+        self.body = body
+        super.init()
+    }
+}
+</code></pre>
+<p>虽然使用上述子类技术以避免编写自定义检查相等代码可能很诱人，但重要的是要指出，默认的Objective-C提供的<strong>Equatable</strong>实现只会检查两个类是否是相同的实例——而不是如果它们包含相同的数据。因此，即使以下两个文章实例具有相同的标题和正文，但在使用上述基于NSObject的方法时，它们也不会被视为平等：</p>
+<pre><code class="language-swift">let articleA = Article(title: &quot;Title&quot;, body: &quot;Body&quot;)
+let articleB = Article(title: &quot;Title&quot;, body: &quot;Body&quot;)
+print(articleA == articleB) // false
+</code></pre>
+<p>然而，执行这些类型的实例检查可能非常有用——因为有时我们可能希望能够检查两个基于类的引用是否指向同一个底层实例。然而，我们不需要我们的类从NSObject继承来做到这一点，因为我们可以使用Swift内置的三等运算符===在任何两个引用之间执行这样的检查：</p>
+<pre><code class="language-swift">let articleA = Article(title: &quot;Title&quot;, body: &quot;Body&quot;)
+let articleB = articleA
+print(articleA === articleB) // true
+</code></pre>
+<p>有了这个，我相信我们已经涵盖了equality如何在Swift中工作的所有基础知识——对于值和对象，使用自定义或自动生成的实现，以及如何使泛型有条件地等同。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/KpFajjYS5/" class="tag">
+                    Equatable
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/creating-combine-compatible-versions-of-asyncawait-based-apis/">
+                  <h3 class="post-title">
+                    Creating Combine-compatible versions of async/await-based APIs
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

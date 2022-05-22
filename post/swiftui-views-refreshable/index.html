@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>SwiftUI view&#39;s refreshable | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1653207772604">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Powered by async/await
+
+
+
+
+Error handling
+
+
+
+
+Custom refreshing logic
+
+
+
+
+Conclusion
+
+
+
+
+
+Making SwiftUI views refre..." />
+    <meta name="keywords" content="swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1653207772604" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">SwiftUI view&#39;s refreshable</h2>
+            <div class="post-date">2022-05-22</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Poweredbyasyncawait">Powered by async/await</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Errorhandling">Error handling</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Customrefreshinglogic">Custom refreshing logic</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Conclusion">Conclusion</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="making-swiftui-views-refreshable">Making SwiftUI views refreshable</h1>
+<p>在WWDC21上，苹果推出了一个新的SwiftUI API，使我们能够将刷新操作附加到任何视图上，这反过来又为我们提供了对非常流行的<strong>pull-to-refresh</strong>机制的原生支持。让我们看看这个新API是如何工作的，以及它如何使我们能够构建完全自定义的刷新逻辑。</p>
+<hr>
+<h2 id="1-a-namepoweredbyasyncawaitapowered-by-asyncawait">1. <a name='Poweredbyasyncawait'></a>Powered by async/await</h2>
+<p>为了能够判断刷新操作何时完成，SwiftUI使用<strong>async/await</strong>模式，该模式在Swift 5.5中引入。因此，在我们开始采用新的刷新API之前，我们需要一个<strong>async-marked</strong>函数，每当我们的视图刷新操作被触发时，我们都可以调用该函数。</p>
+<p>例如，假设我们正在开发一个包含某种形式的书签功能的应用程序，并且我们已经构建了一个<strong>BookmarkListViewModel</strong>，负责向我们的书签列表用户界面提供数据。然后，为了刷新数据，我们添加了一个异步<strong>reload</strong>方法，该方法又调用<strong>DatabaseController</strong>来获取书签模型数组：</p>
+<pre><code class="language-swift">class BookmarkListViewModel: ObservableObject {
+    @Published private(set) var bookmarks: [Bookmark]
+    private let databaseController: DatabaseController
+    ...
+
+    func reload() async {
+        bookmarks = await databaseController.loadAllModels(
+            ofType: Bookmark.self
+        )
+    }
+}
+</code></pre>
+<p>现在我们有一个可以调用的异步函数来刷新视图的数据，让我们在BookmarkList视图中应用新的可刷新修饰符——如下所示：</p>
+<pre><code class="language-swift">struct BookmarkList: View {
+    @ObservedObject var viewModel: BookmarkListViewModel
+
+    var body: some View {
+        List(viewModel.bookmarks) { bookmark in
+            ...
+        }
+        .refreshable {
+            await viewModel.reload()
+        }
+    }
+}
+</code></pre>
+<p>仅通过这样做，我们的列表驱动的用户界面现在将支持<strong>pull-to-refresh</strong>。在我们的刷新操作时，SwiftUI将自动隐藏和显示加载旋转器，甚至将确保不会同时执行重复的刷新操作。真的很酷！</p>
+<p>作为额外的奖励——鉴于Swift支持<strong>first class functions</strong> ，我们甚至可以将视图模型的重新加载方法直接传递给可刷新的修饰符，这给了我们一个稍微紧凑的实现：</p>
+<pre><code class="language-swift">struct BookmarkList: View {
+    @ObservedObject var viewModel: BookmarkListViewModel
+
+    var body: some View {
+        List(viewModel.bookmarks) { bookmark in
+            ...
+        }
+        .refreshable(action: viewModel.reload)
+    }
+}
+</code></pre>
+<p>当涉及到基本的<strong>pull-to-refresh</strong> 支持时，这就是它的全部。但这只是开始——让我们继续探索吧！</p>
+<hr>
+<h2 id="2-a-nameerrorhandlingaerror-handling">2. <a name='Errorhandling'></a>Error handling</h2>
+<p>当涉及到加载操作时，这些操作最终可能会抛出错误是很常见的，我们需要以这样或那样的方式处理。例如，如果我们视图模型调用的底层loadAllModels API是一个抛出函数，那么我们必须使用try关键字调用它，以处理任何可以抛出的错误。一种方法是简单地将任何此类错误传播到我们的视图中，使我们的顶级重新加载方法也能够抛出：</p>
+<pre><code class="language-swift">class BookmarkListViewModel: ObservableObject {
+    ...
+
+    func reload() async throws {
+        bookmarks = try await databaseController.loadAllModels(
+            ofType: Bookmark.self
+        )
+    }
+}
+</code></pre>
+<p>然而，随着上述更改的到位，我们之前的BookmarkList视图代码不再编译，因为<strong>refreshable</strong>修饰符仅接受<strong>non-throwing async</strong> 闭包。例如，为了解决这个问题，我们可以将对视图模型<strong>reload</strong>方法的调用包装在<strong>do/catch</strong>语句中——这将允许我们捕获任何抛出的错误，以便使用<strong>ErrorView</strong>覆盖层等内容显示它们：</p>
+<pre><code class="language-swift">struct BookmarkList: View {
+    @ObservedObject var viewModel: BookmarkListViewModel
+    @State private var error: Error?
+
+    var body: some View {
+        List(viewModel.bookmarks) { bookmark in
+            ...
+        }
+        .overlay(alignment: .top) {
+            if error != nil {
+                ErrorView(error: $error)
+            }
+        }
+        .refreshable {
+            do {
+                try await viewModel.reload()
+                error = nil
+            } catch {
+                self.error = error
+            }
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>我们的ErrorView接受对错误的绑定，而不仅仅是一个普通的Error值，是因为我们希望该视图能够通过将错误属性设置为nil来忽略自己。</p>
+</blockquote>
+<p>虽然上述实现确实有效，但可以说最好将我们所有的视图状态（包括任何抛出的错误）封装在我们的视图模型中，这将允许我们的视图专注于渲染视图模型提供的数据。为了做到这一点，让我们首先将上述<strong>do/catch</strong>语句移动到我们的视图模型中——如下所示：</p>
+<pre><code class="language-swift">class BookmarkListViewModel: ObservableObject {
+    @Published private(set) var bookmarks: [Bookmark]
+    @Published var error: Error?
+    ...
+
+    func reload() async {
+        do {
+            bookmarks = try await databaseController.loadAllModels(
+                ofType: Bookmark.self
+            )
+            error = nil
+        } catch {
+            self.error = error
+        }
+    }
+}
+</code></pre>
+<p>随着上述变化的到位，我们现在可以使我们的view变得简单得多，因为我们的reload方法现在可以抛出错误，这有点像我们视图模型的实现细节。我们的view现在需要知道的是，有一个错误属性，它可以用来显示遇到的任何错误（出于任何原因）：</p>
+<pre><code class="language-swift">struct BookmarkList: View {
+    @ObservedObject var viewModel: BookmarkListViewModel
+
+    var body: some View {
+        List(viewModel.bookmarks) { bookmark in
+            ...
+        }
+        .overlay(alignment: .top) {
+            if viewModel.error != nil {
+                ErrorView(error: $viewModel.error)
+            }
+        }
+        .refreshable {
+            await viewModel.reload()
+        }
+    }
+}
+</code></pre>
+<p>非常好。但也许这个新的<strong>refreshable</strong>修饰符最有趣的方面是，它不仅限于SwiftUI附带的内置拉取刷新功能。事实上，我们也可以用它来为我们自己的、完全定制的刷新逻辑提供动力。</p>
+<hr>
+<h2 id="3-a-namecustomrefreshinglogicacustom-refreshing-logic">3. <a name='Customrefreshinglogic'></a>Custom refreshing logic</h2>
+<p>为了能够更轻松地构建自定义刷新功能，让我们从创建一个专门的类开始，该类将执行我们的刷新操作。当传递系统提供的<strong>RefreshAction</strong>值时，它将执行操作时将<strong>isPerforming</strong>属性设置为true，这反过来将使我们能够在我们想要构建的任何自定义刷新UI中观察该状态：</p>
+<pre><code class="language-swift">class RefreshActionPerformer: ObservableObject {
+    @Published private(set) var isPerforming = false
+
+    func perform(_ action: RefreshAction) async {
+        guard !isPerforming else { return }
+        isPerforming = true
+        await action()
+        isPerforming = false
+    }
+}
+</code></pre>
+<p>接下来，让我们构建一个<strong>RetryButton</strong>，如果给定的刷新操作最终失败，我们的用户将能够重试该操作。为此，我们将使用新的<strong>refresh</strong>环境值，该值使我们能够访问使用可刷新修饰符注入视图层次结构的任何<strong>RefreshAction</strong>。然后，我们将任何此类操作传递给我们新创建的<strong>RefreshActionPerformer</strong>的实例——如下所示：</p>
+<pre><code class="language-swift">struct RetryButton: View {
+    var title: LocalizedStringKey = &quot;Retry&quot;
+    
+    @Environment(\.refresh) private var action
+    @StateObject private var actionPerformer = RefreshActionPerformer()
+
+    var body: some View {
+        if let action = action {
+            Button(
+                role: nil,
+                action: {
+                    await actionPerformer.perform(action)
+                },
+                label: {
+                    ZStack {
+                        if actionPerformer.isPerforming {
+                            Text(title).hidden()
+                            ProgressView()
+                        } else {
+                            Text(title)
+                        }
+                    }
+                }
+            )
+            .disabled(actionPerformer.isPerforming)
+        }
+    }
+}
+</code></pre>
+<blockquote>
+<p>请注意，在显示加载旋转器时，我们如何渲染标签的隐藏版本。这是为了防止按钮的大小在空闲状态和加载状态之间过渡时发生变化。</p>
+</blockquote>
+<p>SwiftUI将我们的刷新操作插入到环境中非常强大，因为这使我们能够定义单个操作，然后该操作可以被该特定视图层次结构中的任何视图接收和使用。因此，在不对我们的BookmarkList视图进行任何更改的情况下，如果我们现在简单地将新的<strong>RetryButton</strong>插入<strong>ErrorView</strong>，那么它将能够执行与我们的列表完全相同的刷新操作——仅仅因为该操作存在于我们的视图层次结构环境中：</p>
+<pre><code class="language-swift">struct ErrorView: View {
+    @Binding var error: Error?
+
+    var body: some View {
+        if let error = error {
+            VStack {
+                Text(error.localizedDescription)
+                    .bold()
+                HStack {
+                    Button(&quot;Dismiss&quot;) {
+                        self.error = nil
+                    }
+                    RetryButton()
+                }
+            }
+            .padding()
+            .background(Color.red)
+            .foregroundColor(.white)
+            .cornerRadius(10)
+        }
+    }
+}
+</code></pre>
+<p>这很酷，不是吗？我喜欢苹果将这样的数据放置在SwiftUI环境中，并将其公开访问，因为正如我认为上面的例子所示，这为构建自定义UI和逻辑开辟了许多强大的方法。</p>
+<hr>
+<h2 id="4-a-nameconclusionaconclusion">4. <a name='Conclusion'></a>Conclusion</h2>
+<p>因此，这就是新的<strong>refreshable</strong>修饰符，以及如何使用它来实现系统提供的UI模式（如pull-to-refresh），以及我们如何使用它来构建完全自定义的重新加载逻辑。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/domain-specific-languages-part-1/">
+                  <h3 class="post-title">
+                    Domain‑Specific Languages: Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

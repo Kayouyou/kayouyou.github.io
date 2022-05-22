@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Using Swift’s concurrency system to run multiple tasks in parallel | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1653207772604">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+From asynchronous to concurrent
+
+
+
+
+Task groups
+
+
+
+
+
+Using Swift’s concurrency system to run multiple tasks in paral..." />
+    <meta name="keywords" content="async/await" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1653207772604" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Using Swift’s concurrency system to run multiple tasks in parallel</h2>
+            <div class="post-date">2022-05-22</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Fromasynchronoustoconcurrent">From asynchronous to concurrent</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Taskgroups">Task groups</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="using-swifts-concurrency-system-to-run-multiple-tasks-in-parallel">Using Swift’s concurrency system to run multiple tasks in parallel</h1>
+<p>Swift内置并发系统的一个好处是，它使并行执行多个异步任务变得更加容易，这反过来又使我们能够显著加快可分解为不同部分的操作。</p>
+<p>在本文中，让我们看一看实现这一点的几种不同方法，以及每种技术何时特别有用。</p>
+<h2 id="1-a-namefromasynchronoustoconcurrentafrom-asynchronous-to-concurrent">1. <a name='Fromasynchronoustoconcurrent'></a>From asynchronous to concurrent</h2>
+<p>首先，假设我们正在开发某种形式的显示各种产品的购物应用程序，并且我们已经实现了一个<strong>ProductLoader</strong>，它允许我们使用一系列异步API加载不同的产品集合，如下所示：</p>
+<pre><code class="language-swift">class ProductLoader {
+    ...
+
+    func loadFeatured() async throws -&gt; [Product] {
+        ...
+    }
+    
+    func loadFavorites() async throws -&gt; [Product] {
+        ...
+    }
+    
+    func loadLatest() async throws -&gt; [Product] {
+        ...
+    }
+}
+</code></pre>
+<p>尽管上述每种方法在大多数情况下都可能被单独调用，但假设在我们应用程序的某些部分中，我们还希望形成一个组合<strong>Recommendations</strong>模型，其中包含这三种<strong>ProductLoader</strong>方法的所有结果：</p>
+<pre><code class="language-swift">extension Product {
+    struct Recommendations {
+        var featured: [Product]
+        var favorites: [Product]
+        var latest: [Product]
+    }
+}
+</code></pre>
+<p>一种方法是使用<strong>await</strong>关键字调用每个加载方法，然后使用这些调用的结果创建我们的<strong>Recommendations</strong>模型的实例，如下所示：</p>
+<pre><code class="language-swift">extension ProductLoader {
+    func loadRecommendations() async throws -&gt; Product.Recommendations {
+        let featured = try await loadFeatured()
+        let favorites = try await loadFavorites()
+        let latest = try await loadLatest()
+        
+        return Product.Recommendations(
+            featured: featured,
+            favorites: favorites,
+            latest: latest
+        )
+    }
+}
+</code></pre>
+<p>上面的实现当然可以工作——但是，尽管我们的三个加载操作都是完全异步的，但它们目前是按顺序依次执行的。因此，尽管我们的顶级<strong>LoadRecommensions</strong>方法是相对于我们应用程序的其他代码并发执行的，但实际上它还没有利用并发来执行其内部操作集。</p>
+<p>由于我们的产品加载方法在任何方面都不相互依赖，因此实际上没有理由按顺序执行它们，所以让我们看看如何使它们完全并发执行。</p>
+<p>关于如何做到这一点的初步想法可能是将上述代码简化为一个表达式，这将使我们能够使用一个<strong>await</strong>关键字来等待每个操作完成：</p>
+<pre><code class="language-swift">extension ProductLoader {
+    func loadRecommendations() async throws -&gt; Product.Recommendations {
+        try await Product.Recommendations(
+            featured: loadFeatured(),
+            favorites: loadFavorites(),
+            latest: loadLatest()
+        )
+    }
+}
+</code></pre>
+<p>然而，即使我们的代码现在看起来是并发的，它实际上仍然会像以前一样完全按顺序执行。</p>
+<p>相反，我们需要利用Swift的 <strong>async let</strong>绑定来告诉并发系统并行执行每个加载操作。使用该语法，我们可以在后台启动异步操作，而无需立即等待操作完成。</p>
+<p>如果我们在实际使用加载的数据时（即，在形成建议模型时），将其与单个<strong>await</strong>关键字结合使用，那么我们将获得并行执行加载操作的所有好处，而不必担心状态管理或数据竞争：</p>
+<pre><code class="language-swift">extension ProductLoader {
+    func loadRecommendations() async throws -&gt; Product.Recommendations {
+        async let featured = loadFeatured()
+        async let favorites = loadFavorites()
+        async let latest = loadLatest()
+        
+        return try await Product.Recommendations(
+            featured: featured,
+            favorites: favorites,
+            latest: latest
+        )
+    }
+}
+</code></pre>
+<p>非常整洁！因此，<strong>async let</strong>提供了一种内置方式，当我们有一组已知的、有限的任务要执行时，可以同时运行多个操作。但如果不是这样呢？</p>
+<hr>
+<h2 id="2-a-nametaskgroupsatask-groups">2. <a name='Taskgroups'></a>Task groups</h2>
+<p>现在让我们假设我们正在开发一个<strong>ImageLoader</strong>，它允许我们通过网络加载图像。要从给定URL加载单个图像，我们可以使用如下方法：</p>
+<pre><code class="language-swift">class ImageLoader {
+    ...
+
+    func loadImage(from url: URL) async throws -&gt; UIImage {
+        ...
+    }
+}
+</code></pre>
+<p>为了简化一次加载一系列图像的过程，我们还创建了一个方便的API，该API获取URL数组，并异步返回一个图像字典，这些图像由下载它们的URL键入：</p>
+<pre><code class="language-swift">extension ImageLoader {
+    func loadImages(from urls: [URL]) async throws -&gt; [URL: UIImage] {
+        var images = [URL: UIImage]()
+        
+        for url in urls {
+            images[url] = try await loadImage(from: url)
+        }
+        
+        return images
+    }
+}
+</code></pre>
+<p>现在让我们假设，就像之前处理<strong>ProductLoader</strong>时一样，我们希望使上面的<strong>loadImages</strong>方法并发执行，而不是按顺序下载每个图像（这是目前的情况，因为我们在for循环中调用<strong>loadImage</strong>时直接使用<strong>await</strong>）。</p>
+<p>然而，这一次我们将无法使用<strong>async let</strong>，因为我们需要执行的任务数量在编译时是未知的。谢天谢地，Swift并发工具箱中还有一个工具，可以让我们在并行<strong>task groups</strong>中执行动态数量的任务。</p>
+<p>要组成任务组，我们要么调用<strong>withTaskGroup</strong>，要么调用<strong>withThrowingTaskGroup</strong>，这取决于我们是否希望在任务中抛出错误。在本例中，我们将选择后者，因为我们的底层<strong>loadImage</strong>方法是用<strong>throws</strong>关键字标记的。</p>
+<p>然后我们将迭代每个URL，就像以前一样，只是这次我们将把每个图像加载任务添加到组中，而不是直接等待它完成。相反，在添加每个任务后，我们将分别<strong>await</strong>组结果，这将允许图像加载操作完全并发执行：</p>
+<pre><code class="language-swift">extension ImageLoader {
+    func loadImages(from urls: [URL]) async throws -&gt; [URL: UIImage] {
+        try await withThrowingTaskGroup(of: (URL, UIImage).self) { group in
+            for url in urls {
+                group.addTask{
+                    let image = try await self.loadImage(from: url)
+                    return (url, image)
+                } 
+            }
+            
+            var images = [URL: UIImage]()
+            
+            for try await (url, image) in group {
+                images[url] = image
+            }
+            
+            return images
+        }
+    }
+}
+</code></pre>
+<p>与使用<strong>async let</strong>时一样，以操作不会直接改变任何状态的方式编写并发代码的一个巨大好处是，这样做可以完全避免任何类型的数据争用问题，同时也不需要在混合中引入任何锁定或序列化代码。</p>
+<p>因此，在可能的情况下，让每个并发操作返回一个完全独立的结果，然后依次等待这些结果以形成最终的数据集，这通常是一种很好的方法。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/rKVwHAq49U/" class="tag">
+                    async/await
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/swiftui-views-refreshable/">
+                  <h3 class="post-title">
+                    SwiftUI view&#39;s refreshable
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

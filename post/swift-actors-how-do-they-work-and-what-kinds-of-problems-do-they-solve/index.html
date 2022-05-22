@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Swift actors: How do they work, and what kinds of problems do they solve? | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1653207772604">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Preventing data races
+
+
+
+
+A case for an actor
+
+
+
+
+Race conditions are still possible
+
+
+
+
+
+Swift actors: How do they ..." />
+    <meta name="keywords" content="actor,async/await" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1653207772604" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Swift actors: How do they work, and what kinds of problems do they solve?</h2>
+            <div class="post-date">2022-05-22</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Preventingdataraces">Preventing data races</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Acaseforanactor">A case for an actor</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#Raceconditionsarestillpossible">Race conditions are still possible</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<h1 id="swift-actors-how-do-they-work-and-what-kinds-of-problems-do-they-solve">Swift actors: How do they work, and what kinds of problems do they solve?</h1>
+<p>从Swift的第一个版本开始，我们就能够将各种类型定义为类、结构体或枚举。但是现在，随着Swift 5.5及其内置并发系统的发布，一个新的类型声明关键字已经添加了- actor。</p>
+<p>因此，在本文中，让我们探讨<strong>actors</strong>的概念，以及通过在代码库中定义自定义<strong>actor</strong>类型可以解决哪些类型的问题。</p>
+<hr>
+<h2 id="1-a-namepreventingdataracesapreventing-data-races">1. <a name='Preventingdataraces'></a>Preventing data races</h2>
+<p>Swift的新<strong>actors</strong>类型的一个核心优势是，它们可以帮助我们防止所谓的“数据竞争”——也就是说，当两个单独的线程试图同时访问或修改相同的数据时，可能会出现内存损坏问题。</p>
+<p>为了举例说明，让我们看一下以下<strong>UserStorage</strong>类型，它本质上为我们提供了一种通过引用而不是通过值传递<strong>User</strong>模型字典的方法：</p>
+<pre><code class="language-swift">class UserStorage {
+    private var users = [User.ID: User]()
+
+    func store(_ user: User) {
+        users[user.id] = user
+    }
+
+    func user(withID id: User.ID) -&gt; User? {
+        users[id]
+    }
+}
+</code></pre>
+<p>就其本身而言，上述实现并没有什么问题。然而，如果我们要在多线程环境中使用该<strong>UserStorage</strong>类，那么我们可能会很快遇到各种数据竞争，因为我们的实现目前在调用它的任何线程或DispatchQueue上执行其内部突变。</p>
+<p>换句话说，我们的<strong>UserStorage</strong>类目前不是线程安全的。</p>
+<p>解决这一问题的一种方法是在特定的<strong>DispatchQueue</strong>上手动分派所有读写操作，这将确保这些操作始终以串行顺序进行，而不管我们的<strong>UserStorage</strong>方法将在哪个线程或队列上使用：</p>
+<pre><code class="language-swift">class UserStorage {
+    private var users = [User.ID: User]()
+    private let queue = DispatchQueue(label: &quot;UserStorage.sync&quot;)
+
+    func store(_ user: User) {
+        queue.sync {
+            self.users[user.id] = user
+        }
+    }
+
+    func user(withID id: User.ID) -&gt; User? {
+        queue.sync {
+            self.users[id]
+        }
+    }
+}
+</code></pre>
+<p>上面的实现工作正常，现在成功地保护我们的代码不受数据竞争的影响，但它确实存在一个相当严重的缺陷。因为我们使用<strong>sync</strong>api来分派字典访问代码，所以我们的两个方法将导致当前执行被阻止，直到那些分派调用完成。</p>
+<p>如果我们最终执行大量并发读写，那么这可能会成为问题，因为在特定的<strong>UserStorage</strong>调用完成之前，每个调用方都会被完全阻塞，这可能导致性能低下和内存使用过度。这类问题通常被称为“数据冲突”。</p>
+<p>解决此问题的一种方法是将我们的两个<strong>UserStorage</strong>方法完全异步，这涉及到使用异步分派方法（而不是同步），在检索用户的情况下，我们还必须使用闭包之类的东西在加载其请求的模型时通知调用方：</p>
+<pre><code class="language-swift">class UserStorage {
+    private var users = [User.ID: User]()
+    private let queue = DispatchQueue(label: &quot;UserStorage.sync&quot;)
+
+    func store(_ user: User) {
+        queue.async {
+            self.users[user.id] = user
+        }
+    }
+
+    func loadUser(withID id: User.ID,
+                  handler: @escaping (User?) -&gt; Void) {
+        queue.async {
+            handler(self.users[id])
+        }
+    }
+}
+</code></pre>
+<p>同样，上述方法确实有效，并且是在Swift 5.5之前实现线程安全数据访问代码的首选方法之一。然而，虽然闭包是一个非常好的工具，但必须将所有用户处理代码封装在一个闭包中肯定会使代码更加复杂——特别是因为我们必须使<strong>loadUser</strong>方法的逃逸闭包参数。</p>
+<hr>
+<h2 id="2-a-nameacaseforanactoraa-case-for-an-actor">2. <a name='Acaseforanactor'></a>A case for an actor</h2>
+<p>这正是Swift的新<strong>actor</strong>类型非常有用的情况。<strong>actor</strong>的工作方式非常类似于类（也就是说，它们是通过引用传递的），但有两个关键的例外：</p>
+<ul>
+<li>
+<p><strong>actor</strong>自动序列化对其属性和方法的所有访问，这确保在任何给定时间只有一个调用方可以直接与参与者交互。这反过来又为我们提供了完全的数据竞争保护，因为所有突变都将一个接一个地连续执行。</p>
+</li>
+<li>
+<p><strong>actor</strong>不支持子类化，因为他们实际上不是类。</p>
+</li>
+</ul>
+<p>因此，实际上，要将<strong>UserStorage</strong>类转换为<strong>actor</strong>，我们需要做的就是返回到其原始实现，并用新的<strong>actor</strong>关键字替换其对<strong>class</strong>关键字的使用，如下所示：</p>
+<pre><code class="language-swift">actor UserStorage {
+    private var users = [User.ID: User]()
+
+    func store(_ user: User) {
+        users[user.id] = user
+    }
+
+    func user(withID id: User.ID) -&gt; User? {
+        users[id]
+    }
+}
+</code></pre>
+<p>只要做了一点小小的改变，我们的<strong>UserStorage</strong>类型现在就完全是线程安全的，不需要我们实现任何定制的调度逻辑。这是因为<strong>actor</strong>强制其他代码使用<strong>await</strong>关键字调用其方法，这允许<strong>actor</strong>的序列化机制在<strong>actor</strong>当前正忙于处理另一个请求时挂起此类调用。</p>
+<p>例如，这里我们将新的<strong>UserStorage actor</strong>用作<strong>UserLoader</strong>中的缓存机制，这要求我们在加载和存储用户值时使用<strong>await</strong>：</p>
+<pre><code class="language-swift">class UserLoader {
+    private let storage: UserStorage
+    private let urlSession: URLSession
+    private let decoder = JSONDecoder()
+
+    init(storage: UserStorage, urlSession: URLSession = .shared) {
+        self.storage = storage
+        self.urlSession = urlSession
+    }
+
+    func loadUser(withID id: User.ID) async throws -&gt; User {
+        if let storedUser = await storage.user(withID: id) {
+            return storedUser
+        }
+
+        let url = URL.forLoadingUser(withID: id)
+        let (data, _) = try await urlSession.data(from: url)
+        let user = try decoder.decode(User.self, from: data)
+
+        await storage.store(user)
+
+        return user
+    }
+}
+</code></pre>
+<p>请注意，除了在与参与者交互时必须使用<strong>await</strong>之外，<strong>actors</strong>还可以像其他Swift类型一样使用。它们可以作为参数传递，使用属性存储，也可以符合协议。</p>
+<hr>
+<h2 id="3-a-nameraceconditionsarestillpossiblearace-conditions-are-still-possible">3. <a name='Raceconditionsarestillpossible'></a>Race conditions are still possible</h2>
+<p>然而，虽然我们的用户加载和存储代码现在保证不受低级数据竞争的影响，但这并不意味着它一定不受竞争条件的影响。虽然数据争用本质上是内存损坏问题，但争用条件是在多个操作以不可预测的顺序结束时发生的逻辑问题。</p>
+<p>事实上，如果我们最终使用新的<strong>UserLoader</strong>在多个位置同时加载同一个用户，我们很可能会遇到竞争情况，因为最终会执行多个重复的网络调用。这是因为我们的<strong>storedUser</strong>值只有在用户完全加载后才会存在。</p>
+<p>最初，我们可能认为解决这个问题就像让我们的用户加载器也成为<strong>actor</strong>一样简单：</p>
+<pre><code class="language-swift">actor UserLoader {
+    ...
+}
+</code></pre>
+<p>但事实证明，在这种情况下这样做是不够的，因为我们的问题与数据如何变异无关，而是与底层操作的执行顺序有关。</p>
+<p>因为即使每个参与者确实序列化了对它的所有调用，当一个<strong>actor</strong>内发生<strong>await</strong>时，该执行仍然像其他任何操作一样被暂停——这意味着该<strong>actor</strong>将被解锁，并准备接受来自其他代码的新请求。一般来说，这是一件好事——因为它让我们能够编写有效执行的非阻塞代码——在这种特殊情况下，这种行为将使我们的<strong>UserLoader</strong>继续执行重复的网络调用，就像它作为类实现时一样。</p>
+<p>为了解决这个问题，我们必须跟踪参与者当前执行给定网络呼叫的时间。这可以通过将代码封装在异步任务实例中来实现，然后我们可以将对该实例的引用存储在字典中，如下所示：</p>
+<pre><code class="language-swift">actor UserLoader {
+    private let storage: UserStorage
+    private let urlSession: URLSession
+    private let decoder = JSONDecoder()
+    private var activeTasks = [User.ID: Task&lt;User, Error&gt;]()
+
+    ...
+
+    func loadUser(withID id: User.ID) async throws -&gt; User {
+        if let existingTask = activeTasks[id] {
+            return try await existingTask.value
+        }
+
+        let task = Task&lt;User, Error&gt; {
+            if let storedUser = await storage.user(withID: id) {
+                activeTasks[id] = nil
+                return storedUser
+            }
+        
+            let url = URL.forLoadingUser(withID: id)
+            let (data, _) = try await urlSession.data(from: url)
+            let user = try decoder.decode(User.self, from: data)
+
+            await storage.store(user)
+            activeTasks[id] = nil
+            
+            return user
+        }
+
+        activeTasks[id] = task
+
+        return try await task.value
+    }
+}
+</code></pre>
+<p>通过上述更改，我们的<strong>UserLoader</strong>现在是完全线程安全的，并且可以从任意多的线程或队列中调用任意多次。我们的<strong>activeTasks</strong>逻辑将确保在可能的情况下正确地重用任务，并且我们的<strong>UserLoader actor</strong>的序列化机制将以可预测的串行顺序将所有突变发送到该字典。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/tmh--TGny/" class="tag">
+                    actor
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/rKVwHAq49U/" class="tag">
+                    async/await
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/building-async-and-concurrent-versions-of-foreach-and-map/">
+                  <h3 class="post-title">
+                    Building async and concurrent versions of forEach and map
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
