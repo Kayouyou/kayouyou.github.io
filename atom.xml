@@ -1,82 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>http://localhost:4000</id>
+    <id>https://kayouyou.github.io</id>
     <title>Kayouyou&apos;s Den</title>
-    <updated>2022-07-02T10:41:30.943Z</updated>
+    <updated>2022-07-02T11:09:13.171Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="http://localhost:4000"/>
-    <link rel="self" href="http://localhost:4000/atom.xml"/>
+    <link rel="alternate" href="https://kayouyou.github.io"/>
+    <link rel="self" href="https://kayouyou.github.io/atom.xml"/>
     <subtitle>The wise build bridges, while the foolish build barriers.</subtitle>
-    <logo>http://localhost:4000/images/avatar.png</logo>
-    <icon>http://localhost:4000/favicon.ico</icon>
+    <logo>https://kayouyou.github.io/images/avatar.png</logo>
+    <icon>https://kayouyou.github.io/favicon.ico</icon>
     <rights>All rights reserved 2022, Kayouyou&apos;s Den</rights>
     <entry>
         <title type="html"><![CDATA[Equality]]></title>
-        <id>http://localhost:4000/post/equality/</id>
-        <link href="http://localhost:4000/post/equality/">
+        <id>https://kayouyou.github.io/post/equality/</id>
+        <link href="https://kayouyou.github.io/post/equality/">
         </link>
         <updated>2022-05-22T08:22:25.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[Creating Combine-compatible versions of async/await-based APIs]]></title>
-        <id>http://localhost:4000/post/creating-combine-compatible-versions-of-asyncawait-based-apis/</id>
-        <link href="http://localhost:4000/post/creating-combine-compatible-versions-of-asyncawait-based-apis/">
+        <id>https://kayouyou.github.io/post/creating-combine-compatible-versions-of-asyncawait-based-apis/</id>
+        <link href="https://kayouyou.github.io/post/creating-combine-compatible-versions-of-asyncawait-based-apis/">
         </link>
         <updated>2022-05-22T08:21:43.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[Lightweight dependency injection and unit testing using async functions]]></title>
-        <id>http://localhost:4000/post/lightweight-dependency-injection-and-unit-testing-using-async-functions/</id>
-        <link href="http://localhost:4000/post/lightweight-dependency-injection-and-unit-testing-using-async-functions/">
+        <id>https://kayouyou.github.io/post/lightweight-dependency-injection-and-unit-testing-using-async-functions/</id>
+        <link href="https://kayouyou.github.io/post/lightweight-dependency-injection-and-unit-testing-using-async-functions/">
         </link>
         <updated>2022-05-22T08:20:43.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[What role do Tasks play within Swift’s concurrency system?]]></title>
-        <id>http://localhost:4000/post/what-role-do-tasks-play-within-swifts-concurrency-system/</id>
-        <link href="http://localhost:4000/post/what-role-do-tasks-play-within-swifts-concurrency-system/">
+        <id>https://kayouyou.github.io/post/what-role-do-tasks-play-within-swifts-concurrency-system/</id>
+        <link href="https://kayouyou.github.io/post/what-role-do-tasks-play-within-swifts-concurrency-system/">
         </link>
         <updated>2022-05-22T08:20:00.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[Swift actors: How do they work, and what kinds of problems do they solve?]]></title>
-        <id>http://localhost:4000/post/swift-actors-how-do-they-work-and-what-kinds-of-problems-do-they-solve/</id>
-        <link href="http://localhost:4000/post/swift-actors-how-do-they-work-and-what-kinds-of-problems-do-they-solve/">
+        <id>https://kayouyou.github.io/post/swift-actors-how-do-they-work-and-what-kinds-of-problems-do-they-solve/</id>
+        <link href="https://kayouyou.github.io/post/swift-actors-how-do-they-work-and-what-kinds-of-problems-do-they-solve/">
         </link>
         <updated>2022-05-22T08:18:47.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[Building async and concurrent versions of forEach and map]]></title>
-        <id>http://localhost:4000/post/building-async-and-concurrent-versions-of-foreach-and-map/</id>
-        <link href="http://localhost:4000/post/building-async-and-concurrent-versions-of-foreach-and-map/">
+        <id>https://kayouyou.github.io/post/building-async-and-concurrent-versions-of-foreach-and-map/</id>
+        <link href="https://kayouyou.github.io/post/building-async-and-concurrent-versions-of-foreach-and-map/">
         </link>
         <updated>2022-05-22T08:16:54.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[Using Swift’s concurrency system to run multiple tasks in parallel]]></title>
-        <id>http://localhost:4000/post/using-swifts-concurrency-system-to-run-multiple-tasks-in-parallel/</id>
-        <link href="http://localhost:4000/post/using-swifts-concurrency-system-to-run-multiple-tasks-in-parallel/">
+        <id>https://kayouyou.github.io/post/using-swifts-concurrency-system-to-run-multiple-tasks-in-parallel/</id>
+        <link href="https://kayouyou.github.io/post/using-swifts-concurrency-system-to-run-multiple-tasks-in-parallel/">
         </link>
         <updated>2022-05-22T08:16:25.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[SwiftUI view's refreshable]]></title>
-        <id>http://localhost:4000/post/swiftui-views-refreshable/</id>
-        <link href="http://localhost:4000/post/swiftui-views-refreshable/">
+        <id>https://kayouyou.github.io/post/swiftui-views-refreshable/</id>
+        <link href="https://kayouyou.github.io/post/swiftui-views-refreshable/">
         </link>
         <updated>2022-05-22T08:14:09.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[Domain‑Specific Languages: Part 1]]></title>
-        <id>http://localhost:4000/post/domain-specific-languages-part-1/</id>
-        <link href="http://localhost:4000/post/domain-specific-languages-part-1/">
+        <id>https://kayouyou.github.io/post/domain-specific-languages-part-1/</id>
+        <link href="https://kayouyou.github.io/post/domain-specific-languages-part-1/">
         </link>
         <updated>2022-05-21T13:56:50.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[Swift中的抽象类型和方法]]></title>
-        <id>http://localhost:4000/post/swift-zhong-de-chou-xiang-lei-xing-he-fang-fa/</id>
-        <link href="http://localhost:4000/post/swift-zhong-de-chou-xiang-lei-xing-he-fang-fa/">
+        <id>https://kayouyou.github.io/post/swift-zhong-de-chou-xiang-lei-xing-he-fang-fa/</id>
+        <link href="https://kayouyou.github.io/post/swift-zhong-de-chou-xiang-lei-xing-he-fang-fa/">
         </link>
         <updated>2022-05-08T14:34:35.000Z</updated>
     </entry>
