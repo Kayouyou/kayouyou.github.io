@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Factory Design Patterns For Dart and Flutter | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1661042947575">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+经典工厂方法模式:
+
+
+
+
+在Flutter中使用工厂方法：
+
+
+
+
+抽象工厂方法模式：
+
+
+
+
+结论
+
+
+
+
+#  Dart和Flutter的工厂设计模式
+工厂方法设计，有时被称为***虚拟构造函数***设计，它提供了一种从客户端..." />
+    <meta name="keywords" content="" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1661042947575" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Factory Design Patterns For Dart and Flutter</h2>
+            <div class="post-date">2022-08-21</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#:">经典工厂方法模式:</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Flutter">在Flutter中使用工厂方法：</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#">抽象工厂方法模式：</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#-1">结论</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->#  Dart和Flutter的工厂设计模式
+<p>工厂方法设计，有时被称为***虚拟构造函数***设计，它提供了一种从客户端代码中覆盖项目创建原理的方法，但是，返回的项目被确保粘在已知的连接点上。这是使用最广泛的设计之一，因为它为您的创作架构增添了大量的适应性，而不会增加很多复杂性。</p>
+<p>在本文中，我们将探索Dart和Flutter的工厂设计模式。我们会了解如何执行demo程序。经典工厂方法模型外观如何巧妙地交付针对不同形状的对象，然后我们将研究如何参与示例，毫无问题地在Flutter中为各个平台制作UI组件。</p>
+<p>今天难度绝对很一般，但是实用！</p>
+<hr>
+<h2 id="1-a-namea经典工厂方法模式">1. <a name=':'></a>经典工厂方法模式:</h2>
+<p>让我们从一个过于简短但堪称典范的模型开始，该模型将有助于理解工厂方法示例的结构。我们将制作一个支持创建circle或square形状的shape factory。随附的图表概述了基本组成部分和联系：</p>
+<figure data-type="image" tabindex="1"><img src="https://tva1.sinaimg.cn/large/e6c9d24egy1h5e2o0l1upj20j60bw0t7.jpg" alt="avatar" loading="lazy"></figure>
+<p>Shape类将作为工厂和模型的连接点，而Circle和Square是实质性成果的实例。这些项目执行实现工厂的交互点，对<strong>draw</strong>()策略进行实质性执行。</p>
+<pre><code class="language-dart">enum ShapeType {
+  circle,
+  square
+}
+
+abstract class Shape {
+  factory Shape(ShapeType type) {
+    switch (type) {
+      case ShapeType.circle: return Circle();
+      case ShapeType.square: return Square();
+      default: return null;
+    }
+  }
+
+  void draw();
+}
+
+class Circle implements Shape {
+  @override
+  void draw() {
+    print(&quot;Circle&quot;);
+  }
+}
+
+class Square implements Shape {
+  @override
+  void draw() {
+    print(&quot;Square&quot;);
+  }
+}
+</code></pre>
+<p>接下来是项目工厂，在这种情况下，它显示为一个名为Shape的抽象类。该形状有一个工厂构造器，作为本示例的工厂策略。它有责任制作上述类型的形状。该类被标记为抽象概念，以拒绝直接启动形状，因为该类没有对draw()的执行。</p>
+<p>switch用于返回契合的实质性形状，在传递无效类型的可能性时返回空。该类以draw()策略的未实现语句结束，仅用于列出所有形状都应该执行的交互点。</p>
+<p>Circle和Square类都通过取代Shape来执行draw(）。</p>
+<pre><code class="language-dart">final shape1 = Shape(ShapeType.circle);
+final shape2 = Shape(ShapeType.square);
+
+shape1.draw();
+shape2.draw();
+</code></pre>
+<p>通过多态性加持，将调用每个形状的draw()的正确实现。Shape1和shape2都是Shape类型，然而，一个是圆形，另一个是正方形。制作一个包含形状类型混合的List<Shape>是可行的，并且可以实现不同的策略，而无需用户知道每个组件的实际类型。</p>
+<hr>
+<h2 id="2-a-namefluttera在flutter中使用工厂方法">2. <a name='Flutter'></a>在Flutter中使用工厂方法：</h2>
+<p>Flutter应用程序中工厂方法设计的一个明确用途是为不同平台生成本地风格的UI组件。我们将建立一个具有平台意识的按钮工厂，该工厂将返回Android或iOS的按钮：</p>
+<pre><code class="language-dart">import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+
+abstract class PlatformButton {
+  factory PlatformButton(TargetPlatform platform) {
+    switch (platform) {
+      case TargetPlatform.android: return ShowAndroidButton();
+      case TargetPlatform.iOS: return ShowIosButton();
+      default: return null;
+    }
+  }
+
+  Widget build({
+    @required BuildContext context,
+    @required Widget child,
+    @required VoidCallback onPressed
+  });
+}
+</code></pre>
+<p>与上个部分的Shape模型一样，我们制作了一个抽象类来容纳生产策略。PlatformButton的工厂构造函数将根据其平台参数的value返回执行具体PlatformButton的类。</p>
+<p>通过返回与调用者匹配的按钮示例来完成切换公告。请注意，ShowAndroidButton和ShowIosButton尚未实现。</p>
+<p>PlatformButton同样为build()集成了未实现的语句，以假设具体实现者将用可行的标记取代它。</p>
+<p>以下是ShowAndroidButton和ShowIosButton的实现：</p>
+<pre><code class="language-dart">class ShowAndroidButton implements PlatformButton {
+  @override
+  Widget build({
+    @required BuildContext context,
+    @required Widget child,
+    @required VoidCallback onPressed
+  }) {
+    return FlatButton(
+      child: child,
+      onPressed: onPressed,
+    );
+  }
+}
+
+class ShowIosButton implements PlatformButton {
+  @override
+  Widget build({
+    @required BuildContext context,
+    @required Widget child,
+    @required VoidCallback onPressed
+  }) {
+    return CupertinoButton(
+      child: child,
+      onPressed: onPressed,
+    );
+  }
+}
+</code></pre>
+<p>ShowAndroidButton和ShowIosButton执行PlatformButton设置的连接点，每个类build()返回这些独立平台样式的按钮小部件。child和onPressed参数提供给这些小部件。</p>
+<p>在应用程序的某个地方，PlatformButton可以这样创建：</p>
+<pre><code class="language-dart">PlatformButton(TargetPlatform.android)
+</code></pre>
+<p>另一方面，更有可能的是，通过使用Flutter主题来显著区分：</p>
+<pre><code class="language-dart">PlatformButton(Theme.of(context).platform)
+</code></pre>
+<p>沿着这些思路，应用程序的每个按钮都可以以统一的样式交付，应用程序的构建方法不会被多余的标识代码弄得很乱。</p>
+<p>此外，要构建按钮，您必须调用build()：</p>
+<pre><code class="language-Dart">PlatformButton(Theme.of(context).platform).build(
+  context: context,
+  child: Text('My Button'),
+  onPressed: () =&gt; print('Button pressed!'),
+)
+</code></pre>
+<p>只需比典型的按钮启动多一点代码，鉴于您的Flutter应用程序正在执行的平台，您可以使用Android的设计风格或利用iOS外观的按钮。</p>
+<hr>
+<h2 id="3-a-namea抽象工厂方法模式">3. <a name=''></a>抽象工厂方法模式：</h2>
+<p>抽象工厂方法设计是工厂方法设计的超集。综上所述，工厂类不知不觉地处理这些微妙之处。客户只需给出所需的对象类型，抽象的工业工厂就会计算出要启动哪个对象工厂，然后返回正确的项目。</p>
+<p>这个扩展模型将支持各种平台显式UI小部件的构建，因此我们将使用工厂方法设计模型中的PlatformButton、ShowAndroidButton和ShowIosButton类，并将为switch小部件添加同等帮助：</p>
+<pre><code class="language-Dart">import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+
+abstract class PlatformSwitch {
+  factory PlatformSwitch(TargetPlatform platform) {
+    switch (platform) {
+      case TargetPlatform.android: return ShowAndroidSwitch();
+      case TargetPlatform.iOS: return ShowIosSwitch();
+      default: return null;
+    }
+  }
+
+  Widget build({
+    @required BuildContext context,
+    @required value,
+    @required ValueChanged&lt;bool&gt; onChanged
+  });
+}
+</code></pre>
+<p>如果您查看了工厂方法设计模型中的按钮创建代码，您看起来可以识别此代码。PlatformSwitch的表现与PlatformButton无法区分。</p>
+<pre><code class="language-swift">class ShowAndroidSwitch implements PlatformSwitch {
+  @override
+  Widget build({
+    @required BuildContext context,
+    @required value,
+    @required ValueChanged&lt;bool&gt; onChanged
+  }) {
+
+    PlatformButton(Theme.of(context).platform);
+    return Switch(
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+}
+
+class ShowIosSwitch implements PlatformSwitch {
+  @override
+  Widget build({
+    @required BuildContext context,
+    @required value,
+    @required ValueChanged&lt;bool&gt; onChanged
+  }) {
+    return CupertinoSwitch(
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+}
+</code></pre>
+<p>由于我们为两个UI控件设置了工厂，我们可以构建一个抽象工厂类，以处理从中央小部件工厂制作每个小部件的正确版本：</p>
+<pre><code class="language-dart">class WidgetFactory {
+  static Widget buildButton({
+    @required BuildContext context,
+    @required Widget child,
+    @required VoidCallback onPressed
+  }) {
+    return PlatformButton(Theme.of(context).platform).build(
+      context: context,
+      child: child,
+      onPressed: onPressed,
+    );
+  }
+
+  static Widget buildSwitch({
+    @required BuildContext context,
+    @required value,
+    @required ValueChanged&lt;bool&gt; onChanged
+  }) {
+    return PlatformSwitch(Theme.of(context).platform).build(
+      context: context,
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+}
+</code></pre>
+<p>我们使所有WidgetFactory保持静态状态，以远离启动它的需要。有了它，您可以制作一个按钮或开关小部件，对于每种情况，与应用程序运行的平台相比，您将获得匹配准备的版本。幸运的是，WidgetFactory可以使用BuildContext决定平台，因此客户端代码不需要给它不同的边界。</p>
+<p>buildButton（）利用按钮生产类PlatformButton制作Android或iOS按钮，然后将该按钮发送回呼叫者。buildSwitch()对switch也是如此。可以添加更多技术来帮助不同的控制。</p>
+<p>要使用WidgetFactory，只需调用构建方法之一：</p>
+<pre><code class="language-dart">WidgetFactory.buildSwitch(
+  context: context,
+  value: myValue,
+  onChanged: (bool value) =&gt; print(value),
+)
+</code></pre>
+<p>显而易见，抽象工厂方法设计在工厂方法设计上占了上风。包含一些标准，然而，客户端代码更简洁，不必明确传递平台标识符，因为这可以通过上下文识别。</p>
+<hr>
+<h2 id="4-a-name-1a结论">4. <a name='-1'></a>结论</h2>
+<p>在这篇文章中，解释了Dart和Flutter工厂设计模式的基本结构；您可以根据自己的选择修改此代码。</p>
+<p>希望这个能为您提供足够的信息，如果您的项目中想尝试Dart和Flutter的工厂设计模式，请大胆一试，祝玩的愉快。</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/equality/">
+                  <h3 class="post-title">
+                    Equality
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
