@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Advanced SwiftUI Animations – Part 1: Paths | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1663232760640">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+Explicit vs. Implicit Animations
+
+
+
+
+How Do Animations Work
+
+
+
+
+Why Do I Care About Animatable?
+
+
+
+
+Animating Shape ..." />
+    <meta name="keywords" content="animations,swiftui" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1663232760640" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+      豫ICP备2021012281号-1  | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Advanced SwiftUI Animations – Part 1: Paths</h2>
+            <div class="post-date">2022-09-15</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Explicitvs.ImplicitAnimations">Explicit vs. Implicit Animations</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#HowDoAnimationsWork">How Do Animations Work</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#WhyDoICareAboutAnimatable">Why Do I Care About Animatable?</a></li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><a href="#AnimatingShapePaths">Animating Shape Paths</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#AnimatingMoreThanOneParameter">Animating More Than One Parameter</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#GoingBeyondTwoAnimatableParameters">Going Beyond Two Animatable Parameters</a></li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li><a href="#MakingYourOwnTypeAnimatablewithVectorArithmetic">Making Your Own Type Animatable (with VectorArithmetic)</a></li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li><a href="#SwiftUIMetal">SwiftUI + Metal</a></li>
+</ol>
+</li>
+<li>
+<ol start="9">
+<li><a href="#WhatsNext">What’s Next</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=trues
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>在本文中，我们将深入研究一些高级技术来创建SwiftUI动画。我将广泛讨论Animatable协议、其值得信赖的配套anitableData、功能强大且经常被忽视的GeometryEffect以及完全被忽视但全能的AnimatableModifier协议。</p>
+<p>这些都是官方文档完全忽视的主题，在SwiftUI帖子和文章中几乎从未提及。尽管如此，他们还是为我们提供了创建一些相当不错的动画的工具。</p>
+<p><a href="https://gist.github.com/swiftui-lab/e5901123101ffad6d39020cc7a810798">Demo代码地址</a></p>
+<h2 id="1-a-nameexplicitvsimplicitanimationsaexplicit-vs-implicit-animations">1. <a name='Explicitvs.ImplicitAnimations'></a>Explicit vs. Implicit Animations</h2>
+<p>SwiftUI中有两种类型的动画。显式和隐式。隐式动画是您使用.animation()修饰符指定的动画。每当视图上更改animatable参数时，SwiftUI都会从旧值动画化到新值。一些animatable参数是尺寸、偏移量、颜色、缩放比例等。</p>
+<p>显式动画是那些用withAnimation { ... }闭包指定的动画。只有那些依赖于withAnimation闭包中更改的值的参数才会被动画化。让我们尝试一些例子来说明：</p>
+<p>以下示例使用隐式动画来更改图像的大小和不透明度：</p>
+<img width="320" height="548" src="https://swiftui-lab.com/wp-content/uploads/2019/07/tower1.gif" alt="Implicit Animation 1" class="wp-image-549">
+<pre><code class="language-swift">struct Example1: View {
+    @State private var half = false
+    @State private var dim = false
+    
+    var body: some View {
+        Image(&quot;tower&quot;)
+            .scaleEffect(half ? 0.5 : 1.0)
+            .opacity(dim ? 0.2 : 1.0)
+            .animation(.easeInOut(duration: 1.0))
+            .onTapGesture {
+                self.dim.toggle()
+                self.half.toggle()
+            }
+    }
+}
+</code></pre>
+<p>以下示例使用显式动画。在这里，缩放和不透明度都发生了变化，但只有不透明度才会被动画化，因为它是withAnimation闭包中唯一更改的参数：</p>
+<img loading="lazy" width="320" height="548" src="https://swiftui-lab.com/wp-content/uploads/2019/07/tower2.gif" alt="Explicit Animation" class="wp-image-552">
+<pre><code class="language-swift">struct Example2: View {
+    @State private var half = false
+    @State private var dim = false
+    
+    var body: some View {
+        Image(&quot;tower&quot;)
+            .scaleEffect(half ? 0.5 : 1.0)
+            .opacity(dim ? 0.5 : 1.0)
+            .onTapGesture {
+                self.half.toggle()
+                
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    self.dim.toggle()
+                }
+        }
+    }
+}
+</code></pre>
+<p>请注意，您可以通过更改修饰符的放置顺序，使用隐式动画创建相同的结果：</p>
+<pre><code class="language-swift">struct Example2: View {
+    @State private var half = false
+    @State private var dim = false
+    
+    var body: some View {
+        Image(&quot;tower&quot;)
+            .opacity(dim ? 0.2 : 1.0)
+            .animation(.easeInOut(duration: 1.0))
+            .scaleEffect(half ? 0.5 : 1.0)
+            .onTapGesture {
+                self.dim.toggle()
+                self.half.toggle()
+        }
+    }
+}
+</code></pre>
+<p>如果您需要禁用动画，您可以使用.animation（nil）。</p>
+<hr>
+<h2 id="2-a-namehowdoanimationsworkahow-do-animations-work">2. <a name='HowDoAnimationsWork'></a>How Do Animations Work</h2>
+<p>在所有 SwiftUI 动画的背后，都有一个名为 <strong>Animatable</strong> 的协议。我们稍后将讨论细节，但主要是，它涉及具有符合VectorArithmetic的类型的计算属性。这使得框架可以随意插值。</p>
+<p>在为视图制作动画时，SwiftUI实际上会多次重新生成视图，每次都修改动画参数。通过这种方式，它逐渐从起点到终点。</p>
+<p>假设我们为视图的不透明度创建一个线性动画。我们打算从0.3升到0.8。该框架将多次重新生成视图，以微小的增量改变不透明度。由于不透明度表示为Double，并且Double符合VectorArithmetic，SwiftUI可以插值所需的不透明度值。在框架代码的某个地方，可能有一种这样的算法：</p>
+<pre><code class="language-swift">let from:Double = 0.3
+let to:Double = 0.8
+
+for i in 0..&lt;6 {
+    let pct = Double(i) / 5
+    
+    var difference = to - from
+    difference.scale(by: pct)
+    
+    let currentOpacity = from + difference
+    
+    print(&quot;currentOpacity = \(currentOpacity)&quot;)
+}
+</code></pre>
+<p>该代码将创建从起点到目的地的渐进更改：</p>
+<pre><code class="language-swift">currentOpacity = 0.3
+currentOpacity = 0.4
+currentOpacity = 0.5
+currentOpacity = 0.6
+currentOpacity = 0.7
+currentOpacity = 0.8
+</code></pre>
+<hr>
+<h2 id="3-a-namewhydoicareaboutanimatableawhy-do-i-care-about-animatable">3. <a name='WhyDoICareAboutAnimatable'></a>Why Do I Care About Animatable?</h2>
+<p>你可能会想，为什么我需要关心所有这些小细节。SwiftUI已经为不透明度制作了动画，而我不必担心这一切。是的，这是真的，但只要SwiftUI知道如何将值从原点插值到目的地。对于不透明度，这是一个直截了当的过程，SwiftUI知道该怎么做。然而，正如我们接下来将看到的，情况并非总是如此。</p>
+<p>想到了一些很大的例外：路径、转换矩阵和任意视图更改（例如，文本视图中的文本、渐变颜色或渐变中的停止等）。在这种情况下，框架不知道该怎么做。关于如何从A到B，没有预定义的行为。我们即将在本文第二和第三部分中讨论转换矩阵并查看更改。现在，让我们专注于shapes。</p>
+<h2 id="4-a-nameanimatingshapepathsaanimating-shape-paths">4. <a name='AnimatingShapePaths'></a>Animating Shape Paths</h2>
+<p>想象一下，你有一个使用路径绘制正多边形的shape。当然，我们的实现将让您指出多边形将有多少方面：</p>
+<pre><code class="language-swift">PolygonShape(sides: 3).stroke(Color.blue, lineWidth: 3)
+PolygonShape(sides: 4).stroke(Color.purple, lineWidth: 4)
+</code></pre>
+<img loading="lazy" width="694" height="384" src="https://swiftui-lab.com/wp-content/uploads/2019/07/polygons.png" alt="PolygonShape" class="wp-image-584" srcset="https://swiftui-lab.com/wp-content/uploads/2019/07/polygons.png 694w, https://swiftui-lab.com/wp-content/uploads/2019/07/polygons-300x166.png 300w" sizes="(max-width: 694px) 100vw, 694px">
+<p>这是我们的PolygonShape实现。</p>
+<pre><code class="language-swift">struct PolygonShape: Shape {
+    var sides: Int
+    
+    func path(in rect: CGRect) -&gt; Path {        
+        // hypotenuse
+        let h = Double(min(rect.size.width, rect.size.height)) / 2.0
+        
+        // center
+        let c = CGPoint(x: rect.size.width / 2.0, y: rect.size.height / 2.0)
+        
+        var path = Path()
+                
+        for i in 0..&lt;sides {
+            let angle = (Double(i) * (360.0 / Double(sides))) * Double.pi / 180
+
+            // Calculate vertex position
+            let pt = CGPoint(x: c.x + CGFloat(cos(angle) * h), y: c.y + CGFloat(sin(angle) * h))
+            
+            if i == 0 {
+                path.move(to: pt) // move to first vertex
+            } else {
+                path.addLine(to: pt) // draw line to next vertex
+            }
+        }
+        
+        path.closeSubpath()
+        
+        return path
+    }
+}
+</code></pre>
+<p>我们可以更进一步，并尝试使用与不透明度相同的方法为side参数添加动画效果：</p>
+<pre><code class="language-swift">PolygonShape(sides: isSquare ? 4 : 3)
+    .stroke(Color.blue, lineWidth: 3)
+    .animation(.easeInOut(duration: duration))
+</code></pre>
+<p>你认为SwiftUI会如何将三角形变成正方形？你可能猜到了。它不会。当然，该框架不知道如何为它制作动画。您可以随心所欲地使用.animation()，但形状将从三角形跳转到没有动画的正方形。原因很简单：您只教SwiftUI如何绘制三面多边形或四面多边形，但您的代码不知道如何绘制3.379面多边形！</p>
+<p>因此，要进行动画，我们需要两件事：</p>
+<ol>
+<li>我们需要更改形状代码，以便它知道如何绘制具有非整数边数的多边形。</li>
+<li>使框架多次生成形状，在动画参数中几乎没有增量。也就是说，我们希望形状被多次要求绘制，每次都对side参数有不同的值：3、3.1、3.15、3.2、3.25，一直到4。</li>
+</ol>
+<p>一旦我们把它放到位，我们将能够在任意数量的方面之间制作动画：</p>
+<img loading="lazy" width="320" height="586" src="https://swiftui-lab.com/wp-content/uploads/2019/07/PolygonAnimation1.gif" alt="Polygon Animation 1" class="wp-image-588">
+<p>为了使shape具有动画效果，我们需要SwiftUI使用原点到目标点之间的所有side值多次渲染视图。幸运的是，Shape已经符合Animatable协议。这意味着，有一个计算属性（animatableData），我们可以用它来处理此任务。然而，它的默认实现设置为EmptyAnimatableData。所以它什么也没做。</p>
+<p>为了解决我们的问题，我们将首先将sides属性的类型从Int更改为Double。这样我们就可以有小数了。<br>
+我们稍后将讨论如何将属性保持为Int，并仍然执行动画。但就目前而言，为了保持简单，让我们使用Double。</p>
+<pre><code class="language-swift">struct PolygonShape: Shape {
+    var sides: Double
+    ...
+}
+</code></pre>
+<p>然后，我们需要创建计算属性anitableData。在这种情况下，它非常简单：</p>
+<pre><code class="language-swift">struct PolygonShape: Shape {
+    var sides: Double
+
+    var animatableData: Double {
+        get { return sides }
+        set { sides = newValue }
+    }
+
+    ...
+}
+</code></pre>
+<p>用小数绘sides</p>
+<p>最后，我们需要教SwiftUI如何绘制具有非整数边数的多边形。我们将稍微更改我们的代码。随着小数点数的增长，这一新side将从零到全长。其他顶点将相应地平稳地重新定位。这听起来很复杂，但这是一个最小的变化：</p>
+<pre><code class="language-swift">func path(in rect: CGRect) -&gt; Path {
+        
+        // hypotenuse
+        let h = Double(min(rect.size.width, rect.size.height)) / 2.0
+        
+        // center
+        let c = CGPoint(x: rect.size.width / 2.0, y: rect.size.height / 2.0)
+        
+        var path = Path()
+                
+        let extra: Int = Double(sides) != Double(Int(sides)) ? 1 : 0
+
+        for i in 0..&lt;Int(sides) + extra {
+            let angle = (Double(i) * (360.0 / Double(sides))) * Double.pi / 180
+
+            // Calculate vertex
+            let pt = CGPoint(x: c.x + CGFloat(cos(angle) * h), y: c.y + CGFloat(sin(angle) * h))
+            
+            if i == 0 {
+                path.move(to: pt) // move to first vertex
+            } else {
+                path.addLine(to: pt) // draw line to next vertex
+            }
+        }
+        
+        path.closeSubpath()
+        
+        return path
+    }
+</code></pre>
+<p>如前所述，对于我们shape的用户来说，sides参数是Double似乎很奇怪。应该期望sides是Int参数。幸运的是，我们可以再次更改代码，并将这一事实隐藏在我们的shape实现中：</p>
+<pre><code class="language-swift">struct PolygonShape: Shape {
+    var sides: Int
+    private var sidesAsDouble: Double
+    
+    var animatableData: Double {
+        get { return sidesAsDouble }
+        set { sidesAsDouble = newValue }
+    }
+    
+    init(sides: Int) {
+        self.sides = sides
+        self.sidesAsDouble = Double(sides)
+    }
+
+    ...
+}
+</code></pre>
+<p>通过这些更改，我们在内部使用Double，但在外部使用Int。它现在看起来更优雅了。不要忘记修改绘图代码，因此它使用 sidesAsDouble而不是 sides。</p>
+<h2 id="5-a-nameanimatingmorethanoneparameteraanimating-more-than-one-parameter">5. <a name='AnimatingMoreThanOneParameter'></a>Animating More Than One Parameter</h2>
+<p>我们经常会发现自己需要为多个参数制作动画效果。一个Double是不会满足它。在这些时刻，我们可以使用AnimatablePair&lt;First, Second&gt;。在这里，第一和第二都是符合VectorArithmetic的类型。例如，AnimatablePair&lt;CGFloat, Double&gt;。</p>
+<img loading="lazy" width="320" height="586" src="https://swiftui-lab.com/wp-content/uploads/2019/07/PolygonAnimation2.gif" alt="Animatable  Polygon 3" class="wp-image-606">
+<p>为了演示AnimatablePair的使用，我们将修改我们的示例。现在，我们的多边形形状将有两个参数：sides和scale。两者都将以double代表。</p>
+<pre><code class="language-swift">struct PolygonShape: Shape {
+    var sides: Double
+    var scale: Double
+    
+    var animatableData: AnimatablePair&lt;Double, Double&gt; {
+        get { AnimatablePair(sides, scale) }
+        set {
+            sides = newValue.first
+            scale = newValue.second
+        }
+    }
+
+    ...
+}
+</code></pre>
+<h2 id="6-a-namegoingbeyondtwoanimatableparametersagoing-beyond-two-animatable-parameters">6. <a name='GoingBeyondTwoAnimatableParameters'></a>Going Beyond Two Animatable Parameters</h2>
+<p>如果您浏览SwiftUI声明文件，您将看到该框架非常广泛地使用AnimatablePair。例如：CGSize、CGPoint、CGrect。虽然这些类型不符合VectorArithmetic，但它们可以动画，因为它们确实符合Animatable。</p>
+<p>他们都以这样或那样的方式使用AnimatablePair：</p>
+<pre><code class="language-swift">extension CGPoint : Animatable {
+    public typealias AnimatableData = AnimatablePair&lt;CGFloat, CGFloat&gt;
+    public var animatableData: CGPoint.AnimatableData
+}
+
+extension CGSize : Animatable {
+    public typealias AnimatableData = AnimatablePair&lt;CGFloat, CGFloat&gt;
+    public var animatableData: CGSize.AnimatableData
+}
+
+extension CGRect : Animatable {
+    public typealias AnimatableData = AnimatablePair&lt;CGPoint.AnimatableData, CGSize.AnimatableData&gt;
+    public var animatableData: CGRect.AnimatableData
+}
+</code></pre>
+<p>如果您更密切地关注CGRect，您会发现它实际上正在使用：</p>
+<pre><code class="language-swift">AnimatablePair&lt;AnimatablePair&lt;CGFloat, CGFloat&gt;, AnimatablePair&lt;CGFloat, CGFloat&gt;&gt;
+</code></pre>
+<p>这意味着矩形x、y、宽度和高度值可以通过first.first、first.second、second.first和second.second访问。</p>
+<h2 id="7-a-namemakingyourowntypeanimatablewithvectorarithmeticamaking-your-own-type-animatable-with-vectorarithmetic">7. <a name='MakingYourOwnTypeAnimatablewithVectorArithmetic'></a>Making Your Own Type Animatable (with VectorArithmetic)</h2>
+<p>以下类型符合Animatable：Angle、CGPoint、CGrect、CGSize、EdgeInsets、StrokeStyle和UnitPoint。以下类型符合VectorArithmetic：AnimatablePair、CGFloat、Double、EmptyAnimatableData和Float。你可以用它们中的任何一个来为你的形状制作动画。</p>
+<p>现有类型提供了足够的灵活性来制作任何动画。但是，如果您发现自己拥有想要动画的复杂类型，没有什么能阻止您添加自己的VectorArithmetic一致性实现。事实上，我们将在下一个例子中这样做。</p>
+<p>为了说明，我们将创建一个模拟时钟形状。它将根据类型为ClockTime的自定义动画参数移动针头。</p>
+<p><video autoplay="" controls="" loop="" src="https://swiftui-lab.com/wp-content/uploads/2019/08/clock.mp4"></video></p>
+<p>我们将以这种方式使用它：</p>
+<pre><code class="language-swift">ClockShape(clockTime: show ? ClockTime(9, 51, 15) : ClockTime(9, 55, 00))
+    .stroke(Color.blue, lineWidth: 3)
+    .animation(.easeInOut(duration: duration))
+</code></pre>
+<p>首先，我们首先创建自定义类型ClockTime。它包含三个属性（小时、分钟和秒），几个有用的初始化器，以及一些助手计算属性和方法：</p>
+<pre><code class="language-swift">struct ClockTime {
+    var hours: Int      // Hour needle should jump by integer numbers
+    var minutes: Int    // Minute needle should jump by integer numbers
+    var seconds: Double // Second needle should move smoothly
+    
+    // Initializer with hour, minute and seconds
+    init(_ h: Int, _ m: Int, _ s: Double) {
+        self.hours = h
+        self.minutes = m
+        self.seconds = s
+    }
+    
+    // Initializer with total of seconds
+    init(_ seconds: Double) {
+        let h = Int(seconds) / 3600
+        let m = (Int(seconds) - (h * 3600)) / 60
+        let s = seconds - Double((h * 3600) + (m * 60))
+        
+        self.hours = h
+        self.minutes = m
+        self.seconds = s
+    }
+    
+    // compute number of seconds
+    var asSeconds: Double {
+        return Double(self.hours * 3600 + self.minutes * 60) + self.seconds
+    }
+    
+    // show as string
+    func asString() -&gt; String {
+        return String(format: &quot;%2i&quot;, self.hours) + &quot;:&quot; + String(format: &quot;%02i&quot;, self.minutes) + &quot;:&quot; + String(format: &quot;%02f&quot;, self.seconds)
+    }
+}
+</code></pre>
+<p>现在，为了符合VectorArithmetic，我们需要编写以下方法和计算属性：</p>
+<pre><code class="language-swift">extension ClockTime: VectorArithmetic {
+    static var zero: ClockTime {
+        return ClockTime(0, 0, 0)
+    }
+
+    var magnitudeSquared: Double { return asSeconds * asSeconds }
+    
+    static func -= (lhs: inout ClockTime, rhs: ClockTime) {
+        lhs = lhs - rhs
+    }
+    
+    static func - (lhs: ClockTime, rhs: ClockTime) -&gt; ClockTime {
+        return ClockTime(lhs.asSeconds - rhs.asSeconds)
+    }
+    
+    static func += (lhs: inout ClockTime, rhs: ClockTime) {
+        lhs = lhs + rhs
+    }
+    
+    static func + (lhs: ClockTime, rhs: ClockTime) -&gt; ClockTime {
+        return ClockTime(lhs.asSeconds + rhs.asSeconds)
+    }
+    
+    mutating func scale(by rhs: Double) {
+        var s = Double(self.asSeconds)
+        s.scale(by: rhs)
+        
+        let ct = ClockTime(s)
+        self.hours = ct.hours
+        self.minutes = ct.minutes
+        self.seconds = ct.seconds
+    }    
+}
+</code></pre>
+<h2 id="8-a-nameswiftuimetalaswiftui-metal">8. <a name='SwiftUIMetal'></a>SwiftUI + Metal</h2>
+<p>如果您发现自己在编码复杂的动画，您当同时试图跟上所有绘图时，可能会看到您的设备受到影响。如果是这样，您肯定会从启用Metal中受益。以下是启用Metal如何让一切变得与众不同的示例：</p>
+<p><video autoplay="" controls="" loop="" src="https://swiftui-lab.com/wp-content/uploads/2019/08/metal-comparison.mov"></video></p>
+<p>在模拟器上运行时，您可能不会看到太大的区别。然而，在真实设备上，你会的。</p>
+<p>幸运的是，启用Metal非常容易。您只需要添加.drawingGroup()修饰符：</p>
+<pre><code class="language-swift">FlowerView().drawingGroup()
+</code></pre>
+<p>根据WWDC 2019，Session237（使用SwiftUI构建自定义视图）：绘图组是一种特殊的渲染方式，但仅适用于graphics等。它基本上会将SwiftUI视图扁平化为单个NSView/UIView，并用metal渲染。</p>
+<p>如果您想尝试一下，但您的形状不够复杂，无法使设备挣扎，请添加一些渐变和阴影，您将立即看到区别。</p>
+<h2 id="9-a-namewhatsnextawhats-next">9. <a name='WhatsNext'></a>What’s Next</h2>
+<p>在本文的第二部分，我们将学习如何使用GeometryEffect协议。它将为改变我们的view和动画的新方法打开大门。与path一样，SwiftUI没有关于如何在两个不同的转换矩阵之间转换的内置知识。GeometryEffect将在此过程中有所帮助。</p>
+<p>目前，SwiftUI没有关键帧功能。我们将看看如何用basic animation来模拟一个。</p>
+<p>在文章的第三部分中，我们将介绍AnimatableModifier，这是一个非常强大的工具，可以让我们为任何可以在视图中更改的东西制作动画，甚至文本！</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/nk7gw0vRGQ/" class="tag">
+                    animations
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/iupH-uWSrW/" class="tag">
+                    swiftui
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/the-swiftui-layout-protocol-part-1/">
+                  <h3 class="post-title">
+                    The SwiftUI Layout Protocol – Part 1
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

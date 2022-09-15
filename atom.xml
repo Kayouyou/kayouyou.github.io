@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://kayouyou.github.io</id>
     <title>Kayouyou&apos;s Den</title>
-    <updated>2022-09-15T06:32:51.749Z</updated>
+    <updated>2022-09-15T09:06:07.468Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://kayouyou.github.io"/>
     <link rel="self" href="https://kayouyou.github.io/atom.xml"/>
@@ -10,6 +10,13 @@
     <logo>https://kayouyou.github.io/images/avatar.png</logo>
     <icon>https://kayouyou.github.io/favicon.ico</icon>
     <rights>All rights reserved 2022, Kayouyou&apos;s Den</rights>
+    <entry>
+        <title type="html"><![CDATA[Advanced SwiftUI Animations – Part 1: Paths]]></title>
+        <id>https://kayouyou.github.io/post/advanced-swiftui-animations-part-1-paths/</id>
+        <link href="https://kayouyou.github.io/post/advanced-swiftui-animations-part-1-paths/">
+        </link>
+        <updated>2022-09-15T07:37:56.000Z</updated>
+    </entry>
     <entry>
         <title type="html"><![CDATA[The SwiftUI Layout Protocol – Part 1]]></title>
         <id>https://kayouyou.github.io/post/the-swiftui-layout-protocol-part-1/</id>
@@ -72,12 +79,5 @@
         <link href="https://kayouyou.github.io/post/using-swifts-concurrency-system-to-run-multiple-tasks-in-parallel/">
         </link>
         <updated>2022-05-22T08:16:25.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[SwiftUI view's refreshable]]></title>
-        <id>https://kayouyou.github.io/post/swiftui-views-refreshable/</id>
-        <link href="https://kayouyou.github.io/post/swiftui-views-refreshable/">
-        </link>
-        <updated>2022-05-22T08:14:09.000Z</updated>
     </entry>
 </feed>
