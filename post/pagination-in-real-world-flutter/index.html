@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Pagination in real world flutter | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1669781686626">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+
+1. Pagination 是什么？
+
+
+
+
+2. Streams 是什么？
+
+
+
+
+3. Fetch Policies 是什么？
+
+
+3.1. 考虑其他场景
+
+
+
+
+4. Cache
+
+
+
+
+5. 支持不同的获取策略
+
+
+
+
+6...." />
+    <meta name="keywords" content="pagination,flutter" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1669781686626" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+       <a href="https://beian.miit.gov.cn/">豫ICP备2021012281号-1</a> | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Pagination in real world flutter</h2>
+            <div class="post-date">2022-11-30</div>
+            
+            <div class="post-content" v-pre>
+              <!-- vscode-markdown-toc -->
+<ul>
+<li>
+<ol>
+<li><a href="#Pagination">1. Pagination 是什么？</a></li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><a href="#Streams">2. Streams 是什么？</a></li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><a href="#FetchPolicies">3. Fetch Policies 是什么？</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#">考虑其他场景</a></li>
+</ul>
+</li>
+<li>
+<ol start="4">
+<li><a href="#Cache">4. Cache</a></li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li><a href="#-1">5. 支持不同的获取策略</a></li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li><a href="#-1">6. 结尾</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+<p>“但凡不能杀死你的，最终都会使你更强大” - 尼采</p>
+<p>最近用纯flutter一套代码开发iOS和Android APP，其中有一个很常见的开发场景就是列表分页加载，其中还掺杂着各种tag以及模糊查询条件。那这种情况就比单纯的分页要更复杂一些，觉得有必要就这一高频场景做一些自我总结。不管大家实际使用的Swift，OC，Kotlin，Dart或别的语言开发，其中的原则都是想通的，开始吧~</p>
+<h2 id="1-a-namepaginationa1-pagination-是什么">1. <a name='Pagination'></a>1. Pagination 是什么？</h2>
+<p>示例代码：</p>
+<pre><code class="language-Dart">  Stream&lt;QuoteListPage&gt; getQuoteListPage(
+    int pageNumber, {
+    Tag? tag,
+    String searchTerm = '',
+    String? favoritedByUsername,
+    required QuoteListPageFetchPolicy fetchPolicy,
+  }) async* {
+    
+  }
+</code></pre>
+<p>首先观察函数的定义；有三件事值得指出：</p>
+<ol>
+<li>函数名称中的page。</li>
+<li>第一个参数：pageNumber。</li>
+<li>return类型：Stream<QuoteListPage>。现在，只需使用QuoteListPage；您将在下一节中了解Stream部分。</li>
+</ol>
+<p>当API将结果列表拆分为分页处理时-就是所谓的pages。然后，它希望您单独请求这些分页处理，因为您需要将它们显示给用户。这允许用户更快地开始与应用程序交互，因为他们不需要等待加载整个列表。减少浪费手机流量的风险。</p>
+<p>Pagination解释了为什么getQuoteListPage（）返回QuoteListPage而不是某种类型的List＜Quote＞。QuoteListPage包含两个属性：</p>
+<ol>
+<li>quoteList：该页面上的items。</li>
+<li>isLastPage：指示该页面是否为最后一页，以便状态管理器知道何时停止请求更多页面。</li>
+</ol>
+<h2 id="2-a-namestreamsa2-streams-是什么">2. <a name='Streams'></a>2. Streams 是什么？</h2>
+<p>Dart中的异步编程有两种类型：Future和Stream。</p>
+<p>Futures表示您无法立即访问的值。例如，当一个函数返回Future＜Quote＞而不仅仅是Quote时，它表示不能立即返回该Quote，因为它需要一些时间才能得到它。因此，函数不会让函数的调用者等待实际的Quote，而是立即向调用者返回一个Future。稍后，当获取成功时，它将通过该通道发送实际数据。</p>
+<p>Stream只是Future的复数形式。Future每次发出一个值；Stream可以发出多个值。</p>
+<p>getQuoteListPage（）返回一个Stream而不是Future的原因与分页以及它可能发出一系列页面的事实完全无关。实际原因在于getQuoteListPage（）的fetchPolicy参数。</p>
+<h2 id="3-a-namefetchpoliciesa3-fetch-policies-是什么">3. <a name='FetchPolicies'></a>3. Fetch Policies 是什么？</h2>
+<p>一旦决定缓存远程获取的结果，您就需要决定以后交付这些结果时要遵循的策略：</p>
+<ul>
+<li>是否始终返回缓存的数据？如果它们丧失了时效性怎么办？</li>
+<li>您是否会继续每次从服务器中提取项目，并仅在请求失败时使用缓存的项目作为备用？如果是这样，频繁的加载时间是否会让用户感到不安？假设数据不经常变化，你不就在浪费手机数据吗？</li>
+</ul>
+<p>这些问题没有明确的答案；你必须考虑每种情况。数据多久会过时？在这种情况下，您应该优先考虑快速性还是准确性？</p>
+<p>当用户打开APP时，他们可能希望每次都能看到新的数据。</p>
+<p>到目前为止，假设最好的策略是每次从服务器获取最新数据，而不必担心缓存，这是安全的。但是，如果网络失败怎么办？在这种情况下，最好将缓存项显示为备用项。</p>
+<p>好的，你现在有策略了。您将继续每次从服务器获取数据，但然后缓存这些数据，以便将来在网络调用失败时使用它们。</p>
+<p>你的新策略相当可靠，但仍有一个巨大的缺陷：通过API每次都意味着用户频繁且长时间的加载。当用户打开应用程序时，他们希望尽快开始与它交互。</p>
+<p>您无法使服务器更快地返回您的项目。但是，既然你无论如何都在缓存数据，那么你可以采取一个主要措施：用户每次打开应用程序时，你可以显示缓存的数据，而不是显示加载屏幕，而是将它们用作占位符，APP在背后默默的获取最新的数据！</p>
+<blockquote>
+<p>请注意，使用此新策略，仅从函数返回Future是不够的。当状态管理器请求第一个页面时，您将首先发出缓存的页面（如果有的话），然后从API发出的数据到达时会再次发出！因此你需要使用一个Stream。</p>
+</blockquote>
+<p>但是以上场景还不足以应付实际使用场景，继续！</p>
+<h3 id="31-a-namea考虑其他场景">3.1. <a name=''></a>考虑其他场景</h3>
+<ul>
+<li>
+<p>如果用户想要通过下拉列表来有目的地刷新列表，该怎么办？在这种情况下，不能先返回“旧”数据。此外，用户不会介意看到加载屏幕；毕竟，他们有目的地要求新的数据。</p>
+</li>
+<li>
+<p>如果用户搜索某个特定的数据，但随后清除了搜索框，以便他们可以返回到之前看到的数据，该怎么办？在这种情况下，最好只显示缓存的数据。您不需要稍后发出新的项目，因为用户只想返回到以前的状态。</p>
+</li>
+</ul>
+<p>根据屏幕的复杂程度，单次提取策略可能不够。在这种情况下，您可以做的最好的事情就是让状态管理器为用户体验旅程的每一步决定最佳策略。这就是getQuoteListPage（）具有fetchPolicy参数的全部原因。</p>
+<p>fetchPolicy的类型为QuoteListPageFetchPolicy，它是枚举类型。这些是枚举的值：</p>
+<ul>
+<li>
+<p>cacheAndNetwork：如果HTTP调用成功，则首先发出缓存的引号（如果有），然后从服务器发出新的数据。适<br>
+用于用户首次打开应用程序时。</p>
+</li>
+<li>
+<p>networkOnly：在任何情况下都不要使用缓存。如果服务器请求失败，请通知用户。当用户有意识地刷新列表时非常有用。</p>
+</li>
+<li>
+<p>networkPreferably：首选使用服务器。如果请求失败，请尝试使用缓存。如果缓存中没有任何内容，请让用户知道发生了错误。适用于用户请求后续页面时。</p>
+</li>
+<li>
+<p>cachePreferry：首选使用缓存。如果缓存中没有任何内容，请尝试使用服务器。当用户清除标记或搜索框时非常有用。</p>
+</li>
+</ul>
+<blockquote>
+<p>注意，如果不是cacheAndNetwork策略（这是唯一一个可以发出两次的策略），那么将Future作为返回类型就足够了。</p>
+</blockquote>
+<h2 id="4-a-namecachea4-cache">4. <a name='Cache'></a>4. Cache</h2>
+<p>四个受支持的策略中的每一个都可能在一个时间点需要来自服务器的数据；毕竟，没有cacheOnly策略。因此，您的第一步是创建一个实用程序函数，该函数从服务器获取数据并写入缓存。这样，您就可以在所有策略的主getQuoteListPage（）中重用该函数。</p>
+<pre><code class="language-Dart">  // 1
+  Future&lt;QuoteListPage&gt; _getQuoteListPageFromNetwork(
+    int pageNumber, {
+    Tag? tag,
+    String searchTerm = '',
+    String? favoritedByUsername,
+  }) async {
+    try {
+      final apiPage = await remoteApi.getQuoteListPage(
+        pageNumber,
+        tag: tag?.toRemoteModel(),
+        searchTerm: searchTerm,
+        favoritedByUsername: favoritedByUsername,
+      );
+
+      final isFiltering = tag != null || searchTerm.isNotEmpty;
+      final favoritesOnly = favoritedByUsername != null;
+
+      final shouldStoreOnCache = !isFiltering;
+      // 2
+      if (shouldStoreOnCache) {
+        // 3
+        final shouldEmptyCache = pageNumber == 1;
+        if (shouldEmptyCache) {
+          await _localStorage.clearQuoteListPageList(favoritesOnly);
+        }
+
+        final cachePage = apiPage.toCacheModel();
+        await _localStorage.upsertQuoteListPage(
+          pageNumber,
+          cachePage,
+          favoritesOnly,
+        );
+      }
+
+      final domainPage = apiPage.toDomainModel();
+      return domainPage;
+    } on EmptySearchResultFavQsException catch (_) {
+      throw EmptySearchResultException();
+    }
+  }
+</code></pre>
+<ol>
+<li>
+<p>与getQuoteListPage（）不同，此函数只能发出一个值-服务器列表或错误。因此，将Future作为返回类型就足够了。</p>
+</li>
+<li>
+<p>你不应该缓存筛选的结果。如果你试图缓存用户可能执行的所有搜索，你会很快填满设备的存储空间。</p>
+</li>
+<li>
+<p>每次获得新的第一页时，都必须从缓存中删除之前存储的所有后续页。这将迫使后续页面将来从网络中获取，这样您就不会冒着将更新的页面和过时的页面混合在一起的风险。不这样做会带来问题；例如，如果过去位于第二页的引用移到了第一页，那么如果混合了缓存页面和新页面，则可能会显示该引用两次。</p>
+</li>
+</ol>
+<blockquote>
+<p>toCacheModel 和 toCacheModel 只是用于Model隔离，RM代表remote model，CM代表cache model。</p>
+</blockquote>
+<h2 id="5-a-name-1a5-支持不同的获取策略">5. <a name='-1'></a>5. 支持不同的获取策略</h2>
+<p>回到上面的getQuoteListPage（）</p>
+<pre><code class="language-Dart">    final isFilteringByTag = tag != null;
+    final isSearching = searchTerm.isNotEmpty;
+    final isFetchPolicyNetworkOnly =
+        fetchPolicy == QuoteListPageFetchPolicy.networkOnly;
+    final shouldSkipCacheLookup =
+        isFilteringByTag || isSearching || isFetchPolicyNetworkOnly;
+    // 1
+    if (shouldSkipCacheLookup) {
+      // 2
+      final freshPage = await _getQuoteListPageFromNetwork(
+        pageNumber,
+        tag: tag,
+        searchTerm: searchTerm,
+        favoritedByUsername: favoritedByUsername,
+      );
+      // 3
+      yield freshPage;
+    } else {
+        // TODO: Cover other fetch policies.
+    }
+</code></pre>
+<ol>
+<li>
+<p>在三种情况下，您希望跳过缓存查找并直接从网络返回数据：如果用户选择了tag，如果用户正在模糊搜索，或者函数的调用方明确指定了networkOnly策略。</p>
+</li>
+<li>
+<p>请求远程数据的私有函数</p>
+</li>
+<li>
+<p>在Dart函数中生成Stream的最简单的方法是将async*添加到函数的头部，然后在您想要发出新项时使用yield关键字。</p>
+</li>
+</ol>
+<p>现在，您已经涵盖了不需要缓存查找的所有场景-当用户筛选或策略为networkOnly时。现在，您将研究强制执行缓存查找的场景。</p>
+<pre><code class="language-Dart">      final isFilteringByFavorites = favoritedByUsername != null;
+
+      final cachedPage = await _localStorage.getQuoteListPage(
+        pageNumber,
+        // 1
+        isFilteringByFavorites,
+      );
+
+      final isFetchPolicyCacheAndNetwork =
+          fetchPolicy == QuoteListPageFetchPolicy.cacheAndNetwork;
+
+      final isFetchPolicyCachePreferably =
+          fetchPolicy == QuoteListPageFetchPolicy.cachePreferably;
+      // 2
+      final shouldEmitCachedPageInAdvance =
+          isFetchPolicyCachePreferably || isFetchPolicyCacheAndNetwork;
+
+      if (shouldEmitCachedPageInAdvance &amp;&amp; cachedPage != null) {
+        // 3
+        yield cachedPage.toDomainModel();
+        // 4
+        if (isFetchPolicyCachePreferably) {
+          return;
+        }
+      }
+
+      // TODO: Call the remote API.
+</code></pre>
+<ol>
+<li>
+<p>您的本地存储将数据列表保存在单独的存储表中，因此您必须指定存储的是常规列表还是收藏夹列表。</p>
+</li>
+<li>
+<p>无论fetchPolicy是cacheAndNetwork还是cachePreferry，都必须发出缓存的数据。这两种策略的区别在于，对于cacheAndNetwork，稍后还将发出服务器返回的数据。</p>
+</li>
+<li>
+<p>返回缓存的数据，cache model 和 remote model 做了一层的隔离， 所以需要转换。</p>
+</li>
+<li>
+<p>如果策略是cachePreferably，并且您已成功发出缓存页面，则无需执行其他操作。你可以返回并关闭这里的Stream。</p>
+</li>
+</ol>
+<p>下一步是从API获取数据，以完成剩下的三个场景：</p>
+<ol>
+<li>
+<p>当策略为cacheAndNetwork时。您已经覆盖了缓存部分，但AndNetwork仍然缺失。</p>
+</li>
+<li>
+<p>当策略为cachePreferably并且无法从缓存中获取页面时。</p>
+</li>
+<li>
+<p>当策略为networkPreferably时。</p>
+</li>
+</ol>
+<p>replace // TODO: Call the remote API.</p>
+<pre><code class="language-Dart">   try {
+        final freshPage = await _getQuoteListPageFromNetwork(
+          pageNumber,
+          favoritedByUsername: favoritedByUsername,
+        );
+
+        yield freshPage;
+      } catch (_) {
+        // 1
+        final isFetchPolicyNetworkPreferably =
+            fetchPolicy == QuoteListPageFetchPolicy.networkPreferably;
+        if (cachedPage != null &amp;&amp; isFetchPolicyNetworkPreferably) {
+          yield cachedPage.toDomainModel();
+          return;
+        }
+        // 2
+        rethrow;
+      }
+</code></pre>
+<ol>
+<li>
+<p>如果策略是networkPreferably，并且您在尝试从网络获取页面时遇到错误，则尝试通过发出缓存数据来还-如果有缓存数据。</p>
+</li>
+<li>
+<p>如果策略是cacheAndNetwork或cachePreferably，那么您已经在几行之前发出了缓存页面，因此现在唯一的选择是在网络调用失败时rethrow错误。这样，状态管理器就可以通过向用户显示错误。</p>
+</li>
+</ol>
+<h2 id="6-a-name-1a6-结尾">6. <a name='-1'></a>6. 结尾</h2>
+<p>现实情况中的列表也许会有更多的tag，更复杂的筛选条件，上述的策略不能覆盖全面，但是至少给了一个大致的思路，祝你编程的世界里玩的愉快！ 拜了个拜 ~~</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/uGxCRlKNH/" class="tag">
+                    pagination
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/5fBZFO1h8/" class="tag">
+                    flutter
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/advanced-swiftui-animations-part-1-paths/">
+                  <h3 class="post-title">
+                    Advanced SwiftUI Animations – Part 1: Paths
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
