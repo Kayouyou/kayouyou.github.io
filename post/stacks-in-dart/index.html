@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Stacks in Dart | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1679555329908">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="class Stack&lt;E&gt; {
+  Stack() : _storage = &lt;E&gt;[];
+
+  Stack.of(Iterable&lt;E&gt; elements) : _storage = List&lt;..." />
+    <meta name="keywords" content="Dart,Structure & Algorithms" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1679555329908" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+       <a href="https://beian.miit.gov.cn/">豫ICP备2021012281号-1</a> | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Stacks in Dart</h2>
+            <div class="post-date">2023-03-23</div>
+            
+            <div class="post-content" v-pre>
+              <pre><code class="language-dart">class Stack&lt;E&gt; {
+  Stack() : _storage = &lt;E&gt;[];
+
+  Stack.of(Iterable&lt;E&gt; elements) : _storage = List&lt;E&gt;.of(elements);
+
+  final List&lt;E&gt; _storage;
+
+  void push(E element) =&gt; _storage.add(element);
+
+  E pop() =&gt; _storage.removeLast();
+
+  E get peek =&gt; _storage.last;
+
+  bool get isEmpty =&gt; _storage.isEmpty;
+
+  bool get isNotEmpty =&gt; !isEmpty;
+
+  @override
+  String toString() {
+    return '--- Top ---\n'
+        '${_storage.reversed.join('\n')}'
+        '\n-----------';
+  }
+
+  /* 问题1： 反转列表
+   * 将所有列表元素推入Stack的时间复杂度为O（n）。
+   * 弹出Stack打印值的时间复杂度也是O（n）。
+   * 总体而言，该算法的时间复杂度为O（n）
+   */
+  void printInReverse&lt;E&gt;(List&lt;E&gt; list) {
+    var stack = Stack&lt;E&gt;();
+    for (E value in list) {
+      stack.push(value);
+    }
+    while (stack.isNotEmpty) {
+      print(stack.pop());
+    }
+  }
+
+  /* 问题2： 检查字符串中的()括号
+   * 该算法的时间复杂度为O（n），其中n是字符串中代码单元的数量。
+   * 该算法还由于使用Stack数据结构而导致O（n）空间复杂度。
+   */
+  bool checkParentheses(String text) {
+    var stack = Stack&lt;int&gt;();
+    final open = '('.codeUnitAt(0);
+    final close = ')'.codeUnitAt(0);
+    for (int codeUnit in text.codeUnits) {
+      if (codeUnit == open) {
+        stack.push(codeUnit);
+      } else if (codeUnit == close) {
+        if (stack.isEmpty) {
+          return false;
+        } else {
+          stack.pop();
+        }
+      }
+    }
+    return stack.isEmpty;
+  }
+}
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/TJve9KUxO/" class="tag">
+                    Dart
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/CcG60wD43r/" class="tag">
+                    Structure &amp; Algorithms
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/stacks/">
+                  <h3 class="post-title">
+                    Stacks
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

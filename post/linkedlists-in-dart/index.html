@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>LinkedLists in Dart | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1679555329908">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="/*
+ * 链表是以线性、单向序列排列的值的集合。与Dart List等连续存储选项相比，它具有几个理论优势：
+ * 1. 在列表前面插入和删除耗时是常量
+ * 2. 可靠的性能特性。
+ */
+
+/// 节点
+class Node&lt;T..." />
+    <meta name="keywords" content="Dart,Structure & Algorithms" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1679555329908" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+       <a href="https://beian.miit.gov.cn/">豫ICP备2021012281号-1</a> | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">LinkedLists in Dart</h2>
+            <div class="post-date">2023-03-23</div>
+            
+            <div class="post-content" v-pre>
+              <pre><code class="language-dart">/*
+ * 链表是以线性、单向序列排列的值的集合。与Dart List等连续存储选项相比，它具有几个理论优势：
+ * 1. 在列表前面插入和删除耗时是常量
+ * 2. 可靠的性能特性。
+ */
+
+/// 节点
+class Node&lt;T&gt; {
+  // 链表拥有一个value和一个向下节点的索引
+  Node({required this.value, this.next});
+  T value;
+  Node&lt;T&gt;? next;
+
+  @override
+  String toString() {
+    if (next == null) return '$value';
+    // 使节点可递归打印输出
+    return '$value -&gt; ${next.toString()}';
+  }
+}
+
+class LinkedList&lt;E&gt; extends Iterable&lt;E&gt; {
+  Node&lt;E&gt;? head;
+  Node&lt;E&gt;? tail;
+
+  // 在列表的前面添加一个值。时间复杂度是O(1)
+  void push(E value) {
+    // 您将创建一个新节点，并指向曾经是头的节点。然后将这个新节点设置为head。
+    // 在您推入空列表的情况下，新节点既是列表的头，也是列表的尾
+    head = Node(value: value, next: head);
+    tail ??= head;
+  }
+
+  // 在列表末尾添加一个值。时间复杂度是O(1)
+  void append(E value) {
+    // 和以前一样，如果列表为空，则需要将head和tail都更新到新节点。
+    // 由于在空列表上进行追加在功能上与推送相同，因此只需调用推送即可完成工作。
+    if (isEmpty) {
+      push(value);
+      return;
+    }
+    // 在所有其他情况下，都会在尾部节点之后创建一个新节点。
+    // 由于您在isEmpty的情况下进行了push，因此tail被保证为非null。
+    tail!.next = Node(value: value);
+    // 由于这是尾部插入，所以您的新节点也是列表的新尾部。
+    tail = tail!.next;
+  }
+
+  // 在列表中查找特定节点。nodeAt将尝试根据给定的索引检索列表中的节点。
+  // 由于您只能从head节点访问列表中的节点，因此必须进行迭代遍历。
+  // 时间复杂度是O(i)
+  Node&lt;E&gt;? nodeAt(int index) {
+    // 你创建了一个新的head引用，并设置了一个计数器来跟踪你在列表中的位置
+    var currentNode = head;
+    var currentIndex = 0;
+
+    // 使用while循环，您可以在列表中向下移动索引，直到达到所需的索引。
+    // 空列表或越界索引将导致null返回值。
+    while (currentNode != null &amp;&amp; currentIndex &lt; index) {
+      currentNode = currentNode.next;
+      currentIndex += 1;
+    }
+    return currentNode;
+  }
+
+  // 在特定节点后面插入新节点。时间复杂度是O(1)
+  Node&lt;E&gt; insertAfter(Node&lt;E&gt; node, E value) {
+    if (tail == node) {
+      append(value);
+      return tail!;
+    }
+    node.next = Node(value: value, next: node.next);
+    return node.next!;
+  }
+
+  // 删除列表前面的值。
+  // 通过将头部向下移动到一个节点，您已经有效地删除了列表中的第一个节点。
+  // 如果列表变为空，则将tail设置为null。
+  // pop返回从列表中删除的值。此值可以为null，因为列表可能为空。
+  // 时间复杂度是O(1)
+  E? pop() {
+    final value = head?.value;
+    head = head?.next;
+    if (isEmpty) {
+      tail = null;
+    }
+    return value;
+  }
+
+  // 删除列表末尾的值。
+  // 删除列表的最后一个节点有些不方便。
+  // 尽管您有一个对尾部节点的引用，但如果不获得对其之前节点的引用就无法将其截断。因此不得不遍历
+  // 时间复杂度是O(n)
+  E? removeLast() {
+    // 如果列表只包含一个节点，那么removeLast在功能上等同于pop。
+    // 由于pop将处理头引用和尾引用的更新，所以您只需要委托这项工作。
+    // pop还将处理空列表的情况
+    if (head?.next == null) return pop();
+
+    // 您从一开始搜索节点，直到current.next是tail。这意味着current是tail之前的节点。
+    var current = head;
+    while (current!.next != tail) {
+      current = current.next;
+    }
+
+    // 从尾部收集返回值，然后将尾部之前的节点重新布线为新的尾部。
+    final value = tail?.value;
+    tail = current;
+    tail?.next = null;
+    return value;
+  }
+
+  // 删除列表中特定节点之后的值。
+  // 最后一个删除操作是删除列表中特定点上的节点。这与insertAfter非常相似。
+  // 您将首先在要删除的节点之前找到该节点，然后取消链接。
+  // 时间复杂度是O(1)
+  E? removeAfter(Node&lt;E&gt; node) {
+    final value = node.next?.value;
+    // 如果删除的节点是尾部节点，则需要特别小心，因为尾部引用需要更新。
+    if (node.next == tail) {
+      tail = node;
+    }
+    // 通过重置给定节点到下一个节点的链接，可以从列表中删除下一节点，实际上跳过了后面的节点。
+    node.next = node.next?.next;
+    return value;
+  }
+
+  // 问题1: 反向打印
+  // 这个算法的时间复杂度是O（n），因为你必须遍历列表的每个节点。
+  // 由于隐式地使用函数调用堆栈来处理每个元素，因此空间复杂度也是O（n）。
+  void printNodesRecursively&lt;T&gt;(Node&lt;T&gt;? node) {
+    // 1 您从基本情况开始：终止递归的条件。若node为null，则表示您已到达列表的末尾。
+    if (node == null) return;
+    // 2 这是您的递归调用，对下一个节点调用相同的函数。
+    printNodesRecursively(node.next);
+    // 3 添加打印语句的位置将决定是否按相反顺序打印列表
+    // 递归调用之后的任何代码都只在基本情况触发之后调用，也就是说，在递归函数到达列表末尾之后。
+    // 随着递归语句的分解，节点数据被打印出来。
+    print(node.value);
+  }
+
+  void printListInReverse&lt;E&gt;(LinkedList&lt;E&gt; list) {
+    printNodesRecursively(list.head);
+  }
+
+  // 问题2: 查找中间节点
+  // 一种解决方案是让两个引用遍历列表的节点，其中一个的速度是另一个的两倍
+  // 一旦较快的参考到达终点，较慢的参考将位于在中间。将函数更新为以下内容：
+  // 时间复杂度是O(n)
+  Node&lt;E&gt;? getMiddle&lt;E&gt;(LinkedList&lt;E&gt; list) {
+    var slow = list.head;
+    var fast = list.head;
+    // 在while循环中，fast检查接下来的两个节点，而slow只检查一个。这就是众所周知的e runner’s technique.
+    while (fast?.next != null) {
+      fast = fast?.next?.next;
+      slow = slow?.next;
+    }
+    return slow;
+  }
+
+  @override
+  bool get isEmpty =&gt; head == null;
+
+  @override
+  Iterator&lt;E&gt; get iterator =&gt; _LinkedListIterator(this);
+
+  @override
+  String toString() {
+    if (isEmpty) return 'Empty list';
+    return head.toString();
+  }
+}
+
+// 问题3：反转链接列表
+// O（n）时间的复杂性，两种实现方式
+extension ReversibleLinkedList&lt;E&gt; on LinkedList&lt;E&gt; {
+  // 首先将列表中的当前值推送到一个新的临时列表中。
+  // 这将以相反的顺序创建一个列表。在该点之后，列表的头部指向反向节点。
+  // 尽管O（n）是反转列表的最佳时间复杂度，但这个解决方案中存在显著的资源成本
+  // 现在，reverse将不得不为临时列表上的每个push方法分配新的节点。
+  void reverse() {
+    final tempList = LinkedList&lt;E&gt;();
+    for (final value in this) {
+      tempList.push(value);
+    }
+    head = tempList.head;
+  }
+
+  // 您可以避免完全使用临时列表，并通过操纵每个节点的下一个指针来反转列表。
+  // 代码最终变得更加复杂，但在性能方面可以获得相当大的好处。
+  // 时间复杂度依然是 O（n）
+  void reverseHighPerformance() {
+    // 首先将head分配给tail。接下来，创建两个引用——previous一个和current引用——以跟踪遍历。
+    // 该策略相当简单：每个节点都指向列表中的下一个节点。您将遍历列表，并使每个节点指向上一个节点：
+    // 然而，您不需要使用临时列表或分配任何新的Node对象，这显著提高了该算法的性能。
+    tail = head;
+    var previous = head;
+    var current = head?.next;
+    previous?.next = null;
+    // more to come...
+    while (current != null) {
+      final next = current.next;
+      current.next = previous;
+      previous = current;
+      current = next;
+    }
+
+    // 一旦完成了所有指针的反转，就可以将头设置为该列表的最后一个节点。在反向方法的末尾添加以下内容：
+    head = previous;
+  }
+}
+
+// 问题4：删除所有重复的节点
+// 该算法的时间复杂度为O（n），因为您需要遍历所有元素
+extension RemovableLinkedList&lt;E&gt; on LinkedList {
+  void removeAll(E value) {
+    // 有几种情况你需要考虑。要考虑的第一种情况是，当列表的头部包含要删除的值时。
+    while (head != null &amp;&amp; head!.value == value) {
+      head = head!.next;
+    }
+    // 取消节点链接
+    // 像许多与链表相关的算法一样，您将利用指针算术技能来取消节点的链接
+    var previous = head;
+    var current = head?.next;
+    while (current != null) {
+      if (current.value == value) {
+        previous?.next = current.next;
+        current = previous?.next;
+        continue;
+      }
+      // more to come
+      previous = current;
+      current = current.next;
+    }
+    // 当原始tail是包含要删除的值的节点时，这是必要的，原始tail可能已被删除，所以需要重新tail
+    tail = previous;
+  }
+}
+
+class _LinkedListIterator&lt;E&gt; implements Iterator&lt;E&gt; {
+  _LinkedListIterator(LinkedList&lt;E&gt; list) : _list = list;
+  final LinkedList&lt;E&gt; _list;
+
+  Node&lt;E&gt;? _currentNode;
+
+  @override
+  E get current =&gt; _currentNode!.value;
+
+  bool _firstPass = true;
+
+  @override
+  bool moveNext() {
+    if (_list.isEmpty) return false;
+
+    if (_firstPass) {
+      _currentNode = _list.head;
+      _firstPass = false;
+    } else {
+      _currentNode = _currentNode?.next;
+    }
+
+    return _currentNode != null;
+  }
+}
+
+// final node1 = Node(value: 1);
+// final node2 = Node(value: 2);
+// final node3 = Node(value: 3);
+// node1.next = node2;
+// node2.next = node3;
+// print(node1);
+// 1 -&gt; 2 -&gt; 3
+/// 目前构建列表的方法还有很多不足之处。您可以很容易地看到，
+/// 以这种方式构建长列表是不切实际的。缓解这个问题的一种常见方法是
+/// 构建一个LinkedList来管理Node对象。
+
+// final list = LinkedList&lt;int&gt;();
+// list.push(3);
+// list.push(2);
+// list.push(1);
+// print('Before: $list');
+// var middleNode = list.nodeAt(1)!;
+// list.insertAfter(middleNode, 42);
+// print('After: $list');
+// Before: 1 -&gt; 2 -&gt; 3
+// After: 1 -&gt; 2 -&gt; 42 -&gt; 3
+
+// final list = LinkedList&lt;int&gt;();
+// list.push(3);
+// list.push(2);
+// list.push(1);
+// print('Before: $list');
+// final poppedValue = list.pop();
+// print('After: $list');
+// print('Popped value: $poppedValue');
+// Before: 1 -&gt; 2 -&gt; 3
+// After: 2 -&gt; 3
+// Popped value: 1
+
+// final list = LinkedList&lt;int&gt;();
+// list.push(3);
+// list.push(2);
+// list.push(1);
+// print('Before: $list');
+// final removedValue = list.removeLast();
+// print('After: $list');
+// print('Removed value: $removedValue');
+// Before: 1 -&gt; 2 -&gt; 3
+// After: 1 -&gt; 2
+// Removed value: 3
+
+// final list = LinkedList&lt;int&gt;();
+// list.push(3);
+// list.push(2);
+// list.push(1);
+// print('Before: $list');
+// final firstNode = list.nodeAt(0);
+// final removedValue = list.removeAfter(firstNode!);
+// print('After: $list');
+// print('Removed value: $removedValue');
+// Before: 1 -&gt; 2 -&gt; 3
+// After: 1 -&gt; 3
+// Removed value: 2
+
+// var list = LinkedList&lt;int&gt;();
+// list.push(3);
+// list.push(2);
+// list.push(1);
+// print('Original list: $list');
+// print(&quot;Printing in reverse:&quot;);
+// printListInReverse(list);
+// Original list: 1 -&gt; 2 -&gt; 3
+// Printing in reverse:
+// 3
+// 2
+// 1
+
+// var list = LinkedList&lt;int&gt;();
+// list.push(3);
+// list.push(2);
+// list.push(1);
+// print(list);
+// final middleNode = getMiddle(list);
+// print('Middle: ${middleNode?.value}');
+// 1 -&gt; 2 -&gt; 3
+// Middle: 2
+
+// var list = LinkedList&lt;int&gt;();
+// list.push(3);
+// list.push(2);
+// list.push(1);
+// print('Original list: $list');
+// list.reverse();
+// print('Reversed list: $list');
+// Original list: 1 -&gt; 2 -&gt; 3
+// Reversed list: 3 -&gt; 2 -&gt; 1
+
+// var list = LinkedList&lt;int&gt;();
+// list.push(3);
+// list.push(2);
+// list.push(2);
+// list.push(1);
+// list.push(1);
+// list.removeAll(3);
+// print(list);
+// 1 -&gt; 1 -&gt; 2 -&gt; 2
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/TJve9KUxO/" class="tag">
+                    Dart
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/CcG60wD43r/" class="tag">
+                    Structure &amp; Algorithms
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/stacks-in-dart/">
+                  <h3 class="post-title">
+                    Stacks in Dart
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
