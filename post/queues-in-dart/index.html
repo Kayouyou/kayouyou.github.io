@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Queues in Dart | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1679904102931">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Queue使用FIFO（先进先出）排序，这意味着添加的第一个元素将始终是第一个被删除的元素。当您需要维护稍后要处理的元素的顺序时，队列很方便。
+/*
+ * Queue使用FIFO（先进先出）排序，这意味着添加的第一个元素将始终是第一个被删除..." />
+    <meta name="keywords" content="Dart,Structure & Algorithms" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1679904102931" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+       <a href="https://beian.miit.gov.cn/">豫ICP备2021012281号-1</a> | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Queues in Dart</h2>
+            <div class="post-date">2023-03-27</div>
+            
+            <div class="post-content" v-pre>
+              <p>Queue使用FIFO（先进先出）排序，这意味着添加的第一个元素将始终是第一个被删除的元素。当您需要维护稍后要处理的元素的顺序时，队列很方便。</p>
+<pre><code class="language-dart">/*
+ * Queue使用FIFO（先进先出）排序，这意味着添加的第一个元素将始终是第一个被删除的元素。
+ * 当您需要维护稍后要处理的元素的顺序时，队列很方便。
+ */
+/// Queue
+abstract class Queue&lt;E&gt; {
+  // enqueue：在队列的后面插入一个元素。如果操作成功，则返回true。
+  bool enqueue(E element);
+  // dequeue：删除队列前面的元素并返回。
+  E? dequeue();
+  // isEmpty：检查队列是否为空。
+  bool get isEmpty;
+  // peek：返回队列前面的元素而不删除它。
+  E? get peek;
+}
+</code></pre>
+<p>在以下部分中，您将学习使用四种不同的内部数据结构创建队列：</p>
+<blockquote>
+<ol>
+<li>List</li>
+<li>Doubly linked list</li>
+<li>Ring buffer</li>
+<li>Two stacks</li>
+</ol>
+</blockquote>
+<hr>
+<h2 id="1-list-based-implementation">1. List-Based Implementation</h2>
+<pre><code class="language-dart">class QueueList&lt;E&gt; implements Queue&lt;E&gt; {
+  // 这将设置一个专用列表来保存队列的元素。您还添加了前面定义的Queue接口所需的方法
+  final _list = &lt;E&gt;[];
+  // 平均而言，对一个元素进行排队是一个O（1）运算。这是因为列表后面有空的空间。
+  // 在添加了多个元素之后，列表最终会被填满。
+  // 如果您想使用超过分配的空间，则必须调整列表大小以腾出更多空间。
+  // 毕竟，调整大小需要列表分配新内存，并将所有现有数据复制到新列表中。
+  // 关键是这种情况不会经常发生。
+  // 这是因为每当空间不足时，容量就会翻倍。
+  // 因此，如果计算enqueue操作的摊余成本（平均成本），enqueue仅为O（1）。
+  // 也就是说，当执行复制时，最坏的性能是O（n）。
+  @override
+  bool enqueue(E element) {
+    _list.add(element);
+    return true;
+  }
+
+  // 从列表的开头删除元素总是一种线性时间操作，因为它需要在内存中移动列表中所有剩余的元素。
+  @override
+  E? dequeue() =&gt; (isEmpty) ? null : _list.removeAt(0);
+  @override
+  bool get isEmpty =&gt; _list.isEmpty; // O(1)
+  @override
+  E? get peek =&gt; (isEmpty) ? null : _list.first; // O(1)
+  // 添加一个新方法来覆盖QueueList中的toString，以便您可以看到操作的结果：
+  @override
+  String toString() =&gt; _list.toString();
+}
+// final queue = QueueList&lt;String&gt;();
+// queue.enqueue('Ray');
+// queue.enqueue('Brian');
+// queue.enqueue('Eric');
+// print(queue);
+// queue.dequeue();
+// print(queue);
+// queue.peek;
+// print(queue);
+// [Ray, Brian, Eric]
+// [Brian, Eric]
+// [Brian, Eric]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">操作</th>
+<th style="text-align:right">平均情况</th>
+<th style="text-align:center">最坏情况</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">入列</td>
+<td style="text-align:right">O(1)</td>
+<td style="text-align:center">O(n)</td>
+</tr>
+<tr>
+<td style="text-align:left">出列</td>
+<td style="text-align:right">O(n)</td>
+<td style="text-align:center">O(n)</td>
+</tr>
+<tr>
+<td style="text-align:left">空间复杂度</td>
+<td style="text-align:right">O(n)</td>
+<td style="text-align:center">O(n)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-doubly-linked-list-implementation">2. Doubly Linked List Implementation</h2>
+<p>双链表只是一个链表，其中的节点还包含对前一个节点的引用。<br>
+单链表由于removeLast是O（n），因此应该避免使用该方法。<br>
+您可以使用append入队，也可以使用pop出队，这两者都是O（1）。<br>
+对于双链接列表来说，这并不重要，因为removeLast也是O（1）。</p>
+<h3 id="doubly-link">Doubly Link</h3>
+<pre><code class="language-dart">class Node&lt;T&gt; {
+  Node({required this.value, this.next, this.previous});
+  T value;
+  Node&lt;T&gt;? next;
+  Node&lt;T&gt;? previous;
+
+  @override
+  String toString() {
+    return '$value';
+  }
+}
+
+abstract class LinkedList&lt;E&gt; {
+  Node&lt;E&gt;? head;
+  Node&lt;E&gt;? tail;
+  bool get isEmpty;
+  void append(E value);
+  void push(E value);
+  E? pop();
+  E? removeLast();
+}
+
+class DoublyLinkedList&lt;E&gt; extends Iterable&lt;E&gt; implements LinkedList&lt;E&gt; {
+  @override
+  Node&lt;E&gt;? head;
+
+  @override
+  Node&lt;E&gt;? tail;
+
+  @override
+  bool get isEmpty =&gt; head == null;
+
+  @override
+  void append(E value) {
+    // convert the value to a node
+    final newNode = Node(value: value, previous: tail);
+
+    // update the pointers at the tail of the list
+    if (isEmpty) {
+      head = newNode;
+    } else {
+      tail!.next = newNode;
+      // handle lists with only one element
+      head?.next ??= newNode;
+    }
+    tail = newNode;
+  }
+
+  @override
+  void push(E value) {
+    // convert the value to a node
+    final newNode = Node(value: value, next: head);
+
+    // update the pointers at the tail of the list
+    if (isEmpty) {
+      tail = newNode;
+    } else {
+      head!.previous = newNode;
+      // handle lists with only one element
+      tail?.previous ??= newNode;
+    }
+    head = newNode;
+  }
+
+  @override
+  E? pop() {
+    // handle an empty list
+    if (isEmpty) return null;
+
+    // save the return value
+    final value = head?.value;
+
+    // handle a list of length one
+    if (head?.next == null) {
+      head = null;
+      tail = null;
+      return value;
+    }
+
+    // update the pointers
+    head = head?.next;
+    head?.previous = null;
+
+    return value;
+  }
+
+  @override
+  E? removeLast() {
+    // delegate lists with one or zero items to pop
+    if (tail?.previous == null) return pop();
+
+    // save the return value
+    final value = tail?.value;
+
+    // update the pointers
+    tail = tail?.previous;
+    tail?.next = null;
+
+    return value;
+  }
+
+  @override
+  Iterator&lt;E&gt; get iterator =&gt; _LinkedListIterator(this);
+
+  @override
+  String toString() =&gt; '[${join(', ')}]';
+}
+
+class _LinkedListIterator&lt;E&gt; implements Iterator&lt;E&gt; {
+  _LinkedListIterator(DoublyLinkedList&lt;E&gt; list) : _list = list;
+  final DoublyLinkedList&lt;E&gt; _list;
+  Node&lt;E&gt;? _currentNode;
+  bool _firstPass = true;
+
+  @override
+  E get current =&gt; _currentNode!.value;
+
+  @override
+  bool moveNext() {
+    if (_list.isEmpty) return false;
+    if (_firstPass) {
+      _currentNode = _list.head;
+      _firstPass = false;
+    } else {
+      _currentNode = _currentNode?.next;
+    }
+    return _currentNode != null;
+  }
+}
+</code></pre>
+<h3 id="doubly-linked-list">Doubly Linked List</h3>
+<pre><code class="language-dart">class QueueLinkedList&lt;E&gt; implements Queue&lt;E&gt; {
+  final _list = DoublyLinkedList&lt;E&gt;();
+  // 在幕后，双链接列表将更新尾部节点对新节点的上一个和下一个引用。这是一个O（1）运算。
+  @override
+  bool enqueue(E element) {
+    _list.append(element);
+    return true;
+  }
+
+  // 从链接列表的前面删除也是一种O（1）操作。与List实现相比，您不必逐个移动元素。
+  // 相反，只需更新链表前两个节点的指针：
+  @override
+  E? dequeue() =&gt; _list.pop();
+  @override
+  bool get isEmpty =&gt; _list.isEmpty;
+  @override
+  E? get peek =&gt; _list.head?.value;
+  @override
+  String toString() =&gt; _list.toString();
+}
+
+final queue = QueueLinkedList&lt;String&gt;();
+queue.enqueue('Ray');
+queue.enqueue('Brian');
+queue.enqueue('Eric');
+print(queue); // [Ray, Brian, Eric]
+queue.dequeue();
+print(queue); // [Brian, Eric]
+queue.peek;
+print(queue); // [Brian, Eric]
+
+[Ray, Brian, Eric]
+[Brian, Eric]
+[Brian, Eric]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">操作</th>
+<th style="text-align:right">平均情况</th>
+<th style="text-align:center">最坏情况</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">入列</td>
+<td style="text-align:right">O(1)</td>
+<td style="text-align:center">O(1)</td>
+</tr>
+<tr>
+<td style="text-align:left">出列</td>
+<td style="text-align:right">O(1)</td>
+<td style="text-align:center">O(1)</td>
+</tr>
+<tr>
+<td style="text-align:left">空间复杂度</td>
+<td style="text-align:right">O(n)</td>
+<td style="text-align:center">O(n)</td>
+</tr>
+</tbody>
+</table>
+<p>QueueList的一个主要问题是，将一个项目排队需要线性时间。使用链表实现，您将其简化为一个常量运算O（1）。您所需要做的就是更新节点的指针。</p>
+<p>从表中可以看出QueueLinkedList的主要弱点并不明显。尽管有O（1）性能，但它的开销很高。每个元素都必须具有用于前向和后向引用的额外存储空间。此外，每次创建新元素时，都需要为新节点动态分配相对昂贵的内存。相比之下，QueueList进行批量分配，这样做更快。</p>
+<p>您能否消除分配开销并维护dequeues O（1）？如果你不必担心你的队列会超过最大固定大小，那么答案是肯定的！</p>
+<p>你要找的是一个环形缓冲区（ring buffer）。例如，您可能有一个有四名玩家的大富翁游戏。您可以使用基于环形缓冲区的队列来跟踪下一个轮到谁。接下来您将了解环形缓冲区的实现</p>
+<hr>
+<h2 id="3-ring-buffer-implementation">3. Ring Buffer Implementation</h2>
+<p>环形缓冲区，也称为循环缓冲区，是一个固定大小的列表。一种用于表示一个固定尺寸、头尾相连的缓冲区的数据结构，适合缓存数据流。</p>
+<p>首先创建一个固定大小为4的环形缓冲区。环形缓冲区有两个指针，用来跟踪两件事：</p>
+<ol>
+<li>read指针跟踪队列的前端。</li>
+<li>write指针跟踪下一个可用的插槽，以便您可以覆盖已经读取的现有元素</li>
+</ol>
+<h3 id="ring_buffer">ring_buffer</h3>
+<pre><code class="language-dart">class RingBuffer&lt;E&gt; {
+  RingBuffer(int length) : _list = List.filled(length, null, growable: false);
+
+  final List&lt;E?&gt; _list;
+  int _writeIndex = 0;
+  int _readIndex = 0;
+  int _size = 0;
+
+  bool get isFull =&gt; _size == _list.length;
+
+  bool get isEmpty =&gt; _size == 0;
+
+  void write(E element) {
+    if (isFull) throw Exception('Buffer is full');
+    _list[_writeIndex] = element;
+    _writeIndex = _advance(_writeIndex);
+    _size++;
+  }
+
+  int _advance(int index) {
+    return (index == _list.length - 1) ? 0 : index + 1;
+  }
+
+  E? read() {
+    if (isEmpty) return null;
+    final element = _list[_readIndex];
+    _readIndex = _advance(_readIndex);
+    _size--;
+    return element;
+  }
+
+  E? get peek =&gt; (isEmpty) ? null : _list[_readIndex];
+
+  @override
+  String toString() {
+    final text = StringBuffer();
+    text.write('[');
+    int index = _readIndex;
+    while (index != _writeIndex) {
+      if (index != _readIndex) {
+        text.write(', ');
+      }
+      text.write(_list[index % _list.length]);
+      index++;
+    }
+    text.write(']');
+    return text.toString();
+  }
+}
+</code></pre>
+<h3 id="queueringbuffer">QueueRingBuffer</h3>
+<pre><code class="language-dart">class QueueRingBuffer&lt;E&gt; implements Queue&lt;E&gt; {
+  // 由于环形缓冲区具有固定大小，因此必须包含长度参数。
+
+  QueueRingBuffer(int length) : _ringBuffer = RingBuffer&lt;E&gt;(length);
+  final RingBuffer&lt;E&gt; _ringBuffer;
+  // 要将一个元素附加到队列中，只需在_ringBuffer上调用write即可。这会使写入指针增加一。
+  // 入队永远是一个O（1）操作。
+  @override
+  bool enqueue(E element) {
+    // 由于队列具有固定的大小，因此现在必须返回true或false来指示元素是否已成功添加。
+    if (_ringBuffer.isFull) {
+      return false;
+    }
+    _ringBuffer.write(element);
+    return true;
+  }
+
+  // 在后台，它检查环形缓冲区是否为空，如果为空，则返回null。
+  // 如果不是，则返回缓冲区的读取索引处的项，然后将索引增加1。
+  @override
+  E? dequeue() =&gt; _ringBuffer.read();
+  // isEmpty和peek这两者都是O（1）
+  @override
+  bool get isEmpty =&gt; _ringBuffer.isEmpty;
+  @override
+  E? get peek =&gt; _ringBuffer.peek;
+
+  @override
+  String toString() =&gt; _ringBuffer.toString();
+}
+
+final queue = QueueRingBuffer&lt;String&gt;(10);
+queue.enqueue(&quot;Ray&quot;);
+queue.enqueue(&quot;Brian&quot;);
+queue.enqueue(&quot;Eric&quot;);
+print(queue); // [Ray, Brian, Eric]
+queue.dequeue();
+print(queue); // [Brian, Eric]
+queue.peek;
+print(queue); // [Brian, Eric]
+
+</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">操作</th>
+<th style="text-align:right">平均情况</th>
+<th style="text-align:center">最坏情况</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">入列</td>
+<td style="text-align:right">O(1)</td>
+<td style="text-align:center">O(1)</td>
+</tr>
+<tr>
+<td style="text-align:left">出列</td>
+<td style="text-align:right">O(1)</td>
+<td style="text-align:center">O(1)</td>
+</tr>
+<tr>
+<td style="text-align:left">空间复杂度</td>
+<td style="text-align:right">O(n)</td>
+<td style="text-align:center">O(n)</td>
+</tr>
+</tbody>
+</table>
+<p>基于环形缓冲区的队列在入队和出队方面具有与链表实现相同的时间复杂性。<br>
+基于环形缓冲区的队列的空间复杂性虽然仍然为O（n），但在像链表实现那样对新元素进行入队时，不需要在内部分配新的内存。但是，环形缓冲区的大小是固定的，这意味着入队可能会失败。</p>
+<p>到目前为止，您已经看到了队列的三种实现：简单列表、双链表和环形缓冲区。</p>
+<p>这些都以各自的方式很有用，但接下来您将使用两个stack实现一个队列。它的空间局部性优于链表，也不需要像环形缓冲区那样的固定大小。</p>
+<hr>
+<h2 id="4-double-stack-implementation">4. Double-Stack Implementation</h2>
+<p>您使用的是列表，而不是您在章“堆栈”中创建的堆栈类。<br>
+这样做的原因是，您将利用List的一些功能，而您的Stack目前没有这些功能：<br>
+first、last和reverse。</p>
+<p>使用两个堆栈的想法很简单。每当您将一个元素排入队列时，它都会进入right堆栈。</p>
+<p>当您需要将元素出列时，您可以反转right堆栈，将其放置在left堆栈中，然后移除顶部元素。</p>
+<p>只有当left堆栈为空时，才需要进行此反转操作，从而使大多数入队和出队操作的时间保持不变。</p>
+<pre><code class="language-dart">
+class QueueStack&lt;E&gt; implements Queue&lt;E&gt; {
+  final _leftStack = &lt;E&gt;[];
+  final _rightStack = &lt;E&gt;[];
+  @override
+  bool enqueue(E element) {
+    _rightStack.add(element);
+    return true;
+  }
+
+  @override
+  E? dequeue() {
+    // 请记住，只有当左堆栈为空时，才能传输右堆栈中的元素！
+    if (_leftStack.isEmpty) {
+      // 1 如果左侧堆栈为空，请将其设置为右侧堆栈的反转：
+      // 是的，反转列表的内容是一种O（n）操作。然而，总体出列成本仍然摊薄为O（1）。
+      _leftStack.addAll(_rightStack.reversed);
+      // 2 使右侧堆栈无效。由于您已将所有内容转移到左侧，只需清除右侧即可：
+      _rightStack.clear();
+    }
+    if (_leftStack.isEmpty) return null;
+    // 3 从左侧堆栈中移除最后一个元素：
+    return _leftStack.removeLast();
+  }
+
+  // 要检查队列是否为空，只需检查左堆栈和右堆栈是否都为空。
+  // 这意味着没有任何元素可以出列，也没有新的元素被入列。
+  // O(1)
+  @override
+  bool get isEmpty =&gt; _leftStack.isEmpty &amp;&amp; _rightStack.isEmpty;
+  // peek是获取最上面的元素。如果左侧堆栈不为空，则此堆栈顶部的元素位于队列的前面。
+  // 如果左侧堆栈为空，则右侧堆栈将反转并放置在左侧堆栈中。
+  // 在这种情况下，位于右侧堆栈底部的元素是队列中的下一个。
+  // O(1)
+  @override
+  E? get peek =&gt; _leftStack.isNotEmpty ? _leftStack.last : _rightStack.first;
+  @override
+  String toString() {
+    final combined = [
+      ..._leftStack.reversed,
+      ..._rightStack,
+    ].join(', ');
+    return '[$combined]';
+  }
+
+// final queue = QueueStack&lt;String&gt;();
+// queue.enqueue(&quot;Ray&quot;);
+// queue.enqueue(&quot;Brian&quot;);
+// final queue = QueueStack&lt;String&gt;();
+// queue.enqueue(&quot;Ray&quot;);
+// queue.enqueue(&quot;Brian&quot;);
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">操作</th>
+<th style="text-align:right">平均情况</th>
+<th style="text-align:center">最坏情况</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">入列</td>
+<td style="text-align:right">O(1)</td>
+<td style="text-align:center">O(n)</td>
+</tr>
+<tr>
+<td style="text-align:left">出列</td>
+<td style="text-align:right">O(1)</td>
+<td style="text-align:center">O(n)</td>
+</tr>
+<tr>
+<td style="text-align:left">空间复杂度</td>
+<td style="text-align:right">O(n)</td>
+<td style="text-align:center">O(n)</td>
+</tr>
+</tbody>
+</table>
+<p>与基于列表的实现相比，通过利用两个堆栈，您能够将出列转换为摊薄的O（1）操作。</p>
+<p>此外，您的两个堆栈实现是完全动态的，并且没有基于环形缓冲区的队列实现所具有的固定大小限制。当正确的队列需要反转或耗尽容量时，最糟糕的性能是O（n）。由于Dart每次都会将容量增加一倍，因此容量不足的情况并不经常发生。</p>
+<p>最后，它在空间局部性方面胜过链表。这是因为列表元素在内存块中相邻。因此，在第一次访问时，大量元素将被加载到缓存中。尽管列表需要O（n）来进行简单的复制操作，但在接近内存带宽的情况下，这是一个非常快的O（n）。</p>
+<hr>
+<h3 id="challenge-1-stack-vs-queue">Challenge 1: Stack vs. Queue</h3>
+<p>解释stack和queue之间的区别。为每个数据结构提供两个真实的例子。</p>
+<ol>
+<li>queue具有先进先出(FIFO)的行为。先进来的必须先出来。<br>
+队列中的项目从后面插入，然后从前面移除。</li>
+</ol>
+<ul>
+<li>
+<ol>
+<li>电影院排队：你会讨厌人们在电影院买票时插队！</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>打印机：多人可以以类似的先到先得的方式从打印机打印文档</li>
+</ol>
+</li>
+</ul>
+<ol start="2">
+<li>stack具有后进先出(LIFO)的行为。堆栈上的项目在顶部插入，然后从顶部移除。</li>
+</ol>
+<ul>
+<li>
+<ol>
+<li>stack：将盘子叠放在一起，每次使用时都要取下最顶部的。这不是比抓住底部的那个容易吗？</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>撤销功能：想象一下在键盘上输入单词。单击Ctrl-Z将撤消您键入的最新文本。</li>
+</ol>
+</li>
+</ul>
+<hr>
+<h3 id="challenge-2-step-by-step-diagrams">Challenge 2: Step-by-Step Diagrams</h3>
+<p>提供分步图，显示以下一系列命令如何在内部影响队列：</p>
+<pre><code class="language-dart">queue.enqueue('D');
+queue.enqueue('A');
+queue.dequeue();
+queue.enqueue('R');
+queue.dequeue();
+queue.dequeue();
+queue.enqueue('T');
+</code></pre>
+<p>对以下每个队列实现执行此操作：</p>
+<blockquote>
+<ol>
+<li>List</li>
+<li>Linked list</li>
+<li>Ring buffer</li>
+<li>Double stack</li>
+</ol>
+</blockquote>
+<p>假设列表和环形缓冲区的初始大小为5。</p>
+<ol>
+<li>List<br>
+请记住，每当列表已满，并且您试图添加一个新元素时，就会创建一个容量是现有元素的两倍的新列表。</li>
+</ol>
+<figure data-type="image" tabindex="1"><img src="https://imgbed.link/file/20754" alt="" loading="lazy"></figure>
+<ol start="2">
+<li>Linked List</li>
+</ol>
+<figure data-type="image" tabindex="2"><img src="https://imgbed.link/file/20755" alt="" loading="lazy"></figure>
+<ol start="3">
+<li>Ring Buffer</li>
+</ol>
+<figure data-type="image" tabindex="3"><img src="https://imgbed.link/file/20756" alt="" loading="lazy"></figure>
+<ol start="4">
+<li>Double Stack</li>
+</ol>
+<figure data-type="image" tabindex="4"><img src="https://imgbed.link/file/20757" alt="" loading="lazy"></figure>
+<hr>
+<h3 id="challenge-3-whose-turn-is-it">Challenge 3: Whose Turn Is It?</h3>
+<p>想象一下，你正在和你的朋友玩大富翁游戏。问题是每个人总是忘记该轮到谁了！创建一个大富翁组织者，它总是告诉轮到谁了。下面是一个可以实现的扩展方法：</p>
+<pre><code class="language-dart">extension BoardGameManager&lt;E&gt; on QueueRingBuffer&lt;E&gt; {
+  E? nextPlayer() {
+    final person = dequeue();
+    if (person != null) {
+      enqueue(person);
+    }
+    return person;
+  }
+}
+</code></pre>
+<hr>
+<h3 id="challenge-4-double-ended-queue">Challenge 4: Double-Ended Queue</h3>
+<p>双端队列（也称为deque）顾名思义，是一个可以在前面或后面添加或删除元素的队列。</p>
+<ul>
+<li>队列（FIFO顺序）允许您将元素添加到后面，并从前面移除。</li>
+<li>堆栈（LIFO顺序）允许您将元素添加到后面，然后从后面移除。</li>
+</ul>
+<p>Deque可以同时被视为队列和堆栈。</p>
+<p>你的挑战是建立一个deque。下面是一个简单的Deque接口，可以帮助您构建数据结构。枚举方向描述是在deque的前面还是后面添加元素还是从中删除元素。您可以使用任何您喜欢的数据结构来构造Deque。</p>
+<p>您可以使用循环缓冲区、两个堆栈、一个列表或双链接列表来构建一个。下面的解决方案使用双链接列表来构造Deque。</p>
+<p>首先设置双链接列表deque，如下所示：</p>
+<pre><code class="language-dart">class DequeDoublyLinkedList&lt;E&gt; implements Deque&lt;E&gt; {
+ final _list = DoublyLinkedList&lt;E&gt;();
+}
+</code></pre>
+<p>现在，您必须遵守Deque接口。首先，通过检查链表是否为空来实现isEmpty。这是一个O（1）运算。</p>
+<pre><code class="language-dart">@override
+bool get isEmpty =&gt; _list.isEmpty;
+</code></pre>
+<p>接下来，您需要一种从Deque的正面或背面查看value的方法。</p>
+<pre><code class="language-dart">@override
+E? peek(Direction from) {
+ switch (from) {
+ case Direction.front:
+ return _list.head?.value;
+ case Direction.back:
+ return _list.tail?.value;
+ }
+}
+</code></pre>
+<p>要从前面或后面查看元素，请检查列表的头值和尾值。<br>
+这是一个O（1）运算。</p>
+<p>现在，您需要一种方法来为Deque的正面或背面添加元素。</p>
+<pre><code class="language-dart">@override
+bool enqueue(E value, Direction to) {
+ switch (to) {
+ case Direction.front:
+ _list.push(value);
+ break;
+ case Direction.back:
+ _list.append(value);
+ break;
+ }
+ return true;
+}
+</code></pre>
+<p>在Deque的正面或背面添加元素：</p>
+<ol>
+<li>Front：将一个元素推到列表的前面。在内部，链表将更新新节点作为链表的头。</li>
+<li>Back：将一个元素追加到列表的后面。类似地，链表将更新新节点作为链表的尾部。</li>
+</ol>
+<p>这两个操作都是O（1）操作，因为您所要做的就是更新几个节点的内部指针。</p>
+<p>既然您已经有了添加元素的方法，那么如何删除元素呢？</p>
+<pre><code class="language-dart">@override
+E? dequeue(Direction from) {
+ switch (from) {
+ case Direction.front:
+ return _list.pop();
+ case Direction.back:
+ return _list.removeLast();
+ }
+}
+</code></pre>
+<p>从Deque的正面或背面移除元素很简单。</p>
+<ol>
+<li>Front：调用pop以删除列表中的head节点。</li>
+<li>Back：同样，调用removeLast来移除尾部。</li>
+</ol>
+<p>与入队类似，这些是针对双链表的O（1）操作。</p>
+<p>最后，覆盖toString，这样您就可以测试您的Deque了。</p>
+<pre><code class="language-dart">final deque = DequeDoublyLinkedList&lt;int&gt;();
+deque.enqueue(1, Direction.back);
+deque.enqueue(2, Direction.back);
+deque.enqueue(3, Direction.back);
+deque.enqueue(4, Direction.back);
+print(deque);
+deque.enqueue(5, Direction.front);
+print(deque);
+deque.dequeue(Direction.back);
+deque.dequeue(Direction.back);
+deque.dequeue(Direction.back);
+deque.dequeue(Direction.front);
+deque.dequeue(Direction.front);
+deque.dequeue(Direction.front);
+print(deque);
+
+[1, 2, 3, 4]
+[5, 1, 2, 3, 4]
+[]
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/TJve9KUxO/" class="tag">
+                    Dart
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/CcG60wD43r/" class="tag">
+                    Structure &amp; Algorithms
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/linkedlists-in-dart/">
+                  <h3 class="post-title">
+                    LinkedLists in Dart
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>
