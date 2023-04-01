@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Trees in Dart | Kayouyou&#39;s Den</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://kayouyou.github.io/favicon.ico?v=1680320045148">
+<link rel="stylesheet" href="https://kayouyou.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Tree是一种非常重要的数据结构。它用于解决软件开发中反复出现的许多挑战，例如：
+
+1, 表示层次关系。
+2, 管理已排序的数据。
+3, 方便快速查找操作。
+
+
+常见术语
+
+
+Node
+与链表一样，树也是由节点组成的。
+每个节点可以携带一些..." />
+    <meta name="keywords" content="Dart,Structure & Algorithms" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://kayouyou.github.io">
+        <img src="https://kayouyou.github.io/images/avatar.png?v=1680320045148" class="site-logo">
+        <h1 class="site-title">Kayouyou&#39;s Den</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      The wise build bridges, while the foolish build barriers.
+    </div>
+    <div class="site-footer">
+       <a href="https://beian.miit.gov.cn/">豫ICP备2021012281号-1</a> | <a class="rss" href="https://kayouyou.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Trees in Dart</h2>
+            <div class="post-date">2023-04-01</div>
+            
+            <div class="post-content" v-pre>
+              <p>Tree是一种非常重要的数据结构。它用于解决软件开发中反复出现的许多挑战，例如：</p>
+<ul>
+<li>1, 表示层次关系。</li>
+<li>2, 管理已排序的数据。</li>
+<li>3, 方便快速查找操作。</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://imgbed.link/file/21259" alt="" loading="lazy"></figure>
+<h2 id="常见术语">常见术语</h2>
+<ol>
+<li>
+<p><strong>Node</strong><br>
+与链表一样，树也是由节点组成的。<br>
+每个节点可以携带一些数据并跟踪其子节点。</p>
+</li>
+<li>
+<p><strong>Parent and Child</strong><br>
+trees从顶部开始，向底部分支，就像一棵真正的树一样。与真正的树正好相反。</p>
+</li>
+</ol>
+<p>除最上面的节点外，每个节点都恰好连接到其上面的一个节点。<br>
+该节点称为父节点。直接连接在父节点下方的节点称为子节点。在一棵树中，每个子Node都有一个父Node。</p>
+<ol start="3">
+<li>
+<p><strong>Root</strong><br>
+tree中最顶端的节点称为树的根。它是唯一一个没有父节点的节点：</p>
+</li>
+<li>
+<p><strong>Leaf</strong><br>
+如果一个节点没有子节点，那么它就是一个leaf：</p>
+</li>
+</ol>
+<hr>
+<h2 id="implementation">Implementation</h2>
+<p>由于树是由节点组成的，因此您的第一个任务是创建一个TreeNode类。</p>
+<pre><code class="language-dart">class TreeNode&lt;T&gt; {
+  // 就像链表节点一样，每个树节点都存储一个值。
+  TreeNode(this.value);
+  T value;
+  // 但是，由于树节点可以指向多个其他节点，因此可以使用列表来保存对所有子节点的引用。
+  List&lt;TreeNode&lt;T&gt;&gt; children = [];
+
+  // 此方法将一个子节点添加到节点中。
+  void add(TreeNode&lt;T&gt; child) {
+    children.add(child);
+  }
+}
+</code></pre>
+<hr>
+<h2 id="traversal-algorithms">Traversal Algorithms</h2>
+<p>通过线性集合（如列表或链表）进行迭代是很简单的。线性集合有一清晰的起点和终点：<br>
+在树上循环有点复杂：</p>
+<figure data-type="image" tabindex="2"><img src="https://imgbed.link/file/21258" alt="" loading="lazy"></figure>
+<p>左边的节点应该优先吗？<br>
+节点的深度与其优先级应该如何关联？您的遍历策略取决于您试图解决的问题。<br>
+对于不同的树和不同的问题，有多种策略。<br>
+在下一节中，您将了解深度优先遍历，这是一种从根开始并在回溯之前尽可能深入地访问节点的技术。</p>
+<hr>
+<h3 id="depth-first-traversal深度优先">Depth-First Traversal(深度优先)</h3>
+<pre><code class="language-dart">  // Depth-First Traversal(深度优先)
+  void forEachDepthFirst(void Function(TreeNode&lt;T&gt; node) performAction) {
+    performAction(this);
+    for (final child in children) {
+      /*
+       * 这个看似简单的代码使用递归访问下一个节点。
+       * 这一次，您允许调用者传入一个名为performAction的匿名函数，该函数将为每个节点调用一次。
+       * 然后访问当前节点的所有子节点，并调用它们的forEachDepthFirst方法。
+       */
+      child.forEachDepthFirst(performAction);
+    }
+  }
+</code></pre>
+<p>测试一下：</p>
+<pre><code class="language-dart">TreeNode&lt;String&gt; makeBeverageTree() {
+  final tree = TreeNode('beverages');
+  final hot = TreeNode('hot');
+  final cold = TreeNode('cold');
+  final tea = TreeNode('tea');
+  final coffee = TreeNode('coffee');
+  final chocolate = TreeNode('cocoa');
+  final blackTea = TreeNode('black');
+  final greenTea = TreeNode('green');
+  final chaiTea = TreeNode('chai');
+  final soda = TreeNode('soda');
+  final milk = TreeNode('milk');
+  final gingerAle = TreeNode('ginger ale');
+  final bitterLemon = TreeNode('bitter lemon');
+  tree.add(hot);
+  tree.add(cold);
+  hot.add(tea);
+  hot.add(coffee);
+  hot.add(chocolate);
+  cold.add(soda);
+  cold.add(milk);
+  tea.add(blackTea);
+  tea.add(greenTea);
+  tea.add(chaiTea);
+  soda.add(gingerAle);
+  soda.add(bitterLemon);
+  return tree;
+}
+
+// final tree = makeBeverageTree();
+// tree.forEachDepthFirst((node) =&gt; print(node.value));
+// 输出：
+// beverages
+// hot
+// tea
+// black
+// green
+// chai
+// coffee
+// cocoa
+// cold
+// soda
+// ginger ale
+// bitter lemon
+// milk
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://imgbed.link/file/21257" alt="" loading="lazy"></figure>
+<hr>
+<h3 id="level-order-traversal顺序优先">Level-Order Traversal(顺序优先)</h3>
+<p>树可以根据节点到根的距离划分为多个级别。<br>
+根本身是级别0，作为根的直接子级的节点是级别1，这些子级的子级是级别2，然后继续。以下是图像形式：</p>
+<figure data-type="image" tabindex="4"><img src="https://imgbed.link/file/21260" alt="" loading="lazy"></figure>
+<p>级别顺序遍历意味着在访问下一级别的任何节点之前，先访问上一级别的所有节点</p>
+<p>您可以通过使用队列（上一篇Queue）来实现这一点。</p>
+<pre><code class="language-dart">void forEachLevelOrder(void Function(TreeNode&lt;T&gt; node) performAction) {
+  final queue = QueueStack&lt;TreeNode&lt;T&gt;&gt;();
+  performAction(this);
+  // 首先将根节点（级别0）入队，然后添加子节点（级别1）。
+  children.forEach(queue.enqueue);
+  var node = queue.dequeue();
+  // while循环随后将下一级上的所有子级排入队列。
+  // 由于队列是先进先出的，这将导致每个级别按从上到下的顺序出列
+  while (node != null) {
+    performAction(node);
+    node.children.forEach(queue.enqueue);
+    node = queue.dequeue();
+  }
+}
+</code></pre>
+<p>测试一下：</p>
+<pre><code class="language-dart">final tree = makeBeverageTree();
+tree.forEachLevelOrder((node) =&gt; print(node.value));
+// beverages
+// hot
+// cold
+// tea
+// coffee
+// cocoa
+// soda
+// milk
+// black
+// green
+// chai
+// ginger ale
+// bitter lemon
+</code></pre>
+<hr>
+<h3 id="search">Search</h3>
+<p>您已经有两种方法可以遍历所有节点，因此构建搜索算法应该不会花很长时间。在树节点的底部写下以下内容：</p>
+<pre><code class="language-dart">// 您遍历每个节点，并检查其值是否与您正在搜索的值相同。如果是，则将其作为结果返回，但如果不是，则返回null。
+TreeNode? search(T value) {
+  TreeNode? result;
+  forEachLevelOrder((node) {
+    if (node.value == value) {
+      result = node;
+    }
+  });
+  return result;
+}
+</code></pre>
+<p>测试一下：</p>
+<pre><code class="language-dart">final tree = makeBeverageTree();
+
+// 在这里，您使用了顺序遍历算法。由于它访问所有节点，如果有多个匹配，最后一个匹配将获胜。这意味着您将根据使用的遍历方法返回不同的对象。
+final searchResult1 = tree.search('ginger ale');
+print(searchResult1?.value); // ginger ale
+final searchResult2 = tree.search('water');
+print(searchResult2?.value); // null
+
+</code></pre>
+<hr>
+<h3 id="challenges">Challenges</h3>
+<ul>
+<li>
+<ol>
+<li>根据按顺序打印树中的所有值。同一级别的节点应打印在同一行上。例如，考虑以下树：</li>
+</ol>
+</li>
+</ul>
+<figure data-type="image" tabindex="5"><img src="https://imgbed.link/file/21261" alt="" loading="lazy"></figure>
+<p>您的算法应该打印以下内容：</p>
+<blockquote>
+<p>15<br>
+1 17 20<br>
+1 5 0 2 5 7</p>
+</blockquote>
+<p>实现思路：</p>
+<p>按顺序打印节点的一种简单方法是使用队列数据结构来利用顺序遍历。棘手的一点是确定何时应该出现换行符。为此，了解队列中元素的数量将是非常有用的。您在上一章中创建的队列没有长度属性，但现在可以添加一个。</p>
+<p>打开QueueStack实现并添加以下行：</p>
+<pre><code class="language-dart">int get length =&gt; _leftStack.length + _rightStack.length;
+</code></pre>
+<p>实现代码：</p>
+<pre><code class="language-dart">void printEachLevel&lt;T&gt;(TreeNode&lt;T&gt; tree) {
+  final result = StringBuffer();
+  // 1 首先初始化一个Queue数据结构，以便于顺序遍历。
+  var queue = QueueStack&lt;TreeNode&lt;T&gt;&gt;();
+  // 您还可以创建nodesLeftInCurrentLevel来跟踪打印新行之前需要处理的节点数量。
+  var nodesLeftInCurrentLevel = 0;
+  queue.enqueue(tree);
+  // 2 您的顺序遍历将继续进行，直到队列为空为止。
+  while (!queue.isEmpty) {
+    // 3 在第一个while循环中，首先将nodesLeftInCurrentLevel设置为队列中当前元素的数量。
+    nodesLeftInCurrentLevel = queue.length;
+    // 4 使用另一个while循环，将第一个nodesLeftInCurrentLevel数量的元素从队列中移出
+    // 您出列的每个元素都会添加到result中，而不需要建立新行。您还将对节点的所有子节点进行enqueue。
+    while (nodesLeftInCurrentLevel &gt; 0) {
+      final node = queue.dequeue();
+      if (node == null) break;
+      result.write('${node.value} ');
+      for (var element in node.children) {
+        queue.enqueue(element);
+      }
+      nodesLeftInCurrentLevel -= 1;
+    }
+    // 5 在这一点上，您可以在结果后面追加一行换行符。
+    // 在下一次迭代中，nodesLeftInCurrentLevel将使用队列的count进行更新，该计数表示上一次迭代的子级数。
+    result.write('\n');
+  }
+  print(result);
+}
+</code></pre>
+<p>该算法的时间复杂度为O（n）。由于您将Queue数据结构初始化为中间容器，因此该算法空间复杂度也是O（n）。</p>
+<ul>
+<li>
+<ol start="2">
+<li>在构建UI小部件树时，如果可以将子级作为参数传入构造函数，则会更容易。以下是节点的一个版本：</li>
+</ol>
+</li>
+</ul>
+<pre><code class="language-dart">class Widget {}
+
+class Column extends Widget {
+  Column({this.children});
+  List&lt;Widget&gt;? children;
+}
+
+class Padding extends Widget {
+  Padding({this.value = 0.0, this.child});
+  double value;
+  Widget? child;
+}
+
+class Text extends Widget {
+  Text([this.value = '']);
+  String value;
+}
+
+final tree = Column(
+  children: [
+    Padding(
+      value: 8.0,
+      child: Text('This'),
+    ),
+    Padding(
+      value: 8.0,
+      child: Text('is'),
+    ),
+    Column(
+      children: [
+        Text('my'),
+        Text('widget'),
+        Text('tree!'),
+      ],
+    ),
+  ],
+);
+
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://kayouyou.github.io/tag/TJve9KUxO/" class="tag">
+                    Dart
+                  </a>
+                
+                  <a href="https://kayouyou.github.io/tag/CcG60wD43r/" class="tag">
+                    Structure &amp; Algorithms
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://kayouyou.github.io/post/queues-in-dart/">
+                  <h3 class="post-title">
+                    Queues in Dart
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.6.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

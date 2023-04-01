@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://kayouyou.github.io</id>
     <title>Kayouyou&apos;s Den</title>
-    <updated>2023-03-27T08:01:50.790Z</updated>
+    <updated>2023-04-01T03:34:12.760Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://kayouyou.github.io"/>
     <link rel="self" href="https://kayouyou.github.io/atom.xml"/>
@@ -10,6 +10,13 @@
     <logo>https://kayouyou.github.io/images/avatar.png</logo>
     <icon>https://kayouyou.github.io/favicon.ico</icon>
     <rights>All rights reserved 2023, Kayouyou&apos;s Den</rights>
+    <entry>
+        <title type="html"><![CDATA[Trees in Dart]]></title>
+        <id>https://kayouyou.github.io/post/trees-in-dart/</id>
+        <link href="https://kayouyou.github.io/post/trees-in-dart/">
+        </link>
+        <updated>2023-04-01T03:33:41.000Z</updated>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Queues in Dart]]></title>
         <id>https://kayouyou.github.io/post/queues-in-dart/</id>
@@ -72,12 +79,5 @@
         <link href="https://kayouyou.github.io/post/equality/">
         </link>
         <updated>2022-05-22T08:22:25.000Z</updated>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Creating Combine-compatible versions of async/await-based APIs]]></title>
-        <id>https://kayouyou.github.io/post/creating-combine-compatible-versions-of-asyncawait-based-apis/</id>
-        <link href="https://kayouyou.github.io/post/creating-combine-compatible-versions-of-asyncawait-based-apis/">
-        </link>
-        <updated>2022-05-22T08:21:43.000Z</updated>
     </entry>
 </feed>
